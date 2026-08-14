@@ -12,7 +12,12 @@ RACE_WITH_RESULTS = {
     "Circuit": {
         "circuitId": "bahrain",
         "circuitName": "Bahrain International Circuit",
-        "Location": {"lat": "26.0325", "long": "50.5106", "locality": "Sakhir", "country": "Bahrain"},
+        "Location": {
+            "lat": "26.0325",
+            "long": "50.5106",
+            "locality": "Sakhir",
+            "country": "Bahrain",
+        },
     },
     "Results": [
         {
@@ -79,9 +84,7 @@ def test_missing_numeric_fields_become_none() -> None:
     race = {
         "season": "2023",
         "round": "1",
-        "Results": [
-            {"position": "R", "grid": "", "points": "", "Driver": {}, "Constructor": {}}
-        ],
+        "Results": [{"position": "R", "grid": "", "points": "", "Driver": {}, "Constructor": {}}],
     }
     row = next(iter(RESOURCES["results"].flatten(race, 2023)))
     assert row["position"] is None

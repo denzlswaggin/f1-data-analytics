@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+jobs:
+  quality:
+    name: Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install
+        run: pip install -e ".[dev]"
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+      - name: Mypy
+        run: mypy ingestion tests
+
+      - name: Pytest
+        run: pytest -q
+
+  dbt:
+    name: dbt
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    env:
+      F1_DUCKDB_PATH: data/warehouse/f1.duckdb
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install
+        run: pip install -e ".[dev]" -e ".[dbt]"
+
+      # No seed/raw data exists in CI yet, so we validate that the dbt
+      # project resolves and compiles rather than running `dbt build`.
+      - name: dbt deps
+        run: dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: dbt parse
+        run: dbt parse --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: dbt compile
+        run: dbt compile --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
