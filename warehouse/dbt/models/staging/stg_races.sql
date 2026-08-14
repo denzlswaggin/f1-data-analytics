@@ -14,8 +14,8 @@ renamed as (
         circuit_name,
         country,
         locality,
-        cast(lat as double)                                        as latitude,
-        cast(long as double)                                       as longitude
+        cast(lat as double precision)                              as latitude,
+        cast(long as double precision)                             as longitude
     from source
 )
 
