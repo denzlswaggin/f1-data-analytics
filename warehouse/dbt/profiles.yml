@@ -1,0 +1,25 @@
+# dbt connection profiles. Run dbt from the repo root with:
+#   dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+#
+# dev  -> DuckDB single-file warehouse (fast local + CI)
+# prod -> Postgres (docker-compose service)
+# The same models run on either target (keep SQL cross-dialect).
+f1:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "{{ env_var('F1_DUCKDB_PATH', 'data/warehouse/f1.duckdb') }}"
+      threads: 4
+
+    prod:
+      type: postgres
+      host: "{{ env_var('F1_PG_HOST', 'localhost') }}"
+      port: "{{ env_var('F1_PG_PORT', '5432') | int }}"
+      user: "{{ env_var('F1_PG_USER', 'f1') }}"
+      password: "{{ env_var('F1_PG_PASSWORD', 'f1') }}"
+      dbname: "{{ env_var('F1_PG_DATABASE', 'f1') }}"
+      # Default schema for un-namespaced nodes; layer models set their own
+      # (staging/intermediate/marts) via generate_schema_name.
+      schema: analytics
+      threads: 4

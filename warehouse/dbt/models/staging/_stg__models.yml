@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: stg_races
+    description: One clean, typed row per race with a surrogate `race_key`.
+    columns:
+      - name: race_key
+        description: Surrogate key = hash(season, round).
+        data_tests: [unique, not_null]
+      - name: season
+        data_tests: [not_null]
+      - name: round
+        data_tests: [not_null]
+      - name: race_date
+        description: Calendar date of the race.

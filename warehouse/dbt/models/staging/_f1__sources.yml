@@ -1,0 +1,30 @@
+version: 2
+
+sources:
+  - name: raw
+    description: >
+      Raw Ergast/Jolpica-F1 data landed by the ingestion layer, one table per
+      resource. Loaded idempotently per season.
+    schema: raw
+    tables:
+      - name: races
+        description: Race schedule and circuit metadata, one row per race.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: round
+            data_tests: [not_null]
+      - name: results
+        description: Race classification, one row per driver per race.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_id
+            data_tests: [not_null]
+      - name: qualifying
+        description: Qualifying classification, one row per driver per race.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_id
+            data_tests: [not_null]

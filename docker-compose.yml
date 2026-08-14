@@ -1,0 +1,23 @@
+# Postgres "production" warehouse for the F1 analytics platform.
+# Dev uses local DuckDB; this compose file provides a real warehouse target so
+# dbt (and the ingestion loaders) can run against Postgres identically.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: f1-postgres
+    environment:
+      POSTGRES_USER: f1
+      POSTGRES_PASSWORD: f1
+      POSTGRES_DB: f1
+    ports:
+      - "5432:5432"
+    volumes:
+      - f1_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U f1 -d f1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  f1_pgdata:
