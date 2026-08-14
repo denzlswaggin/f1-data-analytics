@@ -1,0 +1,11 @@
+# Normalise line endings: LF in the repo, checked out natively.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary / data
+*.parquet binary
+*.duckdb binary
+*.png binary

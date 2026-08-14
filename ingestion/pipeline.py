@@ -1,0 +1,64 @@
+"""Extract-Load pipeline: API -> flatten -> Parquet lake -> warehouse."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pandas as pd
+
+from ingestion.clients.jolpica import JolpicaClient
+from ingestion.config import Settings, get_settings
+from ingestion.loaders.lake import write_parquet
+from ingestion.loaders.warehouse import load_dataframe
+from ingestion.logging import get_logger
+from ingestion.resources import DEFAULT_RESOURCES, RESOURCES, Resource
+
+log = get_logger(__name__)
+
+
+def extract_resource(resource: Resource, season: int, client: JolpicaClient) -> pd.DataFrame:
+    """Fetch and flatten one resource for one season into a DataFrame."""
+    path = resource.path_template.format(season=season)
+    rows: list[dict[str, Any]] = []
+    for record in client.paginate(path, resource.table_key, resource.list_key):
+        rows.extend(resource.flatten(record, season))
+    return pd.DataFrame(rows)
+
+
+def ingest_resource(
+    resource_name: str,
+    season: int,
+    client: JolpicaClient | None = None,
+    settings: Settings | None = None,
+) -> int:
+    """Run the full EL path for one resource/season. Returns rows loaded."""
+    settings = settings or get_settings()
+    client = client or JolpicaClient(settings)
+    resource = RESOURCES[resource_name]
+
+    df = extract_resource(resource, season, client)
+    if df.empty:
+        log.warning("pipeline.empty", resource=resource_name, season=season)
+        return 0
+
+    write_parquet(df, resource.name, season, settings)
+    return load_dataframe(df, resource.name, season, settings)
+
+
+def backfill(
+    seasons: list[int],
+    resources: tuple[str, ...] = DEFAULT_RESOURCES,
+    settings: Settings | None = None,
+) -> dict[tuple[str, int], int]:
+    """Backfill the given resources across the given seasons.
+
+    Returns a ``{(resource, season): rows_loaded}`` summary.
+    """
+    settings = settings or get_settings()
+    client = JolpicaClient(settings)
+    summary: dict[tuple[str, int], int] = {}
+    for season in seasons:
+        for resource_name in resources:
+            rows = ingest_resource(resource_name, season, client, settings)
+            summary[(resource_name, season)] = rows
+    return summary
