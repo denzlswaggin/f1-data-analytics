@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Data lake / warehouse artifacts (never commit data)
+data/
+*.duckdb
+*.duckdb.wal
+*.parquet
+cache/
+fastf1_cache/
+
+# dbt
+warehouse/dbt/target/
+warehouse/dbt/dbt_packages/
+warehouse/dbt/logs/
+warehouse/dbt/.user.yml
+
+# Dagster
+orchestration/.dagster_home/
+tmp*/
+
+# Evidence.dev
+dashboard/.evidence/
+dashboard/node_modules/
+dashboard/build/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

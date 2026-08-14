@@ -1,0 +1,81 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "f1-data-analytics"
+version = "0.1.0"
+description = "End-to-end F1 data engineering platform: ingestion, warehouse, dbt, orchestration, and a teammate-normalized driver-rating insight."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [{ name = "Patrik Kriz" }]
+keywords = ["formula1", "data-engineering", "dbt", "dagster", "duckdb"]
+
+dependencies = [
+    "requests>=2.32",
+    "tenacity>=9.0",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pandas>=2.2",
+    "pyarrow>=18.0",
+    "duckdb>=1.1",
+    "sqlalchemy>=2.0",
+    "psycopg2-binary>=2.9",
+    "structlog>=24.4",
+    "typer>=0.15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "sqlfluff>=3.2",
+    "types-requests>=2.32",
+    "types-psycopg2>=2.9",
+    "pre-commit>=4.0",
+]
+# dbt is resolved separately (strict transitive pins) — install with:
+#   pip install -e ".[dbt]"
+dbt = [
+    "dbt-core>=1.9",
+    "dbt-duckdb>=1.9",
+    "dbt-postgres>=1.9",
+]
+
+[project.scripts]
+f1-ingest = "ingestion.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ingestion"]
+
+# ---------------------------------------------------------------------------
+# Tooling
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["ingestion", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+files = ["ingestion", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.sqlfluff.core]
+dialect = "duckdb"
+templater = "dbt"
+max_line_length = 100
