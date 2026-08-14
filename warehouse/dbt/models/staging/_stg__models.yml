@@ -13,3 +13,51 @@ models:
         data_tests: [not_null]
       - name: race_date
         description: Calendar date of the race.
+
+  - name: stg_results
+    description: One typed row per driver per race (finishing classification).
+    columns:
+      - name: result_key
+        description: Surrogate key = hash(season, round, driver_id).
+        data_tests: [unique, not_null]
+      - name: race_key
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_races')
+              field: race_key
+      - name: driver_id
+        data_tests: [not_null]
+      - name: is_classified
+        data_tests:
+          - accepted_values:
+              values: [true, false]
+
+  - name: stg_qualifying
+    description: One typed row per driver per qualifying session; Q1/Q2/Q3 in seconds.
+    columns:
+      - name: qualifying_key
+        description: Surrogate key = hash(season, round, driver_id).
+        data_tests: [unique, not_null]
+      - name: race_key
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_races')
+              field: race_key
+      - name: driver_id
+        data_tests: [not_null]
+
+  - name: stg_drivers
+    description: Driver dimension (one row per driver) with display name and career span.
+    columns:
+      - name: driver_id
+        data_tests: [unique, not_null]
+      - name: driver_name
+        data_tests: [not_null]
+
+  - name: stg_constructors
+    description: Constructor dimension (one row per team) with active span.
+    columns:
+      - name: constructor_id
+        data_tests: [unique, not_null]
