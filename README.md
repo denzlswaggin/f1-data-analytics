@@ -111,8 +111,8 @@ tests/            pytest suite
 
 - [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI
 - [x] **M2 — dbt core**: staging/intermediate/marts + `driver_ratings` insight
-- [ ] **M3 — Telemetry & serving**: FastF1 ingestion + Evidence dashboard
-- [ ] **M4 — Orchestration**: Dagster assets + race-weekend schedule
+- [x] **M3 — Telemetry & serving**: FastF1 ingestion + Evidence dashboard + Pages deploy
+- [x] **M4 — Orchestration**: Dagster assets + race-weekend schedule
 - [ ] **M5 — Depth**: pit-strategy & tyre-degradation marts, writeup
 
 ## License
