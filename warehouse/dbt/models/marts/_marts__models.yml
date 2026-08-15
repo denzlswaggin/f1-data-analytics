@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: mart_driver_season_pace
+    description: >
+      Per-driver, per-season teammate qualifying summary: head-to-head record and
+      mean pace gap (negative = faster than teammate).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [driver_id, season]
+    columns:
+      - name: driver_id
+        data_tests: [not_null]
+      - name: season
+        data_tests: [not_null]
+      - name: races_compared
+        data_tests: [not_null]
+      - name: teammate_win_pct
+        description: Share of compared races the driver out-qualified their teammate.
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 100

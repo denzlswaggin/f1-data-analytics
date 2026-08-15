@@ -28,7 +28,13 @@ RACE_WITH_RESULTS = {
             "grid": "1",
             "laps": "57",
             "status": "Finished",
-            "Driver": {"driverId": "max_verstappen", "code": "VER"},
+            "Driver": {
+                "driverId": "max_verstappen",
+                "code": "VER",
+                "givenName": "Max",
+                "familyName": "Verstappen",
+                "nationality": "Dutch",
+            },
             "Constructor": {"constructorId": "red_bull"},
             "Time": {"millis": "5637366", "time": "1:33:56.736"},
             "FastestLap": {"rank": "3", "Time": {"time": "1:36.236"}},
@@ -61,6 +67,9 @@ def test_flatten_results_extracts_typed_fields() -> None:
     row = rows[0]
     assert row["season"] == 2023 and row["round"] == 1
     assert row["driver_id"] == "max_verstappen"
+    assert row["driver_given_name"] == "Max"
+    assert row["driver_family_name"] == "Verstappen"
+    assert row["driver_nationality"] == "Dutch"
     assert row["constructor_id"] == "red_bull"
     assert row["grid"] == 1 and row["position"] == 1
     assert row["points"] == 25.0

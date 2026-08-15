@@ -18,6 +18,7 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "pandas>=2.2",
+    "numpy>=2.0",
     "pyarrow>=18.0",
     "duckdb>=1.1",
     "sqlalchemy>=2.0",
@@ -47,9 +48,10 @@ dbt = [
 
 [project.scripts]
 f1-ingest = "ingestion.cli:app"
+f1-analytics = "analytics.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ingestion"]
+packages = ["ingestion", "analytics"]
 
 # ---------------------------------------------------------------------------
 # Tooling
@@ -57,7 +59,7 @@ packages = ["ingestion"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["ingestion", "tests"]
+src = ["ingestion", "analytics", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
@@ -69,7 +71,7 @@ strict = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-files = ["ingestion", "tests"]
+files = ["ingestion", "analytics", "tests"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

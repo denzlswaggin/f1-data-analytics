@@ -13,10 +13,40 @@
 
 ## The signature insight — "true pace" driver ratings
 
-Teammates drive **identical machinery**, so the gap *between teammates* isolates
-driver skill from the car. Chaining these pairwise deltas across seasons yields a
-single cross-era **driver-skill leaderboard** — the headline output of this
-platform. (Coming in Milestone 2.)
+Teammates drive **identical machinery**, so the qualifying gap *between teammates*
+isolates driver skill from the car. Each gap is turned into an additive log-pace
+difference and the whole set is solved into one cross-era leaderboard via a
+Massey-style least-squares fit on the teammate graph (with empirical-Bayes
+shrinkage so thin-sample drivers don't top the board on noise).
+
+**Fastest qualifiers, 2006–2025** (teammate-normalised, drivers with ≥40 head-to-heads):
+
+| Rank\* | Driver           | Rating | Head-to-heads | Seasons   |
+| -----: | ---------------- | -----: | ------------: | --------- |
+|      1 | Max Verstappen   |  0.946 |           224 | 2015–2025 |
+|      4 | George Russell   |  0.641 |           149 | 2019–2025 |
+|      5 | Charles Leclerc  |  0.578 |           171 | 2018–2025 |
+|      6 | Daniel Ricciardo |  0.504 |           252 | 2011–2024 |
+|      7 | Sebastian Vettel |  0.469 |           292 | 2007–2022 |
+|      8 | Pierre Gasly     |  0.441 |           169 | 2017–2025 |
+|      9 | Lando Norris     |  0.438 |           150 | 2019–2025 |
+|     11 | Nico Rosberg     |  0.351 |           202 | 2006–2016 |
+|     14 | Fernando Alonso  |  0.300 |           347 | 2006–2025 |
+|     15 | Lewis Hamilton   |  0.295 |           376 | 2007–2025 |
+
+\* Global rank across all 100 drivers; the gaps (2, 3, 10, …) are lower-sample
+drivers omitted from this filtered view. Higher rating = faster vs teammates.
+Hamilton mid-pack is a genuinely debatable result — the metric measures *margin
+over teammate*, and his teammates (Alonso, Rosberg, Russell) were consistently
+strong.
+
+Reproduce:
+
+```bash
+python -m ingestion.cli backfill --from 2006 --to 2025   # ~17k rows
+make dbt-build                                           # staging → intermediate → marts
+python -m analytics.cli ratings --top 20                 # solve + print leaderboard
+```
 
 ## Architecture
 
@@ -79,8 +109,8 @@ tests/            pytest suite
 
 ## Roadmap
 
-- [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI *(in progress)*
-- [ ] **M2 — dbt core**: staging/intermediate/marts + `driver_ratings` insight
+- [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI
+- [x] **M2 — dbt core**: staging/intermediate/marts + `driver_ratings` insight
 - [ ] **M3 — Telemetry & serving**: FastF1 ingestion + Evidence dashboard
 - [ ] **M4 — Orchestration**: Dagster assets + race-weekend schedule
 - [ ] **M5 — Depth**: pit-strategy & tyre-degradation marts, writeup

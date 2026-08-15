@@ -74,3 +74,54 @@ def _load_postgres(df: pd.DataFrame, table: str, season: int, settings: Settings
             df.to_sql(table, conn, schema=schema, if_exists="append", index=False)
     finally:
         engine.dispose()
+
+
+def read_query(sql: str, settings: Settings | None = None) -> pd.DataFrame:
+    """Run a read-only SQL query against the active warehouse and return a frame."""
+    settings = settings or get_settings()
+    if settings.warehouse == "duckdb":
+        con = duckdb.connect(str(settings.duckdb_path), read_only=True)
+        try:
+            return con.execute(sql).fetchdf()
+        finally:
+            con.close()
+    engine = create_engine(settings.pg_dsn)
+    try:
+        return pd.read_sql_query(text(sql), engine)
+    finally:
+        engine.dispose()
+
+
+def replace_table(
+    df: pd.DataFrame, schema: str, table: str, settings: Settings | None = None
+) -> int:
+    """Fully replace ``schema.table`` with ``df`` (used for non-partitioned marts).
+
+    Returns the number of rows written.
+    """
+    settings = settings or get_settings()
+    if settings.warehouse == "duckdb":
+        settings.duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+        con = duckdb.connect(str(settings.duckdb_path))
+        try:
+            con.register("incoming", df)
+            con.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+            con.execute(f'CREATE OR REPLACE TABLE "{schema}"."{table}" AS SELECT * FROM incoming')
+        finally:
+            con.unregister("incoming")
+            con.close()
+    else:
+        engine = create_engine(settings.pg_dsn)
+        try:
+            with engine.begin() as conn:
+                conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+                df.to_sql(table, conn, schema=schema, if_exists="replace", index=False)
+        finally:
+            engine.dispose()
+    log.info(
+        "warehouse.replace_table",
+        target=settings.warehouse,
+        table=f"{schema}.{table}",
+        rows=len(df),
+    )
+    return len(df)
