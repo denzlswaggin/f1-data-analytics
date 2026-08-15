@@ -16,6 +16,7 @@ import typer
 from ingestion.config import get_settings
 from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import backfill as run_backfill
+from ingestion.pipeline import ingest_laps
 from ingestion.resources import DEFAULT_RESOURCES
 
 app = typer.Typer(add_completion=False, help="F1 data ingestion (Jolpica-F1).")
@@ -70,6 +71,21 @@ def incremental(
     log.info("cli.incremental.start", season=CURRENT_SEASON, resources=res)
     summary = run_backfill([CURRENT_SEASON], res)
     _print_summary(summary)
+
+
+@app.command()
+def laps(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 laps for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[int, typer.Option("--to-round", help="Last round (inclusive).")] = 5,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 per-lap timing/tyre data (requires the `telemetry` extra)."""
+    configure_logging()
+    rounds = list(range(from_round, to_round + 1))
+    log.info("cli.laps.start", season=season, rounds=rounds, session=session)
+    rows = ingest_laps(season, rounds, session)
+    typer.echo(f"Loaded {rows} laps for {season} rounds {from_round}-{to_round} ({session}).")
 
 
 if __name__ == "__main__":

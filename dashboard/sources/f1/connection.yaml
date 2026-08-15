@@ -1,0 +1,6 @@
+name: f1
+type: duckdb
+options:
+  # Path is relative to this source folder (dashboard/sources/f1/).
+  # ../../../ climbs to the repo root, where the pipeline writes the warehouse.
+  filename: ../../../data/warehouse/f1.duckdb

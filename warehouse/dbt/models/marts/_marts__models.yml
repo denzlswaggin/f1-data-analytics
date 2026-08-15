@@ -21,3 +21,19 @@ models:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
               max_value: 100
+
+  - name: mart_lap_times
+    description: >
+      Green-flag race laps with tyre context (one row per driver per racing lap),
+      for race-pace and tyre-stint analysis. FastF1-sourced (2018+).
+    columns:
+      - name: lap_time_sec
+        description: Lap time in seconds (valid timed green-flag laps only).
+        data_tests: [not_null]
+      - name: driver_code
+        data_tests: [not_null]
+      - name: compound
+        data_tests:
+          - accepted_values:
+              values: ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "HYPERSOFT",
+                       "ULTRASOFT", "SUPERSOFT", "SUPERHARD", "UNKNOWN", "TEST_UNKNOWN"]

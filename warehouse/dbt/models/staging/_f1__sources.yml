@@ -28,3 +28,10 @@ sources:
             data_tests: [not_null]
           - name: driver_id
             data_tests: [not_null]
+      - name: laps
+        description: FastF1 per-lap timing and tyre data (one row per driver per lap).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_code
+            data_tests: [not_null]
