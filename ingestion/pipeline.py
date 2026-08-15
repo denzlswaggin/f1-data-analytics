@@ -62,3 +62,34 @@ def backfill(
             rows = ingest_resource(resource_name, season, client, settings)
             summary[(resource_name, season)] = rows
     return summary
+
+
+def ingest_laps(
+    season: int,
+    rounds: list[int],
+    session: str = "R",
+    settings: Settings | None = None,
+) -> int:
+    """Ingest FastF1 per-lap data for a set of rounds in one season.
+
+    All requested rounds are collected into a single season DataFrame and loaded
+    idempotently per season (re-running replaces the season's laps). Returns rows
+    loaded. FastF1 is a heavy optional dependency, imported here.
+    """
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        df = client.load_session_laps(season, rnd, session)
+        if not df.empty:
+            frames.append(df)
+
+    if not frames:
+        log.warning("pipeline.laps_empty", season=season, rounds=rounds)
+        return 0
+
+    laps = pd.concat(frames, ignore_index=True)
+    write_parquet(laps, "laps", season, settings)
+    return load_dataframe(laps, "laps", season, settings)

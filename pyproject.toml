@@ -45,6 +45,11 @@ dbt = [
     "dbt-duckdb>=1.9",
     "dbt-postgres>=1.9",
 ]
+# FastF1 telemetry ingestion (heavy: pulls matplotlib/scipy). Optional so the
+# core install and CI stay lean; the fastf1 client imports it lazily.
+telemetry = [
+    "fastf1>=3.4",
+]
 
 [project.scripts]
 f1-ingest = "ingestion.cli:app"
