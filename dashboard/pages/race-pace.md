@@ -67,3 +67,27 @@ order by avg_lap_sec
     <Column id=best_lap_sec title="Best (s)" fmt='0.00' />
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
+
+## Tyre degradation — {inputs.race.value}
+
+Pace lost per lap of tyre age (linear fit over green-flag laps). Higher =
+faster fall-off; softer compounds should degrade quicker.
+
+```sql race_deg
+select
+    compound,
+    deg_sec_per_lap,
+    n_laps
+from f1.tyre_degradation
+where race_name = '${inputs.race.value}'
+order by deg_sec_per_lap desc
+```
+
+<BarChart
+    data={race_deg}
+    x=compound
+    y=deg_sec_per_lap
+    yAxisTitle="degradation (s/lap)"
+    labels=true
+    sort=false
+/>

@@ -37,3 +37,20 @@ models:
           - accepted_values:
               values: ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "HYPERSOFT",
                        "ULTRASOFT", "SUPERSOFT", "SUPERHARD", "UNKNOWN", "TEST_UNKNOWN"]
+
+  - name: mart_tyre_degradation
+    description: >
+      Tyre-degradation rate (sec/lap) per race and compound, from a linear fit of
+      lap time vs tyre age over green-flag laps.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, compound]
+    columns:
+      - name: deg_sec_per_lap
+        description: Slope of lap time vs tyre life; higher = faster fall-off.
+        data_tests: [not_null]
+      - name: n_laps
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 8
+              max_value: 2000
