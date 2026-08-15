@@ -113,7 +113,12 @@ tests/            pytest suite
 - [x] **M2 — dbt core**: staging/intermediate/marts + `driver_ratings` insight
 - [x] **M3 — Telemetry & serving**: FastF1 ingestion + Evidence dashboard + Pages deploy
 - [x] **M4 — Orchestration**: Dagster assets + race-weekend schedule
-- [ ] **M5 — Depth**: pit-strategy & tyre-degradation marts, writeup
+- [x] **M5 — Depth**: tyre-degradation mart, drivers snapshot, prod indexes, writeup
+
+## Writeup
+
+- [The full story](docs/blog-teammate-normalised-pace.md) — method, results, and the stack behind them
+- [LinkedIn draft](docs/linkedin-post.md)
 
 ## License
 
