@@ -21,3 +21,36 @@ models:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
               max_value: 100
+
+  - name: mart_lap_times
+    description: >
+      Green-flag race laps with tyre context (one row per driver per racing lap),
+      for race-pace and tyre-stint analysis. FastF1-sourced (2018+).
+    columns:
+      - name: lap_time_sec
+        description: Lap time in seconds (valid timed green-flag laps only).
+        data_tests: [not_null]
+      - name: driver_code
+        data_tests: [not_null]
+      - name: compound
+        data_tests:
+          - accepted_values:
+              values: ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "HYPERSOFT",
+                       "ULTRASOFT", "SUPERSOFT", "SUPERHARD", "UNKNOWN", "TEST_UNKNOWN"]
+
+  - name: mart_tyre_degradation
+    description: >
+      Tyre-degradation rate (sec/lap) per race and compound, from a linear fit of
+      lap time vs tyre age over green-flag laps.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, compound]
+    columns:
+      - name: deg_sec_per_lap
+        description: Slope of lap time vs tyre life; higher = faster fall-off.
+        data_tests: [not_null]
+      - name: n_laps
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 8
+              max_value: 2000

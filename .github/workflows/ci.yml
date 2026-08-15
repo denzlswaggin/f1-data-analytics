@@ -28,7 +28,7 @@ jobs:
         run: ruff format --check .
 
       - name: Mypy
-        run: mypy ingestion tests
+        run: mypy ingestion analytics tests
 
       - name: Pytest
         run: pytest -q
@@ -60,3 +60,27 @@ jobs:
 
       - name: dbt compile
         run: dbt compile --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+  orchestration:
+    name: orchestration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install (dev + dbt + orchestration)
+        run: pip install -e ".[dev]" -e ".[dbt]" -e ".[orchestration]"
+
+      # Generate the dbt manifest the Dagster assets load, then validate the
+      # whole asset graph (ingestion -> dbt -> ratings) resolves.
+      - name: dbt deps + parse
+        run: |
+          dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+          dbt parse --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: Validate Dagster definitions
+        run: dagster definitions validate -m orchestration.definitions
