@@ -32,6 +32,18 @@ models:
         data_tests: [not_null]
       - name: driver_code
         data_tests: [not_null]
+      - name: driver_id
+        description: >
+          Ergast driver_id bridged from the FastF1 driver_code via
+          stg_driver_codes (may be null if a lap has no matching Ergast entry).
+        data_tests:
+          # Tolerant (warn, not error): telemetry could in principle carry a code
+          # with no Ergast result row; nulls are ignored by the relationships test.
+          - relationships:
+              to: ref('stg_drivers')
+              field: driver_id
+              config:
+                severity: warn
       - name: compound
         data_tests:
           - accepted_values:
@@ -54,3 +66,24 @@ models:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 8
               max_value: 2000
+
+  - name: mart_stint_degradation
+    description: >
+      Per-driver-stint tyre-degradation rate (sec/lap): a linear fit of lap time
+      vs tyre age within each individual stint. Finer-grained than
+      mart_tyre_degradation, which pools by race and compound. FastF1-sourced (2018+).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_code, stint]
+    columns:
+      - name: deg_sec_per_lap
+        description: Slope of lap time vs tyre life within the stint; higher = faster fall-off.
+        data_tests: [not_null]
+      - name: driver_id
+        description: Ergast driver_id bridged from driver_code (may be null if unmatched).
+        data_tests:
+          - relationships:
+              to: ref('stg_drivers')
+              field: driver_id
+              config:
+                severity: warn

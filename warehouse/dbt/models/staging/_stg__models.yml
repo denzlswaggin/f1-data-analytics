@@ -62,6 +62,23 @@ models:
       - name: constructor_id
         data_tests: [unique, not_null]
 
+  - name: stg_driver_codes
+    description: >
+      Season-grain bridge from the FastF1 3-letter driver_code to the Ergast
+      driver_id, so telemetry models can join the driver dimension.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, driver_code]
+    columns:
+      - name: driver_code
+        data_tests: [not_null]
+      - name: driver_id
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_drivers')
+              field: driver_id
+
   - name: stg_laps
     description: One typed row per driver per lap (FastF1) with tyre/stint context.
     columns:

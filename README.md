@@ -43,6 +43,7 @@ strong.
 Reproduce:
 
 ```bash
+pip install -e ".[dbt]"                                  # dbt is a separate extra (see below)
 python -m ingestion.cli backfill --from 2006 --to 2025   # ~17k rows
 make dbt-build                                           # staging → intermediate → marts
 python -m analytics.cli ratings --top 20                 # solve + print leaderboard
@@ -90,7 +91,8 @@ pip install -e ".[dev]"
 # 2. Configure
 copy .env.example .env           # then edit as needed
 
-# 3. Backfill a season into the local DuckDB warehouse
+# 3. Backfill a single season into the local DuckDB warehouse (quick smoke test;
+#    the full driver-ratings dataset is the 2006–2025 backfill shown above)
 python -m ingestion.cli backfill --season 2023
 
 # 4. (Optional) bring up the Postgres "prod" warehouse
