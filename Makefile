@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lint format typecheck test backfill dbt-build dbt-docs pg-up pg-down check
+.PHONY: help install install-dbt lint format typecheck test backfill dbt-build dbt-docs dagster dagster-validate pg-up pg-down check
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -18,7 +18,7 @@ format: ## Auto-format and auto-fix with ruff
 	ruff check --fix .
 
 typecheck: ## Run mypy type checks
-	mypy ingestion tests
+	mypy ingestion analytics orchestration tests
 
 test: ## Run the test suite
 	pytest -q
@@ -31,6 +31,12 @@ dbt-build: ## Build the dbt project (dev target)
 
 dbt-docs: ## Generate dbt docs (dev target)
 	dbt docs generate --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+dagster: ## Launch the Dagster UI (asset graph + schedules)
+	dagster dev -m orchestration.definitions
+
+dagster-validate: ## Validate the Dagster definitions load
+	dagster definitions validate -m orchestration.definitions
 
 pg-up: ## Start the postgres container
 	docker compose up -d postgres

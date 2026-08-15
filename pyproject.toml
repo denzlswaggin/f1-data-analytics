@@ -30,7 +30,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ruff>=0.8",
-    "mypy>=1.13",
+    # mypy 2.x requires pathspec>=1.0 which conflicts with dbt (<0.13); stay on 1.x.
+    "mypy>=1.13,<2",
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "sqlfluff>=3.2",
@@ -50,13 +51,19 @@ dbt = [
 telemetry = [
     "fastf1>=3.4",
 ]
+# Dagster orchestration (assets, schedules, dbt integration).
+orchestration = [
+    "dagster>=1.9",
+    "dagster-webserver>=1.9",
+    "dagster-dbt>=0.25",
+]
 
 [project.scripts]
 f1-ingest = "ingestion.cli:app"
 f1-analytics = "analytics.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ingestion", "analytics"]
+packages = ["ingestion", "analytics", "orchestration"]
 
 # ---------------------------------------------------------------------------
 # Tooling
@@ -64,7 +71,7 @@ packages = ["ingestion", "analytics"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-src = ["ingestion", "analytics", "tests"]
+src = ["ingestion", "analytics", "orchestration", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
@@ -76,7 +83,14 @@ strict = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 ignore_missing_imports = true
-files = ["ingestion", "analytics", "tests"]
+files = ["ingestion", "analytics", "orchestration", "tests"]
+
+# Dagster's decorators and result types don't satisfy strict generics; the
+# orchestration layer is validated by `dagster definitions validate` instead.
+[[tool.mypy.overrides]]
+module = "orchestration.*"
+disallow_any_generics = false
+disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
