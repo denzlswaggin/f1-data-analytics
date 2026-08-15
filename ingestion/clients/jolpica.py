@@ -62,7 +62,9 @@ class JolpicaClient:
         self._limiter = _RateLimiter(self.settings.jolpica_rate_limit_per_sec)
         self._session = requests.Session()
         self._session.headers.update(
-            {"User-Agent": "f1-data-analytics/0.1 (+github.com/denzlswaggin)"}
+            {
+                "User-Agent": "f1-data-analytics/0.1 (+https://github.com/denzlswaggin/f1-data-analytics)"
+            }
         )
 
     # -- low-level ---------------------------------------------------------

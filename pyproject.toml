@@ -94,7 +94,9 @@ disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+# Coverage is reported (term-missing) but not gated — a portfolio repo shouldn't
+# fail CI on a coverage threshold. Drop --cov here to silence it locally.
+addopts = "-q --cov=ingestion --cov=analytics --cov-report=term-missing"
 
 [tool.sqlfluff.core]
 dialect = "duckdb"

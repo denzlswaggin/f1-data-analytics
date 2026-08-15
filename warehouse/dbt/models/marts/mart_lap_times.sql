@@ -11,6 +11,10 @@ with laps as (
 
 races as (
     select race_key, season, round, race_name from {{ ref('stg_races') }}
+),
+
+driver_codes as (
+    select season, driver_code, driver_id, driver_name from {{ ref('stg_driver_codes') }}
 )
 
 select
@@ -18,6 +22,8 @@ select
     laps.round,
     races.race_name,
     laps.driver_code,
+    driver_codes.driver_id,
+    driver_codes.driver_name,
     laps.team,
     laps.lap_number,
     laps.stint,
@@ -29,6 +35,10 @@ from laps
 left join races
     on laps.season = races.season
     and laps.round = races.round
+-- Bridge the FastF1 driver_code to the Ergast driver_id / display name.
+left join driver_codes
+    on laps.season = driver_codes.season
+    and laps.driver_code = driver_codes.driver_code
 where laps.session = 'R'
     and laps.lap_time_sec is not null
     -- track_status '1' = green flag (no SC/VSC/yellow); clean pace laps only.

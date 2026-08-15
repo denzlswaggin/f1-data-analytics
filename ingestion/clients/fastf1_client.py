@@ -83,7 +83,9 @@ class FastF1Client:
         for src, dst in _TIMEDELTA_COLS.items():
             out[dst] = _seconds(laps[src])
 
-        # Drop laps with no time (e.g. in/out laps without a set time have NaT).
+        # In/out laps without a set time arrive as NaT; `_seconds` maps those to
+        # NaN here. The raw layer keeps every lap (stint-boundary rows included);
+        # null lap times are filtered later in `mart_lap_times`.
         out = out.reset_index(drop=True)
         log.info(
             "fastf1.laps",
