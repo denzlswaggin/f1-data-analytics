@@ -61,3 +61,14 @@ models:
     columns:
       - name: constructor_id
         data_tests: [unique, not_null]
+
+  - name: stg_laps
+    description: One typed row per driver per lap (FastF1) with tyre/stint context.
+    columns:
+      - name: lap_key
+        description: Surrogate key = hash(season, round, session, driver_code, lap_number).
+        data_tests: [unique, not_null]
+      - name: driver_code
+        data_tests: [not_null]
+      - name: lap_number
+        data_tests: [not_null]
