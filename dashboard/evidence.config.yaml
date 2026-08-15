@@ -2,6 +2,11 @@ appearance:
   default: system
   switcher: true
 
+# Served from a GitHub Pages project site at /<repo>. All internal links and
+# asset URLs are rewritten under this base path at build time.
+deployment:
+  basePath: /f1-data-analytics
+
 theme:
   colorPalettes:
     default:

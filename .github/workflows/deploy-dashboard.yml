@@ -1,0 +1,87 @@
+# Build the Evidence dashboard from a freshly-run pipeline and publish it to
+# GitHub Pages. Manual + weekly (kinder to the volunteer-run Jolpica API than
+# running on every push). Requires Pages enabled with "GitHub Actions" as source.
+name: Deploy Dashboard
+
+on:
+  workflow_dispatch:
+    inputs:
+      seasons_from:
+        description: First season to backfill
+        default: "2006"
+      seasons_to:
+        description: Last season to backfill
+        default: "2025"
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC, after race weekends
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  F1_DUCKDB_PATH: data/warehouse/f1.duckdb
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install (dev + dbt + telemetry)
+        run: pip install -e ".[dev,dbt,telemetry]"
+
+      - name: Backfill results / qualifying (Jolpica)
+        run: >
+          python -m ingestion.cli backfill
+          --from ${{ github.event.inputs.seasons_from || '2006' }}
+          --to ${{ github.event.inputs.seasons_to || '2025' }}
+
+      - name: Ingest sample race laps (FastF1)
+        run: python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5
+
+      - name: dbt build
+        run: |
+          dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt
+          dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: Solve driver ratings
+        run: python -m analytics.cli ratings
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Build Evidence dashboard
+        working-directory: dashboard
+        run: |
+          npm ci
+          npm run sources
+          npm run build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
