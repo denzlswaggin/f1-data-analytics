@@ -47,8 +47,18 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      # dbt and the core deps have conflicting transitive pins; resolving them
+      # in one pip invocation sends the backtracking resolver into meltdown.
+      # Install each extra separately so pip resolves against what's present.
       - name: Install
-        run: pip install -e ".[dev]" -e ".[dbt]"
+        run: |
+          pip install -e ".[dev]"
+          pip install -e ".[dbt]"
+
+      # dbt-duckdb opens the warehouse file at parse/compile time and DuckDB
+      # will not create missing parent dirs (data/ is gitignored, so absent in CI).
+      - name: Prepare warehouse dir
+        run: mkdir -p data/warehouse
 
       # No seed/raw data exists in CI yet, so we validate that the dbt
       # project resolves and compiles rather than running `dbt build`.
@@ -72,8 +82,19 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
+      # Install each extra in its own pip invocation: resolving dev + dbt +
+      # orchestration together overflows the backtracking resolver
+      # (resolution-too-deep). Separate installs resolve against what's present.
       - name: Install (dev + dbt + orchestration)
-        run: pip install -e ".[dev]" -e ".[dbt]" -e ".[orchestration]"
+        run: |
+          pip install -e ".[dev]"
+          pip install -e ".[dbt]"
+          pip install -e ".[orchestration]"
+
+      # dbt parse opens the DuckDB warehouse file; DuckDB won't create missing
+      # parent dirs (data/ is gitignored, so absent in CI).
+      - name: Prepare warehouse dir
+        run: mkdir -p data/warehouse
 
       # Generate the dbt manifest the Dagster assets load, then validate the
       # whole asset graph (ingestion -> dbt -> ratings) resolves.
