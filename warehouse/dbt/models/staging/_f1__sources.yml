@@ -49,3 +49,10 @@ sources:
             data_tests: [not_null]
           - name: driver_id
             data_tests: [not_null]
+      - name: weather
+        description: FastF1 per-minute weather samples (one row per timestamp per session).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: round
+            data_tests: [not_null]

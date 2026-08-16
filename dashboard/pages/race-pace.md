@@ -4,7 +4,7 @@ title: Race Pace & Tyre Stints
 
 Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
-stints fall. _Sample: 2024, rounds 1–5._
+stints fall. _FastF1 laps cover the current season to date._
 
 ```sql races
 select distinct race_name

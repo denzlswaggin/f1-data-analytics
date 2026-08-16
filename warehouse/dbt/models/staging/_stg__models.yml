@@ -111,3 +111,14 @@ models:
         data_tests: [not_null]
       - name: lap_number
         data_tests: [not_null]
+
+  - name: stg_weather
+    description: One typed row per weather sample (FastF1, ~per minute).
+    columns:
+      - name: weather_key
+        description: Surrogate key = hash(season, round, session, time_sec).
+        data_tests: [unique, not_null]
+      - name: season
+        data_tests: [not_null]
+      - name: round
+        data_tests: [not_null]

@@ -24,6 +24,7 @@ from orchestration.assets import (
     raw_qualifying,
     raw_races,
     raw_results,
+    raw_weather,
 )
 
 
@@ -43,6 +44,7 @@ all_assets = [
     raw_laps,
     raw_pitstops,
     raw_ergast_laps,
+    raw_weather,
     dbt_models,
     driver_ratings,
 ]

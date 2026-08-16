@@ -86,6 +86,45 @@ models:
               min_value: -20
               max_value: 20
 
+  - name: mart_weather_degradation
+    description: >
+      Tyre degradation (sec/lap) per race and compound, segmented by a race-day
+      weather bucket (wet/hot/cool). FastF1-sourced (2018+).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, compound]
+    columns:
+      - name: deg_sec_per_lap
+        description: Slope of lap time vs tyre life; higher = faster fall-off.
+        data_tests: [not_null]
+      - name: weather_bucket
+        description: Race-day weather class (null if weather not ingested for the race).
+        data_tests:
+          - accepted_values:
+              values: ["wet", "hot", "cool"]
+      - name: n_laps
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 8
+              max_value: 2000
+
+  - name: mart_speed_trap
+    description: >
+      Straight-line speed (km/h) per driver per race from the SpeedST trap over
+      green-flag laps — a power-unit / low-drag proxy. FastF1-sourced (2018+).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_code]
+    columns:
+      - name: driver_code
+        data_tests: [not_null]
+      - name: top_speed_kph
+        description: Fastest straight-line speed-trap reading in the race (km/h).
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 250
+              max_value: 380
+
   - name: mart_stint_degradation
     description: >
       Per-driver-stint tyre-degradation rate (sec/lap): a linear fit of lap time

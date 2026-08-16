@@ -22,6 +22,7 @@ from ingestion.pipeline import (
     ingest_laps,
     ingest_pitstops,
     ingest_resource,
+    ingest_weather,
     season_rounds,
 )
 
@@ -87,6 +88,18 @@ def raw_pitstops() -> MaterializeResult:
 def raw_ergast_laps() -> MaterializeResult:
     rounds = season_rounds(CURRENT_SEASON, completed_only=True)
     rows = ingest_ergast_laps(CURRENT_SEASON, rounds)
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "weather"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="fastf1",
+)
+def raw_weather() -> MaterializeResult:
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_weather(CURRENT_SEASON, rounds, "R")
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 
