@@ -20,6 +20,7 @@ from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
     ingest_pitstops,
+    ingest_weather,
     season_rounds,
 )
 from ingestion.resources import DEFAULT_RESOURCES
@@ -118,6 +119,23 @@ def pitstops(
     log.info("cli.pitstops.start", season=season, rounds=rounds)
     rows = ingest_pitstops(season, rounds)
     typer.echo(f"Loaded {rows} pit stops for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command()
+def weather(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 weather for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 per-minute weather (requires the `telemetry` extra)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.weather.start", season=season, rounds=rounds, session=session)
+    rows = ingest_weather(season, rounds, session)
+    typer.echo(f"Loaded {rows} weather rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
 
 
 @app.command("ergast-laps")

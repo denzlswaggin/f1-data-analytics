@@ -1,8 +1,9 @@
 """Client for FastF1 — per-lap timing and tyre data from the official F1 feed.
 
 FastF1 covers 2018→present, downloads a lot per session, and caches to disk, so
-this client enables the cache and exposes one focused loader: per-lap records for
-a session (race or qualifying), flattened to compact, warehouse-friendly rows.
+this client enables the cache and exposes focused loaders — per-lap records
+(with tyre + speed-trap context), per-minute weather, and distance-resampled
+telemetry — each flattened to compact, warehouse-friendly rows.
 
 ``fastf1`` is imported lazily (it is a heavy optional dependency; install with
 ``pip install -e ".[telemetry]"``).
@@ -78,6 +79,15 @@ class FastF1Client:
                 "position": laps["Position"].astype("Int64"),
                 "is_personal_best": laps["IsPersonalBest"],
                 "track_status": laps["TrackStatus"].astype("string"),
+                # Session time at which the lap began — lets weather be joined by
+                # time later (v1 marts join at race grain).
+                "lap_start_sec": _seconds(laps["LapStartTime"]),
+                # Speed-trap readings (km/h): two intermediate points, the finish
+                # line, and the longest straight (SpeedST = straight-line speed).
+                "speed_i1_kph": laps["SpeedI1"],
+                "speed_i2_kph": laps["SpeedI2"],
+                "speed_fl_kph": laps["SpeedFL"],
+                "speed_st_kph": laps["SpeedST"],
             }
         )
         for src, dst in _TIMEDELTA_COLS.items():
@@ -94,4 +104,33 @@ class FastF1Client:
             session=session,
             rows=len(out),
         )
+        return out
+
+    def load_session_weather(self, season: int, rnd: int, session: str = "R") -> pd.DataFrame:
+        """Return one row per weather sample (roughly per minute) for a session."""
+        ff1 = self._ensure_loaded()
+        sess = ff1.get_session(season, rnd, session)
+        sess.load(laps=False, telemetry=False, weather=True, messages=False)
+        weather = sess.weather_data
+        if weather is None or weather.empty:
+            log.warning("fastf1.no_weather", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+
+        out = pd.DataFrame(
+            {
+                "season": season,
+                "round": rnd,
+                "session": session,
+                "time_sec": _seconds(weather["Time"]),
+                "air_temp": weather["AirTemp"],
+                "track_temp": weather["TrackTemp"],
+                "humidity": weather["Humidity"],
+                "pressure": weather["Pressure"],
+                "wind_speed": weather["WindSpeed"],
+                "wind_direction": weather["WindDirection"],
+                # FastF1 Rainfall is already a boolean.
+                "is_raining": weather["Rainfall"],
+            }
+        ).reset_index(drop=True)
+        log.info("fastf1.weather", season=season, round=rnd, session=session, rows=len(out))
         return out

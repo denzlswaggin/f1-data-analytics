@@ -128,6 +128,29 @@ def ingest_laps(
     return load_dataframe(laps, "laps", season, settings)
 
 
+def ingest_weather(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest FastF1 per-minute weather for a set of rounds in one season."""
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        df = client.load_session_weather(season, rnd, session)
+        if not df.empty:
+            frames.append(df)
+
+    if not frames:
+        log.warning("pipeline.weather_empty", season=season, rounds=rounds)
+        return 0
+
+    weather = pd.concat(frames, ignore_index=True)
+    write_parquet(weather, "weather", season, settings)
+    return load_dataframe(weather, "weather", season, settings)
+
+
 def _extract_per_round(
     client: JolpicaClient,
     season: int,
