@@ -18,7 +18,9 @@ from orchestration.assets import (
     dbt_models,
     dbt_project,
     driver_ratings,
+    raw_ergast_laps,
     raw_laps,
+    raw_pitstops,
     raw_qualifying,
     raw_races,
     raw_results,
@@ -39,6 +41,8 @@ all_assets = [
     raw_results,
     raw_qualifying,
     raw_laps,
+    raw_pitstops,
+    raw_ergast_laps,
     dbt_models,
     driver_ratings,
 ]

@@ -67,6 +67,25 @@ models:
               min_value: 8
               max_value: 2000
 
+  - name: mart_pit_strategy
+    description: >
+      Undercut/overcut outcome per pit stop: track-position change across the
+      stop window (lap before vs two laps after) plus stop duration. Ergast-sourced.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_id, stop_number]
+    columns:
+      - name: driver_id
+        data_tests: [not_null]
+      - name: stop_number
+        data_tests: [not_null]
+      - name: positions_gained
+        description: Places gained across the stop cycle (position_before - position_after).
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: -20
+              max_value: 20
+
   - name: mart_stint_degradation
     description: >
       Per-driver-stint tyre-degradation rate (sec/lap): a linear fit of lap time

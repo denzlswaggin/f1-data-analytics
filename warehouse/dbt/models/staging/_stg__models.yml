@@ -89,3 +89,25 @@ models:
         data_tests: [not_null]
       - name: lap_number
         data_tests: [not_null]
+
+  - name: stg_pitstops
+    description: One typed row per pit stop (Ergast); stop duration in seconds.
+    columns:
+      - name: pitstop_key
+        description: Surrogate key = hash(season, round, driver_id, stop).
+        data_tests: [unique, not_null]
+      - name: driver_id
+        data_tests: [not_null]
+      - name: season
+        data_tests: [not_null]
+
+  - name: stg_ergast_laps
+    description: One typed row per driver per lap (Ergast position + lap time).
+    columns:
+      - name: ergast_lap_key
+        description: Surrogate key = hash(season, round, driver_id, lap).
+        data_tests: [unique, not_null]
+      - name: driver_id
+        data_tests: [not_null]
+      - name: lap_number
+        data_tests: [not_null]

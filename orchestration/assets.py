@@ -17,13 +17,16 @@ from dagster_dbt import (
     DbtProject,
     dbt_assets,
 )
-from ingestion.pipeline import ingest_laps, ingest_resource
+from ingestion.pipeline import (
+    ingest_ergast_laps,
+    ingest_laps,
+    ingest_pitstops,
+    ingest_resource,
+    season_rounds,
+)
 
 # Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
 CURRENT_SEASON = 2026
-# Sample race laps for the telemetry mart (FastF1).
-LAPS_SEASON = 2024
-LAPS_ROUNDS = [1, 2, 3, 4, 5]
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 DBT_PROJECT_DIR = _REPO_ROOT / "warehouse" / "dbt"
@@ -51,10 +54,40 @@ def raw_qualifying() -> MaterializeResult:
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 
-@asset(key=["raw", "laps"], group_name="ingest", compute_kind="fastf1")
+@asset(
+    key=["raw", "laps"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="fastf1",
+)
 def raw_laps() -> MaterializeResult:
-    rows = ingest_laps(LAPS_SEASON, LAPS_ROUNDS, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": LAPS_SEASON})
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_laps(CURRENT_SEASON, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "pitstops"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="jolpica",
+)
+def raw_pitstops() -> MaterializeResult:
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_pitstops(CURRENT_SEASON, rounds)
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "ergast_laps"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="jolpica",
+)
+def raw_ergast_laps() -> MaterializeResult:
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_ergast_laps(CURRENT_SEASON, rounds)
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 
 # --- dbt models -------------------------------------------------------------
