@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from ingestion.resources import RESOURCES
+from ingestion.resources import (
+    RESOURCES,
+    _flatten_ergast_laps,
+    _flatten_pitstops,
+)
 
 RACE_WITH_RESULTS = {
     "season": "2023",
@@ -99,3 +103,63 @@ def test_missing_numeric_fields_become_none() -> None:
     assert row["position"] is None
     assert row["grid"] is None
     assert row["points"] is None
+
+
+RACE_WITH_PITSTOPS = {
+    "season": "2023",
+    "round": "1",
+    "PitStops": [
+        {
+            "driverId": "max_verstappen",
+            "lap": "14",
+            "stop": "1",
+            "time": "17:05:23",
+            "duration": "22.343",
+        },
+        {"driverId": "perez", "lap": "17", "stop": "1", "time": "17:09:11", "duration": "1:04.500"},
+    ],
+}
+
+RACE_WITH_LAPS = {
+    "season": "2023",
+    "round": "1",
+    "Laps": [
+        {
+            "number": "1",
+            "Timings": [
+                {"driverId": "max_verstappen", "position": "1", "time": "1:38.001"},
+                {"driverId": "perez", "position": "2", "time": "1:38.500"},
+            ],
+        },
+        {
+            "number": "2",
+            "Timings": [
+                {"driverId": "max_verstappen", "position": "1", "time": "1:36.900"},
+            ],
+        },
+    ],
+}
+
+
+def test_flatten_pitstops_one_row_per_stop() -> None:
+    rows = list(_flatten_pitstops(RACE_WITH_PITSTOPS, 2023))
+    assert len(rows) == 2
+    first = rows[0]
+    assert first["season"] == 2023 and first["round"] == 1
+    assert first["driver_id"] == "max_verstappen"
+    assert first["stop"] == 1 and first["lap"] == 14
+    assert first["duration"] == "22.343"  # parsed to seconds downstream in dbt
+
+
+def test_flatten_ergast_laps_expands_timings() -> None:
+    rows = list(_flatten_ergast_laps(RACE_WITH_LAPS, 2023))
+    assert len(rows) == 3  # 2 timings on lap 1 + 1 on lap 2
+    assert rows[0] == {
+        "season": 2023,
+        "round": 1,
+        "driver_id": "max_verstappen",
+        "lap": 1,
+        "position": 1,
+        "lap_time": "1:38.001",
+    }
+    assert rows[2]["lap"] == 2 and rows[2]["driver_id"] == "max_verstappen"

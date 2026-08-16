@@ -99,6 +99,46 @@ def _flatten_qualifying(race: dict[str, Any], _season: int) -> Iterator[dict[str
         }
 
 
+# Per-round flatteners --------------------------------------------------------
+# The pit-stops and lap-timing endpoints are scoped per ``{season}/{round}`` and
+# so don't fit the season-only ``Resource`` registry above; the per-round
+# ingest functions in ``pipeline.py`` call these directly. Each still emits a
+# ``season`` column (the loader's idempotency key) plus ``round``.
+def _round_key(race: dict[str, Any]) -> dict[str, Any]:
+    return {"season": int(race["season"]), "round": int(race["round"])}
+
+
+def _flatten_pitstops(race: dict[str, Any], _season: int) -> Iterator[dict[str, Any]]:
+    """Flatten one Race envelope's ``PitStops`` list (one row per stop)."""
+    base = _round_key(race)
+    for ps in race.get("PitStops", []):
+        yield {
+            **base,
+            "driver_id": ps.get("driverId"),
+            "stop": _to_int(ps.get("stop")),
+            "lap": _to_int(ps.get("lap")),
+            "time_of_day": ps.get("time"),
+            # Duration string ("22.343" or "1:05.201"); parsed to seconds in dbt.
+            "duration": ps.get("duration"),
+        }
+
+
+def _flatten_ergast_laps(race: dict[str, Any], _season: int) -> Iterator[dict[str, Any]]:
+    """Flatten one Race envelope's ``Laps``/``Timings`` (one row per driver-lap)."""
+    base = _round_key(race)
+    for lap in race.get("Laps", []):
+        lap_number = _to_int(lap.get("number"))
+        for timing in lap.get("Timings", []):
+            yield {
+                **base,
+                "driver_id": timing.get("driverId"),
+                "lap": lap_number,
+                "position": _to_int(timing.get("position")),
+                # Lap-time string ("1:34.567"); parsed to seconds in dbt.
+                "lap_time": timing.get("time"),
+            }
+
+
 def _to_int(value: Any) -> int | None:
     try:
         return int(value)
