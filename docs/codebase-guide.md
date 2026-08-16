@@ -116,6 +116,15 @@ This is why adding a new season-scoped endpoint is a copy-paste-and-adapt job
 `extract_resource` loop already knows how to page any resource and call its
 flattener.
 
+**Per-round endpoints** (Ergast pit stops and lap positions; FastF1 weather and
+telemetry) are scoped by `{season}/{round}` and so *don't* fit that season-only
+registry. They get a dedicated `ingest_*` in `pipeline.py`
+(`ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`)
+that loops the rounds, **concatenates them into one season frame, and loads
+once** — because `load_dataframe`'s delete key is `season` only, loading
+round-by-round would wipe earlier rounds. `season_rounds()` reads `raw.races` to
+supply the round list (dates ≤ today for a "season so far" backfill).
+
 ### The idempotency contract (important)
 
 Re-running a backfill must never duplicate or corrupt data. Two mechanisms
@@ -185,6 +194,11 @@ prefixing them — so `analytics/pipeline.py` can hard-code `intermediate.` /
   `mart_tyre_degradation` (pooled tyre fall-off per race/compound), and
   `mart_stint_degradation` (per-stint fall-off). Plus the season-grain bridge
   `stg_driver_codes` that lets the FastF1 marts join the Ergast driver dimension.
+  The API-expansion work (PR #8) adds four more: `mart_pit_strategy`
+  (undercut/overcut per stop, Ergast), `mart_weather_degradation` (fall-off by a
+  race-day weather bucket), `mart_speed_trap` (straight-line speed), and
+  `mart_lap_telemetry` (distance-resampled car telemetry for speed traces + a
+  track map) — each with its own `stg_*` model and `raw.*` source.
 
 ### Tests and the snapshot
 
@@ -385,8 +399,13 @@ practice exercises — build them yourself; the verification loop is your safety
    `orchestration/assets.py`.
 
 > Note: endpoints that are **per-round** (like pit stops) don't fit the
-> season-scoped `Resource` pattern — you'd add an `ingest_<name>` function in
-> `pipeline.py` that loops rounds into one season frame, mirroring `ingest_laps`.
+> season-scoped `Resource` pattern. Add an `ingest_<name>` in `pipeline.py` that
+> loops rounds into one season frame and loads once, mirroring `ingest_laps` —
+> see the existing `ingest_pitstops` / `ingest_ergast_laps` / `ingest_weather` /
+> `ingest_telemetry`. Adding **columns** to a raw table you've already loaded
+> (e.g. the speed-trap columns on `raw.laps`) means dropping and re-ingesting it
+> once: DuckDB's `CREATE TABLE IF NOT EXISTS` won't add them and the positional
+> INSERT then mismatches.
 
 ### 9.2 Add a new dbt mart
 
