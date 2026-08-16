@@ -22,6 +22,7 @@ from ingestion.pipeline import (
     ingest_laps,
     ingest_pitstops,
     ingest_resource,
+    ingest_telemetry,
     ingest_weather,
     season_rounds,
 )
@@ -100,6 +101,20 @@ def raw_ergast_laps() -> MaterializeResult:
 def raw_weather() -> MaterializeResult:
     rounds = season_rounds(CURRENT_SEASON, completed_only=True)
     rows = ingest_weather(CURRENT_SEASON, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "telemetry"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="fastf1",
+)
+def raw_telemetry() -> MaterializeResult:
+    # Heavy: resampled telemetry for every race lap of the season so far. Kept out
+    # of the weekly refresh job (see definitions.py) — materialise on demand.
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_telemetry(CURRENT_SEASON, rounds, "R")
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 

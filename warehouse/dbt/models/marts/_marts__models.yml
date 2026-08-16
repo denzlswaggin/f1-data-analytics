@@ -125,6 +125,25 @@ models:
               min_value: 250
               max_value: 380
 
+  - name: mart_lap_telemetry
+    description: >
+      Race-lap telemetry (speed/throttle/brake/DRS/gear/x/y) resampled by distance,
+      with driver and tyre context. Powers speed traces and track maps.
+      FastF1-sourced (2018+).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_code, lap_number, distance_m]
+    columns:
+      - name: driver_code
+        data_tests: [not_null]
+      - name: distance_m
+        data_tests: [not_null]
+      - name: speed_kph
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 400
+
   - name: mart_stint_degradation
     description: >
       Per-driver-stint tyre-degradation rate (sec/lap): a linear fit of lap time

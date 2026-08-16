@@ -122,3 +122,16 @@ models:
         data_tests: [not_null]
       - name: round
         data_tests: [not_null]
+
+  - name: stg_telemetry
+    description: One typed row per driver per lap per distance point (FastF1 telemetry).
+    columns:
+      - name: telemetry_key
+        description: >
+          Surrogate key = hash(season, round, session, driver_code, lap_number,
+          distance_m).
+        data_tests: [unique, not_null]
+      - name: driver_code
+        data_tests: [not_null]
+      - name: distance_m
+        data_tests: [not_null]

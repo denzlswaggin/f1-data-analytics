@@ -56,3 +56,12 @@ sources:
             data_tests: [not_null]
           - name: round
             data_tests: [not_null]
+      - name: telemetry
+        description: >
+          FastF1 distance-resampled car telemetry (one row per driver per lap per
+          distance point).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_code
+            data_tests: [not_null]
