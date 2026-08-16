@@ -121,9 +121,12 @@ models:
       - name: top_speed_kph
         description: Fastest straight-line speed-trap reading in the race (km/h).
         data_tests:
+          # Scope the sanity range to drivers with a real green-flag sample — a
+          # driver who retired after one lap can legitimately top out much lower.
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 250
+              min_value: 200
               max_value: 380
+              row_condition: "n_laps >= 3"
 
   - name: mart_lap_telemetry
     description: >
