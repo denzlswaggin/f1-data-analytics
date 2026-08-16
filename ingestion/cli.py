@@ -16,7 +16,14 @@ import typer
 from ingestion.config import get_settings
 from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import backfill as run_backfill
-from ingestion.pipeline import ingest_laps
+from ingestion.pipeline import (
+    ingest_ergast_laps,
+    ingest_laps,
+    ingest_pitstops,
+    ingest_telemetry,
+    ingest_weather,
+    season_rounds,
+)
 from ingestion.resources import DEFAULT_RESOURCES
 
 app = typer.Typer(add_completion=False, help="F1 data ingestion (Jolpica-F1).")
@@ -31,6 +38,15 @@ def _print_summary(summary: dict[tuple[str, int], int]) -> None:
     for (resource, season), rows in sorted(summary.items()):
         typer.echo(f"  {season}  {resource:<12} {rows:>6} rows")
     typer.echo(f"Total: {total} rows across {len(summary)} resource/season partitions.")
+
+
+def _resolve_rounds(season: int, from_round: int, to_round: int | None) -> list[int]:
+    """Build a round range; when ``to_round`` is omitted, use the last completed
+    round from the ingested schedule (``raw.races``) — i.e. "season so far"."""
+    if to_round is None:
+        completed = season_rounds(season, completed_only=True)
+        to_round = max(completed) if completed else from_round
+    return list(range(from_round, to_round + 1))
 
 
 @app.command()
@@ -77,15 +93,83 @@ def incremental(
 def laps(
     season: Annotated[int, typer.Option(help="Season to load FastF1 laps for.")],
     from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
-    to_round: Annotated[int, typer.Option("--to-round", help="Last round (inclusive).")] = 5,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
     session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
 ) -> None:
     """Ingest FastF1 per-lap timing/tyre data (requires the `telemetry` extra)."""
     configure_logging()
-    rounds = list(range(from_round, to_round + 1))
+    rounds = _resolve_rounds(season, from_round, to_round)
     log.info("cli.laps.start", season=season, rounds=rounds, session=session)
     rows = ingest_laps(season, rounds, session)
-    typer.echo(f"Loaded {rows} laps for {season} rounds {from_round}-{to_round} ({session}).")
+    typer.echo(f"Loaded {rows} laps for {season} rounds {rounds[0]}-{rounds[-1]} ({session}).")
+
+
+@app.command()
+def pitstops(
+    season: Annotated[int, typer.Option(help="Season to load Ergast pit stops for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+) -> None:
+    """Ingest Ergast pit-stop timing (per round; needs `races` backfilled for auto rounds)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.pitstops.start", season=season, rounds=rounds)
+    rows = ingest_pitstops(season, rounds)
+    typer.echo(f"Loaded {rows} pit stops for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command()
+def weather(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 weather for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 per-minute weather (requires the `telemetry` extra)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.weather.start", season=season, rounds=rounds, session=session)
+    rows = ingest_weather(season, rounds, session)
+    typer.echo(f"Loaded {rows} weather rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command("ergast-laps")
+def ergast_laps(
+    season: Annotated[int, typer.Option(help="Season to load Ergast lap positions for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+) -> None:
+    """Ingest Ergast per-lap position/time (per round; powers the pit-strategy mart)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.ergast_laps.start", season=season, rounds=rounds)
+    rows = ingest_ergast_laps(season, rounds)
+    typer.echo(f"Loaded {rows} lap records for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command()
+def telemetry(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 telemetry for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 distance-resampled telemetry (heavy; requires `telemetry` extra)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.telemetry.start", season=season, rounds=rounds, session=session)
+    rows = ingest_telemetry(season, rounds, session)
+    typer.echo(f"Loaded {rows} telemetry rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
 
 
 if __name__ == "__main__":

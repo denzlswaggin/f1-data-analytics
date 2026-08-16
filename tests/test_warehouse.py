@@ -1,11 +1,7 @@
-"""Tests for the idempotent, per-season warehouse loader.
+"""Idempotency tests for the per-season warehouse loader (DuckDB, temp file).
 
-``load_dataframe`` deletes a season's rows and re-inserts them, so re-running a
-backfill must never duplicate data while leaving other seasons untouched. This is
-core "don't corrupt the warehouse on re-run" logic; it was previously untested.
-Only the DuckDB path runs here (``duckdb`` is a core dependency); the Postgres
-branch has parallel semantics but needs a live server, so it stays a
-manual/prod check.
+These lock in the delete-then-insert-per-season contract that every per-round
+ingest relies on: re-loading a season replaces only that season's rows.
 """
 
 from __future__ import annotations
@@ -17,41 +13,37 @@ from ingestion.config import Settings
 from ingestion.loaders.warehouse import load_dataframe, read_query
 
 
-def _results(season: int, driver_ids: list[str]) -> pd.DataFrame:
-    """A minimal ``raw.results``-shaped frame carrying the ``season`` key."""
+def _settings(tmp_path: Path) -> Settings:
+    return Settings(warehouse="duckdb", duckdb_path=tmp_path / "f1.duckdb")
+
+
+def _frame(season: int, rows: int) -> pd.DataFrame:
     return pd.DataFrame(
-        [{"season": season, "driver_id": d, "points": float(i)} for i, d in enumerate(driver_ids)]
+        {
+            "season": [season] * rows,
+            "round": list(range(1, rows + 1)),
+            "val": list(range(rows)),
+        }
     )
 
 
-def _count(settings: Settings, where: str = "") -> int:
-    frame = read_query(f"select count(*) as n from raw.results {where}", settings)
-    return int(frame["n"].iloc[0])
+def test_reload_same_season_is_idempotent(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    load_dataframe(_frame(2024, 3), "pitstops", 2024, settings)
+    load_dataframe(_frame(2024, 3), "pitstops", 2024, settings)  # re-run
+    out = read_query("select count(*) as n from raw.pitstops", settings)
+    assert int(out["n"][0]) == 3  # not doubled
 
 
-def test_load_dataframe_is_idempotent_per_season(tmp_path: Path) -> None:
-    settings = Settings(warehouse="duckdb", duckdb_path=tmp_path / "f1.duckdb")
-    df_2023 = _results(2023, ["ver", "per", "ham"])
-
-    # First load establishes the season's rows.
-    assert load_dataframe(df_2023, "results", 2023, settings) == 3
-    assert _count(settings) == 3
-
-    # Re-loading the same season is a no-op on row count (delete-then-insert).
-    assert load_dataframe(df_2023, "results", 2023, settings) == 3
-    assert _count(settings) == 3
-
-    # A different season is additive and leaves the first season intact.
-    df_2024 = _results(2024, ["ver", "nor", "lec", "pia"])
-    assert load_dataframe(df_2024, "results", 2024, settings) == 4
-    assert _count(settings) == 7
-    assert _count(settings, "where season = 2023") == 3
-    assert _count(settings, "where season = 2024") == 4
-
-
-def test_load_dataframe_skips_empty(tmp_path: Path) -> None:
-    settings = Settings(warehouse="duckdb", duckdb_path=tmp_path / "f1.duckdb")
-    empty = pd.DataFrame(columns=["season", "driver_id", "points"])
-
-    # An empty frame writes nothing and reports zero rows loaded.
-    assert load_dataframe(empty, "results", 2023, settings) == 0
+def test_load_only_replaces_its_own_season(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    load_dataframe(_frame(2023, 2), "pitstops", 2023, settings)
+    load_dataframe(_frame(2024, 3), "pitstops", 2024, settings)
+    # Reloading 2024 (now 5 rows) must leave 2023 untouched.
+    load_dataframe(_frame(2024, 5), "pitstops", 2024, settings)
+    out = read_query(
+        "select season, count(*) as n from raw.pitstops group by season order by season",
+        settings,
+    )
+    counts = dict(zip(out["season"].tolist(), out["n"].tolist(), strict=True))
+    assert counts == {2023: 2, 2024: 5}

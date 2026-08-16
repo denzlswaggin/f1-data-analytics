@@ -35,3 +35,33 @@ sources:
             data_tests: [not_null]
           - name: driver_code
             data_tests: [not_null]
+      - name: pitstops
+        description: Ergast pit-stop timing (one row per driver per stop).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_id
+            data_tests: [not_null]
+      - name: ergast_laps
+        description: Ergast per-lap position and time (one row per driver per lap).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_id
+            data_tests: [not_null]
+      - name: weather
+        description: FastF1 per-minute weather samples (one row per timestamp per session).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: round
+            data_tests: [not_null]
+      - name: telemetry
+        description: >
+          FastF1 distance-resampled car telemetry (one row per driver per lap per
+          distance point).
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_code
+            data_tests: [not_null]

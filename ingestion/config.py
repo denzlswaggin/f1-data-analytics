@@ -50,6 +50,9 @@ class Settings(BaseSettings):
 
     # FastF1 (Milestone 3)
     fastf1_cache_dir: Path = Path("data/fastf1_cache")
+    # Distance grid (metres) for resampling per-lap telemetry — smaller = more
+    # rows and finer traces. 25 m ≈ ~200 points per lap.
+    fastf1_telemetry_resample_m: float = Field(default=25.0, gt=0)
 
     # Logging
     log_level: str = "INFO"

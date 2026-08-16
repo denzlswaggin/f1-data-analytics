@@ -11,17 +11,27 @@ import shutil
 import sys
 from pathlib import Path
 
-from dagster import Definitions, ScheduleDefinition, define_asset_job
+from dagster import (
+    AssetKey,
+    AssetSelection,
+    Definitions,
+    ScheduleDefinition,
+    define_asset_job,
+)
 from dagster_dbt import DbtCliResource
 
 from orchestration.assets import (
     dbt_models,
     dbt_project,
     driver_ratings,
+    raw_ergast_laps,
     raw_laps,
+    raw_pitstops,
     raw_qualifying,
     raw_races,
     raw_results,
+    raw_telemetry,
+    raw_weather,
 )
 
 
@@ -39,12 +49,22 @@ all_assets = [
     raw_results,
     raw_qualifying,
     raw_laps,
+    raw_pitstops,
+    raw_ergast_laps,
+    raw_weather,
+    raw_telemetry,
     dbt_models,
     driver_ratings,
 ]
 
-# Full end-to-end refresh: ingest -> dbt -> ratings.
-refresh_job = define_asset_job(name="refresh_pipeline", selection="*")
+# Full end-to-end refresh: ingest -> dbt -> ratings. Telemetry ingestion is heavy
+# (resampled every race lap), so it's excluded from the weekly job — materialise
+# raw.telemetry on demand. dbt still rebuilds mart_lap_telemetry each run from
+# whatever telemetry has been ingested.
+refresh_job = define_asset_job(
+    name="refresh_pipeline",
+    selection=AssetSelection.all() - AssetSelection.assets(AssetKey(["raw", "telemetry"])),
+)
 
 # Race weekends finish Sunday; refresh Monday morning.
 race_weekend_schedule = ScheduleDefinition(
