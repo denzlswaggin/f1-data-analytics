@@ -151,6 +151,29 @@ def ingest_weather(
     return load_dataframe(weather, "weather", season, settings)
 
 
+def ingest_telemetry(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest FastF1 distance-resampled telemetry for a set of rounds (heavy)."""
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        df = client.load_session_telemetry(season, rnd, session)
+        if not df.empty:
+            frames.append(df)
+
+    if not frames:
+        log.warning("pipeline.telemetry_empty", season=season, rounds=rounds)
+        return 0
+
+    telemetry = pd.concat(frames, ignore_index=True)
+    write_parquet(telemetry, "telemetry", season, settings)
+    return load_dataframe(telemetry, "telemetry", season, settings)
+
+
 def _extract_per_round(
     client: JolpicaClient,
     season: int,

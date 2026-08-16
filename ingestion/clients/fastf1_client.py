@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from ingestion.config import Settings, get_settings
@@ -31,6 +32,47 @@ _TIMEDELTA_COLS = {
 
 def _seconds(series: pd.Series) -> pd.Series:
     return series.dt.total_seconds()
+
+
+def resample_lap_telemetry(tel: pd.DataFrame, step_m: float) -> pd.DataFrame:
+    """Resample one lap's telemetry onto a uniform distance grid.
+
+    Continuous channels (speed, throttle, rpm, x, y) are linearly interpolated;
+    discrete channels (brake, DRS, gear) are interpolated then rounded to the
+    nearest integer. Returns an empty frame when the lap has no usable distance
+    axis (e.g. an in/out lap with missing telemetry). Pure (no FastF1) so it can
+    be unit-tested on a synthetic frame.
+    """
+    if tel.empty or "Distance" not in tel.columns:
+        return pd.DataFrame()
+    distance = tel["Distance"].to_numpy(dtype="float64")
+    finite = np.isfinite(distance)
+    if int(finite.sum()) < 2:
+        return pd.DataFrame()
+    order = np.argsort(distance[finite])
+    xp = distance[finite][order]
+    d_max = float(xp[-1])
+    if d_max <= 0:
+        return pd.DataFrame()
+    grid = np.arange(0.0, d_max, step_m)
+
+    def _interp(col: str) -> Any:
+        fp = tel[col].to_numpy(dtype="float64")[finite][order]
+        return np.interp(grid, xp, fp)
+
+    return pd.DataFrame(
+        {
+            "distance_m": grid,
+            "speed_kph": _interp("Speed"),
+            "throttle": _interp("Throttle"),
+            "rpm": _interp("RPM"),
+            "x": _interp("X"),
+            "y": _interp("Y"),
+            "brake": np.rint(_interp("Brake")).astype("int64"),
+            "drs": np.rint(_interp("DRS")).astype("int64"),
+            "gear": np.rint(_interp("nGear")).astype("int64"),
+        }
+    )
 
 
 class FastF1Client:
@@ -133,4 +175,45 @@ class FastF1Client:
             }
         ).reset_index(drop=True)
         log.info("fastf1.weather", season=season, round=rnd, session=session, rows=len(out))
+        return out
+
+    def load_session_telemetry(self, season: int, rnd: int, session: str = "R") -> pd.DataFrame:
+        """Return distance-resampled car telemetry: one row per driver/lap/point.
+
+        Heavy: FastF1 downloads full-resolution telemetry per lap; this resamples
+        each lap onto the configured distance grid to keep the warehouse compact.
+        """
+        ff1 = self._ensure_loaded()
+        sess = ff1.get_session(season, rnd, session)
+        sess.load(laps=True, telemetry=True, weather=False, messages=False)
+        laps = sess.laps
+        if laps is None or laps.empty:
+            log.warning("fastf1.no_laps_for_telemetry", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+
+        step = float(self.settings.fastf1_telemetry_resample_m)
+        frames: list[pd.DataFrame] = []
+        for _, lap in laps.iterlaps():
+            try:
+                tel = lap.get_telemetry()
+            except Exception as exc:
+                log.debug("fastf1.telemetry_lap_skip", season=season, round=rnd, error=str(exc))
+                continue
+            resampled = resample_lap_telemetry(tel, step)
+            if resampled.empty:
+                continue
+            lap_number = lap["LapNumber"]
+            resampled.insert(0, "season", season)
+            resampled.insert(1, "round", rnd)
+            resampled.insert(2, "session", session)
+            resampled.insert(3, "driver_code", lap["Driver"])
+            resampled.insert(4, "lap_number", int(lap_number) if pd.notna(lap_number) else pd.NA)
+            frames.append(resampled)
+
+        if not frames:
+            log.warning("fastf1.no_telemetry", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+
+        out = pd.concat(frames, ignore_index=True)
+        log.info("fastf1.telemetry", season=season, round=rnd, session=session, rows=len(out))
         return out
