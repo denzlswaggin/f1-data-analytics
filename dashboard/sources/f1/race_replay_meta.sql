@@ -20,7 +20,7 @@ team as (
 select
     d.season,
     d.round,
-    rc.race_name,
+    cast(d.season as varchar) || ' ' || rc.race_name as race_name,
     d.driver_code,
     coalesce(dc.driver_name, d.driver_code) as driver_name,
     t.team,

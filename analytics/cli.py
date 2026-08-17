@@ -16,7 +16,12 @@ from ingestion.config import get_settings
 from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import season_rounds
 
-from analytics.pipeline import build_driver_ratings, build_race_replay, build_race_replays
+from analytics.pipeline import (
+    build_all_replays,
+    build_driver_ratings,
+    build_race_replay,
+    build_race_replays,
+)
 
 app = typer.Typer(add_completion=False, help="F1 analytical transforms.")
 log = get_logger(__name__)
@@ -55,7 +60,9 @@ def ratings(
 
 @app.command()
 def replay(
-    season: Annotated[int, typer.Option(help="Season to build race replays for.")],
+    season: Annotated[
+        int | None, typer.Option(help="Season to build race replays for (not needed with --all).")
+    ] = None,
     round_: Annotated[
         int | None,
         typer.Option("--round", help="Single round; omit to build all completed rounds."),
@@ -71,17 +78,29 @@ def replay(
             help="Seconds a retired car stays shown after it stops (default: F1_REPLAY_RETIRE_BUFFER_S).",
         ),
     ] = None,
+    all_seasons: Annotated[
+        bool,
+        typer.Option(
+            "--all", help="Build every race with positions (all seasons); ignores --season."
+        ),
+    ] = False,
 ) -> None:
     """Build the animated race-replay mart (marts.race_replay).
 
-    With ``--round`` builds one race (replacing the mart); without it, builds every
-    completed round of the season so the dashboard can offer a race picker.
+    With ``--round`` builds one race (replacing the mart); with ``--all`` builds every
+    race that has positions across all seasons; otherwise builds every completed round
+    of ``--season`` so the dashboard can offer a race picker.
     """
     configure_logging()
     log.info(
         "cli.replay.start", season=season, round=round_, tick=tick, target=get_settings().warehouse
     )
-    if round_ is not None:
+    if all_seasons:
+        df = build_all_replays(tick_s=tick, retire_buffer_s=retire_buffer)
+        scope = "all seasons"
+    elif season is None:
+        raise typer.BadParameter("Provide --season, or use --all.")
+    elif round_ is not None:
         df = build_race_replay(season, round_, tick_s=tick, retire_buffer_s=retire_buffer)
         scope = f"round {round_}"
     else:
