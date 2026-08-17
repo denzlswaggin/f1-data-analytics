@@ -142,6 +142,30 @@ def test_resample_race_retire_buffer_is_tunable() -> None:
     assert long_r == pytest.approx(60.0, abs=1.0)
 
 
+def test_resample_race_clamps_recovered_retiree() -> None:
+    # R completes 1 lap (finishes 40 s) but its position keeps moving to the end (as
+    # if recovered/craned) — the safety cap must retire it, not show it to the flag.
+    t = np.arange(0.0, 121.0, 10.0)
+    lead = pd.DataFrame({"driver_code": "L", "session_time_sec": t, "x": 100.0 + 5 * t, "y": 300.0})
+    ret = pd.DataFrame({"driver_code": "R", "session_time_sec": t, "x": 200.0 + 5 * t, "y": 400.0})
+    positions = pd.concat([lead, ret], ignore_index=True)
+    laps = pd.DataFrame(
+        [
+            {"driver_code": "L", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 40.0},
+            {"driver_code": "L", "lap_number": 2, "lap_start_sec": 40.0, "lap_time_sec": 40.0},
+            {"driver_code": "L", "lap_number": 3, "lap_start_sec": 80.0, "lap_time_sec": 40.0},
+            {"driver_code": "R", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 40.0},
+        ]
+    )
+    out = resample_race(positions, laps, tick_s=1.0, retire_buffer_s=5.0, max_linger_s=30.0)
+    ret_out = out[out["driver_code"] == "R"]
+    # R never stops moving, but is clamped at its last lap (40 s) + 30 s = 70 s.
+    assert ret_out["t_s"].max() == pytest.approx(70.0, abs=1.0)
+    assert out[(out["driver_code"] == "R") & (out["t_s"] >= 90.0)].empty
+    # The leader (still racing) is unaffected and runs to the end.
+    assert out[out["driver_code"] == "L"]["t_s"].max() >= 115.0
+
+
 def test_resample_race_validates_and_handles_empty() -> None:
     positions, laps = _synthetic_race()
     with pytest.raises(ValueError, match="positions is missing"):

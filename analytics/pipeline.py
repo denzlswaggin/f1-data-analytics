@@ -95,7 +95,12 @@ def _replay_laps_query(season: int, rnd: int) -> str:
 
 
 def _build_one_replay(
-    season: int, rnd: int, tick_s: float, retire_buffer_s: float, settings: Settings
+    season: int,
+    rnd: int,
+    tick_s: float,
+    retire_buffer_s: float,
+    max_linger_s: float,
+    settings: Settings,
 ) -> pd.DataFrame:
     """Resample one race into a replay frame (with season/round), no warehouse write.
 
@@ -106,7 +111,9 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
-    replay = resample_race(positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s)
+    replay = resample_race(
+        positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s, max_linger_s=max_linger_s
+    )
     replay.insert(0, "season", season)
     replay.insert(1, "round", rnd)
     return replay
@@ -127,7 +134,9 @@ def build_race_replay(
     """
     settings = settings or get_settings()
     buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
-    replay = _build_one_replay(season, rnd, tick_s, buf, settings)
+    replay = _build_one_replay(
+        season, rnd, tick_s, buf, settings.replay_retire_max_linger_s, settings
+    )
     replace_table(replay, schema="marts", table="race_replay", settings=settings)
     log.info(
         "replay.materialised",
@@ -155,12 +164,13 @@ def build_race_replays(
     """
     settings = settings or get_settings()
     buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
-    frames = [_build_one_replay(season, rnd, tick_s, buf, settings) for rnd in rounds]
+    linger = settings.replay_retire_max_linger_s
+    frames = [_build_one_replay(season, rnd, tick_s, buf, linger, settings) for rnd in rounds]
     non_empty = [f for f in frames if not f.empty]
     combined = (
         pd.concat(non_empty, ignore_index=True)
         if non_empty
-        else (frames[0] if frames else _build_one_replay(season, 0, tick_s, buf, settings))
+        else (frames[0] if frames else _build_one_replay(season, 0, tick_s, buf, linger, settings))
     )
     replace_table(combined, schema="marts", table="race_replay", settings=settings)
     log.info(

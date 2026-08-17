@@ -30,6 +30,9 @@ _MOVE_EPS_UNITS = 0.5
 # Default grace (s) to keep showing a car after it stops before it vanishes; the
 # pipeline overrides this from settings (F1_REPLAY_RETIRE_BUFFER_S).
 _RETIRE_BUFFER_S = 5.0
+# Default safety cap (s): a retiree is never shown more than this long past its last
+# completed lap, guarding against a recovered car whose position keeps moving.
+_RETIRE_MAX_LINGER_S = 120.0
 
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
@@ -67,6 +70,7 @@ def resample_race(
     laps: pd.DataFrame,
     tick_s: float = 1.0,
     retire_buffer_s: float = _RETIRE_BUFFER_S,
+    max_linger_s: float = _RETIRE_MAX_LINGER_S,
 ) -> pd.DataFrame:
     """Resample a race onto a shared time grid with running order and gaps.
 
@@ -80,6 +84,8 @@ def resample_race(
     ``retire_buffer_s`` grace, so retirees vanish where they pull off instead of
     freezing on the map. Using the *last* movement is red-flag-safe: a car that
     resumes has a later last-movement, so it isn't retired during the stoppage.
+    ``max_linger_s`` caps this above: a retiree is never shown more than that long
+    past its last completed lap (guards a recovered car whose sensor keeps moving).
     """
     required_pos = {"driver_code", "session_time_sec", "x", "y"}
     required_lap = {"driver_code", "lap_number", "lap_start_sec", "lap_time_sec"}
@@ -133,6 +139,10 @@ def resample_race(
         moved = np.where(np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS)[0]
         stop_t = float(pt[moved[-1] + 1]) if moved.size else float(pt[0])
         cap = stop_t + retire_buffer_s
+        # Safety cap: don't show a retiree more than max_linger_s past its last lap
+        # (a recovered car's sensor can keep "moving" long after it's out).
+        if np.isfinite(t_finish[i]):
+            cap = min(cap, t_finish[i] + max_linger_s)
         active[i] = (grid >= pt.min()) & (grid <= min(float(pt.max()), cap))
 
     # Leader progress = leading edge across the field; monotonic by construction.

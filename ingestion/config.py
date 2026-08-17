@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     # lets the final resting position settle. The car is retired by *when it actually
     # stops*, not by lap count — this is just the grace/safety window on top.
     replay_retire_buffer_s: float = Field(default=5.0, ge=0)
+    # Safety cap (s): never show a retiree more than this long past its last completed
+    # lap, even if its position keeps "moving" (a recovery crane/truck follows the car
+    # sensor). Bounds the stop-detection above; ~one lap of margin by default.
+    replay_retire_max_linger_s: float = Field(default=120.0, gt=0)
 
     # Logging
     log_level: str = "INFO"

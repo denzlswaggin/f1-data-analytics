@@ -111,7 +111,10 @@ Built end-to-end on real **2026** data.
   changing** (last-movement detection, red-flag-safe since a car that resumes has a
   later last-movement), plus a tunable grace `F1_REPLAY_RETIRE_BUFFER_S` (default 5 s,
   CLI `--retire-buffer`), so retirees vanish where they pull off instead of freezing.
-  A dbt `expression_is_true` (x≠0 or y≠0) on `stg_positions` catches (0,0) regressions.
+  A safety cap `F1_REPLAY_RETIRE_MAX_LINGER_S` (default 120 s) bounds this above — a
+  retiree is never shown more than ~a lap past its last completed lap, guarding a
+  recovered car whose sensor keeps moving. A dbt `expression_is_true` (x≠0 or y≠0)
+  on `stg_positions` catches (0,0) regressions.
 - **`marts.race_replay`** — built by **Python** (`analytics/replay.py`, like
   `driver_ratings` — *not* dbt). `resample_race` interpolates every car's x/y onto
   one uniform time grid (`--tick`, default 1 s), reconstructs per-car lap progress
