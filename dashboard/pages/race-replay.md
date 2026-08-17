@@ -4,8 +4,10 @@ title: Race Replay — Live Track Map
 
 Watch a Grand Prix replay: every car placed on the circuit at its **true position
 on the shared race clock**, reconstructed from FastF1 positional telemetry. Press
-play, scrub the timeline, or speed it up — the running order and gaps on the left
-update live as the race unfolds. _2026 season._
+play, scrub the timeline, or speed it up — the running order and intervals on the
+left update live as the race unfolds, and the **race-control feed** on the right
+plays flags, safety cars and penalties in sync. Click a car to follow it, scroll
+to zoom, and click the timeline markers to jump to key moments. _2026 season._
 
 ```sql replay_races
 select distinct race_name
@@ -35,7 +37,14 @@ from f1.race_replay_meta
 where race_name = '${inputs.race.value}'
 ```
 
-<TrackMap data={replay} meta={replay_meta} title={inputs.race.value} />
+```sql race_ctrl
+select t_s, category, flag, scope, message, driver_code
+from f1.race_control
+where race_name = '${inputs.race.value}'
+order by t_s
+```
+
+<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} title={inputs.race.value} />
 
 ## How it's built
 

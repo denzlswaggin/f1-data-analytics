@@ -30,6 +30,7 @@ from orchestration.assets import (
     raw_pitstops,
     raw_positions,
     raw_qualifying,
+    raw_race_control,
     raw_races,
     raw_results,
     raw_telemetry,
@@ -56,20 +57,25 @@ all_assets = [
     raw_weather,
     raw_telemetry,
     raw_positions,
+    raw_race_control,
     dbt_models,
     driver_ratings,
     race_replay,
 ]
 
-# Full end-to-end refresh: ingest -> dbt -> ratings + replay. The two heavy FastF1
-# ingests — raw.telemetry (resampled every race lap) and raw.positions (per-car
-# position stream for the replay) — are excluded from the weekly job; materialise
-# them on demand. Downstream dbt/analytics still rebuild each run from whatever has
-# been ingested.
+# Full end-to-end refresh: ingest -> dbt -> ratings + replay. The heavy FastF1
+# ingests — raw.telemetry (resampled every race lap), raw.positions (per-car
+# position stream) and raw.race_control (needs the telemetry cache) — are excluded
+# from the weekly job; materialise them on demand. Downstream dbt/analytics still
+# rebuild each run from whatever has been ingested.
 refresh_job = define_asset_job(
     name="refresh_pipeline",
     selection=AssetSelection.all()
-    - AssetSelection.assets(AssetKey(["raw", "telemetry"]), AssetKey(["raw", "positions"])),
+    - AssetSelection.assets(
+        AssetKey(["raw", "telemetry"]),
+        AssetKey(["raw", "positions"]),
+        AssetKey(["raw", "race_control"]),
+    ),
 )
 
 # Race weekends finish Sunday; refresh Monday morning.

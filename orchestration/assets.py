@@ -22,6 +22,7 @@ from ingestion.pipeline import (
     ingest_laps,
     ingest_pitstops,
     ingest_positions,
+    ingest_race_control,
     ingest_resource,
     ingest_telemetry,
     ingest_weather,
@@ -130,6 +131,20 @@ def raw_positions() -> MaterializeResult:
     # kept out of the weekly refresh job (see definitions.py) — materialise on demand.
     rounds = season_rounds(CURRENT_SEASON, completed_only=True)
     rows = ingest_positions(CURRENT_SEASON, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "race_control"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="fastf1",
+)
+def raw_race_control() -> MaterializeResult:
+    # Official race-control messages for the replay feed. Needs the telemetry cache
+    # for the session-time reference, so it's kept out of the weekly job too.
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_race_control(CURRENT_SEASON, rounds, "R")
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 

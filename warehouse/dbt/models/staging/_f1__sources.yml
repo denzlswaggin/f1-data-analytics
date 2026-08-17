@@ -74,3 +74,12 @@ sources:
             data_tests: [not_null]
           - name: driver_code
             data_tests: [not_null]
+      - name: race_control
+        description: >
+          FastF1 official race-control messages (flags, safety car, penalties,
+          incidents, DRS) on the shared session clock. Feeds the replay message feed.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: session_time_sec
+            data_tests: [not_null]

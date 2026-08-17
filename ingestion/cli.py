@@ -21,6 +21,7 @@ from ingestion.pipeline import (
     ingest_laps,
     ingest_pitstops,
     ingest_positions,
+    ingest_race_control,
     ingest_telemetry,
     ingest_weather,
     season_rounds,
@@ -188,6 +189,23 @@ def positions(
     log.info("cli.positions.start", season=season, rounds=rounds, session=session)
     rows = ingest_positions(season, rounds, session)
     typer.echo(f"Loaded {rows} position rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command("race-control")
+def race_control(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 race-control messages for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 race-control messages (flags/SC/penalties; needs `telemetry` extra)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.race_control.start", season=season, rounds=rounds, session=session)
+    rows = ingest_race_control(season, rounds, session)
+    typer.echo(f"Loaded {rows} race-control messages for {season} rounds {rounds[0]}-{rounds[-1]}.")
 
 
 if __name__ == "__main__":

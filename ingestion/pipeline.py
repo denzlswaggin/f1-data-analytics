@@ -202,6 +202,34 @@ def ingest_positions(
     return load_dataframe(positions, "positions", season, settings)
 
 
+def ingest_race_control(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest FastF1 race-control messages for a set of rounds in one season.
+
+    Reads from the FastF1 cache for the session-time reference, so it's light once
+    telemetry is cached. All rounds are concatenated into one season frame and
+    loaded once (the loader's delete key is ``season`` only).
+    """
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        df = client.load_session_race_control(season, rnd, session)
+        if not df.empty:
+            frames.append(df)
+
+    if not frames:
+        log.warning("pipeline.race_control_empty", season=season, rounds=rounds)
+        return 0
+
+    messages = pd.concat(frames, ignore_index=True)
+    write_parquet(messages, "race_control", season, settings)
+    return load_dataframe(messages, "race_control", season, settings)
+
+
 def _extract_per_round(
     client: JolpicaClient,
     season: int,

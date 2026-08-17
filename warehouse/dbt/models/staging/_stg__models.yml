@@ -153,3 +153,16 @@ models:
         data_tests: [not_null]
       - name: session_time_sec
         data_tests: [not_null]
+
+  - name: stg_race_control
+    description: >
+      One typed row per official race-control message (FastF1) on the shared session
+      clock — flags, safety car, penalties, incidents, DRS. Feeds the replay feed.
+    columns:
+      - name: message_key
+        description: Surrogate key = hash(season, round, session, session_time_sec, message).
+        data_tests: [unique, not_null]
+      - name: session_time_sec
+        data_tests: [not_null]
+      - name: category
+        data_tests: [not_null]
