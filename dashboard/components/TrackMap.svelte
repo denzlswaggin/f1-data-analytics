@@ -90,16 +90,20 @@
     $: radioClips = (radio || [])
         .map((r) => ({ t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url }))
         .sort((a, b) => a.t - b.t);
+    // Followed a driver? show only their clips — otherwise show the whole field's.
+    $: displayedRadio = selected ? radioClips.filter((c) => c.code === selected) : radioClips;
+    $: codeColor = Object.fromEntries(drivers.map((d) => [d.code, d.color]));
     let audioEl;
     let nowPlaying = null;
     function playRadio(clip) {
-        jumpTo(clip.t);
         nowPlaying = clip;
+        jumpTo(clip.t);
         if (audioEl) {
             audioEl.src = clip.url;
             audioEl.currentTime = 0;
             audioEl.play().catch(() => {});
         }
+        play(); // roll the replay on from this moment
     }
     function stopRadio() {
         if (audioEl) audioEl.pause();
@@ -473,25 +477,29 @@
     {#if tMax > 0}
         <div class="tm-radio">
             <span class="tm-radio-label">
-                📻 Team radio
+                📻 Team radio{#if selected} · {selected}{/if}
                 {#if nowPlaying}
                     <button class="tm-radio-stop" on:click={stopRadio}>⏹ {nowPlaying.code}</button>
                 {/if}
             </span>
-            {#if radioClips.length}
+            {#if displayedRadio.length}
                 <div class="tm-radio-track">
-                    {#each radioClips as c (c.url)}
+                    {#each displayedRadio as c (c.url)}
                         <button
                             class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
-                            style="left:{(c.t / tMax) * 100}%"
-                            title="{fmtClock(c.t)} — {c.code} team radio (click to play)"
+                            style="left:{(c.t / tMax) * 100}%; background:{codeColor[c.code] || '#2dd4bf'}"
+                            title="{fmtClock(c.t)} — {c.code} team radio (click to play from here)"
                             aria-label="{c.code} team radio at {fmtClock(c.t)}"
                             on:click={() => playRadio(c)}
                         ></button>
                     {/each}
                 </div>
+            {:else if selected}
+                <span class="tm-radio-none">no team radio for {selected} in this race</span>
+            {:else if radioClips.length}
+                <div class="tm-radio-track"></div>
             {:else}
-                <span class="tm-radio-none">none available for this race — try Canada or Austria</span>
+                <span class="tm-radio-none">none available for this race — try Barcelona or Hungary</span>
             {/if}
         </div>
     {/if}
@@ -499,9 +507,9 @@
     <audio bind:this={audioEl} on:ended={() => (nowPlaying = null)} preload="none"></audio>
 
     <div class="tm-hint">
-        Scroll to zoom · drag to pan · click a car to follow · hover for details · click the event
-        markers to jump to safety cars / penalties · click a 📻 marker to play team radio (where
-        available)
+        Scroll to zoom · drag to pan · hover for details · click a car to follow it (and filter its
+        team radio) · click an event marker to jump to safety cars / penalties · click a 📻 marker to
+        play that team radio and roll the race on from there
     </div>
 </div>
 
