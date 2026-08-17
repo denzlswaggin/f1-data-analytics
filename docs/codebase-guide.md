@@ -53,13 +53,19 @@ Two things write into the `marts` schema: **dbt** (the `mart_*` models) and
 **Python** (`marts.driver_ratings` and `marts.race_replay`). Keep that distinction
 in your head — it's the one part of the architecture that isn't "just dbt".
 
-> Newer feature — the **animated race replay** (`analytics/replay.py` →
-> `marts.race_replay` → `dashboard/pages/race-replay.md` +
-> `dashboard/components/TrackMap.svelte`). A second Python-built mart: it resamples
-> FastF1's time-stamped positional feed (`raw.positions`, unlike the
-> distance-gridded `raw.telemetry`) onto one shared clock so every car can be drawn
-> at the same instant, then a custom Svelte canvas component animates them. Built
-> on 2026 data. See the `f1-platform` skill for the full write-up.
+> **Newer feature — the animated race replay.** A second Python-built mart
+> (`analytics/replay.py` → `marts.race_replay`) served by a custom Svelte canvas
+> component (`dashboard/components/TrackMap.svelte`) on `pages/race-replay.md`. It
+> resamples FastF1's time-stamped **positional** feed (`raw.positions` — unlike the
+> distance-gridded `raw.telemetry`, this one carries a shared clock) so every car
+> can be drawn at the same instant. Around that core it layers three new raw
+> sources and their cleaning: the notoriously dirty positional feed (cleaned at two
+> layers, see [§3](#3-layer-1--ingestion-python-el)), a **race-control** feed
+> (`raw.race_control` — flags, safety cars, penalties), and **team-radio** audio
+> with ASR **transcripts** (`raw.team_radio`, via OpenF1 + a Hugging Face dataset).
+> The dashboard picker spans seasons (2026 + a 2024 showcase). This guide says
+> where each piece lives and how to extend it; the `f1-platform` skill has the
+> exhaustive write-up (every config knob, the cleaning thresholds, coverage caveats).
 
 ---
 
@@ -104,11 +110,12 @@ and into the warehouse, reliably and idempotently. It's plain Python — no fram
 | `config.py` | All configuration as a pydantic-settings `Settings` object (env vars prefixed `F1_`, or `.env`). One source of truth for the warehouse target, paths, API URL, rate limits. |
 | `logging.py` | `structlog` setup — every log line is structured (`log.info("event.name", key=val)`). |
 | `clients/jolpica.py` | HTTP client for the Jolpica/Ergast API: rate-limited, retrying (tenacity), and paginating. |
-| `clients/fastf1_client.py` | Wraps the FastF1 library for per-lap telemetry. Imported lazily (it's a heavy optional dependency). |
+| `clients/fastf1_client.py` | Wraps the FastF1 library for per-lap telemetry, plus weather, the time-stamped **positional** feed (`load_session_position` + pure `thin_positions`/`clean_positions`) and race-control messages. Imported lazily (it's a heavy optional dependency). |
+| `clients/openf1.py` | Tiny reader for the **OpenF1** API — used only for team-radio audio clips (the one thing FastF1/Ergast don't expose for the current season). |
 | `resources.py` | A **declarative registry** of what can be ingested and how to flatten it. |
 | `loaders/lake.py` | Writes DataFrames to the partitioned Parquet lake. |
 | `loaders/warehouse.py` | Loads DataFrames into the warehouse (DuckDB or Postgres), idempotently. |
-| `pipeline.py` | Ties it together: `extract_resource`, `ingest_resource`, `backfill`, `ingest_laps`. |
+| `pipeline.py` | Ties it together: `extract_resource`, `ingest_resource`, `backfill`, and the dedicated per-round/per-source ingests (`ingest_laps`, `ingest_positions`, `ingest_race_control`, `ingest_team_radio`, …). |
 | `cli.py` | The `python -m ingestion.cli ...` command-line entrypoint (Typer). |
 
 ### The key design idea: a declarative resource registry
@@ -132,6 +139,24 @@ that loops the rounds, **concatenates them into one season frame, and loads
 once** — because `load_dataframe`'s delete key is `season` only, loading
 round-by-round would wipe earlier rounds. `season_rounds()` reads `raw.races` to
 supply the round list (dates ≤ today for a "season so far" backfill).
+
+### Cleaning at ingest (new: the race-replay sources)
+
+The **race replay** adds three raw sources that don't come from Ergast — FastF1's
+positional feed (`raw.positions`, the *time* axis the replay animates on), FastF1
+race-control messages (`raw.race_control`), and OpenF1 team-radio clips
+(`raw.team_radio`, later enriched with ASR transcripts from a public Hugging Face
+dataset) — each with a dedicated `ingest_*` in `pipeline.py`.
+
+The positional feed is unusually dirty, which introduces a concept this layer
+didn't have before: **cleaning at ingest**. `clean_positions` (pure, unit-tested)
+drops FastF1's `(0,0)` "no-signal / in-garage" sentinels and physically-impossible
+"teleport" samples *before* they land, so `raw.positions` stays faithful to a real
+car on track. (The usual rule still holds — staging never filters rows — so this
+one dirty *source* is scrubbed upstream instead. A car that **retires** parks at a
+*valid* coordinate, which is a temporal problem, not a bad coordinate, so that case
+is handled downstream by the replay builder, keyed on time; the skill has the full
+story.)
 
 ### The idempotency contract (important)
 
@@ -207,6 +232,14 @@ prefixing them — so `analytics/pipeline.py` can hard-code `intermediate.` /
   race-day weather bucket), `mart_speed_trap` (straight-line speed), and
   `mart_lap_telemetry` (distance-resampled car telemetry for speed traces + a
   track map) — each with its own `stg_*` model and `raw.*` source.
+
+The **race replay** adds three *staging-only* models — `stg_positions`,
+`stg_race_control`, `stg_team_radio` — that type and clean its new raw sources.
+There is deliberately **no `mart_*` model** for the replay: the mart itself
+(`marts.race_replay`) is built in Python, not SQL, because resampling every car
+onto one time grid is far easier in numpy/pandas (same reason the ratings mart is
+Python — see [recipe 9.3](#93-add-a-python-analytics-transform)). So these staging
+models are consumed by `analytics/replay.py`, not by a downstream dbt model.
 
 ### Tests and the snapshot
 
@@ -359,6 +392,17 @@ Markdown, with no separate BI tool.
   (`<BarChart>`, `<DataTable>`, `<Dropdown>`, `<LineChart>`). Inputs are reactive:
   the driver `<Dropdown>` on `index.md` feeds `${inputs.driver.value}` straight
   into the next SQL block, so selecting a driver re-runs the query.
+- **Custom components.** Beyond Evidence's built-ins you can drop a Svelte file in
+  `dashboard/components/` and Evidence auto-imports it by filename. The race replay
+  uses this: `TrackMap.svelte` is a `<canvas>` animation (static track layer +
+  per-tick interpolated dots, click-to-follow, scroll-zoom/drag-pan, a live
+  race-control panel, and a 📻 team-radio lane that plays the clip audio with a
+  transcript subtitle). Its `race-replay.md` page has a season picker spanning 2026
+  and a 2024 showcase. **Gotcha:** pages are *prerendered* at `evidence build`, so
+  any browser-only API (`canvas`, `requestAnimationFrame`, `window`) reachable from
+  top-level or a `$:` reactive statement must be guarded, or the build 500s even
+  though `npm run dev` (client render) is fine — put it in `onMount` or behind a
+  `typeof … === 'undefined'` check.
 
 Run it locally with `cd dashboard && npm run dev` (serves at
 `localhost:3000/f1-data-analytics/`). `evidence.config.yaml` sets the project-site
@@ -444,6 +488,37 @@ practice exercises — build them yourself; the verification loop is your safety
    `sources/f1/<name>.sql`.
 2. **Verify:** `cd dashboard && npm run dev` and open the page.
 
+### 9.5 Add a custom (animated / interactive) component
+
+*Goal: a visualisation Evidence's built-ins don't cover — like the replay track map.*
+1. Add `dashboard/components/<Name>.svelte`; Evidence auto-imports it by filename, so
+   you use it in a page like any built-in: `<Name data={my_query} ... />`.
+2. Feed it a **lean** query — the whole result ships to the browser, so aggregate and
+   trim server-side. (The replay keeps names/colours out of its big per-tick feed and
+   joins them client-side from a tiny separate meta source.)
+3. **Guard browser-only APIs** (`canvas`, `requestAnimationFrame`, `window`): they
+   must not run at module top-level or in a `$:` statement, or `evidence build`
+   (which prerenders each page) 500s. Use `onMount` or a `typeof … === 'undefined'`
+   check.
+4. **Verify:** `npm run dev` to iterate, then `npm run build` once to confirm the
+   prerender doesn't crash (dev is client-rendered and won't catch it).
+
+### 9.6 Add a new (non-Ergast) raw source
+
+*Goal: ingest something the season-scoped registry can't express — a different API,
+or a feed that needs cleaning (like the replay's positional data).*
+1. Add a client under `ingestion/clients/` (copy `openf1.py` for a small REST reader,
+   or extend `fastf1_client.py`). Keep any row-shaping in a **pure, testable**
+   function (e.g. `clean_positions`) so it can be unit-tested without the network.
+2. Add an `ingest_<name>` in `pipeline.py` that fetches, cleans, lands in the lake,
+   and loads once per season (mirror `ingest_positions` / `ingest_team_radio`), plus
+   a CLI verb and — if it should be scheduled — an `@asset` in `orchestration/`.
+3. Add a `stg_<name>.sql` + a source entry so dbt (or a Python transform) can consume
+   it. Remember the convention: **staging doesn't filter rows** — if the source is
+   dirty, clean it at ingest (step 1), not in staging.
+4. **Verify:** run the ingest, confirm `raw.<name>` and `stg_<name>` look right, then
+   `dbt build --select stg_<name>` on both targets.
+
 ---
 
 ## 10. Glossary
@@ -470,3 +545,9 @@ practice exercises — build them yourself; the verification loop is your safety
 - **Idempotent** — safe to run repeatedly with the same result (no duplicate data).
 - **Asset (Dagster)** — a node in the pipeline graph that produces a data artifact.
 - **Cross-dialect** — SQL that runs identically on DuckDB and Postgres.
+- **Positional feed** — FastF1's time-stamped car X/Y (`raw.positions`), the shared
+  clock the race replay animates on; distinct from the distance-gridded
+  `raw.telemetry`, which carries no time axis.
+- **Race replay** — the second Python-built mart (`marts.race_replay`): every car
+  resampled onto one uniform time grid so the whole field can be drawn at the same
+  instant, served by the `TrackMap.svelte` canvas component.

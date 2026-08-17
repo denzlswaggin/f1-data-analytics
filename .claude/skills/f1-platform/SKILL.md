@@ -15,11 +15,15 @@ A CV-centerpiece **data-engineering** project: a modern data stack that turns ra
 F1 data into two reproducible, debatable insights. Owner: denzlswaggin
 (patrik.kriz@studyfi.com). Repo: github.com/denzlswaggin/f1-data-analytics.
 
-**Status: all 5 milestones complete.** Branch `feat/api-data-expansion` (PR #8)
-adds four new marts on top — pit strategy, weather-adjusted degradation,
-straight-line speed, and resampled telemetry — verified live on 2024 data (see
-"Further marts" below). The local Evidence dashboard runs at
-http://localhost:3000 via `cd dashboard && npm run dev`.
+**Status: all 5 milestones complete, plus two feature waves now merged to `main`.**
+The **API expansion** added four marts — pit strategy, weather-adjusted
+degradation, straight-line speed, and resampled telemetry — verified live on 2024
+data (see "Further marts" below). The **animated race replay** added FastF1's
+positional feed, a Python-built `marts.race_replay`, a custom Svelte track-map
+component, a race-control feed, team-radio audio + transcripts, and a
+season-spanning race picker (see "Race replay — animated track map" below). The
+local Evidence dashboard runs at http://localhost:3000 via
+`cd dashboard && npm run dev`.
 
 ## Architecture
 
@@ -242,5 +246,5 @@ Makefile wraps these (`make lint typecheck test dbt-build dagster …`). For Pos
 ## Remaining / future work
 
 - Enable GitHub Pages (Settings → Pages → GitHub Actions) + run the *Deploy Dashboard* workflow for the public URL.
-- Merge PR #8, then **backfill the new marts for real**: pit stops / ergast-laps over ~2011→current, and FastF1 weather/telemetry across a full season (the live check only ingested 2024 R1 for weather/telemetry).
+- **Backfill the new marts for real**: pit stops / ergast-laps over ~2011→current, and FastF1 weather/telemetry across a full season (the live check only ingested 2024 R1 for weather/telemetry). Likewise the **replay**: only 2026 + the 2024 Bahrain showcase are ingested — backfill more 2024 races (positions + radio) for a transcript-rich picker.
 - Possible: a proper constructors/drivers dimension from the dedicated endpoints; driver-standings / championship-evolution mart; finer per-lap weather join (now that `lap_start_sec` is retained on `raw.laps`).
