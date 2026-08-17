@@ -28,3 +28,11 @@ models:
     marts:
       +materialized: table
       +schema: marts
+
+seeds:
+  f1_analytics:
+    +schema: staging
+    constructor_colors:
+      +column_types:
+        team: varchar
+        team_color: varchar
