@@ -382,3 +382,29 @@ class FastF1Client:
         ).reset_index(drop=True)
         log.info("fastf1.race_control", season=season, round=rnd, session=session, rows=len(out))
         return out
+
+    def session_reference(
+        self, season: int, rnd: int, session: str = "R"
+    ) -> tuple[pd.Timestamp | None, dict[str, str]]:
+        """Return ``(t0_date, {number: code})`` to align external timestamps.
+
+        ``t0_date`` is the absolute UTC time of SessionTime=0 — the anchor for
+        converting an OpenF1/other absolute timestamp to the shared session clock.
+        Needs a telemetry load (reads from cache). Returns ``(None, {})`` if the
+        reference can't be resolved.
+        """
+        ff1 = self._ensure_loaded()
+        sess = ff1.get_session(season, rnd, session)
+        sess.load(laps=True, telemetry=True, weather=False, messages=False)
+        try:
+            t0 = sess.t0_date
+        except Exception as exc:
+            log.warning("fastf1.no_t0_date", season=season, round=rnd, error=str(exc))
+            return None, {}
+        num2code: dict[str, str] = {}
+        for number in getattr(sess, "drivers", []) or []:
+            try:
+                num2code[str(number)] = str(sess.get_driver(number)["Abbreviation"])
+            except Exception:
+                continue
+        return t0, num2code

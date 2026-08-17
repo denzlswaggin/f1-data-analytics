@@ -24,6 +24,7 @@ from ingestion.pipeline import (
     ingest_positions,
     ingest_race_control,
     ingest_resource,
+    ingest_team_radio,
     ingest_telemetry,
     ingest_weather,
     season_rounds,
@@ -145,6 +146,20 @@ def raw_race_control() -> MaterializeResult:
     # for the session-time reference, so it's kept out of the weekly job too.
     rounds = season_rounds(CURRENT_SEASON, completed_only=True)
     rows = ingest_race_control(CURRENT_SEASON, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
+@asset(
+    key=["raw", "team_radio"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="openf1",
+)
+def raw_team_radio() -> MaterializeResult:
+    # OpenF1 team-radio clips for the replay player. Aligns via the telemetry cache,
+    # so it's kept out of the weekly job too. Coverage is partial.
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_team_radio(CURRENT_SEASON, rounds, "R")
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 

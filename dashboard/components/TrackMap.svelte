@@ -10,6 +10,7 @@
     export let data = [];
     export let meta = [];
     export let messages = [];
+    export let radio = [];
     export let title = '';
 
     const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
@@ -82,6 +83,34 @@
     function onTimelineKey(e) {
         if (e.key === 'ArrowLeft') jumpTo(t - 5);
         else if (e.key === 'ArrowRight') jumpTo(t + 5);
+    }
+
+    // --- team radio (OpenF1 audio clips; partial coverage) ---
+    let radioClips = [];
+    $: radioClips = (radio || [])
+        .map((r) => ({
+            t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url,
+            transcript: r.transcript || null,
+        }))
+        .sort((a, b) => a.t - b.t);
+    // Followed a driver? show only their clips — otherwise show the whole field's.
+    $: displayedRadio = selected ? radioClips.filter((c) => c.code === selected) : radioClips;
+    $: codeColor = Object.fromEntries(drivers.map((d) => [d.code, d.color]));
+    let audioEl;
+    let nowPlaying = null;
+    function playRadio(clip) {
+        nowPlaying = clip;
+        jumpTo(clip.t);
+        if (audioEl) {
+            audioEl.src = clip.url;
+            audioEl.currentTime = 0;
+            audioEl.play().catch(() => {});
+        }
+        play(); // roll the replay on from this moment
+    }
+    function stopRadio() {
+        if (audioEl) audioEl.pause();
+        nowPlaying = null;
     }
 
     function build(rows, metaRows) {
@@ -407,6 +436,10 @@
             </div>
         {/if}
 
+        {#if nowPlaying && nowPlaying.transcript}
+            <div class="tm-radio-caption">📻 {nowPlaying.code}: “{nowPlaying.transcript}”</div>
+        {/if}
+
         <div class="tm-clock">{fmtClock(t)} / {fmtClock(tMax)}</div>
         {#if selected}<div class="tm-follow">Following {selected} · click to release</div>{/if}
     </div>
@@ -448,9 +481,44 @@
         </div>
     {/if}
 
+    {#if tMax > 0}
+        <div class="tm-radio">
+            <span class="tm-radio-label">
+                📻 Team radio{#if selected} · {selected}{/if}
+                {#if nowPlaying}
+                    <button class="tm-radio-stop" on:click={stopRadio}>⏹ {nowPlaying.code}</button>
+                {/if}
+            </span>
+            {#if displayedRadio.length}
+                <div class="tm-radio-track">
+                    {#each displayedRadio as c (c.url)}
+                        <button
+                            class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
+                            style="left:{(c.t / tMax) * 100}%; background:{codeColor[c.code] || '#2dd4bf'}"
+                            title="{fmtClock(c.t)} — {c.code}: {c.transcript || 'team radio'} (click to play)"
+                            aria-label="{c.code} team radio at {fmtClock(c.t)}"
+                            on:click={() => playRadio(c)}
+                        ></button>
+                    {/each}
+                </div>
+            {:else if selected}
+                <span class="tm-radio-none">no team radio for {selected} in this race</span>
+            {:else if radioClips.length}
+                <div class="tm-radio-track"></div>
+            {:else}
+                <span class="tm-radio-none">none available for this race — try Barcelona or Hungary</span>
+            {/if}
+        </div>
+    {/if}
+
+    <!-- Keep nowPlaying (and its transcript caption) after the clip ends so it stays
+         readable; it's replaced by the next clip or cleared with the stop button. -->
+    <audio bind:this={audioEl} preload="none"></audio>
+
     <div class="tm-hint">
-        Scroll to zoom · drag to pan · click a car to follow · hover for details · click the timeline
-        markers to jump to safety cars, red flags &amp; penalties
+        Scroll to zoom · drag to pan · hover for details · click a car to follow it (and filter its
+        team radio) · click an event marker to jump to safety cars / penalties · click a 📻 marker to
+        play that team radio and roll the race on from there
     </div>
 </div>
 
@@ -574,6 +642,21 @@
         padding: 2px 8px;
         border-radius: 6px;
     }
+    .tm-radio-caption {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 34px;
+        max-width: 72%;
+        text-align: center;
+        color: #eafffb;
+        font-size: 12.5px;
+        line-height: 1.4;
+        background: rgba(8, 12, 18, 0.82);
+        border: 1px solid rgba(45, 212, 191, 0.35);
+        padding: 5px 12px;
+        border-radius: 8px;
+    }
     .tm-msgs {
         position: absolute;
         top: 10px;
@@ -652,6 +735,59 @@
     .tm-mark.red { background: #e8002d; }
     .tm-mark.chequered { background: #e8eaed; }
     .tm-mark.penalty { background: #ff7ab3; }
+    .tm-radio {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .tm-radio-label {
+        font-size: 11px;
+        opacity: 0.75;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .tm-radio-stop {
+        cursor: pointer;
+        border: 1px solid rgba(45, 212, 191, 0.5);
+        background: rgba(45, 212, 191, 0.12);
+        color: inherit;
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-size: 10.5px;
+    }
+    .tm-radio-track {
+        position: relative;
+        flex: 1;
+        height: 12px;
+        border-radius: 6px;
+        background: rgba(45, 212, 191, 0.12);
+    }
+    .tm-radio-none {
+        font-size: 11px;
+        opacity: 0.45;
+        font-style: italic;
+    }
+    .tm-radio-mark {
+        position: absolute;
+        top: 1px;
+        width: 10px;
+        height: 10px;
+        margin-left: -5px;
+        padding: 0;
+        border: 1px solid rgba(8, 12, 18, 0.6);
+        border-radius: 50%;
+        background: #2dd4bf;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .tm-radio-mark:hover { transform: scale(1.4); }
+    .tm-radio-mark.on {
+        background: #eafffb;
+        box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.7);
+    }
     .tm-controls {
         display: flex;
         align-items: center;

@@ -166,3 +166,14 @@ models:
         data_tests: [not_null]
       - name: category
         data_tests: [not_null]
+
+  - name: stg_team_radio
+    description: >
+      One typed row per team-radio clip (OpenF1) on the shared session clock — audio
+      only (recording_url), partial coverage. Feeds the replay radio player.
+    columns:
+      - name: radio_key
+        description: Surrogate key = hash(season, round, session, recording_url).
+        data_tests: [unique, not_null]
+      - name: recording_url
+        data_tests: [not_null]

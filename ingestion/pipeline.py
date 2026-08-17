@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 from typing import Any
 
 import pandas as pd
@@ -228,6 +229,131 @@ def ingest_race_control(
     messages = pd.concat(frames, ignore_index=True)
     write_parquet(messages, "race_control", season, settings)
     return load_dataframe(messages, "race_control", season, settings)
+
+
+def _code_from_radio_url(url: object) -> str | None:
+    """Fallback driver code from an F1 team-radio filename (e.g. .../NOR_1_...mp3)."""
+    match = re.search(r"/TeamRadio/([A-Z]{3})_", str(url))
+    return match.group(1) if match else None
+
+
+_HF_RADIO_PARQUET = "hf://datasets/MikCil/f1-team-radio/**/*.parquet"
+
+
+def _load_hf_transcripts(season: int) -> dict[tuple[str, pd.Timestamp], str]:
+    """Return ``{(racing_number, utc_timestamp): transcript}`` for a season.
+
+    Transcripts come from the public ``MikCil/f1-team-radio`` dataset (Whisper/Cohere
+    ASR over the F1 radio archive), which covers 2018-2025. Its ``message_timestamp``
+    matches the OpenF1 clip ``date`` exactly, so we join on (car number, timestamp).
+    One clip can hold a driver+engineer exchange split across rows — those are
+    concatenated. Empty for seasons the dataset doesn't cover (e.g. 2026).
+    """
+    import duckdb
+
+    con = duckdb.connect()
+    try:
+        con.execute("INSTALL httpfs; LOAD httpfs;")
+        df = con.execute(
+            f"""
+            select racing_number, message_timestamp,
+                   string_agg(transcription, ' ' order by id) as transcript
+            from read_parquet('{_HF_RADIO_PARQUET}')
+            where substr(session_date, 1, 4) = '{int(season)}'
+            group by racing_number, message_timestamp
+            """
+        ).df()
+    except Exception as exc:  # dataset offline / season absent -> no transcripts
+        log.warning("team_radio.hf_unavailable", season=season, error=str(exc))
+        return {}
+    finally:
+        con.close()
+    if df.empty:
+        return {}
+    ts = pd.to_datetime(df["message_timestamp"], utc=True, format="ISO8601")
+    return {
+        (str(rn), t): str(tx)
+        for rn, t, tx in zip(
+            df["racing_number"].astype("string"), ts, df["transcript"], strict=True
+        )
+    }
+
+
+def ingest_team_radio(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest OpenF1 team-radio clips (timestamped MP3s per driver) for a season.
+
+    OpenF1 is matched to our rounds by race date. Clip timestamps are absolute UTC;
+    we place them on the shared session clock via FastF1's ``t0_date`` (per race,
+    from the telemetry cache), so a clip lands at the same ``t_s`` as the replay.
+    Rounds with no clips (OpenF1 coverage is partial) simply contribute nothing.
+    """
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+    from ingestion.clients.openf1 import OpenF1Client
+
+    of1 = OpenF1Client()
+    key_by_date: dict[str, int] = {}
+    for sess in of1.race_sessions(season):
+        day = str(sess.get("date_start") or "")[:10]
+        if day and sess.get("session_key") is not None:
+            key_by_date[day] = int(sess["session_key"])
+
+    races = read_query(f"select round, date from raw.races where season = {int(season)}", settings)
+    date_by_round = {
+        int(r): str(d)[:10] for r, d in zip(races["round"], races["date"], strict=True)
+    }
+
+    # Transcripts (public ASR dataset) — joined by (car number, clip timestamp).
+    # Empty for seasons the dataset doesn't cover (e.g. 2026), leaving audio-only.
+    hf_map = _load_hf_transcripts(season)
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        session_key = key_by_date.get(date_by_round.get(rnd, ""))
+        if session_key is None:
+            continue
+        clips = of1.team_radio(session_key)
+        if not clips:
+            continue
+        t0, num2code = client.session_reference(season, rnd, session)
+        if t0 is None:
+            continue
+        t0_ts = pd.Timestamp(t0)
+        if t0_ts.tzinfo is not None:
+            t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
+
+        clip_df = pd.DataFrame(clips)
+        numbers = clip_df["driver_number"].astype("string")
+        # OpenF1 dates vary (some carry milliseconds, some don't) — ISO8601 parses both.
+        clip_utc = pd.to_datetime(clip_df["date"], utc=True, format="ISO8601")
+        codes = numbers.map(num2code).astype("string")
+        codes = codes.fillna(clip_df["recording_url"].map(_code_from_radio_url).astype("string"))
+        transcripts = [hf_map.get((str(n), ts)) for n, ts in zip(numbers, clip_utc, strict=True)]
+        frames.append(
+            pd.DataFrame(
+                {
+                    "season": season,
+                    "round": rnd,
+                    "session": session,
+                    "session_time_sec": (clip_utc.dt.tz_localize(None) - t0_ts).dt.total_seconds(),
+                    "driver_number": numbers,
+                    "driver_code": codes,
+                    "recording_url": clip_df["recording_url"].astype("string"),
+                    "transcript": pd.array(transcripts, dtype="string"),
+                }
+            )
+        )
+
+    if not frames:
+        log.warning("pipeline.team_radio_empty", season=season, rounds=rounds)
+        return 0
+
+    radio = pd.concat(frames, ignore_index=True)
+    write_parquet(radio, "team_radio", season, settings)
+    return load_dataframe(radio, "team_radio", season, settings)
 
 
 def _extract_per_round(

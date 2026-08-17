@@ -142,9 +142,27 @@ Built end-to-end on real **2026** data.
   the feed's exact-duplicate messages, cross-dialect — no `QUALIFY`). Source
   `race_control.sql` aligns to `t_s`. The component shows a live **Race control**
   panel + a clickable **event-marker timeline** (safety cars / red flags / penalties
-  / chequered) to jump to key moments. NB **team-radio audio is NOT obtainable** —
-  the F1 archive denies the `TeamRadio` stream and there are no transcripts, so the
-  official race-control feed is the substitute.
+  / chequered) to jump to key moments.
+- **Team radio** (`feat/replay-team-radio`): audio clips via **OpenF1**. The F1
+  archive 403s the `TeamRadio` stream for 2026 (works for 2024), so use OpenF1:
+  `clients/openf1.py` + `ingest_team_radio` maps `(season, round)`→OpenF1
+  `session_key` by race date and aligns clip UTC times to the session clock via
+  FastF1 `session_reference`/`t0_date` (driver code from num→code with filename
+  fallback `_code_from_radio_url`). CLI `team-radio` / `stg_team_radio` / source
+  `team_radio.sql` (in-race only) / Dagster `raw_team_radio`. Component: a 📻 marker
+  lane (per-driver when a car is followed) — click to jump + **play the MP3**
+  (`<audio>`), roll the replay on, and show a **transcript subtitle**.
+  Coverage: OpenF1's 2026 is a sparse *broadcast* subset (~20–40/race, some drivers
+  none); 2024 is far richer (~137/race, all drivers).
+- **Transcripts** (`feat/replay-radio-transcripts`): from the public HF dataset
+  `MikCil/f1-team-radio` (ASR over the radio archive, **2018–2025, no 2026**).
+  `_load_hf_transcripts(season)` reads it via duckdb `hf://` and joins by
+  `(racing_number, timestamp)` — exact match, one clip's driver+engineer rows
+  concatenated — filling a `transcript` column on `raw.team_radio` (null for 2026).
+- **Multi-season replay**: `build_all_replays()` / CLI `replay --all` builds a race
+  for every `(season, round)` in `stg_positions`, so the picker spans seasons; the
+  Evidence sources **year-prefix `race_name`** ("2024 Bahrain Grand Prix"). The 2024
+  Bahrain GP is ingested as the transcript showcase (full radio + 104/107 transcripts).
 - **Validated on 2026 Australian GP**: final top-12 match the official classification;
   gaps realistic (RUS win, ANT +3 s, …). Dagster: `raw_positions` + `race_replay`
   assets, both excluded-heavy `raw.positions` from the weekly job.
@@ -153,15 +171,15 @@ Built end-to-end on real **2026** data.
 
 - `ingestion/` — EL package.
   - `config.py` (pydantic-settings, `F1_*` env, `.env`; incl. `fastf1_telemetry_resample_m`), `logging.py` (structlog).
-  - `clients/jolpica.py` (rate-limited, retrying, paginating), `clients/fastf1_client.py` (lazy import; `load_session_laps` keeps speed traps + `lap_start_sec`, plus `load_session_weather`, `load_session_telemetry` + pure `resample_lap_telemetry`, `load_session_position` + pure `thin_positions`/`clean_positions`, and `load_session_race_control` for the message feed).
+  - `clients/jolpica.py` (rate-limited, retrying, paginating), `clients/fastf1_client.py` (lazy import; `load_session_laps` keeps speed traps + `lap_start_sec`, plus `load_session_weather`, `load_session_telemetry` + pure `resample_lap_telemetry`, `load_session_position` + pure `thin_positions`/`clean_positions`, `load_session_race_control`, and `session_reference` for `t0_date`), `clients/openf1.py` (tiny OpenF1 reader — team radio).
   - `resources.py` (season-scoped registry + flatteners races/results/qualifying; **per-round** flatteners `_flatten_pitstops`/`_flatten_ergast_laps`).
   - `loaders/lake.py` (Parquet), `loaders/warehouse.py` (idempotent-per-season load; `read_query`/`replace_table`).
-  - `pipeline.py` (`ingest_resource`, `backfill`, `ingest_laps`, `ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`, `ingest_positions`, `ingest_race_control`, `season_rounds`), `cli.py` (`backfill`/`incremental`/`laps`/`pitstops`/`ergast-laps`/`weather`/`telemetry`/`positions`/`race-control`).
+  - `pipeline.py` (`ingest_resource`, `backfill`, `ingest_laps`, `ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`, `ingest_positions`, `ingest_race_control`, `ingest_team_radio`, `season_rounds`), `cli.py` (`backfill`/`incremental`/`laps`/`pitstops`/`ergast-laps`/`weather`/`telemetry`/`positions`/`race-control`/`team-radio`).
 - `analytics/` — `ratings.py` (pure solver + union-find), `replay.py` (pure `resample_race`), `pipeline.py` (`build_driver_ratings`, `build_race_replay`/`build_race_replays`), `cli.py` (`ratings`/`replay`).
 - `warehouse/dbt/` — `profiles.yml` (dev=duckdb, prod=postgres), `macros/` (`generate_schema_name`, `parse_laptime`),
   `models/staging|intermediate|marts/*.sql` + `_*.yml` tests, `snapshots/drivers_snapshot.sql`.
-- `orchestration/` — `assets.py` (raw.* assets keyed to dbt sources — `raw_pitstops`/`raw_ergast_laps`/`raw_weather`/`raw_telemetry`/`raw_positions`/`raw_race_control`, all `deps=[["raw","races"]]`; FastF1 assets ingest the current season *so far* via `season_rounds`; `@dbt_assets`, `driver_ratings`, `race_replay`),
-  `definitions.py` (job + weekly schedule + `DbtCliResource`; the weekly job **excludes** `raw.telemetry`, `raw.positions` **and `raw.race_control`** — too heavy to re-pull weekly, materialise on demand).
+- `orchestration/` — `assets.py` (raw.* assets keyed to dbt sources — `raw_pitstops`/`raw_ergast_laps`/`raw_weather`/`raw_telemetry`/`raw_positions`/`raw_race_control`/`raw_team_radio`, all `deps=[["raw","races"]]`; FastF1 assets ingest the current season *so far* via `season_rounds`; `@dbt_assets`, `driver_ratings`, `race_replay`),
+  `definitions.py` (job + weekly schedule + `DbtCliResource`; the weekly job **excludes** `raw.telemetry`, `raw.positions`, `raw.race_control` **and `raw.team_radio`** — too heavy / cache-dependent to re-pull weekly, materialise on demand).
 - `dashboard/` — Evidence project: `sources/f1/*.sql` (over the marts), pages `index.md`, `race-pace.md`, `pit-strategy.md`, `weather-and-speed.md`, `telemetry.md`, `race-replay.md`; `components/TrackMap.svelte` (auto-imported custom Svelte canvas component); `seeds/constructor_colors.csv`;
   `evidence.config.yaml` (`deployment.basePath: /f1-data-analytics`).
 - `.github/workflows/` — `ci.yml` (quality + dbt + orchestration jobs), `scheduled-ingest.yml`, `deploy-dashboard.yml`.
@@ -185,6 +203,7 @@ python -m ingestion.cli weather --season 2024               # FastF1 weather
 python -m ingestion.cli telemetry --season 2024             # FastF1 telemetry (heavy: ~5.5 min/race)
 python -m ingestion.cli positions --season 2026             # FastF1 positions for the replay (heavy)
 python -m ingestion.cli race-control --season 2026          # FastF1 race-control messages (uses telemetry cache)
+python -m ingestion.cli team-radio --season 2026            # OpenF1 team-radio clips (partial coverage)
 dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev   # or --target prod
 python -m analytics.cli ratings --top 20                    # solve + print leaderboard
 python -m analytics.cli replay --season 2026                # build marts.race_replay (all completed rounds)

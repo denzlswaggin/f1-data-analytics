@@ -7,7 +7,8 @@ on the shared race clock**, reconstructed from FastF1 positional telemetry. Pres
 play, scrub the timeline, or speed it up — the running order and intervals on the
 left update live as the race unfolds, and the **race-control feed** on the right
 plays flags, safety cars and penalties in sync. Click a car to follow it, scroll
-to zoom, and click the timeline markers to jump to key moments. _2026 season._
+to zoom, click the timeline markers to jump to key moments, and click a 📻 marker
+to play **team radio** (where available). _2026 season._
 
 ```sql replay_races
 select distinct race_name
@@ -15,7 +16,7 @@ from f1.race_replay_meta
 order by race_name
 ```
 
-<Dropdown data={replay_races} name=race value=race_name defaultValue="Australian Grand Prix" />
+<Dropdown data={replay_races} name=race value=race_name defaultValue="2024 Bahrain Grand Prix" />
 
 ```sql replay
 select
@@ -44,7 +45,14 @@ where race_name = '${inputs.race.value}'
 order by t_s
 ```
 
-<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} title={inputs.race.value} />
+```sql radio
+select t_s, driver_code, recording_url, transcript
+from f1.team_radio
+where race_name = '${inputs.race.value}'
+order by t_s
+```
+
+<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} title={inputs.race.value} />
 
 ## How it's built
 

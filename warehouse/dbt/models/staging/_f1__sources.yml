@@ -83,3 +83,12 @@ sources:
             data_tests: [not_null]
           - name: session_time_sec
             data_tests: [not_null]
+      - name: team_radio
+        description: >
+          OpenF1 team-radio clips (timestamped MP3 per driver) on the shared session
+          clock. Audio only; partial coverage. Feeds the replay radio player.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: recording_url
+            data_tests: [not_null]

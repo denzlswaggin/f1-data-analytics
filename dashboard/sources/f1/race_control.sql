@@ -14,7 +14,7 @@ with win as (
 select
     m.season,
     m.round,
-    rc.race_name,
+    cast(m.season as varchar) || ' ' || rc.race_name as race_name,
     round(m.session_time_sec - w.t0, 1) as t_s,
     m.category,
     m.flag,
