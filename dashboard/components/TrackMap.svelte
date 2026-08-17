@@ -10,6 +10,7 @@
     export let data = [];
     export let meta = [];
     export let messages = [];
+    export let radio = [];
     export let title = '';
 
     const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
@@ -82,6 +83,27 @@
     function onTimelineKey(e) {
         if (e.key === 'ArrowLeft') jumpTo(t - 5);
         else if (e.key === 'ArrowRight') jumpTo(t + 5);
+    }
+
+    // --- team radio (OpenF1 audio clips; partial coverage) ---
+    let radioClips = [];
+    $: radioClips = (radio || [])
+        .map((r) => ({ t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url }))
+        .sort((a, b) => a.t - b.t);
+    let audioEl;
+    let nowPlaying = null;
+    function playRadio(clip) {
+        jumpTo(clip.t);
+        nowPlaying = clip;
+        if (audioEl) {
+            audioEl.src = clip.url;
+            audioEl.currentTime = 0;
+            audioEl.play().catch(() => {});
+        }
+    }
+    function stopRadio() {
+        if (audioEl) audioEl.pause();
+        nowPlaying = null;
     }
 
     function build(rows, metaRows) {
@@ -448,9 +470,34 @@
         </div>
     {/if}
 
+    {#if radioClips.length && tMax > 0}
+        <div class="tm-radio">
+            <span class="tm-radio-label">
+                📻 Team radio
+                {#if nowPlaying}
+                    <button class="tm-radio-stop" on:click={stopRadio}>⏹ {nowPlaying.code}</button>
+                {/if}
+            </span>
+            <div class="tm-radio-track">
+                {#each radioClips as c (c.url)}
+                    <button
+                        class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
+                        style="left:{(c.t / tMax) * 100}%"
+                        title="{fmtClock(c.t)} — {c.code} team radio (click to play)"
+                        aria-label="{c.code} team radio at {fmtClock(c.t)}"
+                        on:click={() => playRadio(c)}
+                    ></button>
+                {/each}
+            </div>
+        </div>
+    {/if}
+
+    <audio bind:this={audioEl} on:ended={() => (nowPlaying = null)} preload="none"></audio>
+
     <div class="tm-hint">
-        Scroll to zoom · drag to pan · click a car to follow · hover for details · click the timeline
-        markers to jump to safety cars, red flags &amp; penalties
+        Scroll to zoom · drag to pan · click a car to follow · hover for details · click the event
+        markers to jump to safety cars / penalties{#if radioClips.length} · click a 📻 marker to play
+        team radio{/if}
     </div>
 </div>
 
@@ -652,6 +699,54 @@
     .tm-mark.red { background: #e8002d; }
     .tm-mark.chequered { background: #e8eaed; }
     .tm-mark.penalty { background: #ff7ab3; }
+    .tm-radio {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .tm-radio-label {
+        font-size: 11px;
+        opacity: 0.75;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .tm-radio-stop {
+        cursor: pointer;
+        border: 1px solid rgba(45, 212, 191, 0.5);
+        background: rgba(45, 212, 191, 0.12);
+        color: inherit;
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-size: 10.5px;
+    }
+    .tm-radio-track {
+        position: relative;
+        flex: 1;
+        height: 12px;
+        border-radius: 6px;
+        background: rgba(45, 212, 191, 0.12);
+    }
+    .tm-radio-mark {
+        position: absolute;
+        top: 1px;
+        width: 10px;
+        height: 10px;
+        margin-left: -5px;
+        padding: 0;
+        border: 1px solid rgba(8, 12, 18, 0.6);
+        border-radius: 50%;
+        background: #2dd4bf;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .tm-radio-mark:hover { transform: scale(1.4); }
+    .tm-radio-mark.on {
+        background: #eafffb;
+        box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.7);
+    }
     .tm-controls {
         display: flex;
         align-items: center;

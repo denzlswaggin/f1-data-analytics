@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import re
 from typing import Any
 
 import pandas as pd
@@ -228,6 +229,82 @@ def ingest_race_control(
     messages = pd.concat(frames, ignore_index=True)
     write_parquet(messages, "race_control", season, settings)
     return load_dataframe(messages, "race_control", season, settings)
+
+
+def _code_from_radio_url(url: object) -> str | None:
+    """Fallback driver code from an F1 team-radio filename (e.g. .../NOR_1_...mp3)."""
+    match = re.search(r"/TeamRadio/([A-Z]{3})_", str(url))
+    return match.group(1) if match else None
+
+
+def ingest_team_radio(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest OpenF1 team-radio clips (timestamped MP3s per driver) for a season.
+
+    OpenF1 is matched to our rounds by race date. Clip timestamps are absolute UTC;
+    we place them on the shared session clock via FastF1's ``t0_date`` (per race,
+    from the telemetry cache), so a clip lands at the same ``t_s`` as the replay.
+    Rounds with no clips (OpenF1 coverage is partial) simply contribute nothing.
+    """
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+    from ingestion.clients.openf1 import OpenF1Client
+
+    of1 = OpenF1Client()
+    key_by_date: dict[str, int] = {}
+    for sess in of1.race_sessions(season):
+        day = str(sess.get("date_start") or "")[:10]
+        if day and sess.get("session_key") is not None:
+            key_by_date[day] = int(sess["session_key"])
+
+    races = read_query(f"select round, date from raw.races where season = {int(season)}", settings)
+    date_by_round = {
+        int(r): str(d)[:10] for r, d in zip(races["round"], races["date"], strict=True)
+    }
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        session_key = key_by_date.get(date_by_round.get(rnd, ""))
+        if session_key is None:
+            continue
+        clips = of1.team_radio(session_key)
+        if not clips:
+            continue
+        t0, num2code = client.session_reference(season, rnd, session)
+        if t0 is None:
+            continue
+        t0_ts = pd.Timestamp(t0)
+        if t0_ts.tzinfo is not None:
+            t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
+
+        clip_df = pd.DataFrame(clips)
+        numbers = clip_df["driver_number"].astype("string")
+        clip_times = pd.to_datetime(clip_df["date"], utc=True).dt.tz_localize(None)
+        codes = numbers.map(num2code).astype("string")
+        codes = codes.fillna(clip_df["recording_url"].map(_code_from_radio_url).astype("string"))
+        frames.append(
+            pd.DataFrame(
+                {
+                    "season": season,
+                    "round": rnd,
+                    "session": session,
+                    "session_time_sec": (clip_times - t0_ts).dt.total_seconds(),
+                    "driver_number": numbers,
+                    "driver_code": codes,
+                    "recording_url": clip_df["recording_url"].astype("string"),
+                }
+            )
+        )
+
+    if not frames:
+        log.warning("pipeline.team_radio_empty", season=season, rounds=rounds)
+        return 0
+
+    radio = pd.concat(frames, ignore_index=True)
+    write_parquet(radio, "team_radio", season, settings)
+    return load_dataframe(radio, "team_radio", season, settings)
 
 
 def _extract_per_round(

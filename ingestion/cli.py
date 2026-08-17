@@ -22,6 +22,7 @@ from ingestion.pipeline import (
     ingest_pitstops,
     ingest_positions,
     ingest_race_control,
+    ingest_team_radio,
     ingest_telemetry,
     ingest_weather,
     season_rounds,
@@ -206,6 +207,23 @@ def race_control(
     log.info("cli.race_control.start", season=season, rounds=rounds, session=session)
     rows = ingest_race_control(season, rounds, session)
     typer.echo(f"Loaded {rows} race-control messages for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command("team-radio")
+def team_radio(
+    season: Annotated[int, typer.Option(help="Season to load OpenF1 team-radio clips for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest OpenF1 team-radio clips (audio; aligned via the telemetry cache)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.team_radio.start", season=season, rounds=rounds, session=session)
+    rows = ingest_team_radio(season, rounds, session)
+    typer.echo(f"Loaded {rows} team-radio clips for {season} rounds {rounds[0]}-{rounds[-1]}.")
 
 
 if __name__ == "__main__":
