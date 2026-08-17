@@ -15,10 +15,11 @@ with win as (
 select
     r.season,
     r.round,
-    rc.race_name,
+    cast(r.season as varchar) || ' ' || rc.race_name as race_name,
     round(r.session_time_sec - w.t0, 1) as t_s,
     r.driver_code,
-    r.recording_url
+    r.recording_url,
+    r.transcript
 from staging.stg_team_radio r
 join win w
     on w.season = r.season and w.round = r.round

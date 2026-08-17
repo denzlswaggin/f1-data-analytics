@@ -150,9 +150,19 @@ Built end-to-end on real **2026** data.
   FastF1 `session_reference`/`t0_date` (driver code from num→code with filename
   fallback `_code_from_radio_url`). CLI `team-radio` / `stg_team_radio` / source
   `team_radio.sql` (in-race only) / Dagster `raw_team_radio`. Component: a 📻 marker
-  lane — click to jump + **play the MP3** (`<audio>`) with a now-playing chip.
-  **Audio only, no transcripts, partial coverage** — OpenF1 has clips for ~2026
-  rounds 5–11 (Montreal/Austria play; Melbourne R1 has none).
+  lane (per-driver when a car is followed) — click to jump + **play the MP3**
+  (`<audio>`), roll the replay on, and show a **transcript subtitle**.
+  Coverage: OpenF1's 2026 is a sparse *broadcast* subset (~20–40/race, some drivers
+  none); 2024 is far richer (~137/race, all drivers).
+- **Transcripts** (`feat/replay-radio-transcripts`): from the public HF dataset
+  `MikCil/f1-team-radio` (ASR over the radio archive, **2018–2025, no 2026**).
+  `_load_hf_transcripts(season)` reads it via duckdb `hf://` and joins by
+  `(racing_number, timestamp)` — exact match, one clip's driver+engineer rows
+  concatenated — filling a `transcript` column on `raw.team_radio` (null for 2026).
+- **Multi-season replay**: `build_all_replays()` / CLI `replay --all` builds a race
+  for every `(season, round)` in `stg_positions`, so the picker spans seasons; the
+  Evidence sources **year-prefix `race_name`** ("2024 Bahrain Grand Prix"). The 2024
+  Bahrain GP is ingested as the transcript showcase (full radio + 104/107 transcripts).
 - **Validated on 2026 Australian GP**: final top-12 match the official classification;
   gaps realistic (RUS win, ANT +3 s, …). Dagster: `raw_positions` + `race_replay`
   assets, both excluded-heavy `raw.positions` from the weekly job.

@@ -16,7 +16,7 @@ from f1.race_replay_meta
 order by race_name
 ```
 
-<Dropdown data={replay_races} name=race value=race_name defaultValue="Barcelona Grand Prix" />
+<Dropdown data={replay_races} name=race value=race_name defaultValue="2024 Bahrain Grand Prix" />
 
 ```sql replay
 select
@@ -46,7 +46,7 @@ order by t_s
 ```
 
 ```sql radio
-select t_s, driver_code, recording_url
+select t_s, driver_code, recording_url, transcript
 from f1.team_radio
 where race_name = '${inputs.race.value}'
 order by t_s

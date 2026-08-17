@@ -181,3 +181,33 @@ def build_race_replays(
         rows=len(combined),
     )
     return combined
+
+
+def build_all_replays(
+    tick_s: float = 1.0, retire_buffer_s: float | None = None, settings: Settings | None = None
+) -> pd.DataFrame:
+    """Build the replay mart for EVERY race with position data (all seasons).
+
+    Reads the distinct ``(season, round)`` pairs from ``stg_positions`` and replaces
+    ``marts.race_replay`` with their union, so the picker can span seasons (e.g. a
+    2024 race alongside 2026). Returns the combined frame.
+    """
+    settings = settings or get_settings()
+    buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
+    linger = settings.replay_retire_max_linger_s
+    pairs = read_query(
+        "select distinct season, round from staging.stg_positions where session = 'R' "
+        "order by season, round",
+        settings,
+    )
+    specs = [(int(s), int(r)) for s, r in zip(pairs["season"], pairs["round"], strict=True)]
+    frames = [_build_one_replay(s, r, tick_s, buf, linger, settings) for s, r in specs]
+    non_empty = [f for f in frames if not f.empty]
+    combined = (
+        pd.concat(non_empty, ignore_index=True)
+        if non_empty
+        else _build_one_replay(0, 0, tick_s, buf, linger, settings)
+    )
+    replace_table(combined, schema="marts", table="race_replay", settings=settings)
+    log.info("replay.materialised_all", races=len(non_empty), rows=len(combined))
+    return combined

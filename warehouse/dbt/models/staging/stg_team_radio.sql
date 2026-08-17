@@ -16,7 +16,8 @@ renamed as (
         cast(session_time_sec as double precision)          as session_time_sec,
         driver_number,
         driver_code,
-        recording_url
+        recording_url,
+        transcript
     from source
 )
 

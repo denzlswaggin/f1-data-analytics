@@ -5,7 +5,7 @@
 select
     r.season,
     r.round,
-    rc.race_name,
+    cast(r.season as varchar) || ' ' || rc.race_name as race_name,
     r.driver_code,
     r.t_s,
     r.x,

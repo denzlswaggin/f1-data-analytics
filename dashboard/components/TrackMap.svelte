@@ -88,7 +88,10 @@
     // --- team radio (OpenF1 audio clips; partial coverage) ---
     let radioClips = [];
     $: radioClips = (radio || [])
-        .map((r) => ({ t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url }))
+        .map((r) => ({
+            t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url,
+            transcript: r.transcript || null,
+        }))
         .sort((a, b) => a.t - b.t);
     // Followed a driver? show only their clips — otherwise show the whole field's.
     $: displayedRadio = selected ? radioClips.filter((c) => c.code === selected) : radioClips;
@@ -433,6 +436,10 @@
             </div>
         {/if}
 
+        {#if nowPlaying && nowPlaying.transcript}
+            <div class="tm-radio-caption">📻 {nowPlaying.code}: “{nowPlaying.transcript}”</div>
+        {/if}
+
         <div class="tm-clock">{fmtClock(t)} / {fmtClock(tMax)}</div>
         {#if selected}<div class="tm-follow">Following {selected} · click to release</div>{/if}
     </div>
@@ -488,7 +495,7 @@
                         <button
                             class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
                             style="left:{(c.t / tMax) * 100}%; background:{codeColor[c.code] || '#2dd4bf'}"
-                            title="{fmtClock(c.t)} — {c.code} team radio (click to play from here)"
+                            title="{fmtClock(c.t)} — {c.code}: {c.transcript || 'team radio'} (click to play)"
                             aria-label="{c.code} team radio at {fmtClock(c.t)}"
                             on:click={() => playRadio(c)}
                         ></button>
@@ -504,7 +511,9 @@
         </div>
     {/if}
 
-    <audio bind:this={audioEl} on:ended={() => (nowPlaying = null)} preload="none"></audio>
+    <!-- Keep nowPlaying (and its transcript caption) after the clip ends so it stays
+         readable; it's replaced by the next clip or cleared with the stop button. -->
+    <audio bind:this={audioEl} preload="none"></audio>
 
     <div class="tm-hint">
         Scroll to zoom · drag to pan · hover for details · click a car to follow it (and filter its
@@ -632,6 +641,21 @@
         background: rgba(8, 12, 18, 0.6);
         padding: 2px 8px;
         border-radius: 6px;
+    }
+    .tm-radio-caption {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 34px;
+        max-width: 72%;
+        text-align: center;
+        color: #eafffb;
+        font-size: 12.5px;
+        line-height: 1.4;
+        background: rgba(8, 12, 18, 0.82);
+        border: 1px solid rgba(45, 212, 191, 0.35);
+        padding: 5px 12px;
+        border-radius: 8px;
     }
     .tm-msgs {
         position: absolute;
