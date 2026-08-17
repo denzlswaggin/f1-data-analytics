@@ -101,6 +101,45 @@ def thin_positions(
     return df.iloc[keep].reset_index(drop=True)
 
 
+def clean_positions(
+    df: pd.DataFrame, max_speed_mps: float, unit_per_m: float = 10.0
+) -> pd.DataFrame:
+    """Drop garbage position samples: (0,0) sentinels and teleports.
+
+    FastF1's positional feed uses ``(0, 0)`` as a "no signal / in garage" sentinel
+    (it still carries ``status='OnTrack'``, so status can't identify it), and
+    occasionally emits single wildly-displaced points. This drops both:
+
+    1. rows where ``x == 0 and y == 0``;
+    2. any sample whose implied speed from the previous *kept* sample exceeds
+       ``max_speed_mps`` (X/Y are in ``unit_per_m`` units per metre). Comparing to
+       the last kept point means a lone teleport is rejected without discarding the
+       good point after it; stationary/parked points (~0 distance) and legitimate
+       large-gap samples (small distance-over-time) are retained.
+
+    Assumes ``df`` is time-ordered per driver (as ``thin_positions`` leaves it).
+    Pure (no FastF1) so it can be unit-tested on a synthetic frame.
+    """
+    if df.empty:
+        return df.reset_index(drop=True)
+    df = df[~((df["x"] == 0) & (df["y"] == 0))].reset_index(drop=True)
+    if len(df) < 2:
+        return df
+    t = df["session_time_sec"].to_numpy(dtype="float64")
+    x = df["x"].to_numpy(dtype="float64")
+    y = df["y"].to_numpy(dtype="float64")
+    keep = np.ones(len(df), dtype=bool)
+    last = 0
+    for i in range(1, len(df)):
+        dt = t[i] - t[last]
+        dist_m = float(np.hypot(x[i] - x[last], y[i] - y[last])) / unit_per_m
+        if dt > 0 and dist_m / dt > max_speed_mps:
+            keep[i] = False  # teleport — reject, keep comparing to `last`
+        else:
+            last = i
+    return df.iloc[keep].reset_index(drop=True)
+
+
 class FastF1Client:
     """Loads and flattens FastF1 session lap data."""
 
@@ -262,6 +301,7 @@ class FastF1Client:
             return pd.DataFrame()
 
         rate = float(self.settings.fastf1_position_rate_hz)
+        max_speed = float(self.settings.fastf1_position_max_speed_mps)
         frames: list[pd.DataFrame] = []
         for number, pos in pos_data.items():
             if pos is None or pos.empty or "SessionTime" not in pos.columns:
@@ -282,7 +322,8 @@ class FastF1Client:
                     "status": pos["Status"].astype("string"),
                 }
             )
-            frames.append(thin_positions(frame, rate))
+            # Thin to the target rate, then drop (0,0) sentinels and teleports.
+            frames.append(clean_positions(thin_positions(frame, rate), max_speed))
 
         if not frames:
             log.warning("fastf1.no_positions", season=season, round=rnd, session=session)

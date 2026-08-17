@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     # native pos_data is ~4-5 Hz; a higher cap keeps it all, a lower one thins it
     # to bound raw size. The browser-facing replay mart is resampled coarser again.
     fastf1_position_rate_hz: float = Field(default=5.0, gt=0)
+    # Teleport cutoff for position cleaning: drop a sample if the implied speed from
+    # the previous kept sample exceeds this (m/s). Deliberately generous over the
+    # ~95 m/s physical max — position-derived speed is noisy (~180 m/s p99.9), while
+    # true teleports (garage jumps, GPS glitches) are >1000 m/s, so 300 separates them.
+    fastf1_position_max_speed_mps: float = Field(default=300.0, gt=0)
 
     # Logging
     log_level: str = "INFO"

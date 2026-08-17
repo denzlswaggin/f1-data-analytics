@@ -23,6 +23,14 @@ from ingestion.logging import get_logger
 
 log = get_logger(__name__)
 
+# A retired car's positional feed keeps reporting its parked spot to the end of the
+# session; cap its on-track window this long after its last lap so it vanishes
+# instead of leaving a dead dot (the buffer shows the slow-down / return to pits).
+_RETIRE_BUFFER_S = 30.0
+# Movement (in position units) below which a car is treated as stationary/parked —
+# used only to retire cars that never completed a lap.
+_MOVE_EPS_UNITS = 10.0
+
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     """Fractional laps completed by each grid time for one driver.
@@ -70,6 +78,9 @@ def resample_race(positions: pd.DataFrame, laps: pd.DataFrame, tick_s: float = 1
         if missing:
             raise ValueError(f"{name} is missing columns: {sorted(missing)}")
 
+    # Defensive clean: drop any (0,0) sentinels that slipped through (raw is cleaned
+    # at ingest, but keep the pure function robust on dirty input).
+    positions = positions[~((positions["x"] == 0) & (positions["y"] == 0))]
     laps = laps.dropna(subset=["lap_start_sec"])
     if positions.empty or laps.empty:
         return _empty_replay()
@@ -96,16 +107,25 @@ def resample_race(positions: pd.DataFrame, laps: pd.DataFrame, tick_s: float = 1
         pt = p["session_time_sec"].to_numpy(dtype="float64")
         if len(pt) < 2:
             continue
-        X[i] = np.interp(grid, pt, p["x"].to_numpy(dtype="float64"))
-        Y[i] = np.interp(grid, pt, p["y"].to_numpy(dtype="float64"))
-        # A car is "on track" only within its own sampled window (retirees vanish).
-        active[i] = (grid >= pt.min()) & (grid <= pt.max())
+        px = p["x"].to_numpy(dtype="float64")
+        py = p["y"].to_numpy(dtype="float64")
+        X[i] = np.interp(grid, pt, px)
+        Y[i] = np.interp(grid, pt, py)
         dl = laps[laps["driver_code"] == d].sort_values("lap_number")
         P[i] = _progress_curve(grid, dl)
         if not dl.empty:
             last = dl.iloc[-1]
             dur = last["lap_time_sec"]
             t_finish[i] = float(last["lap_start_sec"]) + (float(dur) if np.isfinite(dur) else 0.0)
+            cap = t_finish[i] + _RETIRE_BUFFER_S
+        else:
+            # No lap data (e.g. a lap-1 crash): fall back to the last time the car
+            # actually moved, so a parked car doesn't linger on the map either.
+            moved = np.where(np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS)[0]
+            cap = float(pt[moved[-1] + 1] if moved.size else pt[0]) + _RETIRE_BUFFER_S
+        # On track within its own sampled window, but not past retirement — a retired
+        # car's feed keeps reporting its parked spot to the end, so vanish it there.
+        active[i] = (grid >= pt.min()) & (grid <= min(float(pt.max()), cap))
 
     # Leader progress = leading edge across the field; monotonic by construction.
     leader_prog = np.nanmax(np.where(active, P, np.nan), axis=0)

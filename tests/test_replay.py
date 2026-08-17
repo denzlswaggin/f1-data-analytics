@@ -39,7 +39,9 @@ def _synthetic_race() -> tuple[pd.DataFrame, pd.DataFrame]:
                     "driver_code": "A",
                     "session_time_sec": [0.0, 5.0, 10.0, 15.0, 20.0],
                     "x": [0.0, 5.0, 10.0, 15.0, 20.0],
-                    "y": 0.0,
+                    # y != 0 so the start point isn't the (0,0) sentinel that cleaning
+                    # drops (real on-track coords are offset, never exactly origin).
+                    "y": 50.0,
                 }
             ),
             pd.DataFrame(
@@ -93,6 +95,40 @@ def test_resample_race_order_gaps_and_window() -> None:
     assert (b_early["running_order"] == 2).all()
     assert (b_early[b_early["t_s"] >= 12.0]["gap_to_leader_s"] > 0).all()
     assert (b_late["running_order"] == 1).all()
+
+
+def _retiree_race() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Leader L runs 3 laps (~120 s); retiree R does 1 lap (finishes 40 s) then parks
+    at a fixed point to the end — the frozen-ghost case cleaning must retire."""
+    t = np.arange(0.0, 121.0, 10.0)
+    lead = pd.DataFrame({"driver_code": "L", "session_time_sec": t, "x": 100.0 + t, "y": 300.0})
+    # R moves until 40 s, then its feed freezes at (240, 400) for the rest of the race.
+    xr = np.where(t <= 40.0, 200.0 + t, 240.0)
+    ret = pd.DataFrame({"driver_code": "R", "session_time_sec": t, "x": xr, "y": 400.0})
+    positions = pd.concat([lead, ret], ignore_index=True)
+    laps = pd.DataFrame(
+        [
+            {"driver_code": "L", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 40.0},
+            {"driver_code": "L", "lap_number": 2, "lap_start_sec": 40.0, "lap_time_sec": 40.0},
+            {"driver_code": "L", "lap_number": 3, "lap_start_sec": 80.0, "lap_time_sec": 40.0},
+            {"driver_code": "R", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 40.0},
+        ]
+    )
+    return positions, laps
+
+
+def test_resample_race_retires_parked_cars() -> None:
+    positions, laps = _retiree_race()
+    out = resample_race(positions, laps, tick_s=1.0)
+
+    lead = out[out["driver_code"] == "L"]
+    ret = out[out["driver_code"] == "R"]
+
+    # The leader is present to the end (~120 s); the retiree vanishes shortly after
+    # its last lap (finish 40 s + 30 s buffer = 70 s), not lingering to the finish.
+    assert lead["t_s"].max() >= 115.0
+    assert ret["t_s"].max() <= 71.0
+    assert out[(out["driver_code"] == "R") & (out["t_s"] >= 90.0)].empty
 
 
 def test_resample_race_validates_and_handles_empty() -> None:
