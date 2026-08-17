@@ -470,7 +470,7 @@
         </div>
     {/if}
 
-    {#if radioClips.length && tMax > 0}
+    {#if tMax > 0}
         <div class="tm-radio">
             <span class="tm-radio-label">
                 📻 Team radio
@@ -478,17 +478,21 @@
                     <button class="tm-radio-stop" on:click={stopRadio}>⏹ {nowPlaying.code}</button>
                 {/if}
             </span>
-            <div class="tm-radio-track">
-                {#each radioClips as c (c.url)}
-                    <button
-                        class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
-                        style="left:{(c.t / tMax) * 100}%"
-                        title="{fmtClock(c.t)} — {c.code} team radio (click to play)"
-                        aria-label="{c.code} team radio at {fmtClock(c.t)}"
-                        on:click={() => playRadio(c)}
-                    ></button>
-                {/each}
-            </div>
+            {#if radioClips.length}
+                <div class="tm-radio-track">
+                    {#each radioClips as c (c.url)}
+                        <button
+                            class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
+                            style="left:{(c.t / tMax) * 100}%"
+                            title="{fmtClock(c.t)} — {c.code} team radio (click to play)"
+                            aria-label="{c.code} team radio at {fmtClock(c.t)}"
+                            on:click={() => playRadio(c)}
+                        ></button>
+                    {/each}
+                </div>
+            {:else}
+                <span class="tm-radio-none">none available for this race — try Canada or Austria</span>
+            {/if}
         </div>
     {/if}
 
@@ -496,8 +500,8 @@
 
     <div class="tm-hint">
         Scroll to zoom · drag to pan · click a car to follow · hover for details · click the event
-        markers to jump to safety cars / penalties{#if radioClips.length} · click a 📻 marker to play
-        team radio{/if}
+        markers to jump to safety cars / penalties · click a 📻 marker to play team radio (where
+        available)
     </div>
 </div>
 
@@ -728,6 +732,11 @@
         height: 12px;
         border-radius: 6px;
         background: rgba(45, 212, 191, 0.12);
+    }
+    .tm-radio-none {
+        font-size: 11px;
+        opacity: 0.45;
+        font-style: italic;
     }
     .tm-radio-mark {
         position: absolute;

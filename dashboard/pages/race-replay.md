@@ -16,7 +16,7 @@ from f1.race_replay_meta
 order by race_name
 ```
 
-<Dropdown data={replay_races} name=race value=race_name defaultValue="Australian Grand Prix" />
+<Dropdown data={replay_races} name=race value=race_name defaultValue="Canadian Grand Prix" />
 
 ```sql replay
 select
