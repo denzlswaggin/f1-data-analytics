@@ -50,8 +50,16 @@ FastF1 ──────┘                                                    
 ```
 
 Two things write into the `marts` schema: **dbt** (the `mart_*` models) and
-**Python** (`marts.driver_ratings`). Keep that distinction in your head — it's the
-one part of the architecture that isn't "just dbt".
+**Python** (`marts.driver_ratings` and `marts.race_replay`). Keep that distinction
+in your head — it's the one part of the architecture that isn't "just dbt".
+
+> Newer feature — the **animated race replay** (`analytics/replay.py` →
+> `marts.race_replay` → `dashboard/pages/race-replay.md` +
+> `dashboard/components/TrackMap.svelte`). A second Python-built mart: it resamples
+> FastF1's time-stamped positional feed (`raw.positions`, unlike the
+> distance-gridded `raw.telemetry`) onto one shared clock so every car can be drawn
+> at the same instant, then a custom Svelte canvas component animates them. Built
+> on 2026 data. See the `f1-platform` skill for the full write-up.
 
 ---
 

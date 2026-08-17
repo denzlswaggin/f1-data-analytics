@@ -20,6 +20,7 @@ from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
     ingest_pitstops,
+    ingest_positions,
     ingest_telemetry,
     ingest_weather,
     season_rounds,
@@ -170,6 +171,23 @@ def telemetry(
     log.info("cli.telemetry.start", season=season, rounds=rounds, session=session)
     rows = ingest_telemetry(season, rounds, session)
     typer.echo(f"Loaded {rows} telemetry rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
+
+
+@app.command()
+def positions(
+    season: Annotated[int, typer.Option(help="Season to load FastF1 positions for.")],
+    from_round: Annotated[int, typer.Option("--from-round", help="First round.")] = 1,
+    to_round: Annotated[
+        int | None, typer.Option("--to-round", help="Last round; default = last completed.")
+    ] = None,
+    session: Annotated[str, typer.Option(help="FastF1 session: R, Q, S, ...")] = "R",
+) -> None:
+    """Ingest FastF1 time-stamped car positions for the replay map (heavy; `telemetry` extra)."""
+    configure_logging()
+    rounds = _resolve_rounds(season, from_round, to_round)
+    log.info("cli.positions.start", season=season, rounds=rounds, session=session)
+    rows = ingest_positions(season, rounds, session)
+    typer.echo(f"Loaded {rows} position rows for {season} rounds {rounds[0]}-{rounds[-1]}.")
 
 
 if __name__ == "__main__":

@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     # Distance grid (metres) for resampling per-lap telemetry — smaller = more
     # rows and finer traces. 25 m ≈ ~200 points per lap.
     fastf1_telemetry_resample_m: float = Field(default=25.0, gt=0)
+    # Max sample rate (Hz) kept for positional data (raw.positions). FastF1's
+    # native pos_data is ~4-5 Hz; a higher cap keeps it all, a lower one thins it
+    # to bound raw size. The browser-facing replay mart is resampled coarser again.
+    fastf1_position_rate_hz: float = Field(default=5.0, gt=0)
 
     # Logging
     log_level: str = "INFO"

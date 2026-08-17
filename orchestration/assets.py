@@ -9,7 +9,7 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
-from analytics.pipeline import build_driver_ratings
+from analytics.pipeline import build_driver_ratings, build_race_replays
 from dagster import AssetExecutionContext, AssetKey, MaterializeResult, asset
 from dagster_dbt import (
     DagsterDbtTranslator,
@@ -21,6 +21,7 @@ from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
     ingest_pitstops,
+    ingest_positions,
     ingest_resource,
     ingest_telemetry,
     ingest_weather,
@@ -118,6 +119,20 @@ def raw_telemetry() -> MaterializeResult:
     return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
 
 
+@asset(
+    key=["raw", "positions"],
+    deps=[AssetKey(["raw", "races"])],
+    group_name="ingest",
+    compute_kind="fastf1",
+)
+def raw_positions() -> MaterializeResult:
+    # Heavy: time-stamped car positions for the race-replay map. Like telemetry it's
+    # kept out of the weekly refresh job (see definitions.py) — materialise on demand.
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    rows = ingest_positions(CURRENT_SEASON, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+
+
 # --- dbt models -------------------------------------------------------------
 class F1DbtTranslator(DagsterDbtTranslator):
     """Map dbt sources to the ingestion assets' ``["raw", <table>]`` keys."""
@@ -145,3 +160,16 @@ def driver_ratings() -> MaterializeResult:
     return MaterializeResult(
         metadata={"drivers": len(df), "fastest": f"{top['driver_name']} ({top['rating']:.3f})"}
     )
+
+
+@asset(
+    deps=[AssetKey(["stg_positions"]), AssetKey(["stg_laps"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def race_replay() -> MaterializeResult:
+    # Resample every completed round into the animated-replay mart.
+    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
+    df = build_race_replays(CURRENT_SEASON, rounds)
+    races = int(df["round"].nunique()) if not df.empty else 0
+    return MaterializeResult(metadata={"rows": len(df), "races": races, "season": CURRENT_SEASON})

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from ingestion.clients.fastf1_client import resample_lap_telemetry
+from ingestion.clients.fastf1_client import resample_lap_telemetry, thin_positions
 
 
 def _synthetic_lap() -> pd.DataFrame:
@@ -49,3 +49,21 @@ def test_resample_grid_spacing_and_columns() -> None:
 def test_resample_empty_without_distance() -> None:
     assert resample_lap_telemetry(pd.DataFrame({"Speed": [1, 2]}), 25.0).empty
     assert resample_lap_telemetry(pd.DataFrame(), 25.0).empty
+
+
+def test_thin_positions_caps_rate_and_sorts() -> None:
+    # 10 Hz input (0.1 s spacing), thinned to 5 Hz -> keep one per 0.2 s bucket.
+    t = np.round(np.arange(0.0, 1.0, 0.1), 1)
+    df = pd.DataFrame({"session_time_sec": t[::-1], "x": t[::-1], "y": np.zeros_like(t)})
+    out = thin_positions(df, rate_hz=5.0)
+    # Output is time-sorted ascending.
+    assert list(out["session_time_sec"]) == sorted(out["session_time_sec"])
+    # First sample of each 0.2 s bucket: 0.0, 0.2, 0.4, 0.6, 0.8.
+    np.testing.assert_allclose(out["session_time_sec"].to_numpy(), [0.0, 0.2, 0.4, 0.6, 0.8])
+
+
+def test_thin_positions_drops_nonfinite_and_handles_empty() -> None:
+    df = pd.DataFrame({"session_time_sec": [0.0, np.nan, 0.5], "x": [1.0, 2.0, 3.0]})
+    out = thin_positions(df, rate_hz=100.0)  # high cap = keep all finite rows
+    assert list(out["session_time_sec"]) == [0.0, 0.5]
+    assert thin_positions(pd.DataFrame(), rate_hz=5.0).empty

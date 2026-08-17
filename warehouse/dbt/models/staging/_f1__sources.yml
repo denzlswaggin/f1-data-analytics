@@ -65,3 +65,12 @@ sources:
             data_tests: [not_null]
           - name: driver_code
             data_tests: [not_null]
+      - name: positions
+        description: >
+          FastF1 time-stamped car positions on the shared session clock (one row
+          per driver per position sample). Feeds the race-replay map.
+        columns:
+          - name: season
+            data_tests: [not_null]
+          - name: driver_code
+            data_tests: [not_null]
