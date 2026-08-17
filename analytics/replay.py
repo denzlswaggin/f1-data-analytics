@@ -23,13 +23,13 @@ from ingestion.logging import get_logger
 
 log = get_logger(__name__)
 
-# A retired car's positional feed keeps reporting its parked spot to the end of the
-# session; cap its on-track window this long after its last lap so it vanishes
-# instead of leaving a dead dot (the buffer shows the slow-down / return to pits).
-_RETIRE_BUFFER_S = 30.0
-# Movement (in position units) below which a car is treated as stationary/parked —
-# used only to retire cars that never completed a lap.
-_MOVE_EPS_UNITS = 10.0
+# Movement (in position units, ~1/10 m) below which two consecutive samples count
+# as "not moving". A parked car's feed repeats its exact coordinate (step 0), so a
+# small epsilon cleanly separates stopped from moving without over-clipping crawls.
+_MOVE_EPS_UNITS = 0.5
+# Default grace (s) to keep showing a car after it stops before it vanishes; the
+# pipeline overrides this from settings (F1_REPLAY_RETIRE_BUFFER_S).
+_RETIRE_BUFFER_S = 5.0
 
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
@@ -62,14 +62,24 @@ def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     return prog
 
 
-def resample_race(positions: pd.DataFrame, laps: pd.DataFrame, tick_s: float = 1.0) -> pd.DataFrame:
+def resample_race(
+    positions: pd.DataFrame,
+    laps: pd.DataFrame,
+    tick_s: float = 1.0,
+    retire_buffer_s: float = _RETIRE_BUFFER_S,
+) -> pd.DataFrame:
     """Resample a race onto a shared time grid with running order and gaps.
 
     ``positions`` needs ``driver_code``, ``session_time_sec``, ``x``, ``y``.
     ``laps`` needs ``driver_code``, ``lap_number``, ``lap_start_sec``,
     ``lap_time_sec``. Returns one row per driver per tick with ``t_s`` (seconds
     since race start), ``x``, ``y``, ``running_order``, ``gap_to_leader_s`` and
-    ``gap_to_ahead_s`` — restricted to ticks where the car has position data.
+    ``gap_to_ahead_s`` — restricted to ticks where the car is on track.
+
+    A car is dropped once it **stops moving** (its position stops changing) plus
+    ``retire_buffer_s`` grace, so retirees vanish where they pull off instead of
+    freezing on the map. Using the *last* movement is red-flag-safe: a car that
+    resumes has a later last-movement, so it isn't retired during the stoppage.
     """
     required_pos = {"driver_code", "session_time_sec", "x", "y"}
     required_lap = {"driver_code", "lap_number", "lap_start_sec", "lap_time_sec"}
@@ -117,14 +127,12 @@ def resample_race(positions: pd.DataFrame, laps: pd.DataFrame, tick_s: float = 1
             last = dl.iloc[-1]
             dur = last["lap_time_sec"]
             t_finish[i] = float(last["lap_start_sec"]) + (float(dur) if np.isfinite(dur) else 0.0)
-            cap = t_finish[i] + _RETIRE_BUFFER_S
-        else:
-            # No lap data (e.g. a lap-1 crash): fall back to the last time the car
-            # actually moved, so a parked car doesn't linger on the map either.
-            moved = np.where(np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS)[0]
-            cap = float(pt[moved[-1] + 1] if moved.size else pt[0]) + _RETIRE_BUFFER_S
-        # On track within its own sampled window, but not past retirement — a retired
-        # car's feed keeps reporting its parked spot to the end, so vanish it there.
+        # Retire the car when it *last actually moves* (a parked feed repeats its spot),
+        # plus the grace buffer. Finishers keep moving to the flag, so their run ends at
+        # the grid bound (t1); retirees vanish where they stop, not frozen to the end.
+        moved = np.where(np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS)[0]
+        stop_t = float(pt[moved[-1] + 1]) if moved.size else float(pt[0])
+        cap = stop_t + retire_buffer_s
         active[i] = (grid >= pt.min()) & (grid <= min(float(pt.max()), cap))
 
     # Leader progress = leading edge across the field; monotonic by construction.

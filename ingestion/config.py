@@ -62,6 +62,11 @@ class Settings(BaseSettings):
     # ~95 m/s physical max — position-derived speed is noisy (~180 m/s p99.9), while
     # true teleports (garage jumps, GPS glitches) are >1000 m/s, so 300 separates them.
     fastf1_position_max_speed_mps: float = Field(default=300.0, gt=0)
+    # Race-replay: how long (s) to keep showing a retired car after it stops moving,
+    # before it vanishes from the map. 0 = vanish the instant it stops; a few seconds
+    # lets the final resting position settle. The car is retired by *when it actually
+    # stops*, not by lap count — this is just the grace/safety window on top.
+    replay_retire_buffer_s: float = Field(default=5.0, ge=0)
 
     # Logging
     log_level: str = "INFO"

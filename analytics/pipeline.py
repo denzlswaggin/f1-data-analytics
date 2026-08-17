@@ -94,7 +94,9 @@ def _replay_laps_query(season: int, rnd: int) -> str:
     """
 
 
-def _build_one_replay(season: int, rnd: int, tick_s: float, settings: Settings) -> pd.DataFrame:
+def _build_one_replay(
+    season: int, rnd: int, tick_s: float, retire_buffer_s: float, settings: Settings
+) -> pd.DataFrame:
     """Resample one race into a replay frame (with season/round), no warehouse write.
 
     Resamples every car onto a shared time grid (see ``analytics.replay``). Kept
@@ -104,22 +106,28 @@ def _build_one_replay(season: int, rnd: int, tick_s: float, settings: Settings) 
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
-    replay = resample_race(positions, laps, tick_s=tick_s)
+    replay = resample_race(positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s)
     replay.insert(0, "season", season)
     replay.insert(1, "round", rnd)
     return replay
 
 
 def build_race_replay(
-    season: int, rnd: int, tick_s: float = 1.0, settings: Settings | None = None
+    season: int,
+    rnd: int,
+    tick_s: float = 1.0,
+    retire_buffer_s: float | None = None,
+    settings: Settings | None = None,
 ) -> pd.DataFrame:
     """Build the replay mart for a single race, fully replacing ``marts.race_replay``.
 
     Note this *replaces* the mart with just this race — use ``build_race_replays``
-    to keep several races in the table for the dashboard. Returns the frame.
+    to keep several races in the table for the dashboard. ``retire_buffer_s``
+    defaults to ``settings.replay_retire_buffer_s``. Returns the frame.
     """
     settings = settings or get_settings()
-    replay = _build_one_replay(season, rnd, tick_s, settings)
+    buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
+    replay = _build_one_replay(season, rnd, tick_s, buf, settings)
     replace_table(replay, schema="marts", table="race_replay", settings=settings)
     log.info(
         "replay.materialised",
@@ -132,21 +140,27 @@ def build_race_replay(
 
 
 def build_race_replays(
-    season: int, rounds: list[int], tick_s: float = 1.0, settings: Settings | None = None
+    season: int,
+    rounds: list[int],
+    tick_s: float = 1.0,
+    retire_buffer_s: float | None = None,
+    settings: Settings | None = None,
 ) -> pd.DataFrame:
     """Build the replay mart for several races at once (one ``marts.race_replay``).
 
     Builds each round and replaces the mart with their union, so the dashboard can
     offer a race picker. Rounds without positions/laps ingested contribute nothing.
-    Returns the combined frame.
+    ``retire_buffer_s`` defaults to ``settings.replay_retire_buffer_s``. Returns the
+    combined frame.
     """
     settings = settings or get_settings()
-    frames = [_build_one_replay(season, rnd, tick_s, settings) for rnd in rounds]
+    buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
+    frames = [_build_one_replay(season, rnd, tick_s, buf, settings) for rnd in rounds]
     non_empty = [f for f in frames if not f.empty]
     combined = (
         pd.concat(non_empty, ignore_index=True)
         if non_empty
-        else (frames[0] if frames else _build_one_replay(season, 0, tick_s, settings))
+        else (frames[0] if frames else _build_one_replay(season, 0, tick_s, buf, settings))
     )
     replace_table(combined, schema="marts", table="race_replay", settings=settings)
     log.info(

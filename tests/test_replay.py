@@ -119,16 +119,27 @@ def _retiree_race() -> tuple[pd.DataFrame, pd.DataFrame]:
 
 def test_resample_race_retires_parked_cars() -> None:
     positions, laps = _retiree_race()
-    out = resample_race(positions, laps, tick_s=1.0)
+    out = resample_race(positions, laps, tick_s=1.0, retire_buffer_s=5.0)
 
     lead = out[out["driver_code"] == "L"]
     ret = out[out["driver_code"] == "R"]
 
-    # The leader is present to the end (~120 s); the retiree vanishes shortly after
-    # its last lap (finish 40 s + 30 s buffer = 70 s), not lingering to the finish.
+    # The leader keeps moving to the end (~120 s). The retiree stops moving at 40 s,
+    # so with a 5 s buffer it vanishes at ~45 s — not lingering frozen to the finish.
     assert lead["t_s"].max() >= 115.0
-    assert ret["t_s"].max() <= 71.0
-    assert out[(out["driver_code"] == "R") & (out["t_s"] >= 90.0)].empty
+    assert ret["t_s"].max() <= 46.0
+    assert out[(out["driver_code"] == "R") & (out["t_s"] >= 60.0)].empty
+
+
+def test_resample_race_retire_buffer_is_tunable() -> None:
+    positions, laps = _retiree_race()
+    # A longer buffer keeps the retiree (stops at 40 s) on the map for longer.
+    short = resample_race(positions, laps, tick_s=1.0, retire_buffer_s=0.0)
+    long = resample_race(positions, laps, tick_s=1.0, retire_buffer_s=20.0)
+    short_r = short[short["driver_code"] == "R"]["t_s"].max()
+    long_r = long[long["driver_code"] == "R"]["t_s"].max()
+    assert short_r == pytest.approx(40.0, abs=1.0)
+    assert long_r == pytest.approx(60.0, abs=1.0)
 
 
 def test_resample_race_validates_and_handles_empty() -> None:
