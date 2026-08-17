@@ -100,6 +100,21 @@ Built end-to-end on real **2026** data.
   (~669k rows for one race at ~5 Hz). `clients/fastf1_client.py:load_session_position`
   + pure `thin_positions`; `pipeline.py:ingest_positions`; CLI `positions`; config
   `F1_FASTF1_POSITION_RATE_HZ` (default 5). `stg_positions` types it.
+- **Data cleaning** (two layers). FastF1's positional feed is dirty:
+  **(0,0) sentinels** ("no signal / in garage", ~9% of rows, still `status='OnTrack'`),
+  **teleport** samples (implied speed >1000 m/s), and **retired cars** whose feed
+  freezes at a parked point to the session end. Cleaned at (1) **ingest** — pure
+  `clean_positions` drops (0,0) + teleports (implied speed >
+  `F1_FASTF1_POSITION_MAX_SPEED_MPS`, default 300 — generous over the ~95 m/s
+  physical max because position-derived speed is noisy ~180 m/s p99.9); and (2) the
+  **replay builder** — `resample_race` retires a car when its position **stops
+  changing** (last-movement detection, red-flag-safe since a car that resumes has a
+  later last-movement), plus a tunable grace `F1_REPLAY_RETIRE_BUFFER_S` (default 5 s,
+  CLI `--retire-buffer`), so retirees vanish where they pull off instead of freezing.
+  A safety cap `F1_REPLAY_RETIRE_MAX_LINGER_S` (default 120 s) bounds this above — a
+  retiree is never shown more than ~a lap past its last completed lap, guarding a
+  recovered car whose sensor keeps moving. A dbt `expression_is_true` (x≠0 or y≠0)
+  on `stg_positions` catches (0,0) regressions.
 - **`marts.race_replay`** — built by **Python** (`analytics/replay.py`, like
   `driver_ratings` — *not* dbt). `resample_race` interpolates every car's x/y onto
   one uniform time grid (`--tick`, default 1 s), reconstructs per-car lap progress
@@ -186,6 +201,7 @@ Makefile wraps these (`make lint typecheck test dbt-build dagster …`). For Pos
 - **"Season so far"** (`season_rounds`) reads `raw.races` for dates ≤ today, so `races` must be backfilled first; it only returns rounds the real FastF1 feed actually has — test against a season with data (e.g. 2024), not a future season.
 - **Telemetry is heavy** (~242k rows/race at 25 m ≈ low-millions/season; ~5.5 min/race). It's excluded from the weekly Dagster job (materialise on demand); the dashboard reads a fastest-lap-only source, not the full mart.
 - **`raw.positions` is heavy too** (~669k rows/race at ~5 Hz) — also excluded from the weekly job. Two time axes coexist and must not be confused: `raw.telemetry` is per-lap by **distance** (no time), `raw.positions` is by **session time** (the replay's axis).
+- **FastF1 pos_data (0,0) is a sentinel** ("no signal / in garage"), NOT a real track position — and it still carries `status='OnTrack'`, so you can't filter it by status; filter on the coordinates. Real on-track X/Y are offset (never exactly origin). Cleaned at ingest by `clean_positions`; a retired car then *parks* at a valid coord and its feed repeats to session end, so retirement is handled by **time** — vanish when the position stops changing (`resample_race`, tunable `F1_REPLAY_RETIRE_BUFFER_S`), not by coordinates.
 - **Custom Evidence components** live in `dashboard/components/*.svelte` (auto-imported by filename; confirmed in the SDK) and pages compile to Svelte, so `<canvas>` + `requestAnimationFrame` works. But pages are **prerendered** on `evidence build` — any browser-only API (rAF, canvas) reachable from a top-level/`$:` reactive statement must be guarded (`typeof requestAnimationFrame === 'undefined'`), or the build 500s even though `npm run dev` (client render) is fine. `onMount` is safe (client-only).
 - **Replay running order** is reconstructed from lap-progress; at the *exact* start (t=0) all cars share progress 0 so the tie-break order is cosmetic — it resolves the moment the race gets going. Cars with no lap data (early DNF) animate but don't appear in the tower.
 

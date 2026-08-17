@@ -140,6 +140,11 @@ models:
     description: >
       One typed row per driver per position sample (FastF1), on the shared session
       clock — the basis for the race-replay track map.
+    data_tests:
+      # (0,0) is FastF1's "no signal / in garage" sentinel (cleaned at ingest). Real
+      # on-track coords are offset, never exactly origin — so any (0,0) is bad data.
+      - dbt_utils.expression_is_true:
+          expression: "x != 0 or y != 0"
     columns:
       - name: position_key
         description: Surrogate key = hash(season, round, session, driver_code, session_time_sec).

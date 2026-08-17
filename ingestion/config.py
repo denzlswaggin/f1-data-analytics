@@ -57,6 +57,20 @@ class Settings(BaseSettings):
     # native pos_data is ~4-5 Hz; a higher cap keeps it all, a lower one thins it
     # to bound raw size. The browser-facing replay mart is resampled coarser again.
     fastf1_position_rate_hz: float = Field(default=5.0, gt=0)
+    # Teleport cutoff for position cleaning: drop a sample if the implied speed from
+    # the previous kept sample exceeds this (m/s). Deliberately generous over the
+    # ~95 m/s physical max — position-derived speed is noisy (~180 m/s p99.9), while
+    # true teleports (garage jumps, GPS glitches) are >1000 m/s, so 300 separates them.
+    fastf1_position_max_speed_mps: float = Field(default=300.0, gt=0)
+    # Race-replay: how long (s) to keep showing a retired car after it stops moving,
+    # before it vanishes from the map. 0 = vanish the instant it stops; a few seconds
+    # lets the final resting position settle. The car is retired by *when it actually
+    # stops*, not by lap count — this is just the grace/safety window on top.
+    replay_retire_buffer_s: float = Field(default=5.0, ge=0)
+    # Safety cap (s): never show a retiree more than this long past its last completed
+    # lap, even if its position keeps "moving" (a recovery crane/truck follows the car
+    # sensor). Bounds the stop-detection above; ~one lap of margin by default.
+    replay_retire_max_linger_s: float = Field(default=120.0, gt=0)
 
     # Logging
     log_level: str = "INFO"

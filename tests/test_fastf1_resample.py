@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from ingestion.clients.fastf1_client import resample_lap_telemetry, thin_positions
+from ingestion.clients.fastf1_client import (
+    clean_positions,
+    resample_lap_telemetry,
+    thin_positions,
+)
 
 
 def _synthetic_lap() -> pd.DataFrame:
@@ -67,3 +71,27 @@ def test_thin_positions_drops_nonfinite_and_handles_empty() -> None:
     out = thin_positions(df, rate_hz=100.0)  # high cap = keep all finite rows
     assert list(out["session_time_sec"]) == [0.0, 0.5]
     assert thin_positions(pd.DataFrame(), rate_hz=5.0).empty
+
+
+def test_clean_positions_drops_sentinels_and_teleports() -> None:
+    # Times chosen so a teleport (>300 m/s at unit_per_m=10 => >3000 units/s) is the
+    # only impossible move; a big jump over a long gap stays (low implied speed).
+    df = pd.DataFrame(
+        {
+            "session_time_sec": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 5.0, 5.2],
+            "x": [1000.0, 1100.0, 0.0, 1200.0, 50000.0, 1300.0, 2000.0, 2000.0],
+            "y": [1000.0, 1000.0, 0.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0],
+        }
+    )
+    out = clean_positions(df, max_speed_mps=300.0)
+    # (0,0) sentinel (t=0.4) and the teleport (t=0.8) are gone; everything else stays,
+    # including the stationary point (t=5.2) and the far-but-slow gap point (t=5.0).
+    assert list(out["session_time_sec"]) == [0.0, 0.2, 0.6, 1.0, 5.0, 5.2]
+    assert not ((out["x"] == 0) & (out["y"] == 0)).any()
+    assert 50000.0 not in set(out["x"])
+
+
+def test_clean_positions_handles_empty_and_all_sentinel() -> None:
+    assert clean_positions(pd.DataFrame(columns=["session_time_sec", "x", "y"]), 300.0).empty
+    allzero = pd.DataFrame({"session_time_sec": [0.0, 0.2], "x": [0.0, 0.0], "y": [0.0, 0.0]})
+    assert clean_positions(allzero, 300.0).empty

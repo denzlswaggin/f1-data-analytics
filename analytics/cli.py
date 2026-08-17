@@ -64,6 +64,13 @@ def replay(
         float,
         typer.Option(help="Time-grid resolution in seconds (smaller = smoother, bigger file)."),
     ] = 1.0,
+    retire_buffer: Annotated[
+        float | None,
+        typer.Option(
+            "--retire-buffer",
+            help="Seconds a retired car stays shown after it stops (default: F1_REPLAY_RETIRE_BUFFER_S).",
+        ),
+    ] = None,
 ) -> None:
     """Build the animated race-replay mart (marts.race_replay).
 
@@ -75,11 +82,11 @@ def replay(
         "cli.replay.start", season=season, round=round_, tick=tick, target=get_settings().warehouse
     )
     if round_ is not None:
-        df = build_race_replay(season, round_, tick_s=tick)
+        df = build_race_replay(season, round_, tick_s=tick, retire_buffer_s=retire_buffer)
         scope = f"round {round_}"
     else:
         rounds = season_rounds(season, completed_only=True)
-        df = build_race_replays(season, rounds, tick_s=tick)
+        df = build_race_replays(season, rounds, tick_s=tick, retire_buffer_s=retire_buffer)
         scope = f"rounds {rounds[0]}-{rounds[-1]}" if rounds else "(no rounds)"
     if df.empty:
         typer.echo(f"No replay data for {season} {scope} (need positions + laps ingested).")
