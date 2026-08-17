@@ -153,6 +153,8 @@
     }
 
     function queueDraw() {
+        // No-op during server-side prerender (no rAF / canvas); onMount redraws.
+        if (typeof requestAnimationFrame === 'undefined') return;
         requestAnimationFrame(() => {
             drawTrack();
             render();
