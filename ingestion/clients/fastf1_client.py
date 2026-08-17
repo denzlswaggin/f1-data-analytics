@@ -2,8 +2,9 @@
 
 FastF1 covers 2018→present, downloads a lot per session, and caches to disk, so
 this client enables the cache and exposes focused loaders — per-lap records
-(with tyre + speed-trap context), per-minute weather, and distance-resampled
-telemetry — each flattened to compact, warehouse-friendly rows.
+(with tyre + speed-trap context), per-minute weather, distance-resampled
+telemetry, and time-stamped positional data (for the race-replay map) — each
+flattened to compact, warehouse-friendly rows.
 
 ``fastf1`` is imported lazily (it is a heavy optional dependency; install with
 ``pip install -e ".[telemetry]"``).
@@ -73,6 +74,31 @@ def resample_lap_telemetry(tel: pd.DataFrame, step_m: float) -> pd.DataFrame:
             "gear": np.rint(_interp("nGear")).astype("int64"),
         }
     )
+
+
+def thin_positions(
+    df: pd.DataFrame, rate_hz: float, time_col: str = "session_time_sec"
+) -> pd.DataFrame:
+    """Thin time-ordered position samples to at most ``rate_hz`` samples/second.
+
+    Rows are sorted by ``time_col`` (dropping non-finite times), then the first
+    sample in each ``1/rate_hz`` time bucket is kept. FastF1's native pos_data is
+    ~4-5 Hz, so a higher cap is a no-op; a lower cap decimates deterministically.
+    Pure (no FastF1) so it can be unit-tested on a synthetic frame.
+    """
+    if df.empty or rate_hz <= 0:
+        return df.reset_index(drop=True)
+    t = df[time_col].to_numpy(dtype="float64")
+    finite = np.isfinite(t)
+    df = df.loc[finite]
+    t = t[finite]
+    if len(t) == 0:
+        return df.reset_index(drop=True)
+    order = np.argsort(t, kind="stable")
+    df = df.iloc[order].reset_index(drop=True)
+    bucket = np.floor(t[order] * rate_hz).astype("int64")
+    keep = np.concatenate(([True], np.diff(bucket) != 0))
+    return df.iloc[keep].reset_index(drop=True)
 
 
 class FastF1Client:
@@ -216,4 +242,52 @@ class FastF1Client:
 
         out = pd.concat(frames, ignore_index=True)
         log.info("fastf1.telemetry", season=season, round=rnd, session=session, rows=len(out))
+        return out
+
+    def load_session_position(self, season: int, rnd: int, session: str = "R") -> pd.DataFrame:
+        """Return time-stamped car position: one row per driver per position sample.
+
+        Uses FastF1's positional feed (``session.pos_data``), which carries X/Y in
+        the track reference frame stamped with ``SessionTime`` — the shared clock
+        that lets every car be placed at the same instant (unlike the
+        distance-gridded telemetry). Samples are thinned to
+        ``settings.fastf1_position_rate_hz``. Heavy: requires a full telemetry load.
+        """
+        ff1 = self._ensure_loaded()
+        sess = ff1.get_session(season, rnd, session)
+        sess.load(laps=True, telemetry=True, weather=False, messages=False)
+        pos_data = getattr(sess, "pos_data", None)
+        if not pos_data:
+            log.warning("fastf1.no_pos_data", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+
+        rate = float(self.settings.fastf1_position_rate_hz)
+        frames: list[pd.DataFrame] = []
+        for number, pos in pos_data.items():
+            if pos is None or pos.empty or "SessionTime" not in pos.columns:
+                continue
+            try:
+                code = str(sess.get_driver(number)["Abbreviation"])
+            except Exception:  # missing driver metadata — fall back to the number
+                code = str(number)
+            frame = pd.DataFrame(
+                {
+                    "season": season,
+                    "round": rnd,
+                    "session": session,
+                    "driver_code": code,
+                    "session_time_sec": _seconds(pos["SessionTime"]),
+                    "x": pos["X"].to_numpy(dtype="float64"),
+                    "y": pos["Y"].to_numpy(dtype="float64"),
+                    "status": pos["Status"].astype("string"),
+                }
+            )
+            frames.append(thin_positions(frame, rate))
+
+        if not frames:
+            log.warning("fastf1.no_positions", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+
+        out = pd.concat(frames, ignore_index=True)
+        log.info("fastf1.positions", season=season, round=rnd, session=session, rows=len(out))
         return out

@@ -174,6 +174,34 @@ def ingest_telemetry(
     return load_dataframe(telemetry, "telemetry", season, settings)
 
 
+def ingest_positions(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest FastF1 time-stamped car positions for a set of rounds (heavy).
+
+    Feeds the race-replay map: one row per driver per position sample, on the
+    shared session clock. All rounds are concatenated into one season frame and
+    loaded once (the loader's delete key is ``season`` only).
+    """
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+
+    client = FastF1Client(settings)
+    frames = []
+    for rnd in rounds:
+        df = client.load_session_position(season, rnd, session)
+        if not df.empty:
+            frames.append(df)
+
+    if not frames:
+        log.warning("pipeline.positions_empty", season=season, rounds=rounds)
+        return 0
+
+    positions = pd.concat(frames, ignore_index=True)
+    write_parquet(positions, "positions", season, settings)
+    return load_dataframe(positions, "positions", season, settings)
+
+
 def _extract_per_round(
     client: JolpicaClient,
     season: int,
