@@ -332,3 +332,53 @@ class FastF1Client:
         out = pd.concat(frames, ignore_index=True)
         log.info("fastf1.positions", season=season, round=rnd, session=session, rows=len(out))
         return out
+
+    def load_session_race_control(self, season: int, rnd: int, session: str = "R") -> pd.DataFrame:
+        """Return official race-control messages on the shared session clock.
+
+        Flags, safety car, penalties, incidents, DRS, etc. FastF1 gives message
+        ``Time`` as an absolute UTC datetime; we convert to ``session_time_sec`` via
+        ``session.t0_date`` (the absolute time of SessionTime=0). ``t0_date`` needs a
+        telemetry load, but it reads from the FastF1 cache, so this is fast once
+        telemetry has been ingested. Non-driver messages (flags) have a null
+        ``driver_code``.
+        """
+        ff1 = self._ensure_loaded()
+        sess = ff1.get_session(season, rnd, session)
+        sess.load(laps=True, telemetry=True, weather=False, messages=True)
+        rcm = getattr(sess, "race_control_messages", None)
+        if rcm is None or rcm.empty:
+            log.warning("fastf1.no_race_control", season=season, round=rnd, session=session)
+            return pd.DataFrame()
+        try:
+            t0 = sess.t0_date
+        except Exception as exc:  # no telemetry reference -> can't place on the clock
+            log.warning("fastf1.no_t0_date", season=season, round=rnd, error=str(exc))
+            return pd.DataFrame()
+
+        num2code: dict[str, str] = {}
+        for number in getattr(sess, "drivers", []) or []:
+            try:
+                num2code[str(number)] = str(sess.get_driver(number)["Abbreviation"])
+            except Exception:
+                continue
+
+        numbers = rcm["RacingNumber"].astype("string")
+        out = pd.DataFrame(
+            {
+                "season": season,
+                "round": rnd,
+                "session": session,
+                "session_time_sec": (pd.to_datetime(rcm["Time"]) - t0).dt.total_seconds(),
+                "category": rcm["Category"].astype("string"),
+                "flag": rcm["Flag"].astype("string"),
+                "scope": rcm["Scope"].astype("string"),
+                "sector": rcm["Sector"].astype("Int64"),
+                "message": rcm["Message"].astype("string"),
+                "driver_number": numbers,
+                "driver_code": numbers.map(num2code).astype("string"),
+                "lap": rcm["Lap"].astype("Int64"),
+            }
+        ).reset_index(drop=True)
+        log.info("fastf1.race_control", season=season, round=rnd, session=session, rows=len(out))
+        return out

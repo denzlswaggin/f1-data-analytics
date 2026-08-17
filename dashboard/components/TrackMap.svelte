@@ -9,6 +9,7 @@
 
     export let data = [];
     export let meta = [];
+    export let messages = [];
     export let title = '';
 
     const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
@@ -37,6 +38,51 @@
     const asNum = (v) => (v == null ? null : Number(v));
 
     $: build(data, meta);
+
+    // --- race-control message feed (aligned to the replay clock via t_s) ---
+    const EVT_COLOR = {
+        sc: '#e8a33d', red: '#e8002d', chequered: '#e8eaed', green: '#2fbf71',
+        yellow: '#e8d33d', drs: '#39a0ff', penalty: '#ff7ab3', info: '#9aa0b0',
+    };
+    let msgs = [];
+    let keyEvents = [];
+    function classify(m) {
+        const f = (m.flag || '').toUpperCase();
+        const c = (m.category || '').toUpperCase();
+        const s = (m.message || '').toUpperCase();
+        if (c === 'SAFETYCAR' || s.includes('SAFETY CAR') || s.includes('VSC')) return 'sc';
+        if (f === 'RED' || s.includes('RED FLAG')) return 'red';
+        if (f === 'CHEQUERED') return 'chequered';
+        if (s.includes('PENALTY')) return 'penalty';
+        if (f === 'GREEN') return 'green';
+        if (f.includes('YELLOW')) return 'yellow';
+        if (s.includes('DRS ENABLED') || s.includes('OVERTAKE ENABLED')) return 'drs';
+        return 'info';
+    }
+    $: {
+        const list = (messages || []).map((r) => ({
+            t: Number(r.t_s), category: r.category || '', flag: r.flag || '',
+            message: r.message || '', code: r.driver_code || '',
+        }));
+        list.sort((a, b) => a.t - b.t);
+        for (const m of list) m.type = classify(m);
+        msgs = list;
+        keyEvents = list.filter((m) => ['sc', 'red', 'chequered', 'penalty'].includes(m.type));
+    }
+    // Newest-first messages up to the current time (recomputes as `t` advances).
+    $: recentMsgs = msgs.filter((m) => m.t <= t).slice(-7).reverse();
+    function jumpTo(sec) {
+        t = Math.max(0, Math.min(tMax, sec));
+        if (!playing) render();
+    }
+    function onTimelineClick(e) {
+        const r = e.currentTarget.getBoundingClientRect();
+        jumpTo(((e.clientX - r.left) / r.width) * tMax);
+    }
+    function onTimelineKey(e) {
+        if (e.key === 'ArrowLeft') jumpTo(t - 5);
+        else if (e.key === 'ArrowRight') jumpTo(t + 5);
+    }
 
     function build(rows, metaRows) {
         if (!rows || !rows.length) {
@@ -347,6 +393,20 @@
             </div>
         {/if}
 
+        {#if msgs.length}
+            <div class="tm-msgs">
+                <div class="tm-board-h">Race control</div>
+                {#each recentMsgs as m (m.t + '|' + m.message)}
+                    <div class="tm-msg">
+                        <span class="mdot" style="background:{EVT_COLOR[m.type]}"></span>
+                        <span class="mt">{fmtClock(Math.max(0, m.t))}</span>
+                        <span class="mm">{m.message}</span>
+                    </div>
+                {/each}
+                {#if !recentMsgs.length}<div class="tm-msg tm-empty">— no messages yet —</div>{/if}
+            </div>
+        {/if}
+
         <div class="tm-clock">{fmtClock(t)} / {fmtClock(tMax)}</div>
         {#if selected}<div class="tm-follow">Following {selected} · click to release</div>{/if}
     </div>
@@ -362,7 +422,36 @@
         </label>
         <button on:click={resetView} class="tm-btn" title="Reset zoom & pan">Reset view</button>
     </div>
-    <div class="tm-hint">Scroll to zoom · drag to pan · click a car to follow · hover for details</div>
+
+    {#if keyEvents.length && tMax > 0}
+        <div
+            class="tm-timeline"
+            on:click={onTimelineClick}
+            on:keydown={onTimelineKey}
+            role="slider"
+            tabindex="0"
+            aria-label="event timeline — click to seek"
+            aria-valuemin="0"
+            aria-valuemax={Math.round(tMax)}
+            aria-valuenow={Math.round(t)}
+        >
+            <div class="tm-timeline-fill" style="width:{(t / tMax) * 100}%"></div>
+            {#each keyEvents as e (e.t + '|' + e.message)}
+                <button
+                    class="tm-mark {e.type}"
+                    style="left:{(Math.max(0, e.t) / tMax) * 100}%"
+                    title="{fmtClock(Math.max(0, e.t))} — {e.message}"
+                    aria-label={e.message}
+                    on:click|stopPropagation={() => jumpTo(e.t)}
+                ></button>
+            {/each}
+        </div>
+    {/if}
+
+    <div class="tm-hint">
+        Scroll to zoom · drag to pan · click a car to follow · hover for details · click the timeline
+        markers to jump to safety cars, red flags &amp; penalties
+    </div>
 </div>
 
 <style>
@@ -485,6 +574,84 @@
         padding: 2px 8px;
         border-radius: 6px;
     }
+    .tm-msgs {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 244px;
+        max-width: 46%;
+        background: rgba(8, 12, 18, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 6px 8px;
+        color: #e8eaed;
+        backdrop-filter: blur(2px);
+    }
+    .tm-msg {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        font-size: 10.5px;
+        line-height: 1.35;
+        padding: 1px 0;
+    }
+    .tm-msg .mdot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex: none;
+        transform: translateY(1px);
+    }
+    .tm-msg .mt {
+        opacity: 0.6;
+        font-variant-numeric: tabular-nums;
+        flex: none;
+    }
+    .tm-msg .mm {
+        opacity: 0.92;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .tm-empty {
+        opacity: 0.5;
+        font-style: italic;
+    }
+    .tm-timeline {
+        position: relative;
+        height: 12px;
+        margin-top: 8px;
+        border-radius: 6px;
+        background: rgba(128, 128, 128, 0.18);
+        cursor: pointer;
+    }
+    .tm-timeline-fill {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        background: rgba(128, 128, 128, 0.32);
+        border-radius: 6px 0 0 6px;
+    }
+    .tm-mark {
+        position: absolute;
+        top: -2px;
+        width: 3px;
+        height: 16px;
+        margin-left: -1.5px;
+        padding: 0;
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .tm-mark:hover {
+        transform: scaleY(1.35);
+    }
+    .tm-mark.sc { background: #e8a33d; }
+    .tm-mark.red { background: #e8002d; }
+    .tm-mark.chequered { background: #e8eaed; }
+    .tm-mark.penalty { background: #ff7ab3; }
     .tm-controls {
         display: flex;
         align-items: center;
