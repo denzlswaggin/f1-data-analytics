@@ -14,8 +14,9 @@ from typing import Annotated
 import typer
 from ingestion.config import get_settings
 from ingestion.logging import configure_logging, get_logger
+from ingestion.pipeline import season_rounds
 
-from analytics.pipeline import build_driver_ratings, build_race_replay
+from analytics.pipeline import build_driver_ratings, build_race_replay, build_race_replays
 
 app = typer.Typer(add_completion=False, help="F1 analytical transforms.")
 log = get_logger(__name__)
@@ -54,26 +55,39 @@ def ratings(
 
 @app.command()
 def replay(
-    season: Annotated[int, typer.Option(help="Season of the race to build a replay for.")],
-    round_: Annotated[int, typer.Option("--round", help="Round number of the race.")],
+    season: Annotated[int, typer.Option(help="Season to build race replays for.")],
+    round_: Annotated[
+        int | None,
+        typer.Option("--round", help="Single round; omit to build all completed rounds."),
+    ] = None,
     tick: Annotated[
         float,
         typer.Option(help="Time-grid resolution in seconds (smaller = smoother, bigger file)."),
     ] = 1.0,
 ) -> None:
-    """Build the animated race-replay mart (marts.race_replay) for one race."""
+    """Build the animated race-replay mart (marts.race_replay).
+
+    With ``--round`` builds one race (replacing the mart); without it, builds every
+    completed round of the season so the dashboard can offer a race picker.
+    """
     configure_logging()
     log.info(
         "cli.replay.start", season=season, round=round_, tick=tick, target=get_settings().warehouse
     )
-    df = build_race_replay(season, round_, tick_s=tick)
+    if round_ is not None:
+        df = build_race_replay(season, round_, tick_s=tick)
+        scope = f"round {round_}"
+    else:
+        rounds = season_rounds(season, completed_only=True)
+        df = build_race_replays(season, rounds, tick_s=tick)
+        scope = f"rounds {rounds[0]}-{rounds[-1]}" if rounds else "(no rounds)"
     if df.empty:
-        typer.echo(f"No replay data for {season} round {round_} (need positions + laps ingested).")
+        typer.echo(f"No replay data for {season} {scope} (need positions + laps ingested).")
         return
     typer.echo(
-        f"Built marts.race_replay for {season} round {round_}: "
+        f"Built marts.race_replay for {season} {scope}: "
         f"{len(df)} rows, {df['driver_code'].nunique()} drivers, "
-        f"{df['t_s'].max():.0f}s of racing at {tick}s ticks."
+        f"{df['round'].nunique()} race(s) at {tick}s ticks."
     )
 
 
