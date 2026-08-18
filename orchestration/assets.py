@@ -9,7 +9,11 @@ from collections.abc import Iterator, Mapping
 from pathlib import Path
 from typing import Any
 
-from analytics.pipeline import build_driver_ratings, build_race_replays
+from analytics.pipeline import (
+    build_driver_ratings,
+    build_race_overtakes_season,
+    build_race_replays,
+)
 from dagster import AssetExecutionContext, AssetKey, MaterializeResult, asset
 from dagster_dbt import (
     DagsterDbtTranslator,
@@ -203,3 +207,15 @@ def race_replay() -> MaterializeResult:
     df = build_race_replays(CURRENT_SEASON, rounds)
     races = int(df["round"].nunique()) if not df.empty else 0
     return MaterializeResult(metadata={"rows": len(df), "races": races, "season": CURRENT_SEASON})
+
+
+@asset(
+    deps=[AssetKey(["race_replay"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def race_overtakes() -> MaterializeResult:
+    # Detect on-track overtakes from the replay mart (every round built above).
+    df = build_race_overtakes_season(CURRENT_SEASON)
+    races = int(df["round"].nunique()) if not df.empty else 0
+    return MaterializeResult(metadata={"passes": len(df), "races": races, "season": CURRENT_SEASON})

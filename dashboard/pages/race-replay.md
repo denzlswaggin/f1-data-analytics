@@ -6,9 +6,11 @@ Watch a Grand Prix replay: every car placed on the circuit at its **true positio
 on the shared race clock**, reconstructed from FastF1 positional telemetry. Press
 play, scrub the timeline, or speed it up — the running order and intervals on the
 left update live as the race unfolds, and the **race-control feed** on the right
-plays flags, safety cars and penalties in sync. Click a car to follow it, scroll
-to zoom, click the timeline markers to jump to key moments, and click a 📻 marker
-to play **team radio** (where available). _2026 season._
+plays flags, safety cars and penalties in sync. Detected **on-track overtakes**
+light up on the map as they happen and sit on their own ⇄ seek lane below. Click a
+car to follow it (its overtakes and radio filter to that driver), scroll to zoom,
+click the timeline markers to jump to key moments, and click a 📻 marker to play
+**team radio** (where available). _2026 season._
 
 ```sql replay_races
 select distinct race_name
@@ -52,7 +54,14 @@ where race_name = '${inputs.race.value}'
 order by t_s
 ```
 
-<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} title={inputs.race.value} />
+```sql overtakes
+select t_s, for_position, passer_code, passed_code, gap_at_pass_s
+from f1.race_overtakes
+where race_name = '${inputs.race.value}'
+order by t_s
+```
+
+<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={inputs.race.value} />
 
 ## How it's built
 
@@ -62,3 +71,10 @@ car onto one uniform time grid, reconstructs lap progress from lap timing to ran
 the field, and derives the time gaps — landing a lean `marts.race_replay` table
 (one row per car per tick) that this page animates. The dots interpolate between
 ticks in the browser for smooth motion.
+
+A second pure step (`analytics/overtakes.py`) reads that replay feed and flags
+**on-track overtakes** — a clean, single-position swap where the two cars are
+physically side-by-side (which is what distinguishes a real pass from a pit-cycle
+position change, since the pitting car's projected gap momentarily collapses too).
+Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
+highlight above.

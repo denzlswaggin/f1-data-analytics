@@ -11,11 +11,13 @@
     export let meta = [];
     export let messages = [];
     export let radio = [];
+    export let overtakes = [];
     export let title = '';
 
     const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
     const PAD = 28;
     const HIT_PX = 16; // click/hover pick radius
+    const PASS_HL_S = 2.0; // seconds an overtake stays highlighted on the map
 
     let containerWidth = 900;
     $: width = Math.max(320, containerWidth);
@@ -33,6 +35,7 @@
     let view = { zoom: 1, ox: 0, oy: 0 };
     let selected = null; // driver_code being followed
     let hovered = null; // {code, name, team, order, gap, ahead, cx, cy}
+    let activePass = null; // overtake currently highlighted on the map
     let screenPos = []; // last-rendered car screen positions, for hit-testing
     let dragging = false, dragMoved = false, dragStart = null;
 
@@ -74,7 +77,7 @@
     $: recentMsgs = msgs.filter((m) => m.t <= t).slice(-7).reverse();
     function jumpTo(sec) {
         t = Math.max(0, Math.min(tMax, sec));
-        if (!playing) render();
+        if (!playing) drawFrame();
     }
     function onTimelineClick(e) {
         const r = e.currentTarget.getBoundingClientRect();
@@ -96,6 +99,20 @@
     // Followed a driver? show only their clips — otherwise show the whole field's.
     $: displayedRadio = selected ? radioClips.filter((c) => c.code === selected) : radioClips;
     $: codeColor = Object.fromEntries(drivers.map((d) => [d.code, d.color]));
+
+    // --- overtakes (detected on-track passes, aligned to the replay clock) ---
+    let passes = [];
+    $: passes = (overtakes || [])
+        .map((r) => ({
+            t: Number(r.t_s), pos: asNum(r.for_position),
+            passer: r.passer_code || '', passed: r.passed_code || '', gap: asNum(r.gap_at_pass_s),
+        }))
+        .sort((a, b) => a.t - b.t);
+    // Following a car? show only passes it was involved in (as passer or passed).
+    $: displayedPasses = selected
+        ? passes.filter((p) => p.passer === selected || p.passed === selected)
+        : passes;
+
     let audioEl;
     let nowPlaying = null;
     function playRadio(clip) {
@@ -250,6 +267,33 @@
         board.sort((a, b) => a.order - b.order);
         leaderboard = board;
         screenPos = sp;
+        // Highlight overtakes around the current time: a ring on the passer and a
+        // connector to the car it passed, fading out over the seconds after the move.
+        const byCode = {};
+        for (const s of sp) byCode[s.code] = s;
+        let active = null;
+        for (const p of displayedPasses) {
+            const dt = t - p.t;
+            if (dt < -0.6 || dt > PASS_HL_S) continue;
+            const A = byCode[p.passer], B = byCode[p.passed];
+            if (!A || !B) continue;
+            const a = dt < 0 ? 1 : 1 - dt / PASS_HL_S;
+            carsCtx.strokeStyle = '#2fbf71';
+            carsCtx.globalAlpha = 0.55 * a;
+            carsCtx.lineWidth = 2;
+            carsCtx.beginPath();
+            carsCtx.moveTo(A.X, A.Y);
+            carsCtx.lineTo(B.X, B.Y);
+            carsCtx.stroke();
+            carsCtx.globalAlpha = a;
+            carsCtx.lineWidth = 2.5;
+            carsCtx.beginPath();
+            carsCtx.arc(A.X, A.Y, 12, 0, Math.PI * 2);
+            carsCtx.stroke();
+            active = p;
+        }
+        carsCtx.globalAlpha = 1;
+        activePass = active;
         // Keep the tooltip live while the race plays.
         if (hovered) {
             const h = sp.find((s) => s.code === hovered.code);
@@ -257,9 +301,36 @@
         }
     }
 
+    // Follow-cam: while a car is followed AND the user has zoomed in, keep it centred
+    // so the camera tracks it around the lap. (At zoom 1 the whole circuit is in view,
+    // so there's nothing to follow.) Returns whether it moved the view.
+    function centerFollowed() {
+        if (selected == null || !bounds || view.zoom <= 1) return false;
+        const g = drivers.find((d) => d.code === selected);
+        if (!g) return false;
+        const p = sampleAt(g, t);
+        if (!p) return false;
+        const s = baseScale() * view.zoom;
+        view.ox = width / 2 - (p.x - bounds.minX) * s;
+        view.oy = height / 2 - (bounds.maxY - p.y) * s;
+        return true;
+    }
+    // One drawn frame: recentre on the followed car first; if that moved the view the
+    // static track layer must be redrawn too, otherwise just the cars overlay.
+    function drawFrame() {
+        if (centerFollowed()) drawTrack();
+        render();
+    }
+    // Follow/unfollow a car; recentre immediately when paused (playback redraws anyway).
+    function toggleSelect(code) {
+        selected = selected === code ? null : code;
+        if (!playing) drawFrame();
+    }
+
     function queueDraw() {
         if (typeof requestAnimationFrame === 'undefined') return; // SSR prerender
         requestAnimationFrame(() => {
+            centerFollowed();
             drawTrack();
             render();
         });
@@ -270,7 +341,7 @@
         if (lastTs == null) lastTs = ts;
         t = Math.min(tMax, t + ((ts - lastTs) / 1000) * speed);
         lastTs = ts;
-        render();
+        drawFrame();
         if (t >= tMax) {
             playing = false;
             lastTs = null;
@@ -294,7 +365,7 @@
     const toggle = () => (playing ? pause() : play());
     function onScrub(e) {
         t = Number(e.target.value);
-        if (!playing) render();
+        if (!playing) drawFrame();
     }
 
     // --- pointer interaction (hover, click-to-follow, drag-pan, wheel-zoom) ---
@@ -335,8 +406,8 @@
         if (dragging && !dragMoved) {
             const [cx, cy] = localXY(e);
             const n = nearest(cx, cy);
-            selected = n ? (selected === n.code ? null : n.code) : null;
-            render();
+            if (n) toggleSelect(n.code);
+            else if (selected != null) toggleSelect(selected); // click empty space = release
         }
         dragging = false;
     }
@@ -398,8 +469,8 @@
             {#each leaderboard as row (row.code)}
                 <div
                     class="tm-brow {selected === row.code ? 'sel' : ''}"
-                    on:click={() => (selected = selected === row.code ? null : row.code)}
-                    on:keydown={(e) => e.key === 'Enter' && (selected = selected === row.code ? null : row.code)}
+                    on:click={() => toggleSelect(row.code)}
+                    on:keydown={(e) => e.key === 'Enter' && toggleSelect(row.code)}
                     role="button"
                     tabindex="0"
                 >
@@ -440,8 +511,12 @@
             <div class="tm-radio-caption">📻 {nowPlaying.code}: “{nowPlaying.transcript}”</div>
         {/if}
 
+        {#if activePass}
+            <div class="tm-pass-caption">⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos}</div>
+        {/if}
+
         <div class="tm-clock">{fmtClock(t)} / {fmtClock(tMax)}</div>
-        {#if selected}<div class="tm-follow">Following {selected} · click to release</div>{/if}
+        {#if selected}<div class="tm-follow">{`Following ${selected}${view.zoom > 1 ? ' · camera locked' : ''} · click to release`}</div>{/if}
     </div>
 
     <div class="tm-controls">
@@ -481,6 +556,30 @@
         </div>
     {/if}
 
+    {#if tMax > 0 && passes.length}
+        <div class="tm-overtakes">
+            <span class="tm-ot-label">
+                ⇄ Overtakes{#if selected} · {selected}{/if}
+                <span class="tm-ot-count">{displayedPasses.length}</span>
+            </span>
+            {#if displayedPasses.length}
+                <div class="tm-ot-track">
+                    {#each displayedPasses as p (p.t + '|' + p.passer + '|' + p.passed)}
+                        <button
+                            class="tm-ot-mark"
+                            style="left:{(p.t / tMax) * 100}%; background:{codeColor[p.passer] || '#2fbf71'}"
+                            title="{fmtClock(p.t)} — {p.passer} ▸ {p.passed} for P{p.pos}"
+                            aria-label="{p.passer} passes {p.passed} for P{p.pos} at {fmtClock(p.t)}"
+                            on:click={() => jumpTo(p.t)}
+                        ></button>
+                    {/each}
+                </div>
+            {:else if selected}
+                <span class="tm-ot-none">no overtakes involving {selected}</span>
+            {/if}
+        </div>
+    {/if}
+
     {#if tMax > 0}
         <div class="tm-radio">
             <span class="tm-radio-label">
@@ -511,14 +610,16 @@
         </div>
     {/if}
 
-    <!-- Keep nowPlaying (and its transcript caption) after the clip ends so it stays
-         readable; it's replaced by the next clip or cleared with the stop button. -->
-    <audio bind:this={audioEl} preload="none"></audio>
+    <!-- The transcript caption shows only while the clip is playing: `ended` (or a
+         load error) clears nowPlaying so it disappears once the conversation is over
+         instead of staying stuck on screen. The stop button clears it early. -->
+    <audio bind:this={audioEl} preload="none" on:ended={stopRadio} on:error={stopRadio}></audio>
 
     <div class="tm-hint">
-        Scroll to zoom · drag to pan · hover for details · click a car to follow it (and filter its
-        team radio) · click an event marker to jump to safety cars / penalties · click a 📻 marker to
-        play that team radio and roll the race on from there
+        Scroll to zoom · drag to pan · hover for details · click a car to follow it (filters its
+        overtakes + team radio; zoom in and the camera locks onto it) · click an event marker to jump
+        to safety cars / penalties · click an ⇄ overtake marker to jump to a pass · click a 📻 marker
+        to play that team radio and roll on
     </div>
 </div>
 
@@ -787,6 +888,64 @@
     .tm-radio-mark.on {
         background: #eafffb;
         box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.7);
+    }
+    .tm-overtakes {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 8px;
+    }
+    .tm-ot-label {
+        font-size: 11px;
+        opacity: 0.75;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .tm-ot-count {
+        font-variant-numeric: tabular-nums;
+        opacity: 0.55;
+    }
+    .tm-ot-track {
+        position: relative;
+        flex: 1;
+        height: 12px;
+        border-radius: 6px;
+        background: rgba(47, 191, 113, 0.12);
+    }
+    .tm-ot-none {
+        font-size: 11px;
+        opacity: 0.45;
+        font-style: italic;
+    }
+    .tm-ot-mark {
+        position: absolute;
+        top: 1px;
+        width: 9px;
+        height: 10px;
+        margin-left: -4.5px;
+        padding: 0;
+        border: 1px solid rgba(8, 12, 18, 0.6);
+        border-radius: 2px;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .tm-ot-mark:hover { transform: scale(1.4); }
+    .tm-pass-caption {
+        position: absolute;
+        left: 50%;
+        top: 8px;
+        transform: translateX(-50%);
+        color: #eafff1;
+        font-size: 12.5px;
+        font-weight: 600;
+        background: rgba(8, 12, 18, 0.82);
+        border: 1px solid rgba(47, 191, 113, 0.4);
+        padding: 4px 12px;
+        border-radius: 8px;
+        pointer-events: none;
+        z-index: 2;
     }
     .tm-controls {
         display: flex;
