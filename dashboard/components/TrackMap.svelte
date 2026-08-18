@@ -389,9 +389,13 @@
         if (!playing) drawFrame();
     }
 
+    let _drawScheduled = false;
     function queueDraw() {
         if (typeof requestAnimationFrame === 'undefined') return; // SSR prerender
+        if (_drawScheduled) return; // coalesce many calls in one frame into a single draw
+        _drawScheduled = true;
         requestAnimationFrame(() => {
+            _drawScheduled = false;
             centerFollowed();
             drawTrack();
             render();
@@ -512,7 +516,20 @@
     });
 
     // Redraw on resize / new data (independent of `t`, so playback is unaffected).
-    $: if (trackCtx && width && height && bounds) queueDraw();
+    // Redraw when the canvas size or track data actually changes. Guarded by a value
+    // key so a same-value reassignment (e.g. a ResizeObserver re-firing on containerWidth)
+    // can't re-trigger this thousands of times a second.
+    let _drawKey = '';
+    $: {
+        const key =
+            trackCtx && bounds
+                ? `${width}x${height}|${bounds.minX},${bounds.maxX},${bounds.minY},${bounds.maxY}`
+                : '';
+        if (key && key !== _drawKey) {
+            _drawKey = key;
+            queueDraw();
+        }
+    }
 </script>
 
 <div class="tm" bind:clientWidth={containerWidth}>
