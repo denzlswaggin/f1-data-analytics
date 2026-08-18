@@ -18,6 +18,10 @@
     const PAD = 28;
     const HIT_PX = 16; // click/hover pick radius
     const PASS_HL_S = 2.0; // seconds an overtake stays highlighted on the map
+    // DOM (tower / clock / feed) refresh cap during playback (~15fps). The canvas
+    // still animates every frame; only the reactive Svelte state is throttled, so the
+    // 20-row tower doesn't re-render 60x/s and compete with the map on the main thread.
+    const UI_MS = 66;
 
     let containerWidth = 900;
     $: width = Math.max(320, containerWidth);
@@ -26,9 +30,12 @@
     let trackCanvas, carsCanvas, trackCtx, carsCtx;
     let playing = false;
     let t = 0, speed = 6, tMax = 0, raf = null, lastTs = null;
+    let uiT = 0; // throttled copy of `t` that drives the DOM (see UI_MS)
+    let lastUiMs = -1e9; // wall-clock of the last DOM refresh during playback
 
     let drivers = [];
     let bounds = null;
+    let trackPts = null; // cached single-lap circuit outline (see build)
     let leaderboard = [];
 
     // View (zoom / pan) and interaction state.
@@ -74,7 +81,7 @@
         keyEvents = list.filter((m) => ['sc', 'red', 'chequered', 'penalty'].includes(m.type));
     }
     // Newest-first messages up to the current time (recomputes as `t` advances).
-    $: recentMsgs = msgs.filter((m) => m.t <= t).slice(-7).reverse();
+    $: recentMsgs = msgs.filter((m) => m.t <= uiT).slice(-7).reverse();
     function jumpTo(sec) {
         t = Math.max(0, Math.min(tMax, sec));
         if (!playing) drawFrame();
@@ -118,6 +125,10 @@
     function playRadio(clip) {
         nowPlaying = clip;
         jumpTo(clip.t);
+        // Watch the moment in real time: at the default 6x the replay races ~50 s of
+        // track through an 8 s clip — steppy and out of sync with the audio. 1x is
+        // smooth and matches the radio.
+        speed = 1;
         if (audioEl) {
             audioEl.src = clip.url;
             audioEl.currentTime = 0;
@@ -126,7 +137,16 @@
         play(); // roll the replay on from this moment
     }
     function stopRadio() {
-        if (audioEl) audioEl.pause();
+        // Pause AND fully release the media resource. A merely-paused <audio> keeps
+        // its decoded clip + media pipeline resident, which can bog the page's canvas
+        // compositing down after a clip plays; clearing src + load() frees it so the
+        // replay stays smooth afterwards. The `if (audioEl.src)` guard stops the
+        // load() from re-entering via the element's own error/emptied event.
+        if (audioEl && audioEl.src) {
+            audioEl.pause();
+            audioEl.removeAttribute('src');
+            audioEl.load();
+        }
         nowPlaying = null;
     }
 
@@ -175,6 +195,28 @@
         }
         drivers = out;
         bounds = { minX, maxX, minY, maxY };
+        // Cache a single clean lap of the circuit for the track outline. The reference
+        // driver's samples retrace the same track once per lap (dozens of times over a
+        // race); take just the first lap — a contiguous run from the start until the path
+        // returns near where it began — so drawTrack strokes ~100 points instead of tens
+        // of thousands. That's the difference between the follow-cam at 60fps and 2fps.
+        let ref = null;
+        for (const g of out) if (!ref || g.samples.length > ref.samples.length) ref = g;
+        trackPts = [];
+        if (ref && ref.samples.length) {
+            const diag = Math.hypot(maxX - minX, maxY - minY) || 1;
+            const near = diag * 0.02, far = diag * 0.15;
+            const s0 = ref.samples[0];
+            trackPts.push(s0);
+            let left = false;
+            for (let i = 1; i < ref.samples.length; i++) {
+                const p = ref.samples[i];
+                trackPts.push(p);
+                const d = Math.hypot(p.x - s0.x, p.y - s0.y);
+                if (d > far) left = true;
+                if (left && d < near) break; // returned to the start line → one lap
+            }
+        }
         tMax = tmax;
         if (t > tMax) t = 0;
         if (selected && !groups.has(selected)) selected = null;
@@ -200,20 +242,30 @@
     const wy = (y) => view.oy + (bounds.maxY - y) * baseScale() * view.zoom;
 
     function drawTrack() {
-        if (!trackCtx || !bounds || !drivers.length) return;
+        if (!trackCtx || !bounds || !trackPts || !trackPts.length) return;
         trackCtx.clearRect(0, 0, width, height);
-        let ref = drivers[0];
-        for (const d of drivers) if (d.samples.length > ref.samples.length) ref = d;
-        trackCtx.lineWidth = Math.max(6, baseScale() * view.zoom * 260);
-        trackCtx.strokeStyle = 'rgba(255,255,255,0.07)';
+        // Cap the width: baseScale*zoom*260 balloons to hundreds of px when zoomed in,
+        // and a very wide stroke is expensive to paint every frame under the follow-cam.
+        trackCtx.lineWidth = Math.min(30, Math.max(6, baseScale() * view.zoom * 260));
+        // One lap drawn once, so a single visible alpha (the old faint 0.07 relied on
+        // dozens of overlapping laps stacking up).
+        trackCtx.strokeStyle = 'rgba(255,255,255,0.42)';
         trackCtx.lineJoin = 'round';
         trackCtx.lineCap = 'round';
         trackCtx.beginPath();
-        ref.samples.forEach((p, i) => {
-            const X = wx(p.x), Y = wy(p.y);
+        for (let i = 0; i < trackPts.length; i++) {
+            const X = wx(trackPts[i].x), Y = wy(trackPts[i].y);
             i === 0 ? trackCtx.moveTo(X, Y) : trackCtx.lineTo(X, Y);
-        });
+        }
         trackCtx.stroke();
+    }
+
+    // Uniform Catmull-Rom through four points — a smooth curve that passes through
+    // p1 and p2, so the dot follows the racing line through corners instead of the
+    // straight-line kinks that linear interpolation gives on 1 s ticks.
+    function catmull(q0, q1, q2, q3, f) {
+        const f2 = f * f, f3 = f2 * f;
+        return 0.5 * (2 * q1 + (-q0 + q2) * f + (2 * q0 - 5 * q1 + 4 * q2 - q3) * f2 + (-q0 + 3 * q1 - 3 * q2 + q3) * f3);
     }
 
     function sampleAt(g, time) {
@@ -228,14 +280,19 @@
         if (lo <= 0) return s[0];
         const a = s[lo - 1], b = s[lo];
         const f = (time - a.t) / ((b.t - a.t) || 1);
+        // Spline through the two neighbours either side (clamped at the ends). Fall
+        // back to linear across a time gap (a red-flag stoppage leaves non-adjacent
+        // samples) so the curve can't fly off between disconnected points.
+        const p0 = s[lo - 2] || a, p3 = s[lo + 1] || b;
+        const smooth = (b.t - a.t) <= 1.5 && (a.t - p0.t) <= 1.5 && (p3.t - b.t) <= 1.5;
         return {
-            x: a.x + (b.x - a.x) * f,
-            y: a.y + (b.y - a.y) * f,
+            x: smooth ? catmull(p0.x, a.x, b.x, p3.x, f) : a.x + (b.x - a.x) * f,
+            y: smooth ? catmull(p0.y, a.y, b.y, p3.y, f) : a.y + (b.y - a.y) * f,
             order: a.order, gap: a.gap, ahead: a.ahead,
         };
     }
 
-    function render() {
+    function render(uiUpdate = true) {
         if (!carsCtx || !bounds) return;
         carsCtx.clearRect(0, 0, width, height);
         const board = [], sp = [];
@@ -265,7 +322,6 @@
                 board.push({ code: g.code, color: g.color, order: p.order, gap: p.gap, ahead: p.ahead });
         }
         board.sort((a, b) => a.order - b.order);
-        leaderboard = board;
         screenPos = sp;
         // Highlight overtakes around the current time: a ring on the passer and a
         // connector to the car it passed, fading out over the seconds after the move.
@@ -293,11 +349,17 @@
             active = p;
         }
         carsCtx.globalAlpha = 1;
-        activePass = active;
-        // Keep the tooltip live while the race plays.
-        if (hovered) {
-            const h = sp.find((s) => s.code === hovered.code);
-            hovered = h ? { ...hovered, order: h.order, gap: h.gap, ahead: h.ahead, cx: h.X, cy: h.Y } : null;
+        // Reactive/DOM state (tower, clock, caption, tooltip) refreshes at the UI_MS
+        // cadence during playback, not every animation frame — the map keeps moving at
+        // 60fps while the surrounding DOM updates ~15fps, which is what stops the jank.
+        if (uiUpdate) {
+            leaderboard = board;
+            uiT = t;
+            activePass = active;
+            if (hovered) {
+                const h = sp.find((s) => s.code === hovered.code);
+                hovered = h ? { ...hovered, order: h.order, gap: h.gap, ahead: h.ahead, cx: h.X, cy: h.Y } : null;
+            }
         }
     }
 
@@ -317,9 +379,9 @@
     }
     // One drawn frame: recentre on the followed car first; if that moved the view the
     // static track layer must be redrawn too, otherwise just the cars overlay.
-    function drawFrame() {
+    function drawFrame(uiUpdate = true) {
         if (centerFollowed()) drawTrack();
-        render();
+        render(uiUpdate);
     }
     // Follow/unfollow a car; recentre immediately when paused (playback redraws anyway).
     function toggleSelect(code) {
@@ -327,9 +389,13 @@
         if (!playing) drawFrame();
     }
 
+    let _drawScheduled = false;
     function queueDraw() {
         if (typeof requestAnimationFrame === 'undefined') return; // SSR prerender
+        if (_drawScheduled) return; // coalesce many calls in one frame into a single draw
+        _drawScheduled = true;
         requestAnimationFrame(() => {
+            _drawScheduled = false;
             centerFollowed();
             drawTrack();
             render();
@@ -341,10 +407,13 @@
         if (lastTs == null) lastTs = ts;
         t = Math.min(tMax, t + ((ts - lastTs) / 1000) * speed);
         lastTs = ts;
-        drawFrame();
+        const doUi = ts - lastUiMs >= UI_MS; // throttle the DOM, not the canvas
+        if (doUi) lastUiMs = ts;
+        drawFrame(doUi);
         if (t >= tMax) {
             playing = false;
             lastTs = null;
+            render(true); // final DOM sync at the finish line
             return;
         }
         raf = requestAnimationFrame(loop);
@@ -354,6 +423,7 @@
         if (t >= tMax) t = 0;
         playing = true;
         lastTs = null;
+        lastUiMs = -1e9; // refresh the DOM on the first frame
         raf = requestAnimationFrame(loop);
     }
     function pause() {
@@ -446,7 +516,20 @@
     });
 
     // Redraw on resize / new data (independent of `t`, so playback is unaffected).
-    $: if (trackCtx && width && height && bounds) queueDraw();
+    // Redraw when the canvas size or track data actually changes. Guarded by a value
+    // key so a same-value reassignment (e.g. a ResizeObserver re-firing on containerWidth)
+    // can't re-trigger this thousands of times a second.
+    let _drawKey = '';
+    $: {
+        const key =
+            trackCtx && bounds
+                ? `${width}x${height}|${bounds.minX},${bounds.maxX},${bounds.minY},${bounds.maxY}`
+                : '';
+        if (key && key !== _drawKey) {
+            _drawKey = key;
+            queueDraw();
+        }
+    }
 </script>
 
 <div class="tm" bind:clientWidth={containerWidth}>
@@ -515,13 +598,13 @@
             <div class="tm-pass-caption">⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos}</div>
         {/if}
 
-        <div class="tm-clock">{fmtClock(t)} / {fmtClock(tMax)}</div>
+        <div class="tm-clock">{fmtClock(uiT)} / {fmtClock(tMax)}</div>
         {#if selected}<div class="tm-follow">{`Following ${selected}${view.zoom > 1 ? ' · camera locked' : ''} · click to release`}</div>{/if}
     </div>
 
     <div class="tm-controls">
         <button on:click={toggle} class="tm-btn tm-play">{playing ? '❚❚ Pause' : '▶ Play'}</button>
-        <input type="range" min="0" max={tMax} step="0.5" value={t} on:input={onScrub} class="tm-scrub" />
+        <input type="range" min="0" max={tMax} step="0.5" value={uiT} on:input={onScrub} class="tm-scrub" />
         <label class="tm-speed">
             Speed
             <select bind:value={speed}>
@@ -541,9 +624,9 @@
             aria-label="event timeline — click to seek"
             aria-valuemin="0"
             aria-valuemax={Math.round(tMax)}
-            aria-valuenow={Math.round(t)}
+            aria-valuenow={Math.round(uiT)}
         >
-            <div class="tm-timeline-fill" style="width:{(t / tMax) * 100}%"></div>
+            <div class="tm-timeline-fill" style="width:{(uiT / tMax) * 100}%"></div>
             {#each keyEvents as e (e.t + '|' + e.message)}
                 <button
                     class="tm-mark {e.type}"
@@ -640,6 +723,10 @@
         overflow: hidden;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
         max-width: 100%;
+        /* Isolate the animated map's layout/paint from the (very tall, in dev) page:
+           the canvas repaints every frame, and without containment the browser can
+           repaint page regions under it, which shows up as heavy per-frame cost. */
+        contain: content;
     }
     .tm-stage canvas {
         position: absolute;
