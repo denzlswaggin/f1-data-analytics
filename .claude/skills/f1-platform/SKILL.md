@@ -15,13 +15,16 @@ A CV-centerpiece **data-engineering** project: a modern data stack that turns ra
 F1 data into two reproducible, debatable insights. Owner: denzlswaggin
 (patrik.kriz@studyfi.com). Repo: github.com/denzlswaggin/f1-data-analytics.
 
-**Status: all 5 milestones complete, plus two feature waves now merged to `main`.**
+**Status: all 5 milestones complete, plus several feature waves on `main`.**
 The **API expansion** added four marts — pit strategy, weather-adjusted
 degradation, straight-line speed, and resampled telemetry — verified live on 2024
 data (see "Further marts" below). The **animated race replay** added FastF1's
 positional feed, a Python-built `marts.race_replay`, a custom Svelte track-map
 component, a race-control feed, team-radio audio + transcripts, and a
 season-spanning race picker (see "Race replay — animated track map" below). The
+latest wave added an **overtake-detection layer** (`marts.race_overtakes`), a
+**follow-cam**, team-radio polish, and a playback **performance pass** — PRs #16 and
+#17, both merged (see "Race replay — overtakes, follow-cam & performance"). The
 local Evidence dashboard runs at http://localhost:3000 via
 `cd dashboard && npm run dev`.
 
@@ -171,6 +174,47 @@ Built end-to-end on real **2026** data.
   gaps realistic (RUS win, ANT +3 s, …). Dagster: `raw_positions` + `race_replay`
   assets, both excluded-heavy `raw.positions` from the weekly job.
 
+## Race replay — overtakes, follow-cam & performance (PRs #16 and #17, merged)
+
+- **Overtake & battle detection** — a derived layer over the replay
+  (`analytics/overtakes.py`, pure like the solver, *not* dbt). `detect_overtakes`
+  reads `marts.race_replay` and flags on-track passes: a clean single-position
+  `running_order` swap where the two cars are **physically side-by-side** at the
+  completion tick. Physical x/y proximity is the key discriminator — when a car
+  pits its lap-progress plateaus, so the *projected* gap to whoever's catching it
+  momentarily collapses to ~0 (a pit pass *looks* close in time), but the cars are
+  far apart on track, so proximity excludes it. Also gated by
+  `gap_to_ahead_s < battle_gap` (secondary), a persistence check, and a start-line
+  settle guard. `F1_OVERTAKE_*` knobs (`battle_gap_s`=2, `persist_s`=3,
+  `start_guard_s`=3, `proximity_frac`=0.02). Builders `build_race_overtakes` /
+  `_season` / `build_all_overtakes` → `marts.race_overtakes` (grain: `season, round,
+  t_s, for_position, passer_code, passed_code, gap_at_pass_s`); CLI `overtakes`
+  (`--season/--round/--all` + threshold flags); Dagster `race_overtakes` asset
+  (`deps=[race_replay]`); Evidence source `race_overtakes.sql`. **Verified on 2024
+  Bahrain: 27 passes**, all nose-to-tail (`gap_at_pass_s` ≤ 0.03 s), no pit-cycle
+  artifacts. In `TrackMap.svelte`: an ⇄ overtakes seek-lane (click to jump), a green
+  highlight ring + connector on the map at the pass, a caption, and follow-a-car
+  filtering of the lane.
+- **Follow-cam** — when a car is followed AND zoomed in, the camera locks onto it and
+  keeps it centred (`centerFollowed`/`drawFrame`); "camera locked" shows in the chip.
+  At zoom 1 it's free pan/zoom.
+- **Team-radio polish** — the transcript caption clears on the audio `ended`/`error`
+  event (was pinned on screen); a comm plays the replay at **1× real time** (was the
+  default 6×, which raced ahead of the audio); `stopRadio` fully releases the
+  `<audio>` (clear `src` + `load`) so the media pipeline isn't left resident.
+- **Playback performance pass (PR #17)** — profiling on the live page showed the JS
+  (~0.1 ms/frame) and raw canvas draw (~0.03 ms) are both trivial; the wins were:
+  Catmull-Rom spline interpolation of car x/y between the 1 s ticks (smooth through
+  corners vs linear kinks); DOM (tower/clock/feed/scrubber) throttled to ~15 fps via a
+  separate `uiT` clock while the canvas stays 60 fps; the track outline cached as a
+  **single deduped lap** (was the reference driver's full run — the circuit retraced
+  once per lap, dozens of times) with a capped line width; and — the big one — a
+  **runaway redraw loop**: `queueDraw` was firing thousands of times a second (map
+  redrawn ~90–2000×/frame, tanking the follow-cam to ~2 fps when zoomed), fixed by
+  **debouncing `queueDraw` to one draw per animation frame** + value-guarding the
+  reactive resize/data redraw so a same-value `containerWidth` reassignment can't
+  re-trigger it.
+
 ## File / module map
 
 - `ingestion/` — EL package.
@@ -179,10 +223,10 @@ Built end-to-end on real **2026** data.
   - `resources.py` (season-scoped registry + flatteners races/results/qualifying; **per-round** flatteners `_flatten_pitstops`/`_flatten_ergast_laps`).
   - `loaders/lake.py` (Parquet), `loaders/warehouse.py` (idempotent-per-season load; `read_query`/`replace_table`).
   - `pipeline.py` (`ingest_resource`, `backfill`, `ingest_laps`, `ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`, `ingest_positions`, `ingest_race_control`, `ingest_team_radio`, `season_rounds`), `cli.py` (`backfill`/`incremental`/`laps`/`pitstops`/`ergast-laps`/`weather`/`telemetry`/`positions`/`race-control`/`team-radio`).
-- `analytics/` — `ratings.py` (pure solver + union-find), `replay.py` (pure `resample_race`), `pipeline.py` (`build_driver_ratings`, `build_race_replay`/`build_race_replays`), `cli.py` (`ratings`/`replay`).
+- `analytics/` — `ratings.py` (pure solver + union-find), `replay.py` (pure `resample_race`), `overtakes.py` (pure `detect_overtakes`), `pipeline.py` (`build_driver_ratings`, `build_race_replay[s]`, `build_all_replays`, `build_race_overtakes`/`_season`/`build_all_overtakes`), `cli.py` (`ratings`/`replay`/`overtakes`).
 - `warehouse/dbt/` — `profiles.yml` (dev=duckdb, prod=postgres), `macros/` (`generate_schema_name`, `parse_laptime`),
   `models/staging|intermediate|marts/*.sql` + `_*.yml` tests, `snapshots/drivers_snapshot.sql`.
-- `orchestration/` — `assets.py` (raw.* assets keyed to dbt sources — `raw_pitstops`/`raw_ergast_laps`/`raw_weather`/`raw_telemetry`/`raw_positions`/`raw_race_control`/`raw_team_radio`, all `deps=[["raw","races"]]`; FastF1 assets ingest the current season *so far* via `season_rounds`; `@dbt_assets`, `driver_ratings`, `race_replay`),
+- `orchestration/` — `assets.py` (raw.* assets keyed to dbt sources — `raw_pitstops`/`raw_ergast_laps`/`raw_weather`/`raw_telemetry`/`raw_positions`/`raw_race_control`/`raw_team_radio`, all `deps=[["raw","races"]]`; FastF1 assets ingest the current season *so far* via `season_rounds`; `@dbt_assets`, `driver_ratings`, `race_replay`, `race_overtakes`),
   `definitions.py` (job + weekly schedule + `DbtCliResource`; the weekly job **excludes** `raw.telemetry`, `raw.positions`, `raw.race_control` **and `raw.team_radio`** — too heavy / cache-dependent to re-pull weekly, materialise on demand).
 - `dashboard/` — Evidence project: `sources/f1/*.sql` (over the marts), pages `index.md`, `race-pace.md`, `pit-strategy.md`, `weather-and-speed.md`, `telemetry.md`, `race-replay.md`; `components/TrackMap.svelte` (auto-imported custom Svelte canvas component); `seeds/constructor_colors.csv`;
   `evidence.config.yaml` (`deployment.basePath: /f1-data-analytics`).
@@ -211,6 +255,7 @@ python -m ingestion.cli team-radio --season 2026            # OpenF1 team-radio 
 dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev   # or --target prod
 python -m analytics.cli ratings --top 20                    # solve + print leaderboard
 python -m analytics.cli replay --season 2026                # build marts.race_replay (all completed rounds)
+python -m analytics.cli overtakes --all                     # detect on-track passes → marts.race_overtakes (reads race_replay)
 dagster dev -m orchestration.definitions                    # Dagster UI (run from repo root)
 dagster definitions validate -m orchestration.definitions   # CI check
 cd dashboard && npm run dev                                 # Evidence at localhost:3000
@@ -242,6 +287,10 @@ Makefile wraps these (`make lint typecheck test dbt-build dagster …`). For Pos
 - **FastF1 pos_data (0,0) is a sentinel** ("no signal / in garage"), NOT a real track position — and it still carries `status='OnTrack'`, so you can't filter it by status; filter on the coordinates. Real on-track X/Y are offset (never exactly origin). Cleaned at ingest by `clean_positions`; a retired car then *parks* at a valid coord and its feed repeats to session end, so retirement is handled by **time** — vanish when the position stops changing (`resample_race`, tunable `F1_REPLAY_RETIRE_BUFFER_S`), not by coordinates.
 - **Custom Evidence components** live in `dashboard/components/*.svelte` (auto-imported by filename; confirmed in the SDK) and pages compile to Svelte, so `<canvas>` + `requestAnimationFrame` works. But pages are **prerendered** on `evidence build` — any browser-only API (rAF, canvas) reachable from a top-level/`$:` reactive statement must be guarded (`typeof requestAnimationFrame === 'undefined'`), or the build 500s even though `npm run dev` (client render) is fine. `onMount` is safe (client-only).
 - **Replay running order** is reconstructed from lap-progress; at the *exact* start (t=0) all cars share progress 0 so the tie-break order is cosmetic — it resolves the moment the race gets going. Cars with no lap data (early DNF) animate but don't appear in the tower.
+- **Overtake vs pit-cycle**: a pit stop makes the *progress-based* gap collapse to ~0 (looks like a close pass), so time-gap alone can't tell them apart — the discriminator is **physical x/y proximity** at the swap tick (a pitting car is far off on track). Detection reads `marts.race_replay`, so build the replay first; `build_race_overtakes*` **replace the whole `marts.race_overtakes`** (like the replay builders) — use `_season`/`build_all_overtakes` to keep multiple races.
+- **Replay follow-cam / zoom performance**: JS and raw canvas draw are both sub-ms — replay lag is elsewhere. (1) Draw the track from a **single deduped lap**, not the reference driver's full multi-lap run, and **cap the stroke width**, or the follow-cam repaints a huge path every frame. (2) **Debounce `queueDraw`** to one draw per frame and **value-guard** the `$: … queueDraw()` resize/data redraw — a ResizeObserver re-firing on `containerWidth` (`bind:clientWidth`) otherwise spins it into a runaway that redraws 90–2000×/frame (single-digit fps that slowly worsens). (3) Throttle DOM (tower/clock/feed/scrubber) to ~15 fps via a separate `uiT` clock; the canvas still animates every frame. (4) Interpolate car x/y with **Catmull-Rom**, not linear, so corners don't kink.
+- **Measuring replay fps under Claude-in-Chrome**: the automation drives Chrome **backgrounded/occluded**, so `requestAnimationFrame` is throttled (~1 fps) and paint is skipped — you can't read real fps or paint cost there. Synchronous JS cost (paused-scrub timing) *is* visibility-independent; playing an `<audio>` clip keeps the tab awake enough to sample Long Tasks; but the reliable profiler is an **on-screen fps/draw-count badge the user reads on their own foreground window**.
+- **Evidence dev cache corruption**: interleaving `npm run build` (adapter-static) with `npm run dev` in one checkout can break dev with `Cannot find module '__SERVER__/internal.js'`. Reset: `cd dashboard && rm -rf .evidence/template/.svelte-kit node_modules/.vite build && npm run dev` (all regenerated, no source touched). Also, a killed/zombie dev server keeps port 3000 held, so the next `npm run dev` silently moves to **3001** and you end up testing stale code — kill listeners on 3000/3001 before restarting.
 
 ## Remaining / future work
 
