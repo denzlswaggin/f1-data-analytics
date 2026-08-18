@@ -17,8 +17,11 @@ from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import season_rounds
 
 from analytics.pipeline import (
+    build_all_overtakes,
     build_all_replays,
     build_driver_ratings,
+    build_race_overtakes,
+    build_race_overtakes_season,
     build_race_replay,
     build_race_replays,
 )
@@ -115,6 +118,80 @@ def replay(
         f"{len(df)} rows, {df['driver_code'].nunique()} drivers, "
         f"{df['round'].nunique()} race(s) at {tick}s ticks."
     )
+
+
+@app.command()
+def overtakes(
+    season: Annotated[
+        int | None, typer.Option(help="Season to detect overtakes for (not needed with --all).")
+    ] = None,
+    round_: Annotated[
+        int | None,
+        typer.Option("--round", help="Single round; omit to do every round in the replay mart."),
+    ] = None,
+    battle_gap: Annotated[
+        float | None,
+        typer.Option("--battle-gap", help="Max post-pass interval, s (F1_OVERTAKE_BATTLE_GAP_S)."),
+    ] = None,
+    persist: Annotated[
+        float | None,
+        typer.Option(
+            "--persist", help="Seconds the passer must stay ahead (F1_OVERTAKE_PERSIST_S)."
+        ),
+    ] = None,
+    start_guard: Annotated[
+        float | None,
+        typer.Option(
+            "--start-guard", help="Skip passes before this many s (F1_OVERTAKE_START_GUARD_S)."
+        ),
+    ] = None,
+    proximity_frac: Annotated[
+        float | None,
+        typer.Option(
+            "--proximity-frac",
+            help="Physical-proximity gate as a fraction of track extent (F1_OVERTAKE_PROXIMITY_FRAC).",
+        ),
+    ] = None,
+    all_seasons: Annotated[
+        bool,
+        typer.Option("--all", help="Detect for every race in the replay mart; ignores --season."),
+    ] = False,
+) -> None:
+    """Detect on-track overtakes into marts.race_overtakes (from marts.race_replay).
+
+    Reads the already-built replay mart, so build the replay first. With ``--round``
+    does one race (replacing the mart); with ``--all`` every race across seasons;
+    otherwise every round of ``--season`` present in the replay mart.
+    """
+    configure_logging()
+    settings = get_settings()
+    overrides = {
+        "overtake_battle_gap_s": battle_gap,
+        "overtake_persist_s": persist,
+        "overtake_start_guard_s": start_guard,
+        "overtake_proximity_frac": proximity_frac,
+    }
+    overrides = {k: v for k, v in overrides.items() if v is not None}
+    if overrides:
+        settings = settings.model_copy(update=overrides)
+    log.info("cli.overtakes.start", season=season, round=round_, target=settings.warehouse)
+
+    if all_seasons:
+        df = build_all_overtakes(settings=settings)
+        scope = "all seasons"
+    elif season is None:
+        raise typer.BadParameter("Provide --season, or use --all.")
+    elif round_ is not None:
+        df = build_race_overtakes(season, round_, settings=settings)
+        scope = f"{season} round {round_}"
+    else:
+        df = build_race_overtakes_season(season, settings=settings)
+        scope = f"{season} (all rounds)"
+    if df.empty:
+        typer.echo(f"No overtakes for {scope} (build marts.race_replay first).")
+        return
+    races = df[["season", "round"]].drop_duplicates().shape[0]
+    typer.echo(f"Built marts.race_overtakes for {scope}: {len(df)} passes across {races} race(s).")
 
 
 if __name__ == "__main__":

@@ -71,6 +71,20 @@ class Settings(BaseSettings):
     # lap, even if its position keeps "moving" (a recovery crane/truck follows the car
     # sensor). Bounds the stop-detection above; ~one lap of margin by default.
     replay_retire_max_linger_s: float = Field(default=120.0, gt=0)
+    # Overtake detection (analytics.overtakes, over marts.race_replay).
+    # Secondary time gate: the interval between the two cars just after a pass must be
+    # under this (s) for it to count as a wheel-to-wheel overtake.
+    overtake_battle_gap_s: float = Field(default=2.0, gt=0)
+    # The passer must stay ahead of the passed car this long (s) after the swap, else
+    # it's treated as rank-boundary flicker rather than a completed pass.
+    overtake_persist_s: float = Field(default=3.0, ge=0)
+    # Skip overtakes before this many seconds — the standing-start order at t≈0 is
+    # cosmetic (all cars share lap-progress 0), so ignore the first moments.
+    overtake_start_guard_s: float = Field(default=3.0, ge=0)
+    # Physical-proximity gate as a fraction of the circuit's bounding-box diagonal:
+    # two cars closer than this at the pass count as on-track (a pitting car is far
+    # away). Circuit-relative so one value travels between tracks.
+    overtake_proximity_frac: float = Field(default=0.02, gt=0)
 
     # Logging
     log_level: str = "INFO"

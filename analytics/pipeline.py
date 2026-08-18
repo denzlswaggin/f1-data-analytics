@@ -7,6 +7,7 @@ from ingestion.config import Settings, get_settings
 from ingestion.loaders.warehouse import read_query, replace_table
 from ingestion.logging import get_logger
 
+from analytics.overtakes import detect_overtakes
 from analytics.ratings import compute_ratings
 from analytics.replay import resample_race
 
@@ -210,4 +211,101 @@ def build_all_replays(
     )
     replace_table(combined, schema="marts", table="race_replay", settings=settings)
     log.info("replay.materialised_all", races=len(non_empty), rows=len(combined))
+    return combined
+
+
+def _overtakes_query(season: int, rnd: int) -> str:
+    return f"""
+        select driver_code, t_s, x, y, running_order, gap_to_ahead_s
+        from marts.race_replay
+        where season = {int(season)} and round = {int(rnd)}
+    """
+
+
+def _build_one_overtakes(season: int, rnd: int, settings: Settings) -> pd.DataFrame:
+    """Detect one race's overtakes from ``marts.race_replay`` (with season/round).
+
+    Reads the already-built replay feed (so the passes align exactly with the
+    animation) and runs the pure detector. Empty (0 rows, right columns) if the race
+    has no replay rows or no clean passes are found.
+    """
+    replay = read_query(_overtakes_query(season, rnd), settings)
+    passes = detect_overtakes(
+        replay,
+        battle_gap_s=settings.overtake_battle_gap_s,
+        persist_s=settings.overtake_persist_s,
+        start_guard_s=settings.overtake_start_guard_s,
+        proximity_frac=settings.overtake_proximity_frac,
+    )
+    passes.insert(0, "season", season)
+    passes.insert(1, "round", rnd)
+    return passes
+
+
+def build_race_overtakes(season: int, rnd: int, settings: Settings | None = None) -> pd.DataFrame:
+    """Build the overtakes mart for a single race, replacing ``marts.race_overtakes``.
+
+    Like ``build_race_replay`` this *replaces* the whole mart with just this race —
+    use ``build_race_overtakes_season`` / ``build_all_overtakes`` to keep several
+    races for the dashboard. Returns the frame.
+    """
+    settings = settings or get_settings()
+    passes = _build_one_overtakes(season, rnd, settings)
+    replace_table(passes, schema="marts", table="race_overtakes", settings=settings)
+    log.info("overtakes.materialised", season=season, round=rnd, passes=len(passes))
+    return passes
+
+
+def build_race_overtakes_season(season: int, settings: Settings | None = None) -> pd.DataFrame:
+    """Build the overtakes mart for every round of ``season`` present in the replay mart.
+
+    Reads the rounds that actually exist in ``marts.race_replay`` for the season
+    (overtakes depend on the replay having been built), detects each, and replaces
+    ``marts.race_overtakes`` with their union. Returns the combined frame.
+    """
+    settings = settings or get_settings()
+    rounds = read_query(
+        f"select distinct round from marts.race_replay where season = {int(season)} order by round",
+        settings,
+    )
+    specs = [int(r) for r in rounds["round"]]
+    frames = [_build_one_overtakes(season, r, settings) for r in specs]
+    non_empty = [f for f in frames if not f.empty]
+    combined = (
+        pd.concat(non_empty, ignore_index=True)
+        if non_empty
+        else (frames[0] if frames else _build_one_overtakes(season, 0, settings))
+    )
+    replace_table(combined, schema="marts", table="race_overtakes", settings=settings)
+    log.info(
+        "overtakes.materialised_season",
+        season=season,
+        rounds=len(specs),
+        races_with_passes=len(non_empty),
+        passes=len(combined),
+    )
+    return combined
+
+
+def build_all_overtakes(settings: Settings | None = None) -> pd.DataFrame:
+    """Build the overtakes mart for EVERY race in ``marts.race_replay`` (all seasons).
+
+    Mirrors ``build_all_replays`` so the picker's overtake lane spans seasons.
+    Returns the combined frame.
+    """
+    settings = settings or get_settings()
+    pairs = read_query(
+        "select distinct season, round from marts.race_replay order by season, round",
+        settings,
+    )
+    specs = [(int(s), int(r)) for s, r in zip(pairs["season"], pairs["round"], strict=True)]
+    frames = [_build_one_overtakes(s, r, settings) for s, r in specs]
+    non_empty = [f for f in frames if not f.empty]
+    combined = (
+        pd.concat(non_empty, ignore_index=True)
+        if non_empty
+        else (frames[0] if frames else _build_one_overtakes(0, 0, settings))
+    )
+    replace_table(combined, schema="marts", table="race_overtakes", settings=settings)
+    log.info("overtakes.materialised_all", races=len(non_empty), passes=len(combined))
     return combined
