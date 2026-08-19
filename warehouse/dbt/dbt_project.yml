@@ -36,3 +36,171 @@ seeds:
       +column_types:
         team: varchar
         team_color: varchar
+
+    # CI test fixtures: a 2024 Bahrain (round 1) slice of every raw source,
+    # materialised into the `raw` schema so `dbt build` can run the full DAG and
+    # the ~120 data tests without hitting the source APIs. Column types are pinned
+    # to the real ingested types so the fixtures are byte-for-type identical on
+    # both DuckDB (dev) and Postgres (prod) — no CSV type-inference drift.
+    #
+    # Gated OFF by default (`load_ci_seeds`) so a normal dev or deploy `dbt build`
+    # never overwrites real ingested raw data. Enable in CI only:
+    #   dbt seed  --vars '{load_ci_seeds: true}' ...
+    #   dbt build --vars '{load_ci_seeds: true}' ...
+    ci:
+      +enabled: "{{ var('load_ci_seeds', false) | as_bool }}"
+      +schema: raw
+      races:
+        +column_types:
+          season: bigint
+          round: bigint
+          race_name: varchar
+          date: varchar
+          time: varchar
+          circuit_id: varchar
+          circuit_name: varchar
+          country: varchar
+          locality: varchar
+          lat: varchar
+          long: varchar
+      results:
+        +column_types:
+          season: bigint
+          round: bigint
+          race_name: varchar
+          date: varchar
+          driver_id: varchar
+          driver_code: varchar
+          driver_number: varchar
+          driver_given_name: varchar
+          driver_family_name: varchar
+          driver_nationality: varchar
+          constructor_id: varchar
+          grid: bigint
+          position: bigint
+          position_text: varchar
+          points: double precision
+          laps: bigint
+          status: varchar
+          time_millis: double precision
+          time_text: varchar
+          fastest_lap_rank: double precision
+          fastest_lap_time: varchar
+      qualifying:
+        +column_types:
+          season: bigint
+          round: bigint
+          race_name: varchar
+          date: varchar
+          driver_id: varchar
+          driver_code: varchar
+          constructor_id: varchar
+          position: bigint
+          q1: varchar
+          q2: varchar
+          q3: varchar
+      laps:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          driver_code: varchar
+          driver_number: varchar
+          team: varchar
+          lap_number: bigint
+          stint: bigint
+          compound: varchar
+          tyre_life: bigint
+          is_fresh_tyre: boolean
+          position: bigint
+          is_personal_best: boolean
+          track_status: varchar
+          lap_start_sec: double precision
+          speed_i1_kph: double precision
+          speed_i2_kph: double precision
+          speed_fl_kph: double precision
+          speed_st_kph: double precision
+          lap_time_sec: double precision
+          sector1_sec: double precision
+          sector2_sec: double precision
+          sector3_sec: double precision
+      pitstops:
+        +column_types:
+          season: bigint
+          round: bigint
+          driver_id: varchar
+          stop: bigint
+          lap: bigint
+          time_of_day: varchar
+          duration: varchar
+      ergast_laps:
+        +column_types:
+          season: bigint
+          round: bigint
+          driver_id: varchar
+          lap: bigint
+          position: bigint
+          lap_time: varchar
+      weather:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          time_sec: double precision
+          air_temp: double precision
+          track_temp: double precision
+          humidity: double precision
+          pressure: double precision
+          wind_speed: double precision
+          wind_direction: bigint
+          is_raining: boolean
+      race_control:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          session_time_sec: double precision
+          category: varchar
+          flag: varchar
+          scope: varchar
+          sector: bigint
+          message: varchar
+          driver_number: varchar
+          driver_code: varchar
+          lap: bigint
+      team_radio:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          session_time_sec: double precision
+          driver_number: varchar
+          driver_code: varchar
+          recording_url: varchar
+          transcript: varchar
+      telemetry:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          driver_code: varchar
+          lap_number: bigint
+          distance_m: double precision
+          speed_kph: double precision
+          throttle: double precision
+          rpm: double precision
+          x: double precision
+          y: double precision
+          brake: bigint
+          drs: bigint
+          gear: bigint
+      positions:
+        +column_types:
+          season: bigint
+          round: bigint
+          session: varchar
+          driver_code: varchar
+          session_time_sec: double precision
+          x: double precision
+          y: double precision
+          status: varchar

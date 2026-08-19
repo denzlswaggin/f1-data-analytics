@@ -1,0 +1,21 @@
+season,round,race_name,date,driver_id,driver_code,constructor_id,position,q1,q2,q3
+2024,1,Bahrain Grand Prix,2024-03-02,max_verstappen,VER,red_bull,1,1:30.031,1:29.374,1:29.179
+2024,1,Bahrain Grand Prix,2024-03-02,leclerc,LEC,ferrari,2,1:30.243,1:29.165,1:29.407
+2024,1,Bahrain Grand Prix,2024-03-02,russell,RUS,mercedes,3,1:30.350,1:29.922,1:29.485
+2024,1,Bahrain Grand Prix,2024-03-02,sainz,SAI,ferrari,4,1:29.909,1:29.573,1:29.507
+2024,1,Bahrain Grand Prix,2024-03-02,perez,PER,red_bull,5,1:30.221,1:29.932,1:29.537
+2024,1,Bahrain Grand Prix,2024-03-02,alonso,ALO,aston_martin,6,1:30.179,1:29.801,1:29.542
+2024,1,Bahrain Grand Prix,2024-03-02,norris,NOR,mclaren,7,1:30.143,1:29.941,1:29.614
+2024,1,Bahrain Grand Prix,2024-03-02,piastri,PIA,mclaren,8,1:30.531,1:30.122,1:29.683
+2024,1,Bahrain Grand Prix,2024-03-02,hamilton,HAM,mercedes,9,1:30.451,1:29.718,1:29.710
+2024,1,Bahrain Grand Prix,2024-03-02,hulkenberg,HUL,haas,10,1:30.566,1:29.851,1:30.502
+2024,1,Bahrain Grand Prix,2024-03-02,tsunoda,TSU,rb,11,1:30.481,1:30.129,
+2024,1,Bahrain Grand Prix,2024-03-02,stroll,STR,aston_martin,12,1:29.965,1:30.200,
+2024,1,Bahrain Grand Prix,2024-03-02,albon,ALB,williams,13,1:30.397,1:30.221,
+2024,1,Bahrain Grand Prix,2024-03-02,ricciardo,RIC,rb,14,1:30.562,1:30.278,
+2024,1,Bahrain Grand Prix,2024-03-02,kevin_magnussen,MAG,haas,15,1:30.646,1:30.529,
+2024,1,Bahrain Grand Prix,2024-03-02,bottas,BOT,sauber,16,1:30.756,,
+2024,1,Bahrain Grand Prix,2024-03-02,zhou,ZHO,sauber,17,1:30.757,,
+2024,1,Bahrain Grand Prix,2024-03-02,sargeant,SAR,williams,18,1:30.770,,
+2024,1,Bahrain Grand Prix,2024-03-02,ocon,OCO,alpine,19,1:30.793,,
+2024,1,Bahrain Grand Prix,2024-03-02,gasly,GAS,alpine,20,1:30.948,,

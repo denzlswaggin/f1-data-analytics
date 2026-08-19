@@ -1,0 +1,23 @@
+version: 2
+
+# Unit test for the parse_laptime macro (via stg_qualifying), which turns F1
+# lap-time strings into seconds. Inputs are chosen so every parsed value is
+# exactly representable in binary floating point (integers + quarters/halves)
+# and identical on DuckDB and Postgres — no float-equality flakiness.
+unit_tests:
+  - name: stg_qualifying_parses_laptime_strings
+    description: >
+      parse_laptime handles "M:SS.mmm", bare "SS.mmm", empty string and null,
+      converting each Q session to seconds.
+    model: stg_qualifying
+    given:
+      - input: source('raw', 'qualifying')
+        rows:
+          # "M:SS.mmm" form for Q1/Q2; empty string for Q3 -> null.
+          - {season: 2024, round: 1, driver_id: drv_a, driver_code: AAA, constructor_id: team_x, position: 1, q1: "1:30.5", q2: "0:45.25", q3: ""}
+          # Bare "SS.mmm" form for Q1; nulls for Q2/Q3 -> null.
+          - {season: 2024, round: 1, driver_id: drv_b, driver_code: BBB, constructor_id: team_x, position: 2, q1: "88.75", q2: , q3: }
+    expect:
+      rows:
+        - {driver_id: drv_a, q1_sec: 90.5, q2_sec: 45.25, q3_sec: }
+        - {driver_id: drv_b, q1_sec: 88.75, q2_sec: , q3_sec: }
