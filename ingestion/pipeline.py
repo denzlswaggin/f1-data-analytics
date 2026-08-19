@@ -106,9 +106,10 @@ def ingest_laps(
 ) -> int:
     """Ingest FastF1 per-lap data for a set of rounds in one season.
 
-    All requested rounds are collected into a single season DataFrame and loaded
-    idempotently per season (re-running replaces the season's laps). Returns rows
-    loaded. FastF1 is a heavy optional dependency, imported here.
+    All requested rounds are collected into a single DataFrame and loaded
+    round-aware (re-running replaces only those rounds' laps, so an incremental
+    run appends new rounds). Returns rows loaded. FastF1 is a heavy optional
+    dependency, imported here.
     """
     settings = settings or get_settings()
     from ingestion.clients.fastf1_client import FastF1Client
@@ -126,7 +127,7 @@ def ingest_laps(
 
     laps = pd.concat(frames, ignore_index=True)
     write_parquet(laps, "laps", season, settings)
-    return load_dataframe(laps, "laps", season, settings)
+    return load_dataframe(laps, "laps", season, settings, replace_rounds=True)
 
 
 def ingest_weather(
@@ -149,7 +150,7 @@ def ingest_weather(
 
     weather = pd.concat(frames, ignore_index=True)
     write_parquet(weather, "weather", season, settings)
-    return load_dataframe(weather, "weather", season, settings)
+    return load_dataframe(weather, "weather", season, settings, replace_rounds=True)
 
 
 def ingest_telemetry(
@@ -172,7 +173,7 @@ def ingest_telemetry(
 
     telemetry = pd.concat(frames, ignore_index=True)
     write_parquet(telemetry, "telemetry", season, settings)
-    return load_dataframe(telemetry, "telemetry", season, settings)
+    return load_dataframe(telemetry, "telemetry", season, settings, replace_rounds=True)
 
 
 def ingest_positions(
@@ -181,8 +182,9 @@ def ingest_positions(
     """Ingest FastF1 time-stamped car positions for a set of rounds (heavy).
 
     Feeds the race-replay map: one row per driver per position sample, on the
-    shared session clock. All rounds are concatenated into one season frame and
-    loaded once (the loader's delete key is ``season`` only).
+    shared session clock. All requested rounds are concatenated into one
+    frame and loaded round-aware, so an incremental run appends new rounds
+    without wiping the rounds already loaded.
     """
     settings = settings or get_settings()
     from ingestion.clients.fastf1_client import FastF1Client
@@ -200,7 +202,7 @@ def ingest_positions(
 
     positions = pd.concat(frames, ignore_index=True)
     write_parquet(positions, "positions", season, settings)
-    return load_dataframe(positions, "positions", season, settings)
+    return load_dataframe(positions, "positions", season, settings, replace_rounds=True)
 
 
 def ingest_race_control(
@@ -209,8 +211,9 @@ def ingest_race_control(
     """Ingest FastF1 race-control messages for a set of rounds in one season.
 
     Reads from the FastF1 cache for the session-time reference, so it's light once
-    telemetry is cached. All rounds are concatenated into one season frame and
-    loaded once (the loader's delete key is ``season`` only).
+    telemetry is cached. All requested rounds are concatenated into one
+    frame and loaded round-aware, so an incremental run appends new rounds
+    without wiping the rounds already loaded.
     """
     settings = settings or get_settings()
     from ingestion.clients.fastf1_client import FastF1Client
@@ -228,7 +231,7 @@ def ingest_race_control(
 
     messages = pd.concat(frames, ignore_index=True)
     write_parquet(messages, "race_control", season, settings)
-    return load_dataframe(messages, "race_control", season, settings)
+    return load_dataframe(messages, "race_control", season, settings, replace_rounds=True)
 
 
 def _code_from_radio_url(url: object) -> str | None:
@@ -353,7 +356,7 @@ def ingest_team_radio(
 
     radio = pd.concat(frames, ignore_index=True)
     write_parquet(radio, "team_radio", season, settings)
-    return load_dataframe(radio, "team_radio", season, settings)
+    return load_dataframe(radio, "team_radio", season, settings, replace_rounds=True)
 
 
 def _extract_per_round(
@@ -365,9 +368,9 @@ def _extract_per_round(
 ) -> pd.DataFrame:
     """Page a per-round Jolpica endpoint over several rounds into one frame.
 
-    All rounds are collected into a single season DataFrame so the per-season
-    idempotent loader replaces the whole season at once (loading round-by-round
-    would delete earlier rounds — the loader's delete key is ``season`` only).
+    All rounds are collected into a single DataFrame; the caller loads them
+    round-aware (``replace_rounds=True``) so replacing some rounds leaves the
+    rest of the season intact.
     """
     rows: list[dict[str, Any]] = []
     for rnd in rounds:
@@ -386,7 +389,7 @@ def ingest_pitstops(season: int, rounds: list[int], settings: Settings | None = 
         log.warning("pipeline.pitstops_empty", season=season, rounds=rounds)
         return 0
     write_parquet(df, "pitstops", season, settings)
-    return load_dataframe(df, "pitstops", season, settings)
+    return load_dataframe(df, "pitstops", season, settings, replace_rounds=True)
 
 
 def ingest_ergast_laps(season: int, rounds: list[int], settings: Settings | None = None) -> int:
@@ -398,4 +401,4 @@ def ingest_ergast_laps(season: int, rounds: list[int], settings: Settings | None
         log.warning("pipeline.ergast_laps_empty", season=season, rounds=rounds)
         return 0
     write_parquet(df, "ergast_laps", season, settings)
-    return load_dataframe(df, "ergast_laps", season, settings)
+    return load_dataframe(df, "ergast_laps", season, settings, replace_rounds=True)

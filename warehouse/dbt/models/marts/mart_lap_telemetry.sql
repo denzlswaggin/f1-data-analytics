@@ -2,6 +2,21 @@
 -- track maps. One row per driver per lap per distance point (race sessions).
 -- Built from stg_telemetry, enriched with compound/stint (stg_laps), race name
 -- (stg_races) and the Ergast driver_id/name (stg_driver_codes).
+--
+-- Incremental: telemetry is the highest-volume mart (~242k rows per race), so it
+-- is built race-by-race rather than fully rebuilt. Each run appends only races
+-- (season, round) not already present. `delete+insert` on the row grain keeps a
+-- re-ingested race idempotent (its rows are replaced, not duplicated), and works
+-- on both DuckDB (dev) and Postgres (prod). A full rebuild: `dbt build
+-- --full-refresh --select mart_lap_telemetry`.
+{{
+    config(
+        materialized="incremental",
+        unique_key=["season", "round", "driver_code", "lap_number", "distance_m"],
+        incremental_strategy="delete+insert",
+        on_schema_change="append_new_columns",
+    )
+}}
 with tel as (
     select * from {{ ref('stg_telemetry') }}
     where session = 'R'
@@ -53,3 +68,12 @@ left join races
 left join driver_codes
     on driver_codes.season = tel.season
     and driver_codes.driver_code = tel.driver_code
+{% if is_incremental() %}
+    -- Append only races not already materialised; existing races are untouched.
+    where not exists (
+        select 1
+        from {{ this }} as existing
+        where existing.season = tel.season
+            and existing.round = tel.round
+    )
+{% endif %}
