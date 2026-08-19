@@ -4,6 +4,7 @@ Example::
 
     python -m analytics.cli ratings          # build marts.driver_ratings
     python -m analytics.cli ratings --top 20 # ...and print the leaderboard
+    python -m analytics.cli validate         # backtest + CIs + shrinkage sweep
     python -m analytics.cli replay --season 2026 --round 1  # build marts.race_replay
 """
 
@@ -13,6 +14,7 @@ from typing import Annotated
 
 import typer
 from ingestion.config import get_settings
+from ingestion.loaders.warehouse import read_query
 from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import season_rounds
 
@@ -24,6 +26,11 @@ from analytics.pipeline import (
     build_race_overtakes_season,
     build_race_replay,
     build_race_replays,
+)
+from analytics.validation import backtest_ratings, bootstrap_ratings, shrinkage_sensitivity
+
+_GAPS_QUERY = (
+    "select driver_id, teammate_id, pace_gap, season from intermediate.int_teammate_quali_gaps"
 )
 
 app = typer.Typer(add_completion=False, help="F1 analytical transforms.")
@@ -59,6 +66,58 @@ def ratings(
             f"  {row.rank:>3}  {name:<22} {row.rating:>7.3f}  "
             f"{row.n_comparisons:>5}  {row.first_season}-{row.last_season}"
         )
+
+
+@app.command()
+def validate(
+    n_boot: Annotated[
+        int, typer.Option(help="Bootstrap resamples for the rating CIs (0 to skip).")
+    ] = 300,
+    prior_weight: Annotated[
+        float, typer.Option(help="Empirical-Bayes shrinkage strength for the fit.")
+    ] = 8.0,
+    top: Annotated[int, typer.Option(help="Rows of the bootstrap CI table to print.")] = 15,
+) -> None:
+    """Validate the rating model: temporal backtest, shrinkage sensitivity, bootstrap CIs."""
+    configure_logging()
+    log.info("cli.validate.start", target=get_settings().warehouse)
+    gaps = read_query(_GAPS_QUERY)
+    if gaps.empty:
+        typer.echo("No teammate gaps found — build the dbt intermediate models first.")
+        return
+
+    bt = backtest_ratings(gaps, prior_weight=prior_weight)
+    typer.echo("\n=== Backtest (expanding-window temporal hold-out) ===")
+    typer.echo(
+        f"  predictions       : {bt.n_predictions} races over {bt.n_test_seasons} test seasons"
+    )
+    typer.echo(f"  race sign acc.    : {bt.sign_accuracy:.3f}   (0.50 = coin flip)")
+    typer.echo(
+        f"  season-battle acc : {bt.pair_sign_accuracy:.3f}   over {bt.n_pairs} teammate-season battles"
+    )
+    typer.echo(f"  correlation r     : {bt.pearson_r:.3f}")
+    typer.echo(
+        f"  MAE / baseline    : {bt.mae:.2f} / {bt.baseline_mae:.2f}  (skill {bt.skill_score:+.3f})"
+    )
+
+    sens = shrinkage_sensitivity(gaps)
+    typer.echo("\n=== Shrinkage sensitivity (leaderboard stability vs prior_weight) ===")
+    typer.echo(f"  {'prior_wt':>8}  {'spearman':>8}  {'top20':>6}  {'|rating|':>8}")
+    for r in sens.itertuples():
+        typer.echo(
+            f"  {r.prior_weight:>8.1f}  {r.spearman_vs_default:>8.3f}  "
+            f"{r.top_n_overlap:>6.2f}  {r.mean_abs_rating:>8.3f}"
+        )
+
+    if n_boot > 0:
+        ci = bootstrap_ratings(gaps, n_boot=n_boot, prior_weight=prior_weight)
+        typer.echo(f"\n=== Bootstrap 90% CIs (n_boot={n_boot}) — top {top} ===")
+        typer.echo(f"  {'#':>3}  {'driver':<18} {'rating':>7}  {'90% CI':>18}  boots")
+        for i, r in enumerate(ci.head(top).itertuples(), start=1):
+            typer.echo(
+                f"  {i:>3}  {r.driver_id:<18} {r.rating:>7.3f}  "
+                f"[{r.rating_lo:>6.3f}, {r.rating_hi:>6.3f}]  {r.n_boot}"
+            )
 
 
 @app.command()
