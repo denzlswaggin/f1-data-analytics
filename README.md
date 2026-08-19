@@ -55,7 +55,7 @@ python -m analytics.cli ratings --top 20                 # solve + print leaderb
 flowchart LR
     J["Jolpica-F1 API\n(results, laps, pit stops)"] --> ING
     F["FastF1\n(telemetry, timing, tyres)"] --> ING
-    ING["Ingestion (Python EL)\nrate-limited · retrying · incremental"] --> LAKE["Raw Parquet lake\npartitioned by season/round"]
+    ING["Ingestion (Python EL)\nrate-limited · retrying · incremental (per-round watermark)"] --> LAKE["Raw Parquet lake\npartitioned by season"]
     LAKE --> WH
     subgraph WH["Warehouse"]
       DUCK["DuckDB (dev)"]
