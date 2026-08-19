@@ -120,6 +120,7 @@ tests/            pytest suite
 ## Writeup
 
 - [The full story](docs/blog-teammate-normalised-pace.md) — method, results, and the stack behind them
+- [Validating the rating model](docs/rating-validation.md) — backtest, shrinkage sensitivity, bootstrap CIs
 - [LinkedIn draft](docs/linkedin-post.md)
 
 ## License
