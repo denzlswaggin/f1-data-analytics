@@ -54,18 +54,39 @@ models:
     description: >
       Tyre-degradation rate (sec/lap) per race and compound, from a linear fit of
       lap time vs tyre age over green-flag laps.
+    # Enforced data contract: dbt fails the build if the model's shape drifts from
+    # the columns/types declared below. Types are cross-dialect (DuckDB + Postgres).
+    config:
+      contract:
+        enforced: true
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, compound]
     columns:
-      - name: deg_sec_per_lap
-        description: Slope of lap time vs tyre life; higher = faster fall-off.
+      - name: season
+        data_type: integer
         data_tests: [not_null]
+      - name: round
+        data_type: integer
+        data_tests: [not_null]
+      - name: race_name
+        data_type: varchar
+      - name: compound
+        data_type: varchar
       - name: n_laps
+        data_type: bigint
         data_tests:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 8
               max_value: 2000
+      - name: deg_sec_per_lap
+        data_type: double precision
+        description: Slope of lap time vs tyre life; higher = faster fall-off.
+        data_tests: [not_null]
+      - name: best_lap_sec
+        data_type: double precision
+      - name: avg_lap_sec
+        data_type: double precision
 
   - name: mart_pit_strategy
     description: >

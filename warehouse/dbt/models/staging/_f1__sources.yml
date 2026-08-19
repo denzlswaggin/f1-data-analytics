@@ -16,6 +16,16 @@ sources:
             data_tests: [not_null]
       - name: results
         description: Race classification, one row per driver per race.
+        # Event-time freshness: results exist only for *completed* races, so the
+        # latest race date tracks whether ingestion is keeping up during a season.
+        # (raw.races isn't a freshness signal — it carries the full future schedule.)
+        # Thresholds tolerate F1's ~4-week summer break; the ~3-month winter
+        # off-season is expected downtime — run `dbt source freshness` in-season or
+        # right after an ingest (see scheduled-ingest.yml).
+        loaded_at_field: 'cast("date" as timestamp)'
+        freshness:
+          warn_after: {count: 21, period: day}
+          error_after: {count: 120, period: day}
         columns:
           - name: season
             data_tests: [not_null]

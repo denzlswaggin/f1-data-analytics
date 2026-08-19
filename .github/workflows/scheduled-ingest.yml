@@ -27,7 +27,19 @@ jobs:
           cache: "pip"
 
       - name: Install
-        run: pip install -e ".[dev]"
+        run: |
+          pip install -e ".[dev]"
+          pip install -e ".[dbt]"
 
       - name: Incremental ingest
         run: python -m ingestion.cli incremental
+
+      # Assert the freshly-ingested source isn't stale (event-time freshness on the
+      # latest race date). Meaningful here because we just ingested the current
+      # season; error_after (120d) tolerates F1's winter off-season, so only a
+      # genuinely stalled pipeline fails.
+      - name: dbt source freshness
+        run: |
+          dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+          dbt source freshness --select source:raw.results \
+            --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
