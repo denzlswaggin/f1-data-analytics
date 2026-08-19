@@ -1,0 +1,32 @@
+version: 2
+
+# Unit test for the headline insight's atomic transform: the "last knockout
+# session both teammates set a time in" selection, the exactly-two-cars filter,
+# and beat_teammate. pace_gap (a cross-dialect float from ln) is intentionally
+# not asserted here — only the exact selection/flag columns are.
+unit_tests:
+  - name: int_teammate_quali_gaps_picks_last_common_session
+    description: >
+      Q3 when both teammates reached it; falls back to Q2 when one didn't;
+      excludes single-car teams and pairs with no common session.
+    model: int_teammate_quali_gaps
+    given:
+      - input: ref('stg_qualifying')
+        rows:
+          # RED: both reached Q3 -> compare on Q3 (driver_a faster).
+          - {race_key: r1, season: 2024, round: 1, constructor_id: red, driver_id: red_a, q1_sec: 80.0, q2_sec: 79.0, q3_sec: 78.0}
+          - {race_key: r1, season: 2024, round: 1, constructor_id: red, driver_id: red_b, q1_sec: 81.0, q2_sec: 80.0, q3_sec: 79.0}
+          # MER: only one reached Q3 -> last COMMON session is Q2 (mer_a faster).
+          - {race_key: r1, season: 2024, round: 1, constructor_id: mer, driver_id: mer_a, q1_sec: 82.0, q2_sec: 81.0, q3_sec: 80.0}
+          - {race_key: r1, season: 2024, round: 1, constructor_id: mer, driver_id: mer_b, q1_sec: 83.0, q2_sec: 82.0, q3_sec: }
+          # WIL: single car that weekend -> excluded (n_cars != 2).
+          - {race_key: r1, season: 2024, round: 1, constructor_id: wil, driver_id: wil_a, q1_sec: 90.0, q2_sec: , q3_sec: }
+          # ALP: two cars but no overlapping session -> excluded.
+          - {race_key: r1, season: 2024, round: 1, constructor_id: alp, driver_id: alp_a, q1_sec: 88.0, q2_sec: , q3_sec: }
+          - {race_key: r1, season: 2024, round: 1, constructor_id: alp, driver_id: alp_b, q1_sec: , q2_sec: 87.0, q3_sec: }
+    expect:
+      rows:
+        - {driver_id: red_a, teammate_id: red_b, common_session: Q3, beat_teammate: true}
+        - {driver_id: red_b, teammate_id: red_a, common_session: Q3, beat_teammate: false}
+        - {driver_id: mer_a, teammate_id: mer_b, common_session: Q2, beat_teammate: true}
+        - {driver_id: mer_b, teammate_id: mer_a, common_session: Q2, beat_teammate: false}
