@@ -50,6 +50,21 @@ def _dedupe_undirected(gaps: pd.DataFrame) -> pd.DataFrame:
     return gaps[gaps["driver_id"] < gaps["teammate_id"]]
 
 
+def _spearman(a: pd.Series, b: pd.Series) -> float:
+    """Spearman rank correlation without a SciPy dependency.
+
+    Spearman ``rho`` is just the Pearson correlation of the ranked values, so we
+    rank (average ties) and hand the ranks to ``np.corrcoef``. ``pandas``' own
+    ``method="spearman"`` imports ``scipy``, which is only in the heavy
+    ``.[telemetry]`` extra — absent from the lean core/CI install.
+    """
+    ar = a.rank().to_numpy(dtype=float)
+    br = b.rank().to_numpy(dtype=float)
+    if len(ar) < 2:
+        return float("nan")
+    return float(np.corrcoef(ar, br)[0, 1])
+
+
 def _make_directed(undirected: pd.DataFrame) -> pd.DataFrame:
     """Rebuild both directions (i→j and j→i, gap negated) for the solver."""
     fwd = undirected[["driver_id", "teammate_id", "pace_gap"]]
@@ -243,7 +258,7 @@ def shrinkage_sensitivity(
     for pw in prior_weights:
         fit = fits[pw]
         common = base.index.intersection(fit.index)
-        rho = float(base.loc[common, "rank"].corr(fit.loc[common, "rank"], method="spearman"))
+        rho = _spearman(base.loc[common, "rank"], fit.loc[common, "rank"])
         overlap = len(base_top & set(fit.index[fit["rank"] <= top_n])) / float(top_n)
         rows.append(
             {
