@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lint format typecheck test backfill dbt-build dbt-docs dagster dagster-validate pg-up pg-down check
+.PHONY: help install install-dbt lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dagster dagster-validate pg-up pg-down check
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -31,6 +31,9 @@ dbt-build: ## Build the dbt project (dev target)
 
 dbt-docs: ## Generate dbt docs (dev target)
 	dbt docs generate --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+dbt-docs-check: dbt-docs ## Generate docs, then fail if any model/source lacks a description
+	python scripts/check_dbt_docs_coverage.py warehouse/dbt/target/manifest.json
 
 dagster: ## Launch the Dagster UI (asset graph + schedules)
 	dagster dev -m orchestration.definitions
