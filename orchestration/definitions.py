@@ -16,14 +16,17 @@ from dagster import (
     AssetSelection,
     Definitions,
     RunFailureSensorContext,
-    ScheduleDefinition,
+    RunRequest,
     define_asset_job,
     run_failure_sensor,
+    schedule,
 )
 from dagster_dbt import DbtCliResource
 from ingestion.logging import get_logger
 
 from orchestration.assets import (
+    CURRENT_SEASON,
+    SEASON_PARTITIONS,
     dbt_models,
     dbt_project,
     driver_ratings,
@@ -72,10 +75,11 @@ all_assets = [
     race_replay,
 ]
 
-# Full end-to-end refresh: ingest -> dbt -> ratings + replay. The heavy / cache-
-# dependent FastF1 + OpenF1 ingests — raw.telemetry, raw.positions, raw.race_control
-# and raw.team_radio — are excluded from the weekly job; materialise them on demand.
-# Downstream dbt/analytics still rebuild each run from whatever has been ingested.
+# Full end-to-end refresh: ingest -> dbt -> ratings + replay, partitioned by
+# season. The heavy / cache-dependent FastF1 + OpenF1 ingests — raw.telemetry,
+# raw.positions, raw.race_control and raw.team_radio — are excluded from the
+# weekly job; materialise them on demand. Downstream dbt/analytics are
+# unpartitioned and rebuild each run from whatever has been ingested.
 refresh_job = define_asset_job(
     name="refresh_pipeline",
     selection=AssetSelection.all()
@@ -85,14 +89,22 @@ refresh_job = define_asset_job(
         AssetKey(["raw", "race_control"]),
         AssetKey(["raw", "team_radio"]),
     ),
+    partitions_def=SEASON_PARTITIONS,
 )
 
-# Race weekends finish Sunday; refresh Monday morning.
-race_weekend_schedule = ScheduleDefinition(
-    name="race_weekend_refresh",
-    job=refresh_job,
-    cron_schedule="0 6 * * 1",
+# Backfill entry point: (re)materialise the raw ingestion for any season (or a
+# range) from the Dagster UI / `dagster job backfill`. Partitioned by season.
+backfill_ingest_job = define_asset_job(
+    name="backfill_ingest",
+    selection=AssetSelection.groups("ingest"),
+    partitions_def=SEASON_PARTITIONS,
 )
+
+
+# Race weekends finish Sunday; refresh the current season Monday morning.
+@schedule(job=refresh_job, cron_schedule="0 6 * * 1", name="race_weekend_refresh")
+def race_weekend_schedule() -> RunRequest:
+    return RunRequest(partition_key=str(CURRENT_SEASON))
 
 
 # Structured alert on any run failure. Logs via structlog (JSON in prod); this is
@@ -110,7 +122,7 @@ def alert_on_run_failure(context: RunFailureSensorContext) -> None:
 defs = Definitions(
     assets=all_assets,
     asset_checks=[raw_races_current_season_present, driver_ratings_are_sane],
-    jobs=[refresh_job],
+    jobs=[refresh_job, backfill_ingest_job],
     schedules=[race_weekend_schedule],
     sensors=[alert_on_run_failure],
     resources={"dbt": DbtCliResource(project_dir=dbt_project, dbt_executable=_dbt_executable())},
