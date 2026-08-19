@@ -38,6 +38,13 @@ dev = [
     "types-requests>=2.32",
     "types-psycopg2>=2.9",
     "pre-commit>=4.0",
+    "pip-tools>=7.4",  # `make lock` -> requirements.lock (pinned core deps)
+    "fsspec>=2024.6",  # exercises the object-store lake path (memory:// in tests)
+]
+# Object-store lake (write the Parquet lake to S3 instead of local disk). Pulls
+# fsspec + s3fs; credentials come from the environment (AWS_*). GCS is `gcsfs`.
+cloud = [
+    "s3fs>=2024.6",
 ]
 # dbt is resolved separately (strict transitive pins) — install with:
 #   pip install -e ".[dbt]"
