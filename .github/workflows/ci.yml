@@ -106,6 +106,30 @@ jobs:
           dbt build --vars '{load_ci_seeds: true}' \
             --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
 
+      # dev leg only: generate the lineage catalog from the built warehouse,
+      # enforce docs coverage, and publish the docs site as a downloadable
+      # artifact (deliberately NOT GitHub Pages — this repo stays private).
+      - name: dbt docs generate
+        if: matrix.target == 'dev'
+        run: |
+          dbt docs generate --vars '{load_ci_seeds: true}' \
+            --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: Check dbt docs coverage (every model + source described)
+        if: matrix.target == 'dev'
+        run: python scripts/check_dbt_docs_coverage.py warehouse/dbt/target/manifest.json
+
+      - name: Upload dbt docs (lineage catalog)
+        if: matrix.target == 'dev'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-docs
+          path: |
+            warehouse/dbt/target/index.html
+            warehouse/dbt/target/manifest.json
+            warehouse/dbt/target/catalog.json
+          if-no-files-found: error
+
   orchestration:
     name: orchestration
     runs-on: ubuntu-latest
