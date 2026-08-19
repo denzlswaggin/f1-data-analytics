@@ -34,11 +34,40 @@ jobs:
         run: pytest -q
 
   dbt:
-    name: dbt
+    # Build the whole dbt DAG and run the data tests against committed CI seed
+    # fixtures (a 2024 Bahrain slice, gated behind `load_ci_seeds`), on BOTH
+    # dialects: dev = DuckDB, prod = Postgres. This turns the ~120 declared dbt
+    # tests into a real per-PR gate and exercises cross-dialect SQL.
+    name: dbt (${{ matrix.target }})
     runs-on: ubuntu-latest
     continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [dev, prod]
+    # Postgres warehouse for the `prod` target. It also spins up for the `dev`
+    # leg (unused there) — simpler than conditional services, and cheap.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: f1
+          POSTGRES_PASSWORD: f1
+          POSTGRES_DB: f1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U f1 -d f1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       F1_DUCKDB_PATH: data/warehouse/f1.duckdb
+      F1_PG_HOST: localhost
+      F1_PG_PORT: "5432"
+      F1_PG_USER: f1
+      F1_PG_PASSWORD: f1
+      F1_PG_DATABASE: f1
     steps:
       - uses: actions/checkout@v4
 
@@ -55,21 +84,27 @@ jobs:
           pip install -e ".[dev]"
           pip install -e ".[dbt]"
 
-      # dbt-duckdb opens the warehouse file at parse/compile time and DuckDB
-      # will not create missing parent dirs (data/ is gitignored, so absent in CI).
+      # dbt-duckdb opens the warehouse file at parse time and DuckDB will not
+      # create missing parent dirs (data/ is gitignored, so absent in CI).
       - name: Prepare warehouse dir
         run: mkdir -p data/warehouse
 
-      # No seed/raw data exists in CI yet, so we validate that the dbt
-      # project resolves and compiles rather than running `dbt build`.
       - name: dbt deps
-        run: dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+        run: dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
 
-      - name: dbt parse
-        run: dbt parse --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+      # Load the CI fixtures into the `raw` schema (gated on load_ci_seeds), then
+      # run seeds again + all models, snapshots and data tests via `dbt build`.
+      # Seeds have no ref-edge to sources, so seed explicitly first to guarantee
+      # the raw.* tables exist before the source-reading models run.
+      - name: dbt seed (load CI fixtures)
+        run: |
+          dbt seed --vars '{load_ci_seeds: true}' \
+            --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
 
-      - name: dbt compile
-        run: dbt compile --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+      - name: dbt build (models + data tests)
+        run: |
+          dbt build --vars '{load_ci_seeds: true}' \
+            --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
 
   orchestration:
     name: orchestration
