@@ -40,8 +40,18 @@ class Settings(BaseSettings):
     pg_password: str = "f1"
     pg_schema: str = "raw"
 
-    # Data lake
+    # Data lake. Local by default; set `lake_uri` to an object-store base
+    # (e.g. s3://my-bucket/f1-lake or gs://…) to write the Parquet lake to the
+    # cloud instead — the ingestion code is storage-agnostic via fsspec. Object
+    # stores need the matching extra (`pip install -e ".[cloud]"` for S3) and
+    # credentials from the environment (AWS_*, GOOGLE_APPLICATION_CREDENTIALS, …).
     lake_dir: Path = Path("data/raw")
+    lake_uri: str = ""
+
+    @property
+    def lake_is_remote(self) -> bool:
+        """True when the lake lives in an object store (``scheme://…``) not on disk."""
+        return "://" in self.lake_uri
 
     # Jolpica-F1 API
     jolpica_base_url: str = "https://api.jolpi.ca/ergast/f1"

@@ -59,9 +59,7 @@ def test_backtest_too_few_seasons_yields_no_predictions() -> None:
 
 def test_shrinkage_default_is_identity_and_ratings_shrink() -> None:
     gaps = _chain_gaps(["a", "b", "c", "d"], range(2000, 2006))
-    sens = shrinkage_sensitivity(
-        gaps, prior_weights=(0.0, 4.0, 8.0, 32.0), default=8.0, top_n=2
-    )
+    sens = shrinkage_sensitivity(gaps, prior_weights=(0.0, 4.0, 8.0, 32.0), default=8.0, top_n=2)
     row = sens.set_index("prior_weight")
     # Compared against itself the default is a perfect match.
     assert row.loc[8.0, "spearman_vs_default"] == pytest.approx(1.0)
