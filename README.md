@@ -109,6 +109,21 @@ dashboard/        Evidence.dev BI-as-code project
 tests/            pytest suite
 ```
 
+## Container & reproducibility
+
+```bash
+# Run the whole pipeline in a container (ingestion + dbt + analytics):
+docker build -t f1-platform .
+docker run --rm f1-platform backfill --season 2024              # ingestion CLI
+docker run --rm --entrypoint f1-analytics f1-platform ratings   # analytics CLI
+
+pip install -r requirements.lock   # pinned core runtime (regenerate: make lock)
+```
+
+The Parquet lake is storage-agnostic: set `F1_LAKE_URI=s3://your-bucket/f1-lake`
+(with `pip install -e ".[cloud]"` and AWS creds in the environment) to write it to
+object storage instead of local disk — the ingestion code is unchanged.
+
 ## Roadmap
 
 - [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI

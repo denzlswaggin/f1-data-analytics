@@ -1,0 +1,32 @@
+# Keep the build context small and reproducible.
+.git
+.github
+.venv
+.env
+.env.*
+data
+*.duckdb
+*.duckdb.wal
+
+# Node / dashboard build artefacts
+dashboard/node_modules
+dashboard/build
+dashboard/.evidence
+
+# dbt build artefacts (regenerated in-container)
+warehouse/dbt/target
+warehouse/dbt/dbt_packages
+warehouse/dbt/logs
+
+# Python / tooling caches
+**/__pycache__
+**/*.pyc
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Docs / tests not needed at runtime
+tests
+docs
