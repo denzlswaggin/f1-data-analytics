@@ -1,0 +1,21 @@
+season,round,race_name,date,driver_id,driver_code,driver_number,driver_given_name,driver_family_name,driver_nationality,constructor_id,grid,position,position_text,points,laps,status,time_millis,time_text,fastest_lap_rank,fastest_lap_time
+2024,1,Bahrain Grand Prix,2024-03-02,max_verstappen,VER,1,Max,Verstappen,Dutch,red_bull,1,1,1,26.0,57,Finished,5504742.0,1:31:44.742,1.0,1:32.608
+2024,1,Bahrain Grand Prix,2024-03-02,perez,PER,11,Sergio,Pérez,Mexican,red_bull,5,2,2,18.0,57,Finished,5527199.0,+22.457,4.0,1:34.364
+2024,1,Bahrain Grand Prix,2024-03-02,sainz,SAI,55,Carlos,Sainz,Spanish,ferrari,4,3,3,15.0,57,Finished,5529852.0,+25.110,6.0,1:34.507
+2024,1,Bahrain Grand Prix,2024-03-02,leclerc,LEC,16,Charles,Leclerc,Monegasque,ferrari,2,4,4,12.0,57,Finished,5544411.0,+39.669,2.0,1:34.090
+2024,1,Bahrain Grand Prix,2024-03-02,russell,RUS,63,George,Russell,British,mercedes,3,5,5,10.0,57,Finished,5551530.0,+46.788,12.0,1:35.065
+2024,1,Bahrain Grand Prix,2024-03-02,norris,NOR,4,Lando,Norris,British,mclaren,7,6,6,8.0,57,Finished,5553200.0,+48.458,5.0,1:34.476
+2024,1,Bahrain Grand Prix,2024-03-02,hamilton,HAM,44,Lewis,Hamilton,British,mercedes,9,7,7,6.0,57,Finished,5555066.0,+50.324,7.0,1:34.722
+2024,1,Bahrain Grand Prix,2024-03-02,piastri,PIA,81,Oscar,Piastri,Australian,mclaren,8,8,8,4.0,57,Finished,5560824.0,+56.082,11.0,1:34.983
+2024,1,Bahrain Grand Prix,2024-03-02,alonso,ALO,14,Fernando,Alonso,Spanish,aston_martin,6,9,9,2.0,57,Finished,5579629.0,+1:14.887,3.0,1:34.199
+2024,1,Bahrain Grand Prix,2024-03-02,stroll,STR,18,Lance,Stroll,Canadian,aston_martin,12,10,10,1.0,57,Finished,5597958.0,+1:33.216,16.0,1:35.632
+2024,1,Bahrain Grand Prix,2024-03-02,zhou,ZHO,24,Guanyu,Zhou,Chinese,sauber,17,11,11,0.0,56,Lapped,5511501.0,+6.759,14.0,1:35.458
+2024,1,Bahrain Grand Prix,2024-03-02,kevin_magnussen,MAG,20,Kevin,Magnussen,Danish,haas,15,12,12,0.0,56,Lapped,5513058.0,+8.316,15.0,1:35.570
+2024,1,Bahrain Grand Prix,2024-03-02,ricciardo,RIC,3,Daniel,Ricciardo,Australian,rb,14,13,13,0.0,56,Lapped,5513700.0,+8.958,13.0,1:35.163
+2024,1,Bahrain Grand Prix,2024-03-02,tsunoda,TSU,22,Yuki,Tsunoda,Japanese,rb,11,14,14,0.0,56,Lapped,5514224.0,+9.482,18.0,1:35.833
+2024,1,Bahrain Grand Prix,2024-03-02,albon,ALB,23,Alexander,Albon,Thai,williams,13,15,15,0.0,56,Lapped,5516628.0,+11.886,17.0,1:35.723
+2024,1,Bahrain Grand Prix,2024-03-02,hulkenberg,HUL,27,Nico,Hülkenberg,German,haas,10,16,16,0.0,56,Lapped,5522374.0,+17.632,10.0,1:34.834
+2024,1,Bahrain Grand Prix,2024-03-02,ocon,OCO,31,Esteban,Ocon,French,alpine,19,17,17,0.0,56,Lapped,5536192.0,+31.450,20.0,1:36.226
+2024,1,Bahrain Grand Prix,2024-03-02,gasly,GAS,10,Pierre,Gasly,French,alpine,20,18,18,0.0,56,Lapped,5537159.0,+32.417,9.0,1:34.805
+2024,1,Bahrain Grand Prix,2024-03-02,bottas,BOT,77,Valtteri,Bottas,Finnish,sauber,16,19,19,0.0,56,Lapped,5587972.0,+1:23.230,19.0,1:36.202
+2024,1,Bahrain Grand Prix,2024-03-02,sargeant,SAR,2,Logan,Sargeant,American,williams,18,20,20,0.0,55,Lapped,5525537.0,+20.795,8.0,1:34.735
