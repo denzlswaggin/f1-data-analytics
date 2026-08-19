@@ -15,15 +15,19 @@ from dagster import (
     AssetKey,
     AssetSelection,
     Definitions,
+    RunFailureSensorContext,
     ScheduleDefinition,
     define_asset_job,
+    run_failure_sensor,
 )
 from dagster_dbt import DbtCliResource
+from ingestion.logging import get_logger
 
 from orchestration.assets import (
     dbt_models,
     dbt_project,
     driver_ratings,
+    driver_ratings_are_sane,
     race_replay,
     raw_ergast_laps,
     raw_laps,
@@ -32,11 +36,14 @@ from orchestration.assets import (
     raw_qualifying,
     raw_race_control,
     raw_races,
+    raw_races_current_season_present,
     raw_results,
     raw_team_radio,
     raw_telemetry,
     raw_weather,
 )
+
+log = get_logger(__name__)
 
 
 def _dbt_executable() -> str:
@@ -87,9 +94,24 @@ race_weekend_schedule = ScheduleDefinition(
     cron_schedule="0 6 * * 1",
 )
 
+
+# Structured alert on any run failure. Logs via structlog (JSON in prod); this is
+# the single place to wire a Slack / PagerDuty webhook when one is available.
+@run_failure_sensor(description="Emit a structured alert when any run fails.")
+def alert_on_run_failure(context: RunFailureSensorContext) -> None:
+    log.error(
+        "dagster.run_failed",
+        run_id=context.dagster_run.run_id,
+        job_name=context.dagster_run.job_name,
+        error=context.failure_event.message,
+    )
+
+
 defs = Definitions(
     assets=all_assets,
+    asset_checks=[raw_races_current_season_present, driver_ratings_are_sane],
     jobs=[refresh_job],
     schedules=[race_weekend_schedule],
+    sensors=[alert_on_run_failure],
     resources={"dbt": DbtCliResource(project_dir=dbt_project, dbt_executable=_dbt_executable())},
 )
