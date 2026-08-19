@@ -14,13 +14,25 @@ from analytics.pipeline import (
     build_race_overtakes_season,
     build_race_replays,
 )
-from dagster import AssetExecutionContext, AssetKey, MaterializeResult, asset
+from dagster import (
+    AssetCheckResult,
+    AssetExecutionContext,
+    AssetKey,
+    Backoff,
+    Jitter,
+    MaterializeResult,
+    RetryPolicy,
+    StaticPartitionsDefinition,
+    asset,
+    asset_check,
+)
 from dagster_dbt import (
     DagsterDbtTranslator,
     DbtCliResource,
     DbtProject,
     dbt_assets,
 )
+from ingestion.loaders.warehouse import read_query
 from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
@@ -37,6 +49,20 @@ from ingestion.pipeline import (
 # Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
 CURRENT_SEASON = 2026
 
+# Ingestion is partitioned by season, so any season can be (re)materialised
+# independently — that's what makes the 2006-onwards history backfillable from
+# the Dagster UI. The weekly schedule targets the current-season partition.
+FIRST_SEASON = 2006
+SEASON_PARTITIONS = StaticPartitionsDefinition(
+    [str(year) for year in range(FIRST_SEASON, CURRENT_SEASON + 1)]
+)
+
+# Ingestion assets hit external APIs (Jolpica / FastF1 / OpenF1), which fail
+# transiently. Retry with exponential backoff + jitter before the run fails.
+INGEST_RETRY = RetryPolicy(
+    max_retries=3, delay=10, backoff=Backoff.EXPONENTIAL, jitter=Jitter.PLUS_MINUS
+)
+
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 DBT_PROJECT_DIR = _REPO_ROOT / "warehouse" / "dbt"
 
@@ -45,126 +71,171 @@ dbt_project.prepare_if_dev()
 
 
 # --- Ingestion assets (keyed to dbt sources) --------------------------------
-@asset(key=["raw", "races"], group_name="ingest", compute_kind="jolpica")
-def raw_races() -> MaterializeResult:
-    rows = ingest_resource("races", CURRENT_SEASON)
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+@asset(
+    key=["raw", "races"],
+    partitions_def=SEASON_PARTITIONS,
+    group_name="ingest",
+    compute_kind="jolpica",
+    retry_policy=INGEST_RETRY,
+)
+def raw_races(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rows = ingest_resource("races", season)
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
-@asset(key=["raw", "results"], group_name="ingest", compute_kind="jolpica")
-def raw_results() -> MaterializeResult:
-    rows = ingest_resource("results", CURRENT_SEASON)
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+@asset(
+    key=["raw", "results"],
+    partitions_def=SEASON_PARTITIONS,
+    group_name="ingest",
+    compute_kind="jolpica",
+    retry_policy=INGEST_RETRY,
+)
+def raw_results(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rows = ingest_resource("results", season)
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
-@asset(key=["raw", "qualifying"], group_name="ingest", compute_kind="jolpica")
-def raw_qualifying() -> MaterializeResult:
-    rows = ingest_resource("qualifying", CURRENT_SEASON)
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+@asset(
+    key=["raw", "qualifying"],
+    partitions_def=SEASON_PARTITIONS,
+    group_name="ingest",
+    compute_kind="jolpica",
+    retry_policy=INGEST_RETRY,
+)
+def raw_qualifying(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rows = ingest_resource("qualifying", season)
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "laps"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="fastf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_laps() -> MaterializeResult:
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_laps(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+def raw_laps(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_laps(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "pitstops"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="jolpica",
+    retry_policy=INGEST_RETRY,
 )
-def raw_pitstops() -> MaterializeResult:
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_pitstops(CURRENT_SEASON, rounds)
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+def raw_pitstops(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_pitstops(season, rounds)
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "ergast_laps"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="jolpica",
+    retry_policy=INGEST_RETRY,
 )
-def raw_ergast_laps() -> MaterializeResult:
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_ergast_laps(CURRENT_SEASON, rounds)
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+def raw_ergast_laps(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_ergast_laps(season, rounds)
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "weather"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="fastf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_weather() -> MaterializeResult:
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_weather(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+def raw_weather(context: AssetExecutionContext) -> MaterializeResult:
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_weather(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "telemetry"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="fastf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_telemetry() -> MaterializeResult:
-    # Heavy: resampled telemetry for every race lap of the season so far. Kept out
-    # of the weekly refresh job (see definitions.py) — materialise on demand.
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_telemetry(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+def raw_telemetry(context: AssetExecutionContext) -> MaterializeResult:
+    # Heavy: resampled telemetry for every race lap of the season. Kept out of the
+    # weekly refresh job (see definitions.py) — materialise on demand.
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_telemetry(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "positions"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="fastf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_positions() -> MaterializeResult:
+def raw_positions(context: AssetExecutionContext) -> MaterializeResult:
     # Heavy: time-stamped car positions for the race-replay map. Like telemetry it's
     # kept out of the weekly refresh job (see definitions.py) — materialise on demand.
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_positions(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_positions(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "race_control"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="fastf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_race_control() -> MaterializeResult:
+def raw_race_control(context: AssetExecutionContext) -> MaterializeResult:
     # Official race-control messages for the replay feed. Needs the telemetry cache
     # for the session-time reference, so it's kept out of the weekly job too.
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_race_control(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_race_control(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 @asset(
     key=["raw", "team_radio"],
+    partitions_def=SEASON_PARTITIONS,
     deps=[AssetKey(["raw", "races"])],
     group_name="ingest",
     compute_kind="openf1",
+    retry_policy=INGEST_RETRY,
 )
-def raw_team_radio() -> MaterializeResult:
+def raw_team_radio(context: AssetExecutionContext) -> MaterializeResult:
     # OpenF1 team-radio clips for the replay player. Aligns via the telemetry cache,
     # so it's kept out of the weekly job too. Coverage is partial.
-    rounds = season_rounds(CURRENT_SEASON, completed_only=True)
-    rows = ingest_team_radio(CURRENT_SEASON, rounds, "R")
-    return MaterializeResult(metadata={"rows": rows, "season": CURRENT_SEASON})
+    season = int(context.partition_key)
+    rounds = season_rounds(season, completed_only=True)
+    rows = ingest_team_radio(season, rounds, "R")
+    return MaterializeResult(metadata={"rows": rows, "season": season})
 
 
 # --- dbt models -------------------------------------------------------------
@@ -219,3 +290,30 @@ def race_overtakes() -> MaterializeResult:
     df = build_race_overtakes_season(CURRENT_SEASON)
     races = int(df["round"].nunique()) if not df.empty else 0
     return MaterializeResult(metadata={"passes": len(df), "races": races, "season": CURRENT_SEASON})
+
+
+# --- Asset checks (data-quality gates surfaced in the Dagster UI) ------------
+@asset_check(asset=raw_races, name="current_season_present", blocking=False)
+def raw_races_current_season_present() -> AssetCheckResult:
+    """The current season's race schedule must have landed (else downstream is stale)."""
+    df = read_query(f"select count(*) as n from raw.races where season = {CURRENT_SEASON}")
+    n = int(df["n"].iloc[0])
+    return AssetCheckResult(passed=n > 0, metadata={"rows_current_season": n})
+
+
+@asset_check(asset=driver_ratings, name="ratings_are_sane", blocking=False)
+def driver_ratings_are_sane() -> AssetCheckResult:
+    """Ratings must be non-empty, have no null rating, and be one row per driver."""
+    df = read_query(
+        "select count(*) as n, "
+        "count(*) filter (where rating is null) as null_ratings, "
+        "count(distinct driver_id) as distinct_ids "
+        "from marts.driver_ratings"
+    )
+    n = int(df["n"].iloc[0])
+    nulls = int(df["null_ratings"].iloc[0])
+    distinct = int(df["distinct_ids"].iloc[0])
+    return AssetCheckResult(
+        passed=n > 0 and nulls == 0 and distinct == n,
+        metadata={"rows": n, "null_ratings": nulls, "distinct_driver_ids": distinct},
+    )
