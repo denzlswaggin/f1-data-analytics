@@ -188,3 +188,93 @@ models:
               field: driver_id
               config:
                 severity: warn
+
+  - name: mart_stint_strategy
+    description: >
+      Per-driver tyre-stint sequence for a race — one row per (season, round,
+      driver, stint) with the compound run and the absolute lap span it covered.
+      Powers the tyre-strategy gantt (a per-driver bar of compound-coloured stints
+      with pit stops at the boundaries). Built from every race lap (not just
+      green-flag), so spans are contiguous. FastF1-sourced (2018+).
+    # Enforced data contract: dbt fails the build if the model's shape drifts from
+    # the columns/types declared below. Types are cross-dialect (DuckDB + Postgres).
+    config:
+      contract:
+        enforced: true
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_code, stint]
+    columns:
+      - name: season
+        data_type: integer
+        data_tests: [not_null]
+      - name: round
+        data_type: integer
+        data_tests: [not_null]
+      - name: race_name
+        data_type: varchar
+      - name: driver_code
+        data_type: varchar
+        data_tests: [not_null]
+      - name: driver_id
+        data_type: varchar
+        description: Ergast driver_id bridged from driver_code (may be null if unmatched).
+        data_tests:
+          - relationships:
+              to: ref('stg_drivers')
+              field: driver_id
+              config:
+                severity: warn
+      - name: driver_name
+        data_type: varchar
+      - name: team
+        data_type: varchar
+      - name: stint
+        data_type: integer
+        description: 1-based stint index within the race (increments at each pit stop).
+        data_tests: [not_null]
+      - name: compound
+        data_type: varchar
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ["SOFT", "MEDIUM", "HARD", "INTERMEDIATE", "WET", "HYPERSOFT",
+                       "ULTRASOFT", "SUPERSOFT", "SUPERHARD", "UNKNOWN", "TEST_UNKNOWN"]
+      - name: start_lap
+        data_type: integer
+        description: First lap number of the stint.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 200
+      - name: end_lap
+        data_type: integer
+        description: Last lap number of the stint.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 200
+      - name: stint_laps
+        data_type: integer
+        description: Lap span of the stint (end_lap - start_lap + 1).
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 200
+      - name: tyre_life_end
+        data_type: integer
+        description: Tyre age (laps) at the end of the stint.
+      - name: started_fresh
+        data_type: boolean
+        description: Whether the set fitted for this stint was a fresh (new) tyre.
+      - name: finish_position
+        data_type: integer
+        description: Driver's position on their final lap — used to order the gantt rows.
+      - name: deg_sec_per_lap
+        data_type: double precision
+        description: >
+          Tyre pace fall-off within the stint (sec/lap), reused from
+          mart_stint_degradation. Null for stints with too few green laps to fit a
+          slope. Drives the degradation shading on the gantt.
