@@ -42,6 +42,7 @@ python -m ingestion.cli backfill --from 2006 --to 2025   # Jolpica → Parquet l
 python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5   # FastF1 laps (.[telemetry])
 make dbt-build                                           # staging → intermediate → marts (61 models)
 python -m analytics.cli ratings --top 20                 # solve + print driver leaderboard
+python -m analytics.cli pace-profile --from-season 2022  # Saturday-vs-Sunday delta (needs FastF1 laps)
 cd dashboard && npm run dev                              # Evidence dashboard at localhost:3000
 ```
 
@@ -64,21 +65,24 @@ Evidence dashboard → GitHub Pages }**.
   `ingest_resource`/`backfill`/`ingest_laps`; `cli.py` is the Typer entrypoint (`backfill`/`incremental`/`laps`).
   `config.py` = pydantic-settings, `logging.py` = structlog.
 - **`warehouse/dbt/`** — `staging → intermediate → marts`. `profiles.yml` has dev=duckdb, prod=postgres.
-  dbt marts are `mart_driver_season_pace`, `mart_lap_times`, `mart_tyre_degradation`. `macros/` holds
+  dbt marts are `mart_driver_season_pace`, `mart_lap_times`, `mart_tyre_degradation`.
+  Model-level thresholds live in `vars:` in `dbt_project.yml` (the `race_gap_*` knobs). `macros/` holds
   `generate_schema_name` and `parse_laptime`. Tests via `dbt_utils` + `dbt_expectations`. A
   `drivers_snapshot` snapshot tracks driver SCD.
 - **`analytics/`** — the headline `driver_ratings` insight is **NOT a dbt model**. `ratings.py` is a pure
-  numpy Massey-style least-squares solver with union-find; `pipeline.py` (`build_driver_ratings`) writes the
-  `driver_ratings` table; `cli.py` prints the leaderboard.
+  numpy Massey-style least-squares solver with union-find; `pace_profile.py` reuses that solver for the
+  race-pace rating and joins the two into `driver_pace_profile`; `pipeline.py`
+  (`build_driver_ratings` / `build_driver_pace_profile`) writes the tables; `cli.py` prints the leaderboards
+  (`ratings`, `pace-profile`).
 - **`orchestration/`** — Dagster. `assets.py` mirrors dbt sources as `raw.*` assets, wraps the dbt project
   via `@dbt_assets`, and adds the `driver_ratings` asset; `definitions.py` holds the job, a weekly
   race-weekend schedule, and the `DbtCliResource`.
-- **`dashboard/`** — Evidence.dev (BI-as-code). `sources/f1/*.sql` query the marts; `pages/index.md` and
-  `pages/race-pace.md` render. `evidence.config.yaml` sets `deployment.basePath: /f1-data-analytics`.
+- **`dashboard/`** — Evidence.dev (BI-as-code). `sources/f1/*.sql` query the marts; `pages/index.md`,
+  `pages/race-pace.md` and `pages/saturday-vs-sunday.md` render. `evidence.config.yaml` sets `deployment.basePath: /f1-data-analytics`.
 - **`.github/workflows/`** — `ci.yml` (quality + dbt + orchestration jobs), `scheduled-ingest.yml`,
   `deploy-dashboard.yml`.
 
-## The two insights (methodology)
+## The three insights (methodology)
 
 1. **Teammate-normalised "true pace" driver ratings** (headline). Teammates share a car, so the
    *qualifying gap between teammates* isolates driver skill. `stg_qualifying` (Q1/Q2/Q3 → seconds) →
@@ -87,13 +91,30 @@ Evidence dashboard → GitHub Pages }**.
    `min Σ(d_i − d_j − gap)²` on the teammate graph via **damped Jacobi** iteration with **empirical-Bayes
    shrinkage**, over the **largest connected component** → `driver_ratings`. 2006–2025: Verstappen #1, then
    Russell, Leclerc, Ricciardo, Vettel; Hamilton mid-pack (the metric measures *margin over teammate*).
-2. **Tyre degradation** (`mart_tyre_degradation`): `regr_slope(lap_time, tyre_life)` per race/compound over
+2. **Saturday vs Sunday** (`marts.driver_pace_profile`): the same teammate-normalisation applied to *race*
+   pace. `int_teammate_race_gaps` pairs teammates on the **same lap number** (identical fuel load) over
+   green-flag laps on the **same compound** within a few laps of tyre age, drops the start lap / in-out laps /
+   outliers, and averages to the quali model's grain — so `compute_ratings` consumes it unchanged.
+   `analytics/pace_profile.py` then solves both and reports `delta = race_rating - quali_rating`
+   (positive = racer, negative = qualifying specialist). Qualifying is **re-solved over only the seasons the
+   race gaps cover** — the season set is derived from `race_gaps` inside the pure module, not from a matching
+   SQL filter, so the two ratings can never describe different eras. Comparability thresholds are dbt vars
+   (`race_gap_max_tyre_delta`, `race_gap_outlier_pct`, `race_gap_min_laps`).
+3. **Tyre degradation** (`mart_tyre_degradation`): `regr_slope(lap_time, tyre_life)` per race/compound over
    green-flag laps. Lands soft +0.24 / medium +0.02 / hard ~0 s/lap.
 
 ## Gotchas that will bite you
 
 - **mypy is pinned `<2`** — mypy 2.x needs `pathspec>=1.0`, which conflicts with dbt's `pathspec<0.13`.
-  Keep `mypy>=1.13,<2`.
+  Keep `mypy>=1.13,<2`. **The pin is no longer enough on its own**: current mypy 1.x (1.20) also imports
+  `pathspec.patterns.gitignore`, which dbt's `pathspec 0.12` doesn't have — so mypy *crashes* in any venv where
+  `.[dev]` and `.[dbt]` are co-installed. CI dodges this because the Quality job installs only `.[dev]` and
+  runs `mypy ingestion analytics tests` (note: **not** `orchestration`, unlike `make typecheck`). Locally, keep
+  a separate dev-only venv for typechecking rather than one venv with every extra.
+- **`dagster definitions validate` fails after a seeded dbt build** — `dbt build --vars '{load_ci_seeds: true}'`
+  writes a manifest where the CI seeds are enabled, and each seed then collides with the `raw.*` source of the
+  same name on its Dagster asset key. It's not a code fault: re-run a plain `dbt parse` (no vars) to regenerate
+  a clean manifest before validating, which is what CI's orchestration job does.
 - **Cross-dialect SQL** (DuckDB + Postgres): use `double precision` not `double`; avoid `median` (use `avg`).
   `ln`/`regr_slope`/`strpos`/`split_part`/`stddev_samp` work on both. Build `--target dev` AND `--target prod`.
 - **The solver** must use damping — plain Jacobi oscillates on bipartite teammate pairs. Ratings are only
