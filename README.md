@@ -72,6 +72,34 @@ comparison is like-for-like, and both are relative to the field — a delta of z
 Race pace needs FastF1 per-lap timing (2018+), so this runs over a narrower window than
 the qualifying leaderboard, bounded to one set of technical regulations.
 
+**2022–2025** (ground-effect era; 1,190 teammate race gaps over 92 races, averaging 28.7
+comparable laps each):
+
+| Driver          |  Delta | Quali  |  Race  | Races |
+| --------------- | -----: | -----: | -----: | ----: |
+| Logan Sargeant  | +1.048 | −1.185 | −0.137 |    26 |
+| Sergio Pérez    | +0.901 | −0.715 | +0.186 |    51 |
+| Lewis Hamilton  | +0.091 | −0.058 | +0.033 |    64 |
+| …               |        |        |        |       |
+| Esteban Ocon    | −0.129 | +0.131 | +0.002 |    56 |
+| Max Verstappen  | −0.145 | +0.796 | +0.651 |    66 |
+| Fernando Alonso | −0.164 | +0.357 | +0.192 |    56 |
+| Carlos Sainz    | −0.180 | +0.269 | +0.089 |    66 |
+| Yuki Tsunoda    | −0.244 | +0.066 | −0.178 |    55 |
+| Alexander Albon | −0.280 | +0.420 | +0.140 |    53 |
+| George Russell  | −0.324 | +0.361 | +0.037 |    68 |
+
+Drivers with fewer than ~25 comparable races are omitted here — the solver shrinks them
+toward the field mean, but a thin sample still deserves a caveat rather than a headline.
+
+The two biggest "racers" are exactly the drivers whose qualifying was demolished by a
+dominant teammate and who recovered on Sunday. Verstappen reads as a mild qualifying
+specialist not because his race pace is poor — it is the best in the field — but because
+his *margin* over a teammate shrinks from Saturday to Sunday.
+
+Spearman between the two ratings is **0.68** — strongly positive, but far enough from 1
+that the delta is carrying real information rather than restating the qualifying rating.
+
 Reproduce:
 
 ```bash

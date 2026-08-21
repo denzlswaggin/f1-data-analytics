@@ -39,7 +39,12 @@ with laps as (
         and lap_time_sec > 0
         -- track_status '1' = green flag (no SC/VSC/yellow); clean pace laps only.
         and track_status = '1'
+        -- FastF1 reports an unknown compound as the *strings* 'None'/'nan', not a
+        -- SQL null, so `is not null` alone lets them through — and two teammates
+        -- both carrying 'None' would then be compared as if on a matching tyre
+        -- when their actual compounds are simply unknown.
         and compound is not null
+        and compound not in ('None', 'nan', 'UNKNOWN')
         and tyre_life is not null
 ),
 

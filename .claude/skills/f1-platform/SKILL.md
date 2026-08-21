@@ -306,6 +306,10 @@ Makefile wraps these (`make lint typecheck test dbt-build dagster …`). For Pos
 - **Evidence**: DuckDB `connection.yaml` `filename` is relative to the source folder → `../../../data/warehouse/f1.duckdb`. Project-site base path set in `evidence.config.yaml`.
 - **GitHub token**: fine-grained PATs need explicit repo access + Contents(RW)+Pull requests(RW) for PRs, Administration(RW) for default-branch, Pages(RW) for Pages. `gh pr create` (GraphQL) failed on defaultBranchRef; create PRs via REST: `gh api -X POST repos/OWNER/REPO/pulls -f head= -f base= -f body=`.
 - **Stacked PRs**: merging PR #1 to main first caused GitHub to retarget #2–#4 onto the intermediate branch, so they merged there, not main — needed a final `feat/dbt-core → main` PR. Prefer merging a stack bottom-up in one sitting.
+- **FastF1 compound sentinels**: an unknown compound comes through as the *string* `'None'` or `'nan'`, never a
+  SQL null, so `compound is not null` silently keeps them and two teammates both on `'None'` read as a matching
+  tyre. Filter the strings explicitly (`int_teammate_race_gaps` does); `mart_lap_times`'s `accepted_values` test
+  is the thing that catches a regression here.
 - **FastF1 uses driver 3-letter codes** (VER), not Ergast `driver_id`; the laps/telemetry marts are keyed separately from the Jolpica marts, bridged by `stg_driver_codes` on `(season, driver_code)`.
 - **Per-round endpoints** (Ergast pit stops / lap positions; FastF1 weather / telemetry) don't fit the season-scoped `Resource` registry. Use a dedicated `ingest_*` that concats **all rounds into one season frame and loads once** — the loader's delete key is `season` only, so loading round-by-round wipes earlier rounds.
 - **Adding columns to an existing raw table** (e.g. speed traps on `raw.laps`): DuckDB `CREATE TABLE IF NOT EXISTS` won't add them and the positional INSERT then mismatches — **drop the table once and re-ingest**.
