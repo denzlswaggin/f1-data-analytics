@@ -49,6 +49,37 @@ make dbt-build                                           # staging → intermedi
 python -m analytics.cli ratings --top 20                 # solve + print leaderboard
 ```
 
+## The second cut — Saturday vs Sunday
+
+Qualifying is one clean lap: no traffic, no fuel, no tyre management. It says who is
+fastest on Saturday and nothing about Sunday. So the same teammate-normalisation is
+applied to **race** pace, and the two ratings are set against each other.
+
+Race laps are only a fair comparison when they are alike, so teammates are paired on
+the **same lap number** — identical fuel load — over green-flag laps on the **same
+compound** at a similar tyre age, with the start lap, in/out laps and outliers dropped.
+Those per-race gaps go through the *same* least-squares solver, and:
+
+```
+delta = race rating − qualifying rating
+```
+
+Positive = gains ground on the field once the race starts; negative = flatters to
+deceive on Saturday. Both ratings are fitted over the **same seasons**, so the
+comparison is like-for-like, and both are relative to the field — a delta of zero means
+"improves on Sunday exactly as much as the average driver does", not "no improvement".
+
+Race pace needs FastF1 per-lap timing (2018+), so this runs over a narrower window than
+the qualifying leaderboard, bounded to one set of technical regulations.
+
+Reproduce:
+
+```bash
+python -m ingestion.cli laps --season 2024               # FastF1 laps (.[telemetry])
+make dbt-build
+python -m analytics.cli pace-profile --from-season 2022  # racers vs qualifying specialists
+```
+
 ## Architecture
 
 ```mermaid

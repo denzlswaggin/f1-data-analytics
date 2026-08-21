@@ -17,6 +17,21 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+# Comparability thresholds for int_teammate_race_gaps. Race pace is only a fair
+# teammate comparison when the two laps are alike, and these three knobs set how
+# strict "alike" is — tightening them buys like-for-like quality at the cost of
+# sample size. Override per-run with `--vars '{race_gap_min_laps: 3}'`.
+vars:
+  # Max difference in tyre age (laps) between the two paired laps. Degradation
+  # runs up to ~0.24 s/lap per lap of age (see mart_tyre_degradation), so a wide
+  # age gap is a tyre measurement, not a driver one.
+  race_gap_max_tyre_delta: 3
+  # Discard a paired lap whose gap exceeds this (log-%, ~= %). Roughly 4.5 s on a
+  # 90 s lap: traffic, a lock-up or damage, not pace.
+  race_gap_outlier_pct: 5.0
+  # Min comparable laps before a race counts as one teammate observation.
+  race_gap_min_laps: 5
+
 models:
   f1_analytics:
     staging:

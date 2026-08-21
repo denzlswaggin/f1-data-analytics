@@ -5,13 +5,16 @@ Example::
     python -m analytics.cli ratings          # build marts.driver_ratings
     python -m analytics.cli ratings --top 20 # ...and print the leaderboard
     python -m analytics.cli validate         # backtest + CIs + shrinkage sweep
+    python -m analytics.cli validate --race  # ...the same checks on the race-pace rating
     python -m analytics.cli replay --season 2026 --round 1  # build marts.race_replay
+    python -m analytics.cli pace-profile --from-season 2022  # Saturday vs Sunday
 """
 
 from __future__ import annotations
 
 from typing import Annotated
 
+import pandas as pd
 import typer
 from ingestion.config import get_settings
 from ingestion.loaders.warehouse import read_query
@@ -21,6 +24,7 @@ from ingestion.pipeline import season_rounds
 from analytics.pipeline import (
     build_all_overtakes,
     build_all_replays,
+    build_driver_pace_profile,
     build_driver_ratings,
     build_race_overtakes,
     build_race_overtakes_season,
@@ -31,6 +35,12 @@ from analytics.validation import backtest_ratings, bootstrap_ratings, shrinkage_
 
 _GAPS_QUERY = (
     "select driver_id, teammate_id, pace_gap, season from intermediate.int_teammate_quali_gaps"
+)
+
+# The race gaps carry the same four columns at the same grain, so every check in
+# analytics.validation applies to them unchanged.
+_RACE_GAPS_QUERY = (
+    "select driver_id, teammate_id, pace_gap, season from intermediate.int_teammate_race_gaps"
 )
 
 app = typer.Typer(add_completion=False, help="F1 analytical transforms.")
@@ -77,14 +87,21 @@ def validate(
         float, typer.Option(help="Empirical-Bayes shrinkage strength for the fit.")
     ] = 8.0,
     top: Annotated[int, typer.Option(help="Rows of the bootstrap CI table to print.")] = 15,
+    race: Annotated[
+        bool,
+        typer.Option("--race", help="Validate the race-pace rating instead of qualifying."),
+    ] = False,
 ) -> None:
     """Validate the rating model: temporal backtest, shrinkage sensitivity, bootstrap CIs."""
     configure_logging()
-    log.info("cli.validate.start", target=get_settings().warehouse)
-    gaps = read_query(_GAPS_QUERY)
+    which = "race" if race else "qualifying"
+    log.info("cli.validate.start", gaps=which, target=get_settings().warehouse)
+    gaps = read_query(_RACE_GAPS_QUERY if race else _GAPS_QUERY)
     if gaps.empty:
-        typer.echo("No teammate gaps found — build the dbt intermediate models first.")
+        typer.echo(f"No {which} teammate gaps found — build the dbt intermediate models first.")
         return
+
+    typer.echo(f"\nValidating the {which} rating.")
 
     bt = backtest_ratings(gaps, prior_weight=prior_weight)
     typer.echo("\n=== Backtest (expanding-window temporal hold-out) ===")
@@ -118,6 +135,64 @@ def validate(
                 f"  {i:>3}  {r.driver_id:<18} {r.rating:>7.3f}  "
                 f"[{r.rating_lo:>6.3f}, {r.rating_hi:>6.3f}]  {r.n_boot}"
             )
+
+
+@app.command("pace-profile")
+def pace_profile(
+    from_season: Annotated[
+        int | None, typer.Option("--from-season", help="First season of race pace to include.")
+    ] = None,
+    to_season: Annotated[
+        int | None, typer.Option("--to-season", help="Last season of race pace to include.")
+    ] = None,
+    top: Annotated[int, typer.Option(help="Print the top-N racers and specialists.")] = 10,
+    min_races: Annotated[
+        int, typer.Option(help="Min race comparisons to show in the printed lists.")
+    ] = 10,
+) -> None:
+    """Build the Saturday-vs-Sunday pace profile (quali rating vs race rating)."""
+    configure_logging()
+    log.info(
+        "cli.pace-profile.start",
+        from_season=from_season,
+        to_season=to_season,
+        target=get_settings().warehouse,
+    )
+    df = build_driver_pace_profile(from_season, to_season)
+    if df.empty:
+        typer.echo(
+            "No pace profile built — ingest FastF1 laps and build the dbt intermediate "
+            "models first (needs int_teammate_race_gaps)."
+        )
+        return
+
+    shown = df[df["n_race_comparisons"] >= min_races]
+    typer.echo(
+        f"\nSaturday vs Sunday — delta = race rating - quali rating "
+        f"(min {min_races} race comparisons):\n"
+    )
+
+    def _table(title: str, rows: pd.DataFrame) -> None:
+        typer.echo(f"  {title}")
+        typer.echo(
+            f"  {'#':>3}  {'driver':<22} {'delta':>7}  {'quali':>7}  {'race':>7}  {'races':>5}"
+        )
+        for row in rows.itertuples():
+            name = row.driver_name or row.driver_id
+            typer.echo(
+                f"  {row.delta_rank:>3}  {name:<22} {row.delta:>+7.3f}  "
+                f"{row.quali_rating:>7.3f}  {row.race_rating:>7.3f}  "
+                f"{row.n_race_comparisons:>5}"
+            )
+        typer.echo("")
+
+    _table(f"Top {top} racers (gain most on Sunday)", shown.head(top))
+    # Only worth a second table when it would not just repeat the first one.
+    if len(shown) > top:
+        _table(
+            f"Top {top} qualifying specialists (lose most on Sunday)",
+            shown.tail(top).iloc[::-1],
+        )
 
 
 @app.command()

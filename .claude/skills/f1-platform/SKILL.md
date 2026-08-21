@@ -2,7 +2,7 @@
 name: f1-platform
 description: >
   Full context for the f1-data-analytics data-engineering platform in this repo:
-  architecture, the two insights and their methodology, a file/module map, run
+  architecture, the three insights and their methodology, a file/module map, run
   commands for every layer, environment setup, verification steps, and hard-won
   gotchas. Load this at the start of any session working on f1-data-analytics
   (ingestion, dbt models, the driver-rating solver, Dagster, or the Evidence
@@ -12,7 +12,7 @@ description: >
 # F1 Analytics Engineering Platform — project context
 
 A CV-centerpiece **data-engineering** project: a modern data stack that turns raw
-F1 data into two reproducible, debatable insights. Owner: denzlswaggin
+F1 data into three reproducible, debatable insights. Owner: denzlswaggin
 (patrik.kriz@studyfi.com). Repo: github.com/denzlswaggin/f1-data-analytics.
 
 **Status: all 5 milestones complete, plus several feature waves on `main`.**
@@ -25,6 +25,9 @@ season-spanning race picker (see "Race replay — animated track map" below). Th
 latest wave added an **overtake-detection layer** (`marts.race_overtakes`), a
 **follow-cam**, team-radio polish, and a playback **performance pass** — PRs #16 and
 #17, both merged (see "Race replay — overtakes, follow-cam & performance"). The
+newest wave is **Saturday vs Sunday** (`feat/saturday-vs-sunday`): a race-pace
+counterpart to the headline rating built on `int_teammate_race_gaps`, joined to
+qualifying as `marts.driver_pace_profile` (see insight 2 below). The
 local Evidence dashboard runs at http://localhost:3000 via
 `cd dashboard && npm run dev`.
 
@@ -55,7 +58,7 @@ Jolpica-F1 API + FastF1 ─► Ingestion (Python EL) ─► Parquet lake ─► 
 | Serving | Evidence.dev (BI-as-code) → GitHub Pages |
 | Quality/CI | ruff, mypy(strict), pytest, sqlfluff, GitHub Actions |
 
-## The two insights
+## The insights
 
 **1. Teammate-normalised "true pace" driver ratings** (the headline).
 Teammates share a car, so their qualifying gap isolates driver skill. Pipeline:
@@ -67,7 +70,24 @@ with **empirical-Bayes shrinkage**, over the **largest connected component** →
 `marts.driver_ratings`. 2006–2025 result: Verstappen #1, then Russell, Leclerc,
 Ricciardo, Vettel; Hamilton mid-pack (metric = margin over teammate).
 
-**2. Tyre degradation** (`marts.mart_tyre_degradation`): `regr_slope(lap_time, tyre_life)`
+**2. Saturday vs Sunday** (`marts.driver_pace_profile`) — the same teammate
+normalisation applied to *race* pace, then set against qualifying.
+`int_teammate_race_gaps` pairs teammates on the **same lap number** (identical
+fuel load), over green-flag laps on the **same compound** within a few laps of
+tyre age, dropping the start lap, in/out laps (derived from stint bounds — there
+is no pit-in column on `stg_laps`) and outlier laps, then averages to one row per
+driver per race — the quali model's exact grain, so `compute_ratings` consumes it
+unchanged. `analytics/pace_profile.py` solves both and reports
+`delta = race_rating - quali_rating` (positive = racer). Qualifying is re-solved
+over **only the seasons the race gaps cover**, and that season set is derived from
+`race_gaps` inside the pure module rather than from a matching SQL filter, so the
+two ratings can never end up describing different eras. Thresholds are dbt vars
+(`race_gap_max_tyre_delta` 3, `race_gap_outlier_pct` 5.0, `race_gap_min_laps` 5).
+Verified on the 2024 Bahrain CI slice: 9 of 10 teams produce a gap, 45-47
+comparable laps for the front teams, antisymmetry exactly 0, SAI ahead of LEC and
+VER ahead of PER — both correct for that race. Serving: `pages/saturday-vs-sunday.md`.
+
+**3. Tyre degradation** (`marts.mart_tyre_degradation`): `regr_slope(lap_time, tyre_life)`
 per race/compound over green-flag laps. Lands soft +0.24 / medium +0.02 / hard ~0 s/lap.
 Also `mart_stint_degradation` (per-driver-stint) and `mart_driver_season_pace`.
 
@@ -223,7 +243,7 @@ Built end-to-end on real **2026** data.
   - `resources.py` (season-scoped registry + flatteners races/results/qualifying; **per-round** flatteners `_flatten_pitstops`/`_flatten_ergast_laps`).
   - `loaders/lake.py` (Parquet), `loaders/warehouse.py` (idempotent-per-season load; `read_query`/`replace_table`).
   - `pipeline.py` (`ingest_resource`, `backfill`, `ingest_laps`, `ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`, `ingest_positions`, `ingest_race_control`, `ingest_team_radio`, `season_rounds`), `cli.py` (`backfill`/`incremental`/`laps`/`pitstops`/`ergast-laps`/`weather`/`telemetry`/`positions`/`race-control`/`team-radio`).
-- `analytics/` — `ratings.py` (pure solver + union-find), `replay.py` (pure `resample_race`), `overtakes.py` (pure `detect_overtakes`), `pipeline.py` (`build_driver_ratings`, `build_race_replay[s]`, `build_all_replays`, `build_race_overtakes`/`_season`/`build_all_overtakes`), `cli.py` (`ratings`/`replay`/`overtakes`).
+- `analytics/` — `ratings.py` (pure solver + union-find), `pace_profile.py` (pure; reuses the solver for race pace + the season match), `replay.py` (pure `resample_race`), `overtakes.py` (pure `detect_overtakes`), `pipeline.py` (`build_driver_ratings`, `build_driver_pace_profile`, `build_race_replay[s]`, `build_all_replays`, `build_race_overtakes`/`_season`/`build_all_overtakes`), `cli.py` (`ratings`/`validate`/`pace-profile`/`replay`/`overtakes`).
 - `warehouse/dbt/` — `profiles.yml` (dev=duckdb, prod=postgres), `macros/` (`generate_schema_name`, `parse_laptime`),
   `models/staging|intermediate|marts/*.sql` + `_*.yml` tests, `snapshots/drivers_snapshot.sql`.
 - `orchestration/` — `assets.py` (raw.* assets keyed to dbt sources — `raw_pitstops`/`raw_ergast_laps`/`raw_weather`/`raw_telemetry`/`raw_positions`/`raw_race_control`/`raw_team_radio`, all `deps=[["raw","races"]]`; FastF1 assets ingest the current season *so far* via `season_rounds`; `@dbt_assets`, `driver_ratings`, `race_replay`, `race_overtakes`),
@@ -254,6 +274,7 @@ python -m ingestion.cli race-control --season 2026          # FastF1 race-contro
 python -m ingestion.cli team-radio --season 2026            # OpenF1 team-radio clips (partial coverage)
 dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev   # or --target prod
 python -m analytics.cli ratings --top 20                    # solve + print leaderboard
+python -m analytics.cli pace-profile --from-season 2022     # Saturday-vs-Sunday delta (needs FastF1 laps)
 python -m analytics.cli replay --season 2026                # build marts.race_replay (all completed rounds)
 python -m analytics.cli overtakes --all                     # detect on-track passes → marts.race_overtakes (reads race_replay)
 dagster dev -m orchestration.definitions                    # Dagster UI (run from repo root)
@@ -272,6 +293,13 @@ Makefile wraps these (`make lint typecheck test dbt-build dagster …`). For Pos
 ## Gotchas / hard-won lessons (don't rediscover these)
 
 - **mypy pinned `<2`**: mypy 2.x needs `pathspec>=1.0`, which conflicts with dbt's `pathspec<0.13`. Keep `mypy>=1.13,<2`.
+  The pin alone is no longer sufficient — mypy 1.20 imports `pathspec.patterns.gitignore`, absent from dbt's
+  pathspec 0.12, so **mypy crashes in any venv holding both `.[dev]` and `.[dbt]`**. CI's Quality job installs
+  only `.[dev]` and checks `ingestion analytics tests` (not `orchestration`, unlike `make typecheck`). Keep a
+  separate dev-only venv for typechecking locally.
+- **`dagster definitions validate` after a seeded dbt build**: `--vars '{load_ci_seeds: true}'` leaves a manifest
+  with the CI seeds enabled, and each seed then collides with the same-named `raw.*` source on its Dagster asset
+  key. Re-run a plain `dbt parse` (no vars) first — that's what CI's orchestration job does.
 - **Cross-dialect SQL**: use `double precision` (not `double`); `ln`, `regr_slope`, `strpos`, `split_part`, `stddev_samp` work on both; avoid `median` (use `avg`). Test both targets.
 - **Solver**: plain Jacobi oscillates on bipartite teammate pairs — must use damping. Ratings only comparable within the largest connected component.
 - **Dagster asset modules**: no `from __future__ import annotations` (breaks context/resource type introspection). `DbtCliResource` needs an explicit dbt executable path when the venv isn't on PATH (see `definitions.py:_dbt_executable`).
