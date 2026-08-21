@@ -121,6 +121,10 @@ Evidence dashboard → GitHub Pages }**.
   comparable within the largest connected component.
 - **Dagster asset modules**: no `from __future__ import annotations` (breaks context/resource introspection).
   `DbtCliResource` needs an explicit dbt executable path when the venv isn't on PATH (`definitions.py`).
+- **FastF1 compound sentinels**: a missing compound arrives as the *strings* `'None'`/`'nan'`, not SQL null, so
+  `compound is not null` does not filter them — and two teammates both carrying `'None'` then look like a
+  same-compound pair. `int_teammate_race_gaps` excludes them explicitly; `mart_lap_times`'s `accepted_values`
+  test is what surfaces them.
 - **FastF1 keys drivers by 3-letter code (VER)**, not Ergast `driver_id` — the laps/telemetry marts are
   keyed separately from the Jolpica marts; don't join them naively.
 - **Evidence** DuckDB `connection.yaml` `filename` is relative to the source folder →
