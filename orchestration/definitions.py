@@ -29,6 +29,8 @@ from orchestration.assets import (
     SEASON_PARTITIONS,
     dbt_models,
     dbt_project,
+    driver_pace_profile,
+    driver_pace_profile_is_sane,
     driver_ratings,
     driver_ratings_are_sane,
     race_replay,
@@ -72,6 +74,7 @@ all_assets = [
     raw_team_radio,
     dbt_models,
     driver_ratings,
+    driver_pace_profile,
     race_replay,
 ]
 
@@ -121,7 +124,11 @@ def alert_on_run_failure(context: RunFailureSensorContext) -> None:
 
 defs = Definitions(
     assets=all_assets,
-    asset_checks=[raw_races_current_season_present, driver_ratings_are_sane],
+    asset_checks=[
+        raw_races_current_season_present,
+        driver_ratings_are_sane,
+        driver_pace_profile_is_sane,
+    ],
     jobs=[refresh_job, backfill_ingest_job],
     schedules=[race_weekend_schedule],
     sensors=[alert_on_run_failure],

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from analytics.pipeline import (
+    build_driver_pace_profile,
     build_driver_ratings,
     build_race_overtakes_season,
     build_race_replays,
@@ -48,6 +49,11 @@ from ingestion.pipeline import (
 
 # Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
 CURRENT_SEASON = 2026
+
+# Race pace is only comparable inside one set of technical regulations — the
+# ground-effect cars arrived in 2022 — so the Saturday-vs-Sunday profile is
+# bounded rather than pooled over everything FastF1 happens to cover.
+PACE_PROFILE_FROM_SEASON = 2022
 
 # Ingestion is partitioned by season, so any season can be (re)materialised
 # independently — that's what makes the 2006-onwards history backfillable from
@@ -268,6 +274,30 @@ def driver_ratings() -> MaterializeResult:
 
 
 @asset(
+    deps=[
+        AssetKey(["int_teammate_quali_gaps"]),
+        AssetKey(["int_teammate_race_gaps"]),
+        AssetKey(["stg_drivers"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def driver_pace_profile() -> MaterializeResult:
+    # Solve the race-pace rating and set it against qualifying over the same seasons.
+    df = build_driver_pace_profile(from_season=PACE_PROFILE_FROM_SEASON)
+    if df.empty:
+        return MaterializeResult(metadata={"drivers": 0, "note": "no race gaps ingested yet"})
+    racer = df.iloc[0]
+    return MaterializeResult(
+        metadata={
+            "drivers": len(df),
+            "from_season": PACE_PROFILE_FROM_SEASON,
+            "biggest_racer": f"{racer['driver_name']} ({racer['delta']:+.3f})",
+        }
+    )
+
+
+@asset(
     deps=[AssetKey(["stg_positions"]), AssetKey(["stg_laps"])],
     group_name="analytics",
     compute_kind="python",
@@ -316,4 +346,29 @@ def driver_ratings_are_sane() -> AssetCheckResult:
     return AssetCheckResult(
         passed=n > 0 and nulls == 0 and distinct == n,
         metadata={"rows": n, "null_ratings": nulls, "distinct_driver_ids": distinct},
+    )
+
+
+@asset_check(asset=driver_pace_profile, name="pace_profile_is_sane", blocking=False)
+def driver_pace_profile_is_sane() -> AssetCheckResult:
+    """One row per driver, no null deltas, and delta must equal race - quali exactly."""
+    df = read_query(
+        "select count(*) as n, "
+        "count(*) filter (where delta is null) as null_deltas, "
+        "count(distinct driver_id) as distinct_ids, "
+        "max(abs(delta - (race_rating - quali_rating))) as max_delta_err "
+        "from marts.driver_pace_profile"
+    )
+    n = int(df["n"].iloc[0])
+    nulls = int(df["null_deltas"].iloc[0])
+    distinct = int(df["distinct_ids"].iloc[0])
+    err = float(df["max_delta_err"].iloc[0] or 0.0)
+    return AssetCheckResult(
+        passed=n > 0 and nulls == 0 and distinct == n and err < 1e-9,
+        metadata={
+            "rows": n,
+            "null_deltas": nulls,
+            "distinct_driver_ids": distinct,
+            "max_delta_error": err,
+        },
     )
