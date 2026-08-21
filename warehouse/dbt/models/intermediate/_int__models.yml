@@ -26,3 +26,35 @@ models:
         data_tests:
           - accepted_values:
               values: [true, false]
+
+  - name: int_teammate_race_gaps
+    description: >
+      One row per driver per race giving the race-pace gap to their teammate,
+      as an additive log-pace difference. Built by pairing teammates on the same
+      lap number (identical fuel load) over green-flag laps on the same compound
+      at a similar tyre age, then averaging. The Sunday counterpart to
+      int_teammate_quali_gaps, and the second input to the rating solver.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [race_key, driver_id]
+    columns:
+      - name: race_key
+        data_tests: [not_null]
+      - name: driver_id
+        data_tests: [not_null]
+      - name: teammate_id
+        data_tests: [not_null]
+      - name: pace_gap
+        description: 100 * (ln(driver_time) - ln(teammate_time)); positive = slower.
+        data_tests: [not_null]
+      - name: n_laps
+        description: Comparable laps behind this race's gap; never below race_gap_min_laps.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              min_value: "{{ var('race_gap_min_laps') }}"
+              inclusive: true
+      - name: beat_teammate
+        data_tests:
+          - accepted_values:
+              values: [true, false]

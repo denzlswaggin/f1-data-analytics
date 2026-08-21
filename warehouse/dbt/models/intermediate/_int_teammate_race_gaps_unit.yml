@@ -1,0 +1,96 @@
+version: 2
+
+# Unit test for the race-pace transform's comparability rules — the part that
+# makes a race lap a fair teammate comparison at all. Asserts the lap selection
+# (start lap, out-lap, in-lap, safety-car laps), the same-compound and tyre-age
+# controls, the outlier trim, and the exactly-two-cars filter.
+#
+# pace_gap itself is intentionally not asserted (a cross-dialect float from ln),
+# matching _int_teammate_quali_gaps_unit.yml; n_laps and beat_teammate pin the
+# behaviour exactly instead. race_gap_min_laps is overridden to 2 so the fixture
+# stays small — the real threshold is 5 (dbt_project.yml).
+unit_tests:
+  - name: int_teammate_race_gaps_compares_only_like_for_like_laps
+    description: >
+      Keeps green-flag mid-stint laps on a matching compound at a similar tyre
+      age; drops the start lap, out/in laps, safety-car laps, outlier laps,
+      compound-mismatched pairs, tyre-age-mismatched pairs and single-car teams.
+    model: int_teammate_race_gaps
+    overrides:
+      vars:
+        race_gap_min_laps: 2
+    given:
+      - input: ref('stg_races')
+        rows:
+          - {race_key: r1, season: 2024, round: 1, race_name: Test Grand Prix}
+      - input: ref('stg_driver_codes')
+        rows:
+          - {season: 2024, driver_code: RDA, driver_id: red_a}
+          - {season: 2024, driver_code: RDB, driver_id: red_b}
+          - {season: 2024, driver_code: MCA, driver_id: mcl_a}
+          - {season: 2024, driver_code: MCB, driver_id: mcl_b}
+          - {season: 2024, driver_code: MEA, driver_id: mer_a}
+          - {season: 2024, driver_code: MEB, driver_id: mer_b}
+          - {season: 2024, driver_code: ALA, driver_id: alp_a}
+          - {season: 2024, driver_code: ALB, driver_id: alp_b}
+          - {season: 2024, driver_code: WIA, driver_id: wil_a}
+      - input: ref('stg_laps')
+        rows:
+          # RED — the clean case. One stint over laps 1-5 (lap 6 is under safety
+          # car and is filtered out before the stint bounds are taken, so lap 5
+          # is the in-lap). Only laps 2, 3, 4 are comparable => n_laps = 3.
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 1, stint: 1, compound: SOFT, tyre_life: 1, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 2, stint: 1, compound: SOFT, tyre_life: 2, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 3, stint: 1, compound: SOFT, tyre_life: 3, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 4, stint: 1, compound: SOFT, tyre_life: 4, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 5, stint: 1, compound: SOFT, tyre_life: 5, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDA, team: Red, lap_number: 6, stint: 1, compound: SOFT, tyre_life: 6, track_status: "4", lap_time_sec: 99.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 1, stint: 1, compound: SOFT, tyre_life: 1, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 2, stint: 1, compound: SOFT, tyre_life: 2, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 3, stint: 1, compound: SOFT, tyre_life: 3, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 4, stint: 1, compound: SOFT, tyre_life: 4, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 5, stint: 1, compound: SOFT, tyre_life: 5, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: RDB, team: Red, lap_number: 6, stint: 1, compound: SOFT, tyre_life: 6, track_status: "4", lap_time_sec: 99.0}
+          # MCL — lap 3 is a 12%-off outlier (traffic / lock-up) and is trimmed,
+          # leaving laps 2 and 4 => n_laps = 2. beat_teammate stays true only
+          # because the outlier (which would flip the average) is dropped.
+          - {season: 2024, round: 1, session: R, driver_code: MCA, team: McLaren, lap_number: 1, stint: 1, compound: MEDIUM, tyre_life: 1, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCA, team: McLaren, lap_number: 2, stint: 1, compound: MEDIUM, tyre_life: 2, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCA, team: McLaren, lap_number: 3, stint: 1, compound: MEDIUM, tyre_life: 3, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCA, team: McLaren, lap_number: 4, stint: 1, compound: MEDIUM, tyre_life: 4, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCA, team: McLaren, lap_number: 5, stint: 1, compound: MEDIUM, tyre_life: 5, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCB, team: McLaren, lap_number: 1, stint: 1, compound: MEDIUM, tyre_life: 1, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCB, team: McLaren, lap_number: 2, stint: 1, compound: MEDIUM, tyre_life: 2, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCB, team: McLaren, lap_number: 3, stint: 1, compound: MEDIUM, tyre_life: 3, track_status: "1", lap_time_sec: 80.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCB, team: McLaren, lap_number: 4, stint: 1, compound: MEDIUM, tyre_life: 4, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MCB, team: McLaren, lap_number: 5, stint: 1, compound: MEDIUM, tyre_life: 5, track_status: "1", lap_time_sec: 91.0}
+          # MER — split strategy, so no lap is on a matching compound => excluded.
+          - {season: 2024, round: 1, session: R, driver_code: MEA, team: Mercedes, lap_number: 1, stint: 1, compound: SOFT, tyre_life: 1, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEA, team: Mercedes, lap_number: 2, stint: 1, compound: SOFT, tyre_life: 2, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEA, team: Mercedes, lap_number: 3, stint: 1, compound: SOFT, tyre_life: 3, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEA, team: Mercedes, lap_number: 4, stint: 1, compound: SOFT, tyre_life: 4, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEB, team: Mercedes, lap_number: 1, stint: 1, compound: HARD, tyre_life: 1, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEB, team: Mercedes, lap_number: 2, stint: 1, compound: HARD, tyre_life: 2, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEB, team: Mercedes, lap_number: 3, stint: 1, compound: HARD, tyre_life: 3, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: MEB, team: Mercedes, lap_number: 4, stint: 1, compound: HARD, tyre_life: 4, track_status: "1", lap_time_sec: 91.0}
+          # ALP — same compound but 10 laps apart in tyre age (offset stops), so
+          # the gap would measure degradation, not the driver => excluded.
+          - {season: 2024, round: 1, session: R, driver_code: ALA, team: Alpine, lap_number: 1, stint: 1, compound: HARD, tyre_life: 1, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALA, team: Alpine, lap_number: 2, stint: 1, compound: HARD, tyre_life: 2, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALA, team: Alpine, lap_number: 3, stint: 1, compound: HARD, tyre_life: 3, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALA, team: Alpine, lap_number: 4, stint: 1, compound: HARD, tyre_life: 4, track_status: "1", lap_time_sec: 90.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALB, team: Alpine, lap_number: 1, stint: 1, compound: HARD, tyre_life: 11, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALB, team: Alpine, lap_number: 2, stint: 1, compound: HARD, tyre_life: 12, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALB, team: Alpine, lap_number: 3, stint: 1, compound: HARD, tyre_life: 13, track_status: "1", lap_time_sec: 91.0}
+          - {season: 2024, round: 1, session: R, driver_code: ALB, team: Alpine, lap_number: 4, stint: 1, compound: HARD, tyre_life: 14, track_status: "1", lap_time_sec: 91.0}
+          # WIL — a single car that weekend, so there is no teammate => excluded.
+          - {season: 2024, round: 1, session: R, driver_code: WIA, team: Williams, lap_number: 1, stint: 1, compound: SOFT, tyre_life: 1, track_status: "1", lap_time_sec: 95.0}
+          - {season: 2024, round: 1, session: R, driver_code: WIA, team: Williams, lap_number: 2, stint: 1, compound: SOFT, tyre_life: 2, track_status: "1", lap_time_sec: 95.0}
+          - {season: 2024, round: 1, session: R, driver_code: WIA, team: Williams, lap_number: 3, stint: 1, compound: SOFT, tyre_life: 3, track_status: "1", lap_time_sec: 95.0}
+          - {season: 2024, round: 1, session: R, driver_code: WIA, team: Williams, lap_number: 4, stint: 1, compound: SOFT, tyre_life: 4, track_status: "1", lap_time_sec: 95.0}
+    expect:
+      rows:
+        - {driver_id: red_a, teammate_id: red_b, team: Red, n_laps: 3, beat_teammate: true}
+        - {driver_id: red_b, teammate_id: red_a, team: Red, n_laps: 3, beat_teammate: false}
+        - {driver_id: mcl_a, teammate_id: mcl_b, team: McLaren, n_laps: 2, beat_teammate: true}
+        - {driver_id: mcl_b, teammate_id: mcl_a, team: McLaren, n_laps: 2, beat_teammate: false}
