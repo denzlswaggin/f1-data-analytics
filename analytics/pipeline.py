@@ -1,4 +1,4 @@
-"""Materialise the driver-rating and race-replay marts from warehouse tables."""
+"""Materialise the rating, pace-profile and race-replay marts from warehouse tables."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from ingestion.loaders.warehouse import read_query, replace_table
 from ingestion.logging import get_logger
 
 from analytics.overtakes import detect_overtakes
+from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
 from analytics.replay import resample_race
 
@@ -75,6 +76,88 @@ def build_driver_ratings(settings: Settings | None = None) -> pd.DataFrame:
         converged=result.converged,
         iterations=result.iterations,
         component=result.main_component_size,
+    )
+    return enriched
+
+
+def _race_gaps_query(from_season: int | None, to_season: int | None) -> str:
+    where = []
+    if from_season is not None:
+        where.append(f"season >= {int(from_season)}")
+    if to_season is not None:
+        where.append(f"season <= {int(to_season)}")
+    clause = f" where {' and '.join(where)}" if where else ""
+    return (
+        "select driver_id, teammate_id, pace_gap, season "
+        f"from intermediate.int_teammate_race_gaps{clause}"
+    )
+
+
+def build_driver_pace_profile(
+    from_season: int | None = None,
+    to_season: int | None = None,
+    settings: Settings | None = None,
+) -> pd.DataFrame:
+    """Solve the race-pace rating alongside qualifying and write ``marts.driver_pace_profile``.
+
+    ``from_season``/``to_season`` bound the *race* gaps (FastF1 laps cover far
+    fewer seasons than qualifying, and race pace is only comparable within one
+    regulation era). The qualifying gaps are read unbounded and matched to
+    whatever seasons survive inside :func:`analytics.pace_profile.build_pace_profile`,
+    so the two ratings always describe the same population.
+
+    Returns the materialised DataFrame.
+    """
+    settings = settings or get_settings()
+
+    race_gaps = read_query(_race_gaps_query(from_season, to_season), settings)
+    quali_gaps = read_query(GAPS_QUERY, settings)
+    drivers = read_query(DRIVERS_QUERY, settings)
+
+    result = build_pace_profile(quali_gaps, race_gaps)
+
+    # Season span from the race gaps — the binding side of the comparison.
+    span = (
+        race_gaps.groupby("driver_id")
+        .agg(
+            first_season=("season", "min"),
+            last_season=("season", "max"),
+            n_seasons=("season", "nunique"),
+        )
+        .reset_index()
+    )
+
+    enriched = (
+        result.profile.merge(drivers, on="driver_id", how="left")
+        .merge(span, on="driver_id", how="left")
+        .loc[
+            :,
+            [
+                "delta_rank",
+                "driver_id",
+                "driver_name",
+                "nationality",
+                "quali_rating",
+                "race_rating",
+                "delta",
+                "quali_rank",
+                "race_rank",
+                "n_quali_comparisons",
+                "n_race_comparisons",
+                "n_seasons",
+                "first_season",
+                "last_season",
+            ],
+        ]
+    )
+
+    replace_table(enriched, schema="marts", table="driver_pace_profile", settings=settings)
+    log.info(
+        "pace_profile.materialised",
+        drivers=len(enriched),
+        seasons=result.seasons,
+        quali_converged=result.quali.converged,
+        race_converged=result.race.converged,
     )
     return enriched
 
