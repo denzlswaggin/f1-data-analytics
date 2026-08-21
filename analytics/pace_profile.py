@@ -122,9 +122,7 @@ def build_pace_profile(
         ("race_rating", "race_rank"),
         ("delta", "delta_rank"),
     ):
-        profile[rank_name] = (
-            profile[column].rank(ascending=False, method="first").astype("int64")
-        )
+        profile[rank_name] = profile[column].rank(ascending=False, method="first").astype("int64")
 
     profile = profile.sort_values("delta", ascending=False, ignore_index=True)
     profile = profile.loc[:, PROFILE_COLUMNS]

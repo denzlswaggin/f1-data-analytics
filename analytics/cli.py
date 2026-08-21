@@ -123,7 +123,6 @@ def validate(
             )
 
 
-
 @app.command("pace-profile")
 def pace_profile(
     from_season: Annotated[
