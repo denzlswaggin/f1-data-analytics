@@ -29,7 +29,7 @@ select 5 as n union all select 10 union all select 20 union all select 30
 
 <Dropdown data={min_races_options} name=minraces value=n defaultValue="10" title="Min. race comparisons" />
 
-```sql profile
+```sql pace
 select *
 from f1.driver_pace_profile
 where n_race_comparisons >= ${inputs.minraces.value}
@@ -53,7 +53,7 @@ driver is better in the race than in qualifying, below it the reverse. Distance 
 the diagonal *is* the delta.
 
 <ScatterPlot
-    data={profile}
+    data={pace}
     x=quali_rating
     y=race_rating
     series=profile
@@ -71,12 +71,12 @@ the diagonal *is* the delta.
 ```sql movers
 select *
 from (
-    select *, 'top' as end_of_list from ${profile} order by delta desc limit 10
+    select *, 'top' as end_of_list from ${pace} order by delta desc limit 10
 )
 union all
 select *
 from (
-    select *, 'bottom' as end_of_list from ${profile} order by delta asc limit 10
+    select *, 'bottom' as end_of_list from ${pace} order by delta asc limit 10
 )
 order by delta desc
 ```
@@ -97,7 +97,7 @@ line is the field average, not "no change".
 
 ## Full table
 
-<DataTable data={profile} rows=20 search=true>
+<DataTable data={pace} rows=20 search=true>
     <Column id=delta_rank title="#" />
     <Column id=driver_name title="Driver" />
     <Column id=delta title="Delta" fmt='+0.000' contentType=colorscale colorScale={['#cf7a33', '#f5f5f5', '#4a97d6']} />
