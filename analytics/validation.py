@@ -289,8 +289,8 @@ def compare_dynamic_backtest(
     *,
     min_train_seasons: int = 5,
     static_prior_weight: float = 8.0,
-    dynamic_prior_weight: float = 4.0,
-    temporal_weight: float = 12.0,
+    dynamic_prior_weight: float = 8.0,
+    temporal_weight: float = 48.0,
 ) -> ModelComparisonResult:
     """Compare static vs latest driver-season ratings on future seasons."""
     _check(gaps)

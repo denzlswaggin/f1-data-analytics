@@ -13,7 +13,11 @@ from pathlib import Path
 
 import duckdb
 import pandas as pd
-from analytics.pipeline import build_driver_pace_profile, build_driver_ratings
+from analytics.pipeline import (
+    build_driver_pace_profile,
+    build_driver_ratings,
+    build_driver_ratings_v2,
+)
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
@@ -39,12 +43,26 @@ def _seasoned_gaps(pairs: list[tuple[str, str, float]], seasons: list[int]) -> p
     """Directed teammate-gap rows (plus antisymmetric mirror) repeated per season."""
     rows: list[dict[str, object]] = []
     for season in seasons:
-        for driver, teammate, gap in pairs:
+        for race_index, (driver, teammate, gap) in enumerate(pairs, start=1):
             rows.append(
-                {"driver_id": driver, "teammate_id": teammate, "pace_gap": gap, "season": season}
+                {
+                    "race_key": f"{season}_{race_index}",
+                    "driver_id": driver,
+                    "teammate_id": teammate,
+                    "pace_gap": gap,
+                    "season": season,
+                    "common_session": "Q3",
+                }
             )
             rows.append(
-                {"driver_id": teammate, "teammate_id": driver, "pace_gap": -gap, "season": season}
+                {
+                    "race_key": f"{season}_{race_index}",
+                    "driver_id": teammate,
+                    "teammate_id": driver,
+                    "pace_gap": -gap,
+                    "season": season,
+                    "common_session": "Q3",
+                }
             )
     return pd.DataFrame(rows)
 
@@ -108,6 +126,23 @@ def test_build_driver_ratings_materialises_mart(tmp_path: Path) -> None:
     persisted = read_query("select * from marts.driver_ratings", settings)
     assert len(persisted) == 3
     assert set(persisted["driver_id"]) == {"A", "B", "C"}
+
+
+def test_build_driver_ratings_v2_materialises_driver_seasons(tmp_path: Path) -> None:
+    db_path = tmp_path / "f1.duckdb"
+    _seed_warehouse(db_path)
+    settings = Settings(warehouse="duckdb", duckdb_path=db_path)
+
+    result = build_driver_ratings_v2(settings, n_boot=20, temporal_weight=2.0)
+
+    assert len(result) == 6
+    assert result[["driver_id", "season"]].duplicated().sum() == 0
+    assert result["rating_lo"].notna().all()
+    assert (result["rating_lo"] <= result["rating"]).all()
+    assert (result["rating"] <= result["rating_hi"]).all()
+    assert result[result["season"] == 2021]["form_delta"].notna().all()
+    persisted = read_query("select * from marts.driver_ratings_v2", settings)
+    assert len(persisted) == 6
 
 
 # The exact column contract the Saturday-vs-Sunday page and its source depend on.

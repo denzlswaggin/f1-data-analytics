@@ -10,6 +10,7 @@ from ingestion.logging import get_logger
 from analytics.overtakes import detect_overtakes
 from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
+from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.replay import resample_race
 from analytics.validation import bootstrap_ratings
 
@@ -23,6 +24,11 @@ GAPS_QUERY = """
 DRIVERS_QUERY = """
     select driver_id, driver_name, nationality
     from staging.stg_drivers
+"""
+
+GAPS_V2_QUERY = """
+    select race_key, driver_id, teammate_id, pace_gap, season, common_session
+    from intermediate.int_teammate_quali_gaps
 """
 
 
@@ -86,6 +92,63 @@ def build_driver_ratings(
         converged=result.converged,
         iterations=result.iterations,
         component=result.main_component_size,
+    )
+    return enriched
+
+
+def build_driver_ratings_v2(
+    settings: Settings | None = None,
+    *,
+    n_boot: int = 100,
+    bootstrap_seed: int = 0,
+    prior_weight: float = 8.0,
+    temporal_weight: float = 48.0,
+) -> pd.DataFrame:
+    """Build season-specific dynamic ratings into ``marts.driver_ratings_v2``."""
+    settings = settings or get_settings()
+    gaps = read_query(GAPS_V2_QUERY, settings)
+    drivers = read_query(DRIVERS_QUERY, settings)
+    fit = compute_dynamic_ratings(
+        gaps,
+        prior_weight=prior_weight,
+        temporal_weight=temporal_weight,
+    )
+    intervals = cluster_bootstrap_dynamic_ratings(
+        gaps,
+        n_boot=n_boot,
+        seed=bootstrap_seed,
+        prior_weight=prior_weight,
+        temporal_weight=temporal_weight,
+    )
+    enriched = (
+        fit.ratings.merge(drivers, on="driver_id", how="left")
+        .merge(intervals, on=["driver_id", "season"], how="left")
+        .loc[
+            :,
+            [
+                "season",
+                "rank",
+                "driver_id",
+                "driver_name",
+                "nationality",
+                "rating",
+                "rating_lo",
+                "rating_hi",
+                "n_boot",
+                "pace_deficit",
+                "form_delta",
+                "n_comparisons",
+            ],
+        ]
+    )
+    replace_table(enriched, schema="marts", table="driver_ratings_v2", settings=settings)
+    log.info(
+        "ratings_v2.materialised",
+        rows=len(enriched),
+        drivers=enriched["driver_id"].nunique(),
+        seasons=enriched["season"].nunique(),
+        converged=fit.converged,
+        iterations=fit.iterations,
     )
     return enriched
 

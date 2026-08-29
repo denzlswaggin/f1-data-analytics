@@ -12,6 +12,7 @@ from typing import Any
 from analytics.pipeline import (
     build_driver_pace_profile,
     build_driver_ratings,
+    build_driver_ratings_v2,
     build_race_overtakes_season,
     build_race_replays,
 )
@@ -281,6 +282,24 @@ def driver_ratings() -> MaterializeResult:
 
 
 @asset(
+    deps=[AssetKey(["int_teammate_quali_gaps"]), AssetKey(["stg_drivers"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def driver_ratings_v2() -> MaterializeResult:
+    df = build_driver_ratings_v2()
+    latest = int(df["season"].max())
+    leader = df[df["season"] == latest].iloc[0]
+    return MaterializeResult(
+        metadata={
+            "driver_seasons": len(df),
+            "latest_season": latest,
+            "leader": f"{leader['driver_name']} ({leader['rating']:.3f})",
+        }
+    )
+
+
+@asset(
     deps=[
         AssetKey(["int_teammate_quali_gaps"]),
         AssetKey(["int_teammate_race_gaps"]),
@@ -381,6 +400,25 @@ def driver_ratings_are_sane() -> AssetCheckResult:
             "distinct_driver_ids": distinct,
         },
     )
+
+
+@asset_check(asset=driver_ratings_v2, name="dynamic_ratings_are_sane", blocking=True)
+def driver_ratings_v2_are_sane() -> AssetCheckResult:
+    """Dynamic ratings must be unique per driver-season with valid intervals."""
+    df = read_query(
+        "select count(*) as n, count(distinct cast(season as varchar) || '-' || driver_id) as keys, "
+        "count(*) filter (where rating is null or rating_lo is null or rating_hi is null) as nulls, "
+        "count(*) filter (where rating_lo > rating or rating > rating_hi) as invalid "
+        "from marts.driver_ratings_v2"
+    )
+    row = df.iloc[0]
+    passed = (
+        int(row["n"]) > 0
+        and int(row["n"]) == int(row["keys"])
+        and int(row["nulls"]) == 0
+        and int(row["invalid"]) == 0
+    )
+    return AssetCheckResult(passed=passed, metadata=row.to_dict())
 
 
 @asset_check(asset=driver_pace_profile, name="pace_profile_is_sane", blocking=True)

@@ -26,12 +26,18 @@ from analytics.pipeline import (
     build_all_replays,
     build_driver_pace_profile,
     build_driver_ratings,
+    build_driver_ratings_v2,
     build_race_overtakes,
     build_race_overtakes_season,
     build_race_replay,
     build_race_replays,
 )
-from analytics.validation import backtest_ratings, bootstrap_ratings, shrinkage_sensitivity
+from analytics.validation import (
+    backtest_ratings,
+    bootstrap_ratings,
+    compare_dynamic_backtest,
+    shrinkage_sensitivity,
+)
 
 _GAPS_QUERY = (
     "select driver_id, teammate_id, pace_gap, season from intermediate.int_teammate_quali_gaps"
@@ -81,6 +87,32 @@ def ratings(
         )
 
 
+@app.command("ratings-v2")
+def ratings_v2(
+    top: Annotated[int, typer.Option(help="Print the top-N latest-season ratings.")] = 20,
+    n_boot: Annotated[
+        int, typer.Option(help="Race-cluster bootstrap resamples for intervals.")
+    ] = 100,
+    temporal_weight: Annotated[
+        float, typer.Option(help="Smoothness strength between a driver's seasons.")
+    ] = 48.0,
+) -> None:
+    """Build dynamic driver-season ratings with race-cluster uncertainty."""
+    configure_logging()
+    df = build_driver_ratings_v2(n_boot=n_boot, temporal_weight=temporal_weight)
+    latest_season = int(df["season"].max())
+    shown = df[df["season"] == latest_season].head(top)
+    typer.echo(f"\nDynamic ratings for {latest_season} (top {len(shown)}):\n")
+    typer.echo(f"  {'#':>3}  {'driver':<22} {'rating':>7}  {'change':>7}  {'90% CI':>18}")
+    for row in shown.itertuples():
+        name = row.driver_name or row.driver_id
+        change = "n/a" if pd.isna(row.form_delta) else f"{row.form_delta:+.3f}"
+        typer.echo(
+            f"  {row.rank:>3}  {name:<22} {row.rating:>7.3f}  {change:>7}  "
+            f"[{row.rating_lo:>6.3f}, {row.rating_hi:>6.3f}]"
+        )
+
+
 @app.command()
 def validate(
     n_boot: Annotated[
@@ -118,6 +150,15 @@ def validate(
     typer.echo(f"  correlation r     : {bt.pearson_r:.3f}")
     typer.echo(
         f"  MAE / baseline    : {bt.mae:.2f} / {bt.baseline_mae:.2f}  (skill {bt.skill_score:+.3f})"
+    )
+
+    comparison = compare_dynamic_backtest(gaps)
+    typer.echo("\n=== Static vs dynamic temporal hold-out ===")
+    typer.echo(f"  predictions       : {comparison.n_predictions}")
+    typer.echo(f"  MAE static/dynamic: {comparison.static_mae:.3f} / {comparison.dynamic_mae:.3f}")
+    typer.echo(
+        "  sign static/dyn.  : "
+        f"{comparison.static_sign_accuracy:.3f} / {comparison.dynamic_sign_accuracy:.3f}"
     )
 
     sens = shrinkage_sensitivity(gaps)

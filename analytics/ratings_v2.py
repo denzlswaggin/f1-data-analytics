@@ -52,9 +52,10 @@ def compute_dynamic_ratings(
     *,
     max_iter: int = 3000,
     tol: float = 1e-10,
-    prior_weight: float = 4.0,
-    temporal_weight: float = 12.0,
+    prior_weight: float = 8.0,
+    temporal_weight: float = 48.0,
     damping: float = 0.5,
+    _log_result: bool = True,
 ) -> DynamicRatingResult:
     """Fit a regularised pace deficit for every observed driver-season.
 
@@ -167,13 +168,14 @@ def compute_dynamic_ratings(
         :, ["season", "rank", "driver_id", "rating", "pace_deficit", "form_delta", "n_comparisons"]
     ].sort_values(["season", "rank"], ignore_index=True)
 
-    log.info(
-        "ratings_v2.solved",
-        nodes=n_nodes,
-        drivers=len(main),
-        iterations=iterations,
-        converged=converged,
-    )
+    if _log_result:
+        log.info(
+            "ratings_v2.solved",
+            nodes=n_nodes,
+            drivers=len(main),
+            iterations=iterations,
+            converged=converged,
+        )
     return DynamicRatingResult(ratings, iterations, converged, len(main))
 
 
@@ -184,8 +186,8 @@ def cluster_bootstrap_dynamic_ratings(
     seed: int = 0,
     ci: float = 0.90,
     min_presence: float = 0.5,
-    prior_weight: float = 4.0,
-    temporal_weight: float = 12.0,
+    prior_weight: float = 8.0,
+    temporal_weight: float = 48.0,
 ) -> pd.DataFrame:
     """Estimate driver-season intervals by resampling whole race weekends.
 
@@ -226,6 +228,7 @@ def cluster_bootstrap_dynamic_ratings(
             sampled,
             prior_weight=prior_weight,
             temporal_weight=temporal_weight,
+            _log_result=False,
         ).ratings
         for row in fit.itertuples():
             key = (str(row.driver_id), int(row.season))
