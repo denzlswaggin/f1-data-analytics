@@ -15,6 +15,7 @@ click the timeline markers to jump to key moments, and click a 📻 marker to pl
 ```sql replay_races
 select distinct race_name
 from f1.race_replay_meta
+where race_name <> '__NO_DATA__'
 order by race_name
 ```
 

@@ -16,4 +16,17 @@ from marts.race_overtakes o
 left join staging.stg_races rc
     on rc.season = o.season
     and rc.round = o.round
-order by rc.race_name, o.t_s
+
+-- See race_replay.sql: prevent Evidence from emitting an invalid empty Parquet.
+union all
+select
+    0,
+    0,
+    '__NO_DATA__',
+    cast(0 as double),
+    0,
+    '__NO_DATA__',
+    '__NO_DATA__',
+    cast(0 as double)
+where not exists (select 1 from marts.race_overtakes)
+order by race_name, t_s
