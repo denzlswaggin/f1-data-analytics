@@ -29,6 +29,7 @@ import pandas as pd
 from ingestion.logging import get_logger
 
 from analytics.ratings import compute_ratings
+from analytics.ratings_v2 import compute_dynamic_ratings
 
 log = get_logger(__name__)
 
@@ -269,3 +270,90 @@ def shrinkage_sensitivity(
             }
         )
     return pd.DataFrame(rows)
+
+
+@dataclass(frozen=True)
+class ModelComparisonResult:
+    """Out-of-sample comparison of static and time-varying ratings."""
+
+    n_predictions: int
+    static_mae: float
+    dynamic_mae: float
+    static_sign_accuracy: float
+    dynamic_sign_accuracy: float
+    predictions: pd.DataFrame
+
+
+def compare_dynamic_backtest(
+    gaps: pd.DataFrame,
+    *,
+    min_train_seasons: int = 5,
+    static_prior_weight: float = 8.0,
+    dynamic_prior_weight: float = 4.0,
+    temporal_weight: float = 12.0,
+) -> ModelComparisonResult:
+    """Compare static vs latest driver-season ratings on future seasons."""
+    _check(gaps)
+    seasons = sorted(int(season) for season in gaps["season"].unique())
+    frames: list[pd.DataFrame] = []
+    for year in seasons[min_train_seasons:]:
+        train = gaps[gaps["season"] < year]
+        test = _dedupe_undirected(gaps[gaps["season"] == year]).copy()
+        if train.empty or test.empty:
+            continue
+        static = compute_ratings(train, prior_weight=static_prior_weight).ratings.set_index(
+            "driver_id"
+        )["pace_deficit"]
+        dynamic_fit = compute_dynamic_ratings(
+            train,
+            prior_weight=dynamic_prior_weight,
+            temporal_weight=temporal_weight,
+        ).ratings
+        latest = (
+            dynamic_fit.sort_values("season")
+            .groupby("driver_id", as_index=False)
+            .tail(1)
+            .set_index("driver_id")["pace_deficit"]
+        )
+        test["static_predicted"] = test["driver_id"].map(static) - test["teammate_id"].map(static)
+        test["dynamic_predicted"] = test["driver_id"].map(latest) - test["teammate_id"].map(latest)
+        test = test.dropna(subset=["static_predicted", "dynamic_predicted"])
+        if not test.empty:
+            frames.append(
+                test[
+                    ["season", "driver_id", "teammate_id", "static_predicted", "dynamic_predicted"]
+                ].assign(actual=test["pace_gap"].to_numpy())
+            )
+
+    predictions = (
+        pd.concat(frames, ignore_index=True)
+        if frames
+        else pd.DataFrame(
+            columns=[
+                "season",
+                "driver_id",
+                "teammate_id",
+                "static_predicted",
+                "dynamic_predicted",
+                "actual",
+            ]
+        )
+    )
+    if predictions.empty:
+        nan = float("nan")
+        return ModelComparisonResult(0, nan, nan, nan, nan, predictions)
+
+    actual = predictions["actual"].to_numpy(dtype=float)
+    static_prediction = predictions["static_predicted"].to_numpy(dtype=float)
+    dynamic_prediction = predictions["dynamic_predicted"].to_numpy(dtype=float)
+    nonzero = actual != 0
+    static_sign = float(np.mean(np.sign(static_prediction[nonzero]) == np.sign(actual[nonzero])))
+    dynamic_sign = float(np.mean(np.sign(dynamic_prediction[nonzero]) == np.sign(actual[nonzero])))
+    return ModelComparisonResult(
+        n_predictions=len(predictions),
+        static_mae=float(np.mean(np.abs(static_prediction - actual))),
+        dynamic_mae=float(np.mean(np.abs(dynamic_prediction - actual))),
+        static_sign_accuracy=static_sign,
+        dynamic_sign_accuracy=dynamic_sign,
+        predictions=predictions,
+    )

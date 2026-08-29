@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from analytics.ratings_v2 import compute_dynamic_ratings
+from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
+from analytics.validation import compare_dynamic_backtest
 
 
 def _season_gap(season: int, gap: float) -> list[dict[str, object]]:
@@ -61,3 +62,37 @@ def test_dynamic_ratings_validate_input_and_empty_frame() -> None:
         compute_dynamic_ratings(pd.DataFrame({"driver_id": ["A"]}))
     empty = pd.DataFrame(columns=["driver_id", "teammate_id", "pace_gap", "season"])
     assert compute_dynamic_ratings(empty).ratings.empty
+
+
+def test_cluster_bootstrap_is_deterministic_and_keeps_mirrors_together() -> None:
+    rows: list[dict[str, object]] = []
+    for season in (2023, 2024):
+        for race, gap in ((1, -1.0), (2, -0.5), (3, -0.8)):
+            rows.extend({**row, "race_key": f"{season}-{race}"} for row in _season_gap(season, gap))
+    gaps = pd.DataFrame(rows)
+
+    first = cluster_bootstrap_dynamic_ratings(gaps, n_boot=20, seed=7)
+    second = cluster_bootstrap_dynamic_ratings(gaps, n_boot=20, seed=7)
+
+    pd.testing.assert_frame_equal(first, second)
+    assert set(first.columns) == {"driver_id", "season", "rating_lo", "rating_hi", "n_boot"}
+    assert (first["rating_lo"] <= first["rating_hi"]).all()
+    assert (first["n_boot"] == 20).all()
+
+
+def test_dynamic_backtest_improves_on_evolving_form() -> None:
+    rows: list[dict[str, object]] = []
+    for season in range(2000, 2012):
+        gap = -1.2 + 0.2 * (season - 2000)
+        rows.extend(_season_gap(season, gap))
+    gaps = pd.DataFrame(rows)
+
+    comparison = compare_dynamic_backtest(
+        gaps,
+        min_train_seasons=5,
+        dynamic_prior_weight=0.2,
+        temporal_weight=0.5,
+    )
+
+    assert comparison.n_predictions == 7
+    assert comparison.dynamic_mae < comparison.static_mae

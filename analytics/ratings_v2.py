@@ -175,3 +175,78 @@ def compute_dynamic_ratings(
         converged=converged,
     )
     return DynamicRatingResult(ratings, iterations, converged, len(main))
+
+
+def cluster_bootstrap_dynamic_ratings(
+    gaps: pd.DataFrame,
+    *,
+    n_boot: int = 100,
+    seed: int = 0,
+    ci: float = 0.90,
+    min_presence: float = 0.5,
+    prior_weight: float = 4.0,
+    temporal_weight: float = 12.0,
+) -> pd.DataFrame:
+    """Estimate driver-season intervals by resampling whole race weekends.
+
+    Both mirrored directions and every team comparison from a weekend stay in
+    the same bootstrap cluster. Sampling occurs within each season, preserving
+    the calendar mix while reflecting race-to-race uncertainty.
+    """
+    if "race_key" not in gaps:
+        raise ValueError("gaps is missing columns: ['race_key']")
+    if n_boot <= 0:
+        raise ValueError("n_boot must be positive")
+    base = compute_dynamic_ratings(
+        gaps,
+        prior_weight=prior_weight,
+        temporal_weight=temporal_weight,
+    ).ratings
+    if base.empty:
+        return pd.DataFrame(columns=["driver_id", "season", "rating_lo", "rating_hi", "n_boot"])
+
+    rng = np.random.default_rng(seed)
+    collected: dict[tuple[str, int], list[float]] = {
+        (str(row.driver_id), int(row.season)): [] for row in base.itertuples()
+    }
+    season_clusters = {
+        int(season): frame["race_key"].drop_duplicates().tolist()
+        for season, frame in gaps.groupby("season")
+    }
+    for _ in range(n_boot):
+        sampled_frames: list[pd.DataFrame] = []
+        for season, clusters in season_clusters.items():
+            selected = rng.choice(clusters, size=len(clusters), replace=True)
+            season_frame = gaps[gaps["season"] == season]
+            sampled_frames.extend(
+                season_frame[season_frame["race_key"] == cluster] for cluster in selected
+            )
+        sampled = pd.concat(sampled_frames, ignore_index=True)
+        fit = compute_dynamic_ratings(
+            sampled,
+            prior_weight=prior_weight,
+            temporal_weight=temporal_weight,
+        ).ratings
+        for row in fit.itertuples():
+            key = (str(row.driver_id), int(row.season))
+            if key in collected:
+                collected[key].append(float(row.rating))
+
+    base_rating = base.set_index(["driver_id", "season"])["rating"]
+    lo_q, hi_q = (1 - ci) / 2, 1 - (1 - ci) / 2
+    rows: list[dict[str, object]] = []
+    for key, samples in collected.items():
+        if len(samples) < min_presence * n_boot:
+            continue
+        values = np.asarray(samples)
+        point = float(base_rating.loc[key])
+        rows.append(
+            {
+                "driver_id": key[0],
+                "season": key[1],
+                "rating_lo": min(float(np.quantile(values, lo_q)), point),
+                "rating_hi": max(float(np.quantile(values, hi_q)), point),
+                "n_boot": len(samples),
+            }
+        )
+    return pd.DataFrame(rows)
