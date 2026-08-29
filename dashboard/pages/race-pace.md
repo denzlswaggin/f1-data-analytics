@@ -7,12 +7,12 @@ yellow laps filtered out). Pick a race to see how pace evolved and where tyre
 stints fall. _FastF1 laps cover the current season to date._
 
 ```sql races
-select distinct race_name
+select distinct race_label
 from f1.lap_times
-order by race_name
+order by race_label desc
 ```
 
-<Dropdown data={races} name=race value=race_name defaultValue="Bahrain Grand Prix" />
+<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
 
 ```sql race_laps
 select
@@ -23,7 +23,7 @@ select
     stint,
     position
 from f1.lap_times
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by driver_code, lap_number
 ```
 
@@ -47,7 +47,7 @@ select
     round(min(lap_time_sec), 2) as best_lap_sec,
     round(avg(lap_time_sec), 2) as avg_lap_sec
 from f1.lap_times
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 group by compound
 order by avg_lap_sec
 ```
@@ -79,7 +79,7 @@ select
     deg_sec_per_lap,
     n_laps
 from f1.tyre_degradation
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by deg_sec_per_lap desc
 ```
 

@@ -2,6 +2,7 @@ select
     season,
     round,
     race_name,
+    cast(season as varchar) || ' ' || race_name as race_label,
     compound,
     n_laps,
     deg_sec_per_lap,

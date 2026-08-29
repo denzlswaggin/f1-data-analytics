@@ -7,12 +7,12 @@ Compare who carried more speed where, then see a single driver's racing line
 coloured by gear. _FastF1 telemetry covers the current season to date._
 
 ```sql tel_races
-select distinct race_name
+select distinct race_label
 from f1.telemetry_fastest_lap
-order by race_name
+order by race_label desc
 ```
 
-<Dropdown data={tel_races} name=race value=race_name defaultValue="Bahrain Grand Prix" />
+<Dropdown data={tel_races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
 
 ## Speed trace — {inputs.race.value}
 
@@ -25,7 +25,7 @@ select
     distance_m,
     speed_kph
 from f1.telemetry_fastest_lap
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by driver_code, distance_m
 ```
 
@@ -47,7 +47,7 @@ selected there — corners (low gears) and straights (high gears) separate clean
 ```sql tel_drivers
 select distinct driver_code, driver_name
 from f1.telemetry_fastest_lap
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by driver_code
 ```
 
@@ -60,7 +60,7 @@ select
     gear,
     speed_kph
 from f1.telemetry_fastest_lap
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
     and driver_code = '${inputs.driver.value}'
 order by distance_m
 ```

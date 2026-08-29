@@ -10,16 +10,17 @@ plays flags, safety cars and penalties in sync. Detected **on-track overtakes**
 light up on the map as they happen and sit on their own ⇄ seek lane below. Click a
 car to follow it (its overtakes and radio filter to that driver), scroll to zoom,
 click the timeline markers to jump to key moments, and click a 📻 marker to play
-**team radio** (where available). _2026 season._
+**team radio** (where available). _Demo: 2024 Bahrain Grand Prix._
 
 ```sql replay_races
-select distinct race_name
+select distinct
+    race_name,
+    case when race_name = '__NO_DATA__' then 'No replay data available' else race_name end as race_label
 from f1.race_replay_meta
-where race_name <> '__NO_DATA__'
 order by race_name
 ```
 
-<Dropdown data={replay_races} name=race value=race_name defaultValue="2024 Bahrain Grand Prix" />
+<Dropdown data={replay_races} name=race value=race_name label=race_label />
 
 ```sql replay
 select
@@ -32,6 +33,7 @@ select
     gap_to_ahead_s
 from f1.race_replay
 where race_name = '${inputs.race.value}'
+    and driver_code <> '__NO_DATA__'
 order by driver_code, t_s
 ```
 
@@ -39,6 +41,7 @@ order by driver_code, t_s
 select driver_code, driver_name, team, team_color
 from f1.race_replay_meta
 where race_name = '${inputs.race.value}'
+    and driver_code <> '__NO_DATA__'
 ```
 
 ```sql race_ctrl
@@ -59,6 +62,7 @@ order by t_s
 select t_s, for_position, passer_code, passed_code, gap_at_pass_s
 from f1.race_overtakes
 where race_name = '${inputs.race.value}'
+    and passer_code <> '__NO_DATA__'
 order by t_s
 ```
 

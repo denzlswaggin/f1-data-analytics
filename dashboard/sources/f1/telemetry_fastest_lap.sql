@@ -24,6 +24,7 @@ select
     t.season,
     t.round,
     t.race_name,
+    cast(t.season as varchar) || ' ' || t.race_name as race_label,
     t.driver_code,
     t.driver_name,
     t.lap_number,

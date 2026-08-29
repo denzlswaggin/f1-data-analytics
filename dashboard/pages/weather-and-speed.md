@@ -7,12 +7,12 @@ you: who carries the most speed down the longest straight, and how tyre
 degradation shifts with track conditions.
 
 ```sql races
-select distinct race_name, season
+select distinct race_label
 from f1.speed_trap
-order by season desc, race_name
+order by race_label desc
 ```
 
-<Dropdown data={races} name=race value=race_name defaultValue="Bahrain Grand Prix" />
+<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
 
 ## Straight-line speed — {inputs.race.value}
 
@@ -26,7 +26,7 @@ select
     top_speed_kph,
     avg_speed_kph
 from f1.speed_trap
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by top_speed_kph desc
 ```
 
