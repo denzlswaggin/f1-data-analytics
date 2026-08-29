@@ -48,13 +48,18 @@ jobs:
           --to ${{ github.event.inputs.seasons_to || '2025' }}
 
       - name: Ingest sample race laps (FastF1)
-        run: python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5
+        run: |
+          python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5
+          python -m ingestion.cli positions --season 2024 --from-round 1 --to-round 1
+          python -m ingestion.cli telemetry --season 2024 --from-round 1 --to-round 1
+          python -m ingestion.cli weather --season 2024 --from-round 1 --to-round 1
+          python -m ingestion.cli race-control --season 2024 --from-round 1 --to-round 1
 
       - name: Prepare dashboard demo sources
         run: |
           dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt
           dbt seed --vars '{load_ci_seeds: true}' \
-            --select pitstops ergast_laps positions race_control team_radio telemetry weather \
+            --select pitstops ergast_laps team_radio \
             --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
 
       - name: dbt build

@@ -547,6 +547,12 @@
             on:mouseleave={onLeave}
         ></canvas>
 
+        {#if !data || !data.length}
+            <div class="tm-no-data">
+                Replay data is not available for this race.
+            </div>
+        {/if}
+
         <div class="tm-board">
             <div class="tm-board-h">Order · interval</div>
             {#each leaderboard as row (row.code)}
@@ -732,6 +738,14 @@
         position: absolute;
         left: 0;
         top: 0;
+    }
+    .tm-no-data {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #c7cbd1;
+        font-size: 0.95rem;
     }
     .cars.grab { cursor: grab; }
     .cars.grabbing { cursor: grabbing; }
