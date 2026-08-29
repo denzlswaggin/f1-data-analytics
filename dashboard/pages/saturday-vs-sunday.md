@@ -27,7 +27,7 @@ improvement".
 select 5 as n union all select 10 union all select 20 union all select 30
 ```
 
-<Dropdown data={min_races_options} name=minraces value=n defaultValue="10" title="Min. race comparisons" />
+<Dropdown data={min_races_options} name=minraces value=n defaultValue={10} title="Min. race comparisons" />
 
 ```sql pace
 select *
