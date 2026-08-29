@@ -11,6 +11,7 @@ from analytics.overtakes import detect_overtakes
 from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
 from analytics.replay import resample_race
+from analytics.validation import bootstrap_ratings
 
 log = get_logger(__name__)
 
@@ -25,7 +26,9 @@ DRIVERS_QUERY = """
 """
 
 
-def build_driver_ratings(settings: Settings | None = None) -> pd.DataFrame:
+def build_driver_ratings(
+    settings: Settings | None = None, *, n_boot: int = 300, bootstrap_seed: int = 0
+) -> pd.DataFrame:
     """Compute the global rating and write it to ``marts.driver_ratings``.
 
     Returns the materialised DataFrame.
@@ -37,6 +40,9 @@ def build_driver_ratings(settings: Settings | None = None) -> pd.DataFrame:
 
     result = compute_ratings(gaps)
     ratings = result.ratings
+    uncertainty = bootstrap_ratings(gaps, n_boot=n_boot, seed=bootstrap_seed).loc[
+        :, ["driver_id", "rating_lo", "rating_hi", "n_boot"]
+    ]
 
     # Per-driver comparison span from the gap data.
     span = (
@@ -52,6 +58,7 @@ def build_driver_ratings(settings: Settings | None = None) -> pd.DataFrame:
     enriched = (
         ratings.merge(drivers, on="driver_id", how="left")
         .merge(span, on="driver_id", how="left")
+        .merge(uncertainty, on="driver_id", how="left")
         .loc[
             :,
             [
@@ -60,6 +67,9 @@ def build_driver_ratings(settings: Settings | None = None) -> pd.DataFrame:
                 "driver_name",
                 "nationality",
                 "rating",
+                "rating_lo",
+                "rating_hi",
+                "n_boot",
                 "pace_deficit",
                 "n_comparisons",
                 "n_seasons",

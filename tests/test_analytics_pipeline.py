@@ -24,6 +24,9 @@ EXPECTED_COLUMNS = [
     "driver_name",
     "nationality",
     "rating",
+    "rating_lo",
+    "rating_hi",
+    "n_boot",
     "pace_deficit",
     "n_comparisons",
     "n_seasons",
@@ -76,7 +79,7 @@ def test_build_driver_ratings_materialises_mart(tmp_path: Path) -> None:
     _seed_warehouse(db_path)
     settings = Settings(warehouse="duckdb", duckdb_path=db_path)
 
-    result = build_driver_ratings(settings)
+    result = build_driver_ratings(settings, n_boot=40)
 
     # Column contract and one row per driver in the (single) connected component.
     assert list(result.columns) == EXPECTED_COLUMNS
@@ -96,6 +99,10 @@ def test_build_driver_ratings_materialises_mart(tmp_path: Path) -> None:
     assert a_row["n_seasons"] == 2
     assert a_row["first_season"] == 2020
     assert a_row["last_season"] == 2021
+    assert result["rating_lo"].notna().all()
+    assert result["rating_hi"].notna().all()
+    assert (result["rating_lo"] <= result["rating_hi"]).all()
+    assert result["n_boot"].between(20, 40).all()
 
     # The mart was actually persisted, not just returned.
     persisted = read_query("select * from marts.driver_ratings", settings)

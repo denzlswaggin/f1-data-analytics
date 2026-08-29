@@ -23,6 +23,13 @@ CHECKS = (
         15,
     ),
     Check(
+        "driver rating intervals",
+        "select count(*) from marts.driver_ratings "
+        "where n_comparisons >= 40 and rating_lo is not null and rating_hi is not null "
+        "and rating_lo <= rating_hi",
+        15,
+    ),
+    Check(
         "driver season history",
         "select count(*) from marts.mart_driver_season_pace where driver_id = 'max_verstappen'",
     ),
@@ -57,6 +64,11 @@ CHECKS = (
     Check(
         "weather degradation",
         "select count(*) from marts.mart_weather_degradation",
+    ),
+    Check(
+        "weather-covered races",
+        "select count(distinct cast(season as varchar) || '-' || cast(round as varchar)) "
+        "from marts.mart_weather_degradation where weather_bucket is not null",
     ),
     Check(
         "2024 Bahrain telemetry drivers",

@@ -58,11 +58,14 @@ def ratings(
     min_comparisons: Annotated[
         int, typer.Option(help="Min teammate comparisons to show in the printed list.")
     ] = 20,
+    n_boot: Annotated[
+        int, typer.Option(help="Comparison-bootstrap resamples for rating intervals.")
+    ] = 300,
 ) -> None:
     """Build the global teammate-normalised driver rating mart."""
     configure_logging()
     log.info("cli.ratings.start", target=get_settings().warehouse)
-    df = build_driver_ratings()
+    df = build_driver_ratings(n_boot=n_boot)
 
     shown = df[df["n_comparisons"] >= min_comparisons].head(top)
     typer.echo(
