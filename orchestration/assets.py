@@ -34,6 +34,7 @@ from dagster_dbt import (
     dbt_assets,
 )
 from ingestion.config import get_settings
+from ingestion.health import evaluate_pipeline_health
 from ingestion.loaders.warehouse import read_query
 from ingestion.pipeline import (
     ingest_ergast_laps,
@@ -253,6 +254,10 @@ class F1DbtTranslator(DagsterDbtTranslator):
     def get_asset_key(self, dbt_resource_props: Mapping[str, Any]) -> AssetKey:
         if dbt_resource_props["resource_type"] == "source":
             return AssetKey(["raw", dbt_resource_props["name"]])
+        if dbt_resource_props["resource_type"] == "seed":
+            # CI fixtures are dbt resources too, but they must not collide with
+            # the real raw ingestion assets in the Dagster graph.
+            return AssetKey(["ci_seed", dbt_resource_props["name"]])
         return super().get_asset_key(dbt_resource_props)
 
 
@@ -325,7 +330,7 @@ def race_overtakes() -> MaterializeResult:
 
 
 # --- Asset checks (data-quality gates surfaced in the Dagster UI) ------------
-@asset_check(asset=raw_races, name="current_season_present", blocking=False)
+@asset_check(asset=raw_races, name="current_season_present", blocking=True)
 def raw_races_current_season_present() -> AssetCheckResult:
     """The current season's race schedule must have landed (else downstream is stale)."""
     df = read_query(f"select count(*) as n from raw.races where season = {CURRENT_SEASON}")
@@ -333,7 +338,18 @@ def raw_races_current_season_present() -> AssetCheckResult:
     return AssetCheckResult(passed=n > 0, metadata={"rows_current_season": n})
 
 
-@asset_check(asset=driver_ratings, name="ratings_are_sane", blocking=False)
+@asset_check(asset=raw_results, name="current_load_is_fresh", blocking=True)
+def raw_results_current_load_is_fresh() -> AssetCheckResult:
+    """The unattended weekly pipeline must have succeeded in the last eight days."""
+    checks = evaluate_pipeline_health(season=CURRENT_SEASON, max_age_hours=192)
+    passed = all(check.passed for check in checks)
+    return AssetCheckResult(
+        passed=passed,
+        metadata={check.name: check.detail for check in checks},
+    )
+
+
+@asset_check(asset=driver_ratings, name="ratings_are_sane", blocking=True)
 def driver_ratings_are_sane() -> AssetCheckResult:
     """Ratings must be unique, non-null, and carry valid uncertainty intervals."""
     df = read_query(
@@ -367,7 +383,7 @@ def driver_ratings_are_sane() -> AssetCheckResult:
     )
 
 
-@asset_check(asset=driver_pace_profile, name="pace_profile_is_sane", blocking=False)
+@asset_check(asset=driver_pace_profile, name="pace_profile_is_sane", blocking=True)
 def driver_pace_profile_is_sane() -> AssetCheckResult:
     """One row per driver, no null deltas, and delta must equal race - quali exactly."""
     df = read_query(

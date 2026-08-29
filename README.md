@@ -154,8 +154,10 @@ copy .env.example .env           # then edit as needed
 #    the full driver-ratings dataset is the 2006–2025 backfill shown above)
 python -m ingestion.cli backfill --season 2023
 
-# 4. (Optional) bring up the Postgres "prod" warehouse
-docker compose up -d postgres
+# 4. (Optional) run the persistent Postgres + Dagster stack
+cp .env.production.example .env.production  # replace the password
+make prod-up
+make prod-smoke
 ```
 
 ## Repository layout
@@ -183,6 +185,11 @@ The Parquet lake is storage-agnostic: set `F1_LAKE_URI=s3://your-bucket/f1-lake`
 (with `pip install -e ".[cloud]"` and AWS creds in the environment) to write it to
 object storage instead of local disk — the ingestion code is unchanged.
 
+The Compose deployment keeps the warehouse, Dagster run history, Parquet lake,
+FastF1 cache, and compute logs across restarts. See the
+[production runbook](docs/production-runbook.md) for health checks, backups, and
+single-partition recovery.
+
 ## Roadmap
 
 - [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI
@@ -196,6 +203,7 @@ object storage instead of local disk — the ingestion code is unchanged.
 - [The full story](docs/blog-teammate-normalised-pace.md) — method, results, and the stack behind them
 - [Validating the rating model](docs/rating-validation.md) — backtest, shrinkage sensitivity, bootstrap CIs
 - [LinkedIn draft](docs/linkedin-post.md)
+- [Production runbook](docs/production-runbook.md) — deploy, monitor, recover, restore
 
 ## License
 

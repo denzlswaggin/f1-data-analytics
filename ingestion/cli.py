@@ -15,6 +15,7 @@ from typing import Annotated
 import typer
 
 from ingestion.config import get_settings
+from ingestion.health import evaluate_pipeline_health
 from ingestion.logging import configure_logging, get_logger
 from ingestion.pipeline import backfill as run_backfill
 from ingestion.pipeline import (
@@ -28,6 +29,7 @@ from ingestion.pipeline import (
     ingest_weather,
     season_rounds,
 )
+from ingestion.recovery import restore_lake_partition
 from ingestion.resources import DEFAULT_RESOURCES
 
 app = typer.Typer(add_completion=False, help="F1 data ingestion (Jolpica-F1).")
@@ -130,6 +132,43 @@ def incremental(
     log.info("cli.incremental.start", season=current_season, resources=res)
     summary = run_backfill([current_season], res)
     _print_summary(summary)
+
+
+@app.command()
+def health(
+    season: Annotated[
+        int | None,
+        typer.Option(help="Season to inspect; default = configured current season."),
+    ] = None,
+    max_age_hours: Annotated[
+        float,
+        typer.Option(help="Maximum age of the latest audited successful load."),
+    ] = 192.0,
+) -> None:
+    """Fail unless the persistent pipeline has fresh, non-empty core loads."""
+    configure_logging()
+    checks = evaluate_pipeline_health(season=season, max_age_hours=max_age_hours)
+    for check in checks:
+        marker = "PASS" if check.passed else "FAIL"
+        typer.echo(f"{marker:<4} {check.name}: {check.detail}")
+    if not all(check.passed for check in checks):
+        raise typer.Exit(code=1)
+
+
+@app.command("restore-partition")
+def restore_partition(
+    resource: Annotated[str, typer.Option(help="Raw resource/table name.")],
+    season: Annotated[int, typer.Option(help="Season partition to restore.")],
+    round_: Annotated[
+        int | None,
+        typer.Option("--round", help="Round to restore; omit for a season-grain resource."),
+    ] = None,
+) -> None:
+    """Restore one warehouse partition from the lake without refetching it."""
+    configure_logging()
+    rows = restore_lake_partition(resource, season, round_=round_)
+    grain = f"season {season}" if round_ is None else f"season {season}, round {round_}"
+    typer.echo(f"Restored {rows} {resource} rows for {grain}.")
 
 
 @app.command()

@@ -33,6 +33,11 @@ jobs:
       - name: Pytest
         run: pytest -q
 
+      - name: Validate Compose stack
+        env:
+          F1_PG_PASSWORD: ci-only
+        run: docker compose config --quiet
+
   dbt:
     # Build the whole dbt DAG and run the data tests against committed CI seed
     # fixtures (a 2024 Bahrain slice, gated behind `load_ci_seeds`), on BOTH
@@ -105,6 +110,10 @@ jobs:
         run: |
           dbt build --vars '{load_ci_seeds: true}' \
             --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
+
+      - name: SQLFluff
+        if: matrix.target == 'dev'
+        run: sqlfluff lint warehouse/dbt/models --processes 0
 
       - name: Check incremental telemetry corrections
         if: matrix.target == 'dev'

@@ -1,23 +1,85 @@
-# Postgres "production" warehouse for the F1 analytics platform.
-# Dev uses local DuckDB; this compose file provides a real warehouse target so
-# dbt (and the ingestion loaders) can run against Postgres identically.
+x-platform: &platform
+  build: .
+  image: f1-data-platform:local
+  env_file:
+    - path: .env.production
+      required: false
+  environment:
+    F1_WAREHOUSE: postgres
+    F1_PG_HOST: postgres
+    F1_PG_PORT: "5432"
+    F1_PG_USER: ${F1_PG_USER:-f1}
+    F1_PG_PASSWORD: ${F1_PG_PASSWORD:?Copy .env.production.example to .env.production}
+    F1_PG_DATABASE: ${F1_PG_DATABASE:-f1}
+    F1_LAKE_DIR: /app/data/raw
+    F1_FASTF1_CACHE_DIR: /app/data/fastf1_cache
+    F1_LOG_JSON: "true"
+    DAGSTER_HOME: /app/orchestration
+    DAGSTER_POSTGRES_URL: postgresql://${F1_PG_USER:-f1}:${F1_PG_PASSWORD:?Copy .env.production.example to .env.production}@postgres:5432/${F1_PG_DATABASE:-f1}
+  depends_on:
+    postgres:
+      condition: service_healthy
+  volumes:
+    - f1_lake:/app/data/raw
+    - f1_fastf1_cache:/app/data/fastf1_cache
+    - f1_dagster_logs:/app/data/dagster
+  restart: unless-stopped
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: f1-postgres
     environment:
-      POSTGRES_USER: f1
-      POSTGRES_PASSWORD: f1
-      POSTGRES_DB: f1
+      POSTGRES_USER: ${F1_PG_USER:-f1}
+      POSTGRES_PASSWORD: ${F1_PG_PASSWORD:?Copy .env.production.example to .env.production}
+      POSTGRES_DB: ${F1_PG_DATABASE:-f1}
     ports:
-      - "5432:5432"
+      - "${F1_PG_PUBLISHED_PORT:-5432}:5432"
     volumes:
       - f1_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U f1 -d f1"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${F1_PG_USER:-f1} -d ${F1_PG_DATABASE:-f1}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
+
+  dagster-webserver:
+    <<: *platform
+    container_name: f1-dagster-webserver
+    entrypoint: ["dagster-webserver"]
+    command: ["-h", "0.0.0.0", "-p", "3001", "-w", "orchestration/workspace.yaml"]
+    ports:
+      - "${F1_DAGSTER_PORT:-3001}:3001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:3001', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  dagster-daemon:
+    <<: *platform
+    container_name: f1-dagster-daemon
+    entrypoint: ["dagster-daemon"]
+    command: ["run", "-w", "orchestration/workspace.yaml"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dagster-webserver:
+        condition: service_healthy
 
 volumes:
   f1_pgdata:
+  f1_lake:
+  f1_fastf1_cache:
+  f1_dagster_logs:

@@ -21,10 +21,12 @@ COPY ingestion ./ingestion
 COPY analytics ./analytics
 COPY orchestration ./orchestration
 COPY warehouse ./warehouse
-RUN pip install . && pip install ".[dbt]"
+RUN pip install . && pip install ".[dbt]" && pip install ".[orchestration]"
 
 # Bake the dbt packages in (they're regenerated, not in the build context).
 RUN dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt
+
+COPY scripts ./scripts
 
 # Run as a non-root user.
 RUN useradd --create-home --uid 1000 app && chown -R app:app /app
