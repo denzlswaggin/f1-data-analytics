@@ -5,7 +5,7 @@
 > SQL-native dashboard — powering a signature insight that isolates **driver
 > skill from car performance**.
 
-[![CI](https://img.shields.io/badge/CI-github--actions-blue)](.github/workflows/ci.yml)
+[![CI](https://github.com/denzlswaggin/f1-data-analytics/actions/workflows/ci.yml/badge.svg)](https://github.com/denzlswaggin/f1-data-analytics/actions/workflows/ci.yml)
 [![dbt](https://img.shields.io/badge/transform-dbt-orange)](warehouse/dbt)
 [![orchestration](https://img.shields.io/badge/orchestration-dagster-purple)](orchestration)
 
@@ -121,8 +121,8 @@ python -m analytics.cli pace-profile --from-season 2022  # racers vs qualifying 
 flowchart LR
     J["Jolpica-F1 API\n(results, laps, pit stops)"] --> ING
     F["FastF1\n(telemetry, timing, tyres)"] --> ING
-    ING["Ingestion (Python EL)\nrate-limited · retrying · incremental (per-round watermark)"] --> LAKE["Raw Parquet lake\npartitioned by season"]
-    LAKE --> WH
+    ING["Ingestion (Python EL)\nrate-limited · retrying · idempotent"] --> LAKE["Raw Parquet lake\nseason / round / session partitions"]
+    ING --> WH
     subgraph WH["Warehouse"]
       DUCK["DuckDB (dev)"]
       PG["Postgres (prod)"]
@@ -208,7 +208,10 @@ single-partition recovery.
 ## Writeup
 
 - [The full story](docs/blog-teammate-normalised-pace.md) — method, results, and the stack behind them
+- [Portfolio case study](docs/portfolio-case-study.md) — problem, decisions, evidence, trade-offs
 - [Validating the rating model](docs/rating-validation.md) — backtest, shrinkage sensitivity, bootstrap CIs
+- [Dynamic rating V2](docs/dynamic-rating-model.md) — driver-season form and clustered uncertainty
+- [Interview walkthrough](docs/interview-walkthrough.md) — a five-minute technical tour
 - [LinkedIn draft](docs/linkedin-post.md)
 - [Production runbook](docs/production-runbook.md) — deploy, monitor, recover, restore
 

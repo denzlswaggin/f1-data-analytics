@@ -49,8 +49,9 @@ FastF1 ──────┘                                                    
                           Dagster (orchestration/) can drive the whole thing on a schedule
 ```
 
-Two things write into the `marts` schema: **dbt** (the `mart_*` models) and
-**Python** (`marts.driver_ratings` and `marts.race_replay`). Keep that distinction
+Two systems write into the `marts` schema: **dbt** (the `mart_*` models) and
+**Python** (`driver_ratings`, `driver_ratings_v2`, `driver_pace_profile`,
+`race_replay`, and `race_overtakes`). Keep that distinction
 in your head — it's the one part of the architecture that isn't "just dbt".
 
 > **Newer feature — the animated race replay.** A second Python-built mart
@@ -135,9 +136,8 @@ flattener.
 telemetry) are scoped by `{season}/{round}` and so *don't* fit that season-only
 registry. They get a dedicated `ingest_*` in `pipeline.py`
 (`ingest_pitstops`, `ingest_ergast_laps`, `ingest_weather`, `ingest_telemetry`)
-that loops the rounds, **concatenates them into one season frame, and loads
-once** — because `load_dataframe`'s delete key is `season` only, loading
-round-by-round would wipe earlier rounds. `season_rounds()` reads `raw.races` to
+that loops the requested rounds, writes one lake partition per round/session,
+and replaces only those rounds in the warehouse. `season_rounds()` reads `raw.races` to
 supply the round list (dates ≤ today for a "season so far" backfill).
 
 ### Cleaning at ingest (new: the race-replay sources)
@@ -163,12 +163,13 @@ story.)
 Re-running a backfill must never duplicate or corrupt data. Two mechanisms
 enforce this:
 
-- **Lake:** `write_parquet` overwrites the whole `season=<n>/data.parquet`
-  partition file, so the lake always reflects the latest fetch.
-- **Warehouse:** `load_dataframe` does **delete-then-insert per season**
-  (`DELETE FROM raw.<table> WHERE season = ?` then `INSERT`). Re-loading a season
-  replaces its rows; other seasons are untouched. (`tests/test_warehouse.py`
-  locks this behaviour in.)
+- **Lake:** season-grain resources atomically replace `season=<n>/data.parquet`;
+  high-volume sources atomically replace only their
+  `season=<n>/round=<r>/session=<s>` file.
+- **Warehouse:** season resources use delete-then-insert per season; round-grain
+  resources delete only the rounds present in the incoming frame. Every success
+  updates `raw.ingestion_partitions`, which drives targeted late-data refreshes.
+  `tests/test_warehouse.py` locks these behaviours in.
 
 `warehouse.py` also exposes two helpers used elsewhere: `read_query(sql)` (run a
 read-only query, get a DataFrame back) and `replace_table(df, schema, table)`
@@ -244,10 +245,10 @@ models are consumed by `analytics/replay.py`, not by a downstream dbt model.
 ### Tests and the snapshot
 
 Tests live in `_*.yml` files next to the models (`unique`, `not_null`,
-`relationships`, plus `dbt_utils` and `dbt_expectations` package tests). They run
-as part of `dbt build`. Note: **in CI the dbt job only parses/compiles** (there's
-no seed data), so these data tests currently run **locally**, not in CI — see the
-"deferred workstreams" note for the seed-based fix.
+`relationships`, plus `dbt_utils` package tests). CI loads a committed race
+fixture and runs the complete `dbt build` on both DuckDB and Postgres, including
+data and unit tests. The DuckDB leg also generates the lineage catalog and runs
+the late-telemetry-correction regression.
 
 `snapshots/drivers_snapshot.sql` is a slowly-changing-dimension snapshot: as the
 season progresses and a driver's `last_season`/`race_entries` change, dbt records
