@@ -50,13 +50,22 @@ jobs:
       - name: Ingest sample race laps (FastF1)
         run: python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5
 
-      - name: dbt build
+      - name: Prepare dashboard demo sources
         run: |
           dbt deps --project-dir warehouse/dbt --profiles-dir warehouse/dbt
+          dbt seed --vars '{load_ci_seeds: true}' \
+            --select pitstops ergast_laps positions race_control team_radio telemetry weather \
+            --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
+
+      - name: dbt build
+        run: |
           dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
 
       - name: Solve driver ratings
-        run: python -m analytics.cli ratings
+        run: |
+          python -m analytics.cli ratings
+          python -m analytics.cli replay --season 2024 --round 1
+          python -m analytics.cli overtakes --season 2024 --round 1
 
       - uses: actions/setup-node@v4
         with:

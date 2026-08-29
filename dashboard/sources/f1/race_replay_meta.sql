@@ -2,7 +2,10 @@
 -- One row per car per race (a couple of dozen rows), joined to the big replay
 -- feed client-side by driver_code so colours/labels don't bloat that feed.
 with drivers as (
-    select distinct season, round, driver_code
+    -- Python materialises an empty replay with inferred pandas dtypes. DuckDB can
+    -- therefore see driver_code as INTEGER until real replay rows are available.
+    -- Normalise it here so the metadata source also works for an empty replay.
+    select distinct season, round, cast(driver_code as varchar) as driver_code
     from marts.race_replay
 ),
 
@@ -10,7 +13,7 @@ team as (
     select
         season,
         round,
-        driver_code,
+        cast(driver_code as varchar) as driver_code,
         max(team) as team
     from staging.stg_laps
     where session = 'R'
@@ -34,3 +37,15 @@ left join staging.constructor_colors cc
     on cc.team = t.team
 left join staging.stg_races rc
     on rc.season = d.season and rc.round = d.round
+
+-- See race_replay.sql: prevent Evidence from emitting an invalid empty Parquet.
+union all
+select
+    0,
+    0,
+    '__NO_DATA__',
+    '__NO_DATA__',
+    'Replay unavailable',
+    null,
+    '#9aa0a6'
+where not exists (select 1 from drivers)

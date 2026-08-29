@@ -1,13 +1,23 @@
 -- Telemetry for each driver's fastest race lap only — a compact, representative
 -- subset (the full mart_lap_telemetry is far too large to load into the browser).
-with fastest as (
+with available_laps as (
+    select distinct season, round, driver_code, lap_number
+    from marts.mart_lap_telemetry
+),
+
+fastest as (
     select
-        season,
-        round,
-        driver_code,
-        arg_min(lap_number, lap_time_sec) as lap_number
-    from marts.mart_lap_times
-    group by season, round, driver_code
+        available_laps.season,
+        available_laps.round,
+        available_laps.driver_code,
+        arg_min(available_laps.lap_number, laps.lap_time_sec) as lap_number
+    from available_laps
+    join marts.mart_lap_times as laps
+        on laps.season = available_laps.season
+        and laps.round = available_laps.round
+        and laps.driver_code = available_laps.driver_code
+        and laps.lap_number = available_laps.lap_number
+    group by available_laps.season, available_laps.round, available_laps.driver_code
 )
 
 select

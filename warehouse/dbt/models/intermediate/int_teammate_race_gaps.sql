@@ -18,6 +18,14 @@
 -- sample size against like-for-like strictness and are meant to be tuned once
 -- real coverage is known.
 
+-- Materialised as a table, unlike the rest of the intermediate layer. This model
+-- self-joins ~100k FastF1 lap rows; as a view that join is re-executed by every
+-- one of its six data tests and again by each Python reader (the pace-profile
+-- build and `validate --race`). On DuckDB that is free, but on Postgres the test
+-- pass alone ran past eleven minutes. The quali gaps stay a view — they sit on
+-- ~8k qualifying rows, where the join is trivial.
+{{ config(materialized='table') }}
+
 {% set max_tyre_delta = var('race_gap_max_tyre_delta') %}
 {% set outlier_pct = var('race_gap_outlier_pct') %}
 {% set min_laps = var('race_gap_min_laps') %}
