@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke check
+.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup check
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
@@ -64,5 +64,9 @@ prod-smoke: ## Check the persistent stack and Dagster definitions
 	docker compose --env-file .env.production ps
 	docker compose --env-file .env.production exec dagster-webserver dagster definitions validate -m orchestration.definitions
 	docker compose --env-file .env.production exec dagster-webserver f1-ingest health
+
+prod-backup: ## Back up the Postgres warehouse and Dagster history
+	mkdir -p data/backups
+	docker compose --env-file .env.production exec -T postgres sh -c 'pg_dump -Fc -U "$$POSTGRES_USER" "$$POSTGRES_DB"' > data/backups/f1.dump
 
 check: lint typecheck test ## Run lint, typecheck and tests

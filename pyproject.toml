@@ -112,3 +112,12 @@ addopts = "-q --cov=ingestion --cov=analytics --cov-report=term-missing"
 dialect = "duckdb"
 templater = "dbt"
 max_line_length = 100
+# The existing models intentionally align select lists and use compact joins.
+# Gate correctness-oriented rules while leaving that established style intact.
+exclude_rules = "LT01,LT02,LT05,LT09,ST09,AL09,AL01,RF04,ST02"
+
+[tool.sqlfluff.templater.dbt]
+project_dir = "warehouse/dbt"
+profiles_dir = "warehouse/dbt"
+profile = "f1"
+target = "dev"
