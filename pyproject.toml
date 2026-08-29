@@ -31,7 +31,8 @@ dependencies = [
 dev = [
     "ruff>=0.8",
     # mypy 2.x requires pathspec>=1.0 which conflicts with dbt (<0.13); stay on 1.x.
-    "mypy>=1.13,<2",
+    # mypy 1.20 imports pathspec APIs unavailable under dbt-core's <0.13 pin.
+    "mypy>=1.13,<1.20",
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "sqlfluff>=3.2",
