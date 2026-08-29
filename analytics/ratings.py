@@ -62,7 +62,8 @@ class RatingResult:
     main_component_size: int
 
 
-def _largest_component(gaps: pd.DataFrame) -> set[str]:
+def largest_component(gaps: pd.DataFrame) -> set[str]:
+    """Return driver IDs in the largest connected teammate component."""
     uf = _UnionFind()
     for driver, teammate in zip(gaps["driver_id"], gaps["teammate_id"], strict=True):
         uf.union(driver, teammate)
@@ -103,7 +104,7 @@ def compute_ratings(
         )
         return RatingResult(empty, 0, True, 0)
 
-    main = _largest_component(gaps)
+    main = largest_component(gaps)
     g = gaps[gaps["driver_id"].isin(main) & gaps["teammate_id"].isin(main)].copy()
 
     drivers = np.array(sorted(main))
