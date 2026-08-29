@@ -47,7 +47,14 @@ pip install -e ".[dbt]"                                  # dbt is a separate ext
 python -m ingestion.cli backfill --from 2006 --to 2025   # ~17k rows
 make dbt-build                                           # staging → intermediate → marts
 python -m analytics.cli ratings --top 20                 # solve + print leaderboard
+python -m analytics.cli ratings-v2 --top 20              # season-specific form + intervals
 ```
+
+The V2 model adds one rating per driver-season, temporal smoothing between
+seasons, Q1/Q2/Q3 reliability weights, and a race-weekend cluster bootstrap. It
+is kept alongside the career-wide model because its expanding-window gain is
+small (MAE 0.643 vs 0.645; sign accuracy 0.609 vs 0.606 on the current
+2006–2025 dataset), while its main value is showing form changes honestly.
 
 ## The second cut — Saturday vs Sunday
 

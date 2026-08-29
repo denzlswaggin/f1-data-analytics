@@ -71,6 +71,7 @@ jobs:
       - name: Build analytics marts
         run: |
           python -m analytics.cli ratings
+          python -m analytics.cli ratings-v2
           python -m analytics.cli pace-profile --from-season 2022
           python -m analytics.cli replay --season 2024 --round 1
           python -m analytics.cli overtakes --season 2024 --round 1

@@ -30,6 +30,14 @@ CHECKS = (
         15,
     ),
     Check(
+        "latest dynamic rating intervals",
+        "select count(*) from marts.driver_ratings_v2 "
+        "where season = (select max(season) from marts.driver_ratings_v2) "
+        "and rating_lo is not null and rating_hi is not null "
+        "and rating_lo <= rating and rating <= rating_hi",
+        15,
+    ),
+    Check(
         "driver season history",
         "select count(*) from marts.mart_driver_season_pace where driver_id = 'max_verstappen'",
     ),
