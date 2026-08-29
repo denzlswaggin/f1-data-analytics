@@ -54,6 +54,50 @@ limit 15
     <Column id=last_season title="To" fmt='0000' />
 </DataTable>
 
+## Current form — dynamic model
+
+Unlike the career-wide benchmark above, this model estimates a separate rating
+for every driver-season. Adjacent seasons share information through a temporal
+regulariser; whole race weekends are resampled together for the 90% interval.
+On the expanding-window holdout it is only marginally better than the static
+model, so read it as a form lens rather than a replacement leaderboard.
+
+```sql latest_dynamic_ratings
+select
+    season,
+    rank,
+    driver_name,
+    rating,
+    rating_lo,
+    rating_hi,
+    form_delta,
+    n_comparisons
+from f1.driver_ratings_v2
+where season = (select max(season) from f1.driver_ratings_v2)
+order by rank
+limit 15
+```
+
+<BarChart
+    data={latest_dynamic_ratings}
+    title="Latest-season teammate-normalised form"
+    x=driver_name
+    y=rating
+    swapXY=true
+    sort=false
+    labels=true
+/>
+
+<DataTable data={latest_dynamic_ratings} rows=15>
+    <Column id=rank title="#" />
+    <Column id=driver_name title="Driver" />
+    <Column id=rating fmt='0.000' />
+    <Column id=rating_lo title="90% low" fmt='0.000' />
+    <Column id=rating_hi title="90% high" fmt='0.000' />
+    <Column id=form_delta title="YoY change" fmt='+0.000;-0.000' />
+    <Column id=n_comparisons title="Head-to-heads" />
+</DataTable>
+
 ## Explore a driver's season-by-season pace
 
 ```sql drivers_list
@@ -63,6 +107,36 @@ order by driver_name
 ```
 
 <Dropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="max_verstappen" />
+
+```sql driver_dynamic_form
+select
+    season,
+    rating,
+    rating_lo,
+    rating_hi,
+    form_delta,
+    n_comparisons
+from f1.driver_ratings_v2
+where driver_id = '${inputs.driver.value}'
+order by season
+```
+
+<LineChart
+    data={driver_dynamic_form}
+    title="Dynamic rating by season (higher = faster)"
+    x=season
+    y=rating
+    yAxisTitle="rating"
+/>
+
+<DataTable data={driver_dynamic_form} rows=20>
+    <Column id=season fmt='0000' />
+    <Column id=rating fmt='0.000' />
+    <Column id=rating_lo title="90% low" fmt='0.000' />
+    <Column id=rating_hi title="90% high" fmt='0.000' />
+    <Column id=form_delta title="YoY change" fmt='+0.000;-0.000' />
+    <Column id=n_comparisons title="Head-to-heads" />
+</DataTable>
 
 ```sql driver_seasons
 select
