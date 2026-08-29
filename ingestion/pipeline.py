@@ -126,7 +126,7 @@ def ingest_laps(
         return 0
 
     laps = pd.concat(frames, ignore_index=True)
-    write_parquet(laps, "laps", season, settings)
+    write_parquet(laps, "laps", season, settings, partition_by=("round", "session"))
     return load_dataframe(laps, "laps", season, settings, replace_rounds=True)
 
 
@@ -149,7 +149,7 @@ def ingest_weather(
         return 0
 
     weather = pd.concat(frames, ignore_index=True)
-    write_parquet(weather, "weather", season, settings)
+    write_parquet(weather, "weather", season, settings, partition_by=("round", "session"))
     return load_dataframe(weather, "weather", season, settings, replace_rounds=True)
 
 
@@ -172,7 +172,7 @@ def ingest_telemetry(
         return 0
 
     telemetry = pd.concat(frames, ignore_index=True)
-    write_parquet(telemetry, "telemetry", season, settings)
+    write_parquet(telemetry, "telemetry", season, settings, partition_by=("round", "session"))
     return load_dataframe(telemetry, "telemetry", season, settings, replace_rounds=True)
 
 
@@ -201,7 +201,7 @@ def ingest_positions(
         return 0
 
     positions = pd.concat(frames, ignore_index=True)
-    write_parquet(positions, "positions", season, settings)
+    write_parquet(positions, "positions", season, settings, partition_by=("round", "session"))
     return load_dataframe(positions, "positions", season, settings, replace_rounds=True)
 
 
@@ -230,7 +230,7 @@ def ingest_race_control(
         return 0
 
     messages = pd.concat(frames, ignore_index=True)
-    write_parquet(messages, "race_control", season, settings)
+    write_parquet(messages, "race_control", season, settings, partition_by=("round", "session"))
     return load_dataframe(messages, "race_control", season, settings, replace_rounds=True)
 
 
@@ -355,7 +355,7 @@ def ingest_team_radio(
         return 0
 
     radio = pd.concat(frames, ignore_index=True)
-    write_parquet(radio, "team_radio", season, settings)
+    write_parquet(radio, "team_radio", season, settings, partition_by=("round", "session"))
     return load_dataframe(radio, "team_radio", season, settings, replace_rounds=True)
 
 
@@ -388,7 +388,7 @@ def ingest_pitstops(season: int, rounds: list[int], settings: Settings | None = 
     if df.empty:
         log.warning("pipeline.pitstops_empty", season=season, rounds=rounds)
         return 0
-    write_parquet(df, "pitstops", season, settings)
+    write_parquet(df, "pitstops", season, settings, partition_by=("round",))
     return load_dataframe(df, "pitstops", season, settings, replace_rounds=True)
 
 
@@ -400,5 +400,5 @@ def ingest_ergast_laps(season: int, rounds: list[int], settings: Settings | None
     if df.empty:
         log.warning("pipeline.ergast_laps_empty", season=season, rounds=rounds)
         return 0
-    write_parquet(df, "ergast_laps", season, settings)
+    write_parquet(df, "ergast_laps", season, settings, partition_by=("round",))
     return load_dataframe(df, "ergast_laps", season, settings, replace_rounds=True)
