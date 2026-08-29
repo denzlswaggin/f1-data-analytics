@@ -46,6 +46,7 @@ from orchestration.assets import (
     raw_races,
     raw_races_current_season_present,
     raw_results,
+    raw_results_current_load_is_fresh,
     raw_team_radio,
     raw_telemetry,
     raw_weather,
@@ -131,6 +132,7 @@ defs = Definitions(
     assets=all_assets,
     asset_checks=[
         raw_races_current_season_present,
+        raw_results_current_load_is_fresh,
         driver_ratings_are_sane,
         driver_pace_profile_is_sane,
     ],

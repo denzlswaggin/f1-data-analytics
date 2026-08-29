@@ -63,5 +63,6 @@ prod-logs: ## Follow Dagster and Postgres logs
 prod-smoke: ## Check the persistent stack and Dagster definitions
 	docker compose --env-file .env.production ps
 	docker compose --env-file .env.production exec dagster-webserver dagster definitions validate -m orchestration.definitions
+	docker compose --env-file .env.production exec dagster-webserver f1-ingest health
 
 check: lint typecheck test ## Run lint, typecheck and tests
