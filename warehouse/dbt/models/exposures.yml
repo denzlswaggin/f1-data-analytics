@@ -1,0 +1,21 @@
+version: 2
+
+exposures:
+  - name: f1_evidence_dashboard
+    label: F1 Analytics Dashboard
+    type: dashboard
+    maturity: medium
+    description: >
+      Evidence data product for driver ratings, Saturday-vs-Sunday pace, race
+      strategy, telemetry, weather, and replay. Python-written marts are linked
+      in Dagster; these dependencies capture its dbt lineage.
+    depends_on:
+      - ref('mart_driver_season_pace')
+      - ref('mart_lap_times')
+      - ref('mart_pit_strategy')
+      - ref('mart_stint_strategy')
+      - ref('mart_weather_degradation')
+      - ref('mart_speed_trap')
+      - ref('mart_lap_telemetry')
+    owner:
+      name: Patrik Kriz
