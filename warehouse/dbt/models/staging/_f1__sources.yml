@@ -102,3 +102,14 @@ sources:
             data_tests: [not_null]
           - name: recording_url
             data_tests: [not_null]
+      - name: ingestion_partitions
+        description: >
+          One audit row per raw partition replaced by ingestion. The load timestamp
+          lets incremental marts refresh corrected historical races, not only append.
+        columns:
+          - name: resource
+            data_tests: [not_null]
+          - name: season
+            data_tests: [not_null]
+          - name: loaded_at
+            data_tests: [not_null]

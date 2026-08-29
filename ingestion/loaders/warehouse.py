@@ -10,6 +10,10 @@ so the same ingestion code serves dev (DuckDB) and prod (Postgres).
 
 from __future__ import annotations
 
+import datetime as dt
+from dataclasses import dataclass
+from uuid import uuid4
+
 import duckdb
 import pandas as pd
 from sqlalchemy import bindparam, create_engine, text
@@ -18,6 +22,42 @@ from ingestion.config import Settings, get_settings
 from ingestion.logging import get_logger
 
 log = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class PartitionLoad:
+    """Audit record for one warehouse partition replaced by an ingest run."""
+
+    resource: str
+    season: int
+    round: int | None
+    session: str | None
+    loaded_at: dt.datetime
+    load_id: str
+    row_count: int
+
+
+def _partition_loads(
+    df: pd.DataFrame, table: str, season: int, replace_rounds: bool
+) -> list[PartitionLoad]:
+    """Describe the physical partitions touched by a warehouse load."""
+    loaded_at = dt.datetime.now(dt.UTC)
+    load_id = uuid4().hex
+    if not replace_rounds or "round" not in df.columns:
+        return [PartitionLoad(table, season, None, None, loaded_at, load_id, len(df))]
+
+    group_columns = ["round"] + (["session"] if "session" in df.columns else [])
+    loads: list[PartitionLoad] = []
+    grouper: str | list[str] = group_columns[0] if len(group_columns) == 1 else group_columns
+    for values, frame in df.groupby(grouper, sort=True, dropna=False):
+        value_tuple = values if isinstance(values, tuple) else (values,)
+        session = str(value_tuple[1]) if len(value_tuple) == 2 else None
+        loads.append(
+            PartitionLoad(
+                table, season, int(value_tuple[0]), session, loaded_at, load_id, len(frame)
+            )
+        )
+    return loads
 
 
 def load_dataframe(
@@ -42,11 +82,12 @@ def load_dataframe(
 
     by_round = replace_rounds and "round" in df.columns
     rounds = sorted({int(r) for r in df["round"].dropna().unique()}) if by_round else []
+    partition_loads = _partition_loads(df, table, season, replace_rounds)
 
     if settings.warehouse == "duckdb":
-        _load_duckdb(df, table, season, settings, rounds if by_round else None)
+        _load_duckdb(df, table, season, settings, rounds if by_round else None, partition_loads)
     else:
-        _load_postgres(df, table, season, settings, rounds if by_round else None)
+        _load_postgres(df, table, season, settings, rounds if by_round else None, partition_loads)
 
     log.info(
         "warehouse.load",
@@ -65,6 +106,7 @@ def _load_duckdb(
     season: int,
     settings: Settings,
     rounds: list[int] | None,
+    partition_loads: list[PartitionLoad],
 ) -> None:
     settings.duckdb_path.parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(settings.duckdb_path))
@@ -83,7 +125,42 @@ def _load_duckdb(
             )
         else:
             con.execute(f'DELETE FROM raw."{table}" WHERE season = ?', [season])
-        con.execute(f'INSERT INTO raw."{table}" SELECT * FROM incoming')
+        # Match by column name, not DataFrame order. External APIs can reorder
+        # fields without changing their schema; positional inserts would silently
+        # cast values into the wrong destination columns.
+        con.execute(f'INSERT INTO raw."{table}" BY NAME SELECT * FROM incoming')
+        con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS raw.ingestion_partitions (
+                resource VARCHAR,
+                season INTEGER,
+                round INTEGER,
+                session VARCHAR,
+                loaded_at TIMESTAMPTZ,
+                load_id VARCHAR,
+                row_count BIGINT
+            )
+            """
+        )
+        for load in partition_loads:
+            con.execute(
+                "DELETE FROM raw.ingestion_partitions "
+                "WHERE resource = ? AND season = ? "
+                "AND round IS NOT DISTINCT FROM ? AND session IS NOT DISTINCT FROM ?",
+                [load.resource, load.season, load.round, load.session],
+            )
+            con.execute(
+                "INSERT INTO raw.ingestion_partitions VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    load.resource,
+                    load.season,
+                    load.round,
+                    load.session,
+                    load.loaded_at,
+                    load.load_id,
+                    load.row_count,
+                ],
+            )
     finally:
         con.unregister("incoming")
         con.close()
@@ -95,6 +172,7 @@ def _load_postgres(
     season: int,
     settings: Settings,
     rounds: list[int] | None,
+    partition_loads: list[PartitionLoad],
 ) -> None:
     engine = create_engine(settings.pg_dsn)
     schema = settings.pg_schema
@@ -117,6 +195,50 @@ def _load_postgres(
                     {"season": season},
                 )
             df.to_sql(table, conn, schema=schema, if_exists="append", index=False)
+            conn.exec_driver_sql(
+                f"""
+                CREATE TABLE IF NOT EXISTS "{schema}".ingestion_partitions (
+                    resource VARCHAR NOT NULL,
+                    season INTEGER NOT NULL,
+                    round INTEGER,
+                    session VARCHAR,
+                    loaded_at TIMESTAMPTZ NOT NULL,
+                    load_id VARCHAR NOT NULL,
+                    row_count BIGINT NOT NULL
+                )
+                """
+            )
+            for load in partition_loads:
+                conn.execute(
+                    text(
+                        f'DELETE FROM "{schema}".ingestion_partitions '
+                        "WHERE resource = :resource AND season = :season "
+                        "AND round IS NOT DISTINCT FROM :round "
+                        "AND session IS NOT DISTINCT FROM :session"
+                    ),
+                    {
+                        "resource": load.resource,
+                        "season": load.season,
+                        "round": load.round,
+                        "session": load.session,
+                    },
+                )
+                conn.execute(
+                    text(
+                        f'INSERT INTO "{schema}".ingestion_partitions '
+                        "(resource, season, round, session, loaded_at, load_id, row_count) "
+                        "VALUES (:resource, :season, :round, :session, :loaded_at, :load_id, :row_count)"
+                    ),
+                    {
+                        "resource": load.resource,
+                        "season": load.season,
+                        "round": load.round,
+                        "session": load.session,
+                        "loaded_at": load.loaded_at,
+                        "load_id": load.load_id,
+                        "row_count": load.row_count,
+                    },
+                )
     finally:
         engine.dispose()
 

@@ -12,6 +12,11 @@ test-paths: ["tests"]
 snapshot-paths: ["snapshots"]
 analysis-paths: ["analyses"]
 
+# Older local warehouses predate the ingestion partition audit. Creating the
+# empty relation here keeps upgrades backward compatible; ingestion populates it.
+on-run-start:
+  - "{{ create_ingestion_partitions() }}"
+
 target-path: "target"
 clean-targets:
   - "target"
@@ -219,3 +224,12 @@ seeds:
           x: double precision
           y: double precision
           status: varchar
+      ingestion_partitions:
+        +column_types:
+          resource: varchar
+          season: bigint
+          round: bigint
+          session: varchar
+          loaded_at: timestamp
+          load_id: varchar
+          row_count: bigint
