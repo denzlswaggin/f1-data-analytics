@@ -33,9 +33,6 @@ from ingestion.resources import DEFAULT_RESOURCES
 app = typer.Typer(add_completion=False, help="F1 data ingestion (Jolpica-F1).")
 log = get_logger(__name__)
 
-# Current F1 season — bump each year (or derive from schedule in a later milestone).
-CURRENT_SEASON = 2026
-
 # Shared options reused across the per-round ingest commands.
 FromRoundOpt = Annotated[int, typer.Option("--from-round", help="First round.")]
 ToRoundOpt = Annotated[
@@ -128,9 +125,10 @@ def incremental(
     flag, which loads only rounds past the high-watermark.
     """
     configure_logging()
+    current_season = get_settings().current_season
     res = tuple(resources) if resources else DEFAULT_RESOURCES
-    log.info("cli.incremental.start", season=CURRENT_SEASON, resources=res)
-    summary = run_backfill([CURRENT_SEASON], res)
+    log.info("cli.incremental.start", season=current_season, resources=res)
+    summary = run_backfill([current_season], res)
     _print_summary(summary)
 
 

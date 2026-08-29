@@ -33,6 +33,7 @@ from dagster_dbt import (
     DbtProject,
     dbt_assets,
 )
+from ingestion.config import get_settings
 from ingestion.loaders.warehouse import read_query
 from ingestion.pipeline import (
     ingest_ergast_laps,
@@ -48,7 +49,8 @@ from ingestion.pipeline import (
 )
 
 # Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
-CURRENT_SEASON = 2026
+# Defaults to the calendar year and can be pinned with F1_CURRENT_SEASON.
+CURRENT_SEASON = get_settings().current_season
 
 # Race pace is only comparable inside one set of technical regulations — the
 # ground-effect cars arrived in 2022 — so the Saturday-vs-Sunday profile is
