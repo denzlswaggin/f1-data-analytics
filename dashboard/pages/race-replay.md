@@ -22,6 +22,13 @@ order by race_name
 
 <Dropdown data={replay_races} name=race value=race_name label=race_label />
 
+```sql replay_coverage
+select * from f1.data_coverage
+where section = 'race_replay' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={replay_coverage} sampleLabel="car ticks" entityLabel="Drivers" method="reconstructed replay; experimental overtake detector" />
+
 ```sql replay
 select
     driver_code,

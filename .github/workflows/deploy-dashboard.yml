@@ -10,8 +10,8 @@ on:
         description: First season to backfill
         default: "2006"
       seasons_to:
-        description: Last season to backfill
-        default: "2025"
+        description: Last season to backfill (blank = current calendar year)
+        default: ""
   schedule:
     - cron: "0 7 * * 1" # Mondays 07:00 UTC, after race weekends
 
@@ -42,10 +42,12 @@ jobs:
         run: pip install -e ".[dev,dbt,telemetry]"
 
       - name: Backfill results / qualifying (Jolpica)
-        run: >
-          python -m ingestion.cli backfill
-          --from ${{ github.event.inputs.seasons_from || '2006' }}
-          --to ${{ github.event.inputs.seasons_to || '2025' }}
+        run: |
+          season_to="${{ github.event.inputs.seasons_to }}"
+          if [ -z "$season_to" ]; then season_to="$(date -u +%Y)"; fi
+          python -m ingestion.cli backfill \
+            --from "${{ github.event.inputs.seasons_from || '2006' }}" \
+            --to "$season_to"
 
       - name: Ingest sample race laps (FastF1)
         run: |
@@ -69,6 +71,7 @@ jobs:
       - name: Build analytics marts
         run: |
           python -m analytics.cli ratings
+          python -m analytics.cli pace-profile --from-season 2022
           python -m analytics.cli replay --season 2024 --round 1
           python -m analytics.cli overtakes --season 2024 --round 1
 

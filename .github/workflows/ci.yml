@@ -106,6 +106,10 @@ jobs:
           dbt build --vars '{load_ci_seeds: true}' \
             --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target ${{ matrix.target }}
 
+      - name: Check incremental telemetry corrections
+        if: matrix.target == 'dev'
+        run: python scripts/check_telemetry_refresh.py
+
       # dev leg only: generate the lineage catalog from the built warehouse,
       # enforce docs coverage, and publish the docs site as a downloadable
       # artifact (deliberately NOT GitHub Pages — this repo stays private).

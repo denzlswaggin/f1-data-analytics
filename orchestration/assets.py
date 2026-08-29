@@ -33,6 +33,7 @@ from dagster_dbt import (
     DbtProject,
     dbt_assets,
 )
+from ingestion.config import get_settings
 from ingestion.loaders.warehouse import read_query
 from ingestion.pipeline import (
     ingest_ergast_laps,
@@ -48,7 +49,8 @@ from ingestion.pipeline import (
 )
 
 # Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
-CURRENT_SEASON = 2026
+# Defaults to the calendar year and can be pinned with F1_CURRENT_SEASON.
+CURRENT_SEASON = get_settings().current_season
 
 # Race pace is only comparable inside one set of technical regulations — the
 # ground-effect cars arrived in 2022 — so the Saturday-vs-Sunday profile is
@@ -333,19 +335,35 @@ def raw_races_current_season_present() -> AssetCheckResult:
 
 @asset_check(asset=driver_ratings, name="ratings_are_sane", blocking=False)
 def driver_ratings_are_sane() -> AssetCheckResult:
-    """Ratings must be non-empty, have no null rating, and be one row per driver."""
+    """Ratings must be unique, non-null, and carry valid uncertainty intervals."""
     df = read_query(
         "select count(*) as n, "
         "count(*) filter (where rating is null) as null_ratings, "
+        "count(*) filter (where rating_lo is null or rating_hi is null) as null_intervals, "
+        "count(*) filter (where rating_lo > rating_hi) as invalid_intervals, "
         "count(distinct driver_id) as distinct_ids "
         "from marts.driver_ratings"
     )
     n = int(df["n"].iloc[0])
     nulls = int(df["null_ratings"].iloc[0])
+    null_intervals = int(df["null_intervals"].iloc[0])
+    invalid_intervals = int(df["invalid_intervals"].iloc[0])
     distinct = int(df["distinct_ids"].iloc[0])
     return AssetCheckResult(
-        passed=n > 0 and nulls == 0 and distinct == n,
-        metadata={"rows": n, "null_ratings": nulls, "distinct_driver_ids": distinct},
+        passed=(
+            n > 0
+            and nulls == 0
+            and null_intervals == 0
+            and invalid_intervals == 0
+            and distinct == n
+        ),
+        metadata={
+            "rows": n,
+            "null_ratings": nulls,
+            "null_intervals": null_intervals,
+            "invalid_intervals": invalid_intervals,
+            "distinct_driver_ids": distinct,
+        },
     )
 
 

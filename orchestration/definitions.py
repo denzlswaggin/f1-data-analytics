@@ -33,6 +33,7 @@ from orchestration.assets import (
     driver_pace_profile_is_sane,
     driver_ratings,
     driver_ratings_are_sane,
+    race_overtakes,
     race_replay,
     raw_ergast_laps,
     raw_laps,
@@ -76,6 +77,7 @@ all_assets = [
     driver_ratings,
     driver_pace_profile,
     race_replay,
+    race_overtakes,
 ]
 
 # Full end-to-end refresh: ingest -> dbt -> ratings + replay, partitioned by

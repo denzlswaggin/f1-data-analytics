@@ -14,6 +14,13 @@ order by race_label desc
 
 <Dropdown data={tel_races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
 
+```sql telemetry_coverage
+select * from f1.data_coverage
+where section = 'telemetry' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={telemetry_coverage} sampleLabel="fastest-lap selections" entityLabel="Drivers" method="descriptive fastest-lap sample" />
+
 ## Speed trace — {inputs.race.value}
 
 Speed vs lap distance for every driver's fastest lap. Braking zones show as the

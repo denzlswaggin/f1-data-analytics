@@ -8,7 +8,7 @@
     // Evidence source (marts.mart_stint_strategy).
     export let data = [];
     export let title = '';
-    export let shade = true; // fade each stint by its tyre degradation (fall-off)
+    export let shade = true; // fade each stint by its observed lap-time slope
 
     // FastF1 compound → F1 broadcast colour, single-letter badge, and a text
     // colour that stays legible on the fill.
@@ -24,9 +24,9 @@
     // Evidence hands numbers back as strings/BigInt — coerce defensively.
     const num = (v) => (v == null ? null : Number(v));
 
-    // Degradation shading: each stint fades left→right toward dark in proportion
-    // to its pace fall-off (deg_sec_per_lap), saturating at DEG_MAX s/lap. Negative
-    // deg (tyre improving, e.g. inters on a drying track) gets no fade.
+    // Slope shading: each stint fades left→right toward dark in proportion to its
+    // observed lap-time slope (deg_sec_per_lap), saturating at DEG_MAX s/lap.
+    // Negative slopes get no fade.
     const DEG_MAX = 0.35;
     const DEG_MAX_ALPHA = 0.6;
     const degAlpha = (deg) =>
@@ -106,7 +106,7 @@
         {/each}
         <span class="sc-legend-item"><span class="sc-pit-swatch"></span> pit stop</span>
         {#if shade}
-            <span class="sc-legend-item"><span class="sc-deg-swatch"></span> less → more fall-off</span>
+            <span class="sc-legend-item"><span class="sc-deg-swatch"></span> lower → higher observed slope</span>
         {/if}
     </div>
 
@@ -160,7 +160,7 @@
                             >{r.driver_code} · {compoundOf(s.compound).name} · laps {s.start_lap}–{s.end_lap}
                             ({s.stint_laps} laps){s.started_fresh ? '' : ' · used set'}, tyre age {s.tyre_life_end}{s.deg !=
                             null
-                                ? ` · ${s.deg.toFixed(2)} s/lap fall-off`
+                                ? ` · ${s.deg.toFixed(2)} s/lap observed slope`
                                 : ''}</title
                         >
                     </rect>

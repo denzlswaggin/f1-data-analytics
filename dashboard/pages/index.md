@@ -1,17 +1,27 @@
 ---
-title: F1 "True Pace" — Teammate-Normalised Driver Ratings
+title: Teammate-Normalised Driver Ratings
 ---
 
-Teammates drive **identical machinery**, so the qualifying gap *between teammates*
-isolates driver skill from the car. Those pairwise gaps are chained into one
-cross-era leaderboard via a least-squares fit on the teammate graph. Higher
-rating = faster than teammates. Data: 2006–2025, via Jolpica-F1.
+Teammate qualifying gaps reduce much of the shared car-performance effect, though
+upgrades, setup, reliability and changing driver form remain possible confounders.
+The pairwise gaps are chained into a cross-era leaderboard via a regularised
+least-squares fit on the teammate graph. Higher rating = faster relative to
+teammates. The interval is a 90% comparison-bootstrap interval, not a guaranteed
+rank range.
+
+```sql rating_coverage
+select * from f1.data_coverage where section = 'driver_rating'
+```
+
+<DataTrust data={rating_coverage} sampleLabel="directed comparisons" entityLabel="Drivers" method="regularised rating + 90% comparison bootstrap" />
 
 ```sql top_drivers
 select
     rank,
     driver_name,
     rating,
+    rating_lo,
+    rating_hi,
     n_comparisons,
     first_season,
     last_season
@@ -37,6 +47,8 @@ limit 15
     <Column id=rank title="#" />
     <Column id=driver_name title="Driver" />
     <Column id=rating fmt='0.000' />
+    <Column id=rating_lo title="90% low" fmt='0.000' />
+    <Column id=rating_hi title="90% high" fmt='0.000' />
     <Column id=n_comparisons title="Head-to-heads" />
     <Column id=first_season title="From" fmt='0000' />
     <Column id=last_season title="To" fmt='0000' />

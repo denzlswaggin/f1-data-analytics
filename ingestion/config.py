@@ -6,6 +6,7 @@ See ``.env.example`` for the full list.
 
 from __future__ import annotations
 
+import datetime as dt
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -28,6 +29,11 @@ class Settings(BaseSettings):
 
     # Warehouse selection
     warehouse: WarehouseKind = "duckdb"
+
+    # Season refreshed by unattended jobs. Formula 1 seasons follow the calendar
+    # year, while an environment override keeps backfills and pre-season deploys
+    # deterministic without changing source code every January.
+    current_season: int = Field(default_factory=lambda: dt.date.today().year, ge=1950)
 
     # DuckDB (dev)
     duckdb_path: Path = Path("data/warehouse/f1.duckdb")

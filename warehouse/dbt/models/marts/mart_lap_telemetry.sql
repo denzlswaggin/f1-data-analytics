@@ -3,16 +3,16 @@
 -- Built from stg_telemetry, enriched with compound/stint (stg_laps), race name
 -- (stg_races) and the Ergast driver_id/name (stg_driver_codes).
 --
--- Incremental: telemetry is the highest-volume mart (~242k rows per race), so it
--- is built race-by-race rather than fully rebuilt. Each run appends only races
--- (season, round) not already present. `delete+insert` on the row grain keeps a
--- re-ingested race idempotent (its rows are replaced, not duplicated), and works
--- on both DuckDB (dev) and Postgres (prod). A full rebuild: `dbt build
--- --full-refresh --select mart_lap_telemetry`.
+-- Incremental: telemetry is the highest-volume mart (~242k rows per race), so
+-- dbt replaces complete race partitions instead of dropping the whole table.
+-- raw.ingestion_partitions is the durable touched-partition manifest. A rerun
+-- selects only races whose raw load timestamp is newer than the version already
+-- in this mart; `delete+insert` replaces each complete (season, round), applying
+-- late corrections and removing stale points on both DuckDB and Postgres.
 {{
     config(
         materialized="incremental",
-        unique_key=["season", "round", "driver_code", "lap_number", "distance_m"],
+        unique_key=["season", "round"],
         incremental_strategy="delete+insert",
         on_schema_change="append_new_columns",
     )
@@ -34,6 +34,16 @@ races as (
 
 driver_codes as (
     select season, driver_code, driver_id, driver_name from {{ ref('stg_driver_codes') }}
+),
+
+telemetry_loads as (
+    select
+        season,
+        round,
+        max(loaded_at) as source_loaded_at
+    from {{ source('raw', 'ingestion_partitions') }}
+    where resource = 'telemetry'
+    group by season, round
 )
 
 select
@@ -54,7 +64,11 @@ select
     tel.gear,
     tel.rpm,
     tel.x,
-    tel.y
+    tel.y,
+    coalesce(
+        telemetry_loads.source_loaded_at,
+        cast('1970-01-01 00:00:00' as timestamp)
+    ) as source_loaded_at
 from tel
 left join laps
     on laps.season = tel.season
@@ -68,12 +82,18 @@ left join races
 left join driver_codes
     on driver_codes.season = tel.season
     and driver_codes.driver_code = tel.driver_code
+left join telemetry_loads
+    on telemetry_loads.season = tel.season
+    and telemetry_loads.round = tel.round
 {% if is_incremental() %}
-    -- Append only races not already materialised; existing races are untouched.
-    where not exists (
-        select 1
-        from {{ this }} as existing
-        where existing.season = tel.season
-            and existing.round = tel.round
-    )
+where not exists (
+    select 1
+    from {{ this }} as existing
+    where existing.season = tel.season
+        and existing.round = tel.round
+        and existing.source_loaded_at >= coalesce(
+            telemetry_loads.source_loaded_at,
+            cast('1970-01-01 00:00:00' as timestamp)
+        )
+)
 {% endif %}

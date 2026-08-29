@@ -167,6 +167,9 @@ models:
           - dbt_expectations.expect_column_values_to_be_between:
               min_value: 0
               max_value: 400
+      - name: source_loaded_at
+        description: Raw telemetry partition version materialised into this race.
+        data_tests: [not_null]
 
   - name: mart_stint_degradation
     description: >
