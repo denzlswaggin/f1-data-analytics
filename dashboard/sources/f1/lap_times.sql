@@ -2,6 +2,7 @@ select
     season,
     round,
     race_name,
+    cast(season as varchar) || ' ' || race_name as race_label,
     driver_code,
     team,
     lap_number,

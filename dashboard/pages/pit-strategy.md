@@ -9,12 +9,12 @@ versus **two laps after** — alongside the stop's stationary time. Positive =
 places gained across the cycle. Ergast-sourced (pit-stop timing from ~2011).
 
 ```sql races
-select distinct race_name, season
+select distinct race_label
 from f1.pit_strategy
-order by season desc, race_name
+order by race_label desc
 ```
 
-<Dropdown data={races} name=race value=race_name defaultValue="Bahrain Grand Prix" />
+<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
 
 ```sql race_stops
 select
@@ -26,7 +26,7 @@ select
     position_after,
     positions_gained
 from f1.pit_strategy
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
 order by pit_lap
 ```
 
@@ -39,7 +39,7 @@ select
     count(*) as stops,
     round(avg(duration_sec), 2) as avg_stop_sec
 from f1.pit_strategy
-where race_name = '${inputs.race.value}'
+where race_label = '${inputs.race.value}'
     and positions_gained is not null
 group by driver_name
 order by net_positions desc
