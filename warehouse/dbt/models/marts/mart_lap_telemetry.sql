@@ -15,11 +15,71 @@
         unique_key=["season", "round"],
         incremental_strategy="delete+insert",
         on_schema_change="append_new_columns",
+        post_hook=(
+            "update {{ this }} "
+            "set source_loaded_at = cast('1970-01-01 00:00:00' as timestamp) "
+            "where source_loaded_at is null"
+        ),
     )
 }}
-with tel as (
+{% if is_incremental() %}
+    {% set existing_columns = adapter.get_columns_in_relation(this) | map(attribute='name') | list %}
+{% endif %}
+with raw_tel as (
     select * from {{ ref('stg_telemetry') }}
     where session = 'R'
+),
+
+telemetry_loads as (
+    select
+        partitions.season,
+        partitions.round,
+        coalesce(
+            max(audit.loaded_at),
+            cast('1970-01-01 00:00:00' as timestamp)
+        ) as source_loaded_at
+    from (select distinct season, round from raw_tel) as partitions
+    left join {{ source('raw', 'ingestion_partitions') }} as audit
+        on audit.resource = 'telemetry'
+        and audit.season = partitions.season
+        and audit.round = partitions.round
+    group by partitions.season, partitions.round
+),
+
+{% if is_incremental() %}
+existing_loads as (
+    {% if 'source_loaded_at' in existing_columns %}
+    select season, round, max(source_loaded_at) as source_loaded_at
+    from {{ this }}
+    group by season, round
+    {% else %}
+    select distinct season, round, cast(null as timestamp) as source_loaded_at
+    from {{ this }}
+    {% endif %}
+),
+
+refresh_partitions as (
+    select telemetry_loads.*
+    from telemetry_loads
+    left join existing_loads
+        on existing_loads.season = telemetry_loads.season
+        and existing_loads.round = telemetry_loads.round
+    where existing_loads.season is null
+        or coalesce(
+            existing_loads.source_loaded_at,
+            cast('1970-01-01 00:00:00' as timestamp)
+        ) < telemetry_loads.source_loaded_at
+),
+{% endif %}
+
+tel as (
+    select raw_tel.*
+    from raw_tel
+    {% if is_incremental() %}
+    inner join refresh_partitions
+        on refresh_partitions.season = raw_tel.season
+        and refresh_partitions.round = raw_tel.round
+    {% endif %}
 ),
 
 laps as (
@@ -34,16 +94,6 @@ races as (
 
 driver_codes as (
     select season, driver_code, driver_id, driver_name from {{ ref('stg_driver_codes') }}
-),
-
-telemetry_loads as (
-    select
-        season,
-        round,
-        max(loaded_at) as source_loaded_at
-    from {{ source('raw', 'ingestion_partitions') }}
-    where resource = 'telemetry'
-    group by season, round
 )
 
 select
@@ -85,15 +135,3 @@ left join driver_codes
 left join telemetry_loads
     on telemetry_loads.season = tel.season
     and telemetry_loads.round = tel.round
-{% if is_incremental() %}
-where not exists (
-    select 1
-    from {{ this }} as existing
-    where existing.season = tel.season
-        and existing.round = tel.round
-        and existing.source_loaded_at >= coalesce(
-            telemetry_loads.source_loaded_at,
-            cast('1970-01-01 00:00:00' as timestamp)
-        )
-)
-{% endif %}

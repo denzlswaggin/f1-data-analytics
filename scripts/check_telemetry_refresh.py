@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import time
 from pathlib import Path
 
 import duckdb
@@ -56,6 +57,7 @@ def main() -> None:
             [season, round_, session, season, round_, session],
         )
 
+    refresh_started = time.perf_counter()
     subprocess.run(
         [
             "dbt",
@@ -71,6 +73,13 @@ def main() -> None:
         ],
         check=True,
     )
+    refresh_seconds = time.perf_counter() - refresh_started
+    max_refresh_seconds = float(os.getenv("F1_TELEMETRY_REFRESH_MAX_SECONDS", "30"))
+    if refresh_seconds > max_refresh_seconds:
+        raise SystemExit(
+            f"telemetry refresh took {refresh_seconds:.2f}s "
+            f"(limit: {max_refresh_seconds:.2f}s)"
+        )
 
     with duckdb.connect(str(warehouse), read_only=True) as connection:
         refreshed = connection.execute(
@@ -88,7 +97,10 @@ def main() -> None:
         raise SystemExit("late telemetry correction was not propagated")
     if after_count != before_count:
         raise SystemExit(f"telemetry partition size changed: {before_count} -> {after_count}")
-    print(f"PASS telemetry correction: {old_speed} -> {new_speed} ({after_count} rows)")
+    print(
+        f"PASS telemetry correction: {old_speed} -> {new_speed} "
+        f"({after_count} rows, {refresh_seconds:.2f}s)"
+    )
 
 
 if __name__ == "__main__":
