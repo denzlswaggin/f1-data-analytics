@@ -23,6 +23,12 @@ so the comparison is like-for-like — and both are relative to the field, so a 
 zero means "improves on Sunday exactly as much as the average driver does", not "no
 improvement".
 
+```sql profile_coverage
+select * from f1.data_coverage where section = 'pace_profile'
+```
+
+<DataTrust data={profile_coverage} sampleLabel="directed race comparisons" entityLabel="Drivers" method="matched-season point estimates; interval pending" />
+
 ```sql min_races_options
 select 5 as n union all select 10 union all select 20 union all select 30
 ```

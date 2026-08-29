@@ -1,12 +1,12 @@
 ---
-title: Pit Strategy — Undercut & Overcut
+title: Pit-Cycle Position Swings
 ---
 
-Every pit stop is a gamble: box a lap early to jump a rival on fresh tyres (the
-_undercut_), or stay out for clean air and clear them later (the _overcut_). This
-page measures the outcome — a driver's track position the lap **before** each stop
-versus **two laps after** — alongside the stop's stationary time. Positive =
-places gained across the cycle. Ergast-sourced (pit-stop timing from ~2011).
+This page describes a driver's track position the lap **before** each stop versus
+**two laps after**, alongside the stop's stationary time. Positive means places
+were gained across that window. It is not a counterfactual undercut/overcut
+estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
+observed position. Ergast-sourced (pit-stop timing from ~2011).
 
 ```sql races
 select distinct race_label
@@ -15,6 +15,13 @@ order by race_label desc
 ```
 
 <Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+
+```sql pit_coverage
+select * from f1.data_coverage
+where section = 'pit_cycle' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={pit_coverage} sampleLabel="pit stops" entityLabel="Drivers" method="descriptive window; not counterfactual" />
 
 ```sql race_stops
 select
@@ -49,7 +56,7 @@ order by net_positions desc
     data={driver_net}
     x=driver_name
     y=net_positions
-    yAxisTitle="net places gained across stops"
+    yAxisTitle="observed net position swing"
     swapXY=true
     labels=true
     sort=false

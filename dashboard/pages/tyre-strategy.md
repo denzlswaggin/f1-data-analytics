@@ -5,9 +5,10 @@ title: Tyre Strategy
 Who ran which compound, for how long, and when they pitted — the classic F1
 **strategy chart**. Each row is a driver (ordered by finish), each coloured block a
 tyre stint on the true race-lap axis; a vertical tick marks every pit stop, and each
-stint **darkens toward its end in proportion to how fast the tyre fell off**
-(degradation, s/lap). Built from FastF1 per-lap compound + stint data. _Hover a stint
-for its lap range, tyre age, and fall-off._
+stint **darkens toward its end in proportion to its observed within-stint pace
+slope** (s/lap). The slope is descriptive and not adjusted for fuel, traffic or
+track evolution. Built from FastF1 per-lap compound + stint data. _Hover a stint
+for its lap range, tyre age, and observed slope._
 
 ```sql races
 select distinct race_label
@@ -16,6 +17,13 @@ order by race_label desc
 ```
 
 <Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+
+```sql tyre_coverage
+select * from f1.data_coverage
+where section = 'tyre_strategy' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={tyre_coverage} sampleLabel="stints" entityLabel="Drivers" method="descriptive, unadjusted slope" />
 
 ```sql race_stints
 select *

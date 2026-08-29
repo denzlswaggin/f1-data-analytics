@@ -3,8 +3,8 @@ title: Weather & Straight-Line Speed
 ---
 
 Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
-you: who carries the most speed down the longest straight, and how tyre
-degradation shifts with track conditions.
+you: who carries the most speed down the longest straight, and how the observed
+lap-time slope changes with track conditions.
 
 ```sql races
 select distinct race_label
@@ -13,6 +13,13 @@ order by race_label desc
 ```
 
 <Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+
+```sql speed_coverage
+select * from f1.data_coverage
+where section = 'speed_trap' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={speed_coverage} sampleLabel="driver summaries" entityLabel="Drivers" method="descriptive speed-trap sample" />
 
 ## Straight-line speed — {inputs.race.value}
 
@@ -47,11 +54,17 @@ order by top_speed_kph desc
     <Column id=avg_speed_kph title="Avg (km/h)" fmt='0.0' />
 </DataTable>
 
-## Tyre degradation by track conditions
+## Observed lap-time slope by track conditions
 
-Across every race with weather data, the average fall-off per compound in each
-condition bucket (cool / hot / wet). Softer compounds and hotter tracks should
-degrade faster.
+```sql weather_coverage
+select * from f1.data_coverage where section = 'weather_slope'
+```
+
+<DataTrust data={weather_coverage} sampleLabel="compound-race fits" entityLabel="Compounds" method="descriptive; weather-covered races only" />
+
+For races with weather coverage, this is the average unadjusted lap-time slope
+per compound in each condition bucket (cool / hot / wet). It mixes tyre wear with
+fuel burn, traffic and track evolution and is therefore descriptive only.
 
 ```sql deg_by_weather
 select
@@ -71,12 +84,12 @@ order by compound, weather_bucket
     y=avg_deg_sec_per_lap
     series=weather_bucket
     type=grouped
-    yAxisTitle="avg degradation (s/lap)"
+    yAxisTitle="avg observed slope (s/lap)"
 />
 
 <DataTable data={deg_by_weather}>
     <Column id=compound title="Compound" />
     <Column id=weather_bucket title="Conditions" />
-    <Column id=avg_deg_sec_per_lap title="Avg deg (s/lap)" fmt='0.000' />
+    <Column id=avg_deg_sec_per_lap title="Avg slope (s/lap)" fmt='0.000' />
     <Column id=laps title="Laps" />
 </DataTable>

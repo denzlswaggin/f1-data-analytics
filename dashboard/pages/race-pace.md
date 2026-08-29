@@ -4,7 +4,7 @@ title: Race Pace & Tyre Stints
 
 Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
-stints fall. _FastF1 laps cover the current season to date._
+stints fall. The coverage panel below states the races actually available.
 
 ```sql races
 select distinct race_label
@@ -13,6 +13,13 @@ order by race_label desc
 ```
 
 <Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+
+```sql pace_coverage
+select * from f1.data_coverage
+where section = 'race_pace' and race_label = '${inputs.race.value}'
+```
+
+<DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="descriptive, filtered timing" />
 
 ```sql race_laps
 select
@@ -68,10 +75,12 @@ order by avg_lap_sec
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
 
-## Tyre degradation — {inputs.race.value}
+## Observed lap-time slope vs tyre age — {inputs.race.value}
 
-Pace lost per lap of tyre age (linear fit over green-flag laps). Higher =
-faster fall-off; softer compounds should degrade quicker.
+Linear slope of lap time against tyre age over green-flag laps. Positive means
+laps became slower as the set aged; negative means they became faster. This
+descriptive slope is not adjusted for fuel burn, traffic or track evolution, so
+it should not be read as pure tyre wear.
 
 ```sql race_deg
 select
@@ -87,7 +96,7 @@ order by deg_sec_per_lap desc
     data={race_deg}
     x=compound
     y=deg_sec_per_lap
-    yAxisTitle="degradation (s/lap)"
+    yAxisTitle="observed slope (s/lap)"
     labels=true
     sort=false
 />
