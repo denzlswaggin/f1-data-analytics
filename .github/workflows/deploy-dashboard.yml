@@ -66,11 +66,14 @@ jobs:
         run: |
           dbt build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev
 
-      - name: Solve driver ratings
+      - name: Build analytics marts
         run: |
           python -m analytics.cli ratings
           python -m analytics.cli replay --season 2024 --round 1
           python -m analytics.cli overtakes --season 2024 --round 1
+
+      - name: Check dashboard data
+        run: python scripts/check_dashboard_data.py
 
       - uses: actions/setup-node@v4
         with:
@@ -82,8 +85,8 @@ jobs:
         working-directory: dashboard
         run: |
           npm ci
-          npm run sources
-          npm run build
+          npm run sources:strict
+          npm run build:strict
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
