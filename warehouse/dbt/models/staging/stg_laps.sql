@@ -18,7 +18,10 @@ renamed as (
         team,
         cast(lap_number as integer)                         as lap_number,
         cast(stint as integer)                              as stint,
-        compound,
+        case
+            when compound is null or lower(trim(compound)) in ('', 'none', 'nan') then 'UNKNOWN'
+            else upper(trim(compound))
+        end                                                as compound,
         cast(tyre_life as integer)                          as tyre_life,
         is_fresh_tyre,
         cast(position as integer)                           as position,
