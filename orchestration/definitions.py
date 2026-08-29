@@ -22,10 +22,12 @@ from dagster import (
     schedule,
 )
 from dagster_dbt import DbtCliResource
+from ingestion.config import get_settings
 from ingestion.logging import get_logger
 
 from orchestration.assets import (
     CURRENT_SEASON,
+    DBT_PROJECT_DIR,
     SEASON_PARTITIONS,
     dbt_models,
     dbt_project,
@@ -50,6 +52,7 @@ from orchestration.assets import (
 )
 
 log = get_logger(__name__)
+settings = get_settings()
 
 
 def _dbt_executable() -> str:
@@ -134,5 +137,12 @@ defs = Definitions(
     jobs=[refresh_job, backfill_ingest_job],
     schedules=[race_weekend_schedule],
     sensors=[alert_on_run_failure],
-    resources={"dbt": DbtCliResource(project_dir=dbt_project, dbt_executable=_dbt_executable())},
+    resources={
+        "dbt": DbtCliResource(
+            project_dir=dbt_project,
+            profiles_dir=DBT_PROJECT_DIR,
+            target="prod" if settings.warehouse == "postgres" else "dev",
+            dbt_executable=_dbt_executable(),
+        )
+    },
 )

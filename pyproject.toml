@@ -36,6 +36,7 @@ dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "sqlfluff>=3.2",
+    "sqlfluff-templater-dbt>=3.2",
     "types-requests>=2.32",
     "types-psycopg2>=2.9",
     "pre-commit>=4.0",
@@ -64,6 +65,7 @@ orchestration = [
     "dagster>=1.9",
     "dagster-webserver>=1.9",
     "dagster-dbt>=0.25",
+    "dagster-postgres>=0.25",
 ]
 
 [project.scripts]

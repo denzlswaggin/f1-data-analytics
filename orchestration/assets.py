@@ -253,6 +253,10 @@ class F1DbtTranslator(DagsterDbtTranslator):
     def get_asset_key(self, dbt_resource_props: Mapping[str, Any]) -> AssetKey:
         if dbt_resource_props["resource_type"] == "source":
             return AssetKey(["raw", dbt_resource_props["name"]])
+        if dbt_resource_props["resource_type"] == "seed":
+            # CI fixtures are dbt resources too, but they must not collide with
+            # the real raw ingestion assets in the Dagster graph.
+            return AssetKey(["ci_seed", dbt_resource_props["name"]])
         return super().get_asset_key(dbt_resource_props)
 
 
