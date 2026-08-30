@@ -13,6 +13,7 @@ from analytics.pipeline import (
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
+    build_driver_ratings_v3,
     build_race_overtakes_season,
     build_race_replays,
 )
@@ -308,6 +309,28 @@ def driver_ratings_v2() -> MaterializeResult:
     group_name="analytics",
     compute_kind="python",
 )
+def driver_ratings_v3() -> MaterializeResult:
+    """Materialise V3 as an experiment, including holdout and ablation evidence."""
+    result = build_driver_ratings_v3()
+    return MaterializeResult(
+        metadata={
+            "driver_seasons": len(result.ratings),
+            "parameters": result.selected_parameters.label,
+            "holdout_status": result.holdout_status,
+            "recommended_for_promotion": result.recommended_for_promotion,
+        }
+    )
+
+
+@asset(
+    deps=[
+        AssetKey(["int_teammate_quali_gaps"]),
+        AssetKey(["int_teammate_race_gaps"]),
+        AssetKey(["stg_drivers"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
 def driver_pace_profile() -> MaterializeResult:
     # Solve the race-pace rating and set it against qualifying over the same seasons.
     df = build_driver_pace_profile(from_season=PACE_PROFILE_FROM_SEASON)
@@ -410,6 +433,25 @@ def driver_ratings_v2_are_sane() -> AssetCheckResult:
         "count(*) filter (where rating is null or rating_lo is null or rating_hi is null) as nulls, "
         "count(*) filter (where rating_lo > rating or rating > rating_hi) as invalid "
         "from marts.driver_ratings_v2"
+    )
+    row = df.iloc[0]
+    passed = (
+        int(row["n"]) > 0
+        and int(row["n"]) == int(row["keys"])
+        and int(row["nulls"]) == 0
+        and int(row["invalid"]) == 0
+    )
+    return AssetCheckResult(passed=passed, metadata=row.to_dict())
+
+
+@asset_check(asset=driver_ratings_v3, name="experimental_ratings_are_sane", blocking=True)
+def driver_ratings_v3_are_sane() -> AssetCheckResult:
+    """V3 research rows must be unique and intervals must contain point estimates."""
+    df = read_query(
+        "select count(*) as n, count(distinct cast(season as varchar) || '-' || driver_id) as keys, "
+        "count(*) filter (where rating is null or rating_lo is null or rating_hi is null) as nulls, "
+        "count(*) filter (where rating_lo > rating or rating > rating_hi) as invalid "
+        "from marts.driver_ratings_v3"
     )
     row = df.iloc[0]
     passed = (

@@ -27,6 +27,7 @@ from analytics.pipeline import (
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
+    build_driver_ratings_v3,
     build_race_overtakes,
     build_race_overtakes_season,
     build_race_replay,
@@ -109,6 +110,45 @@ def ratings_v2(
         change = "n/a" if pd.isna(row.form_delta) else f"{row.form_delta:+.3f}"
         typer.echo(
             f"  {row.rank:>3}  {name:<22} {row.rating:>7.3f}  {change:>7}  "
+            f"[{row.rating_lo:>6.3f}, {row.rating_hi:>6.3f}]"
+        )
+
+
+@app.command("ratings-v3")
+def ratings_v3(
+    final_holdout_season: Annotated[
+        int, typer.Option(help="Untouched final test season; 2026 when available.")
+    ] = 2026,
+    n_boot: Annotated[
+        int, typer.Option(help="Race-weekend bootstrap resamples for rating intervals.")
+    ] = 100,
+    seed: Annotated[int, typer.Option(help="Deterministic bootstrap seed.")] = 0,
+    top: Annotated[int, typer.Option(help="Print the top-N latest-season research ratings.")] = 20,
+) -> None:
+    """Build the opt-in joint V3 experiment and evaluation artifacts."""
+    configure_logging()
+    result = build_driver_ratings_v3(
+        final_holdout_season=final_holdout_season,
+        n_boot=n_boot,
+        seed=seed,
+    )
+    typer.echo(f"\nSelected V3 parameters: {result.selected_parameters.label}")
+    typer.echo(f"Final holdout {final_holdout_season}: {result.holdout_status}")
+    typer.echo(
+        "Promotion gate: "
+        + ("passed" if result.recommended_for_promotion else "not passed; V1/V2 remain canonical")
+    )
+    latest = int(result.ratings["season"].max())
+    shown = result.ratings[result.ratings["season"] == latest].head(top)
+    typer.echo(f"\nExperimental joint ratings for {latest} (top {len(shown)}):\n")
+    typer.echo(
+        f"  {'#':>3}  {'driver':<22} {'joint':>7}  {'quali':>7}  {'race':>7}  {'90% CI':>18}"
+    )
+    for row in shown.itertuples():
+        name = row.driver_name or row.driver_id
+        typer.echo(
+            f"  {row.rank:>3}  {name:<22} {row.rating:>7.3f}  "
+            f"{row.quali_rating:>7.3f}  {row.race_rating:>7.3f}  "
             f"[{row.rating_lo:>6.3f}, {row.rating_hi:>6.3f}]"
         )
 

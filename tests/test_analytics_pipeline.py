@@ -17,6 +17,7 @@ from analytics.pipeline import (
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
+    build_driver_ratings_v3,
 )
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
@@ -204,6 +205,51 @@ def _seed_pace_profile_warehouse(db_path: Path) -> None:
         con.unregister("race")
         con.unregister("drivers")
         con.close()  # release the single writer before read_query opens read-only
+
+
+def test_build_driver_ratings_v3_materialises_research_artifacts(tmp_path: Path) -> None:
+    db_path = tmp_path / "f1.duckdb"
+    qualifying = _seasoned_gaps(
+        [("A", "B", -1.0), ("B", "C", -0.5)], seasons=list(range(2019, 2027))
+    )
+    race = _seasoned_gaps([("A", "B", -0.6), ("B", "C", -0.2)], seasons=list(range(2019, 2027)))
+    race["n_laps"] = 20
+    drivers = pd.DataFrame(
+        [
+            {"driver_id": "A", "driver_name": "Driver A", "nationality": "British"},
+            {"driver_id": "B", "driver_name": "Driver B", "nationality": "German"},
+            {"driver_id": "C", "driver_name": "Driver C", "nationality": "Spanish"},
+        ]
+    )
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute("create schema intermediate")
+        con.execute("create schema staging")
+        con.register("qualifying", qualifying)
+        con.register("race", race)
+        con.register("drivers", drivers)
+        con.execute("create table intermediate.int_teammate_quali_gaps as select * from qualifying")
+        con.execute("create table intermediate.int_teammate_race_gaps as select * from race")
+        con.execute("create table staging.stg_drivers as select * from drivers")
+    finally:
+        con.unregister("qualifying")
+        con.unregister("race")
+        con.unregister("drivers")
+        con.close()
+    settings = Settings(warehouse="duckdb", duckdb_path=db_path)
+
+    result = build_driver_ratings_v3(settings, n_boot=4, min_train_seasons=3)
+
+    assert result.holdout_status == "evaluated"
+    assert result.ratings[["driver_id", "season"]].duplicated().sum() == 0
+    assert result.ratings["driver_name"].notna().all()
+    for table in (
+        "driver_ratings_v3",
+        "driver_ratings_v3_validation",
+        "driver_ratings_v3_ablation",
+    ):
+        persisted = read_query(f"select count(*) as n from marts.{table}", settings)
+        assert int(persisted.iloc[0]["n"]) > 0
 
 
 def test_build_driver_pace_profile_materialises_mart(tmp_path: Path) -> None:

@@ -48,6 +48,7 @@ python -m ingestion.cli backfill --from 2006 --to 2025   # ~17k rows
 make dbt-build                                           # staging → intermediate → marts
 python -m analytics.cli ratings --top 20                 # solve + print leaderboard
 python -m analytics.cli ratings-v2 --top 20              # season-specific form + intervals
+python -m analytics.cli ratings-v3 --final-holdout-season 2026  # joint research model + evidence
 ```
 
 The V2 model adds one rating per driver-season, temporal smoothing between
@@ -224,6 +225,7 @@ contract and rollback procedure.
 - [Portfolio case study](docs/portfolio-case-study.md) — problem, decisions, evidence, trade-offs
 - [Validating the rating model](docs/rating-validation.md) — backtest, shrinkage sensitivity, bootstrap CIs
 - [Dynamic rating V2](docs/dynamic-rating-model.md) — driver-season form and clustered uncertainty
+- [Joint ratings V3 experiment](docs/ratings-v3-experiment.md) — partial pooling, nested validation, and sealed holdout
 - [Interview walkthrough](docs/interview-walkthrough.md) — a five-minute technical tour
 - [LinkedIn draft](docs/linkedin-post.md)
 - [Production runbook](docs/production-runbook.md) — deploy, monitor, recover, restore

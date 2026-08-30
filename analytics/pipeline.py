@@ -11,6 +11,7 @@ from analytics.overtakes import detect_overtakes
 from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
+from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
 from analytics.replay import resample_race
 from analytics.validation import bootstrap_ratings
 
@@ -29,6 +30,11 @@ DRIVERS_QUERY = """
 GAPS_V2_QUERY = """
     select race_key, driver_id, teammate_id, pace_gap, season, common_session
     from intermediate.int_teammate_quali_gaps
+"""
+
+RACE_GAPS_V3_QUERY = """
+    select race_key, driver_id, teammate_id, pace_gap, season, n_laps
+    from intermediate.int_teammate_race_gaps
 """
 
 
@@ -151,6 +157,78 @@ def build_driver_ratings_v2(
         iterations=fit.iterations,
     )
     return enriched
+
+
+def build_driver_ratings_v3(
+    settings: Settings | None = None,
+    *,
+    final_holdout_season: int = 2026,
+    min_train_seasons: int = 3,
+    n_boot: int = 100,
+    seed: int = 0,
+) -> V3ExperimentResult:
+    """Materialise the opt-in V3 model and its honest evaluation artifacts.
+
+    V1 and V2 remain untouched.  ``marts.driver_ratings_v3`` is a research
+    output, while the validation and ablation tables preserve the evidence
+    needed to decide whether it should ever be promoted.
+    """
+    settings = settings or get_settings()
+    qualifying = read_query(GAPS_V2_QUERY, settings)
+    race = read_query(RACE_GAPS_V3_QUERY, settings)
+    drivers = read_query(DRIVERS_QUERY, settings)
+    result = evaluate_v3_experiment(
+        qualifying,
+        race,
+        final_holdout_season=final_holdout_season,
+        min_train_seasons=min_train_seasons,
+        n_boot=n_boot,
+        seed=seed,
+    )
+    ratings = result.ratings.merge(drivers, on="driver_id", how="left").loc[
+        :,
+        [
+            "season",
+            "rank",
+            "driver_id",
+            "driver_name",
+            "nationality",
+            "rating",
+            "rating_lo",
+            "rating_hi",
+            "n_boot",
+            "pace_deficit",
+            "quali_rating",
+            "race_rating",
+            "discipline_delta",
+            "form_delta",
+            "n_quali_comparisons",
+            "n_race_comparisons",
+        ],
+    ]
+    materialised = V3ExperimentResult(
+        ratings=ratings,
+        validation=result.validation,
+        ablation=result.ablation,
+        selected_parameters=result.selected_parameters,
+        holdout_status=result.holdout_status,
+        recommended_for_promotion=result.recommended_for_promotion,
+    )
+    replace_table(ratings, schema="marts", table="driver_ratings_v3", settings=settings)
+    replace_table(
+        result.validation, schema="marts", table="driver_ratings_v3_validation", settings=settings
+    )
+    replace_table(
+        result.ablation, schema="marts", table="driver_ratings_v3_ablation", settings=settings
+    )
+    log.info(
+        "ratings_v3.materialised",
+        rows=len(ratings),
+        parameters=result.selected_parameters.label,
+        holdout_status=result.holdout_status,
+        recommended_for_promotion=result.recommended_for_promotion,
+    )
+    return materialised
 
 
 def _race_gaps_query(from_season: int | None, to_season: int | None) -> str:
