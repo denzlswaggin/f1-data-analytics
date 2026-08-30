@@ -1,7 +1,7 @@
 # Versioned dashboard snapshots
 
-The public Evidence site never reads the mutable operational warehouse. After a
-successful scheduled pipeline run, `Publish Dashboard Snapshot` exports the
+The public Evidence site never reads the mutable operational warehouse. After
+Dagster's persistent round refresh finishes, `Publish Dashboard Snapshot` exports the
 `staging`, `intermediate`, and `marts` relations into an immutable DuckDB file,
 validates it, calculates SHA-256, and publishes both database and manifest to
 object storage.
@@ -38,6 +38,12 @@ and configure separate least-privilege reader/writer roles. The publisher also
 needs read-only Postgres credentials. Versioning and retention are configured on
 the bucket by the production infrastructure; the workflow itself never deletes
 an older snapshot.
+
+Dagster is the only ingestion scheduler. The previous GitHub Actions workflow
+used an ephemeral DuckDB and discarded its data, so it was removed instead of
+leaving a second scheduler that could race or imply durability. Snapshot export
+runs at 08:00 UTC, two hours after Dagster's Monday refresh, and fails closed if
+the persistent warehouse or its required marts are unavailable.
 
 To roll back, replace `latest.json` with a prior version's manifest. Consumers
 will verify the referenced database before installing it.
