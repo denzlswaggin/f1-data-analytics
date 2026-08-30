@@ -50,6 +50,35 @@ def season_rounds(
     return sorted(int(r) for r in df["round"].tolist())
 
 
+def latest_completed_round(
+    season: int,
+    settings: Settings | None = None,
+    *,
+    as_of: dt.date | None = None,
+) -> int | None:
+    """Return the last round whose race date is strictly before ``as_of``.
+
+    Strict comparison prevents an on-demand refresh on race day from treating
+    an in-progress event as complete. ``None`` is returned before the season or
+    before the race calendar has been bootstrapped.
+    """
+    settings = settings or get_settings()
+    as_of = as_of or dt.date.today()
+    try:
+        frame = read_query(
+            f"select round, date from raw.races where season = {int(season)}", settings
+        )
+    except Exception:
+        return None
+    if frame.empty:
+        return None
+    dates = frame["date"].astype("string").str.slice(0, 10)
+    completed = frame[dates < as_of.isoformat()]
+    if completed.empty:
+        return None
+    return int(completed["round"].max())
+
+
 def extract_resource(resource: Resource, season: int, client: JolpicaClient) -> pd.DataFrame:
     """Fetch and flatten one resource for one season into a DataFrame."""
     path = resource.path_template.format(season=season)

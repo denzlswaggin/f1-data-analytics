@@ -314,3 +314,81 @@ def replace_table(
         rows=len(df),
     )
     return len(df)
+
+
+def replace_table_partition(
+    df: pd.DataFrame,
+    schema: str,
+    table: str,
+    partition: dict[str, object],
+    settings: Settings | None = None,
+) -> int:
+    """Atomically replace one partition of an analytics table with ``df``.
+
+    This is the mart equivalent of ``load_dataframe(..., replace_rounds=True)``:
+    rows outside the exact partition predicate are preserved. The delete still
+    runs for an empty frame, which makes late source removals idempotent. Column
+    and table names are internal constants; partition values remain bound
+    parameters for both DuckDB and Postgres.
+    """
+    if not partition:
+        raise ValueError("partition must contain at least one column")
+    missing = set(partition) - set(df.columns)
+    if missing:
+        raise ValueError(f"incoming frame is missing partition columns: {sorted(missing)}")
+    for column, value in partition.items():
+        if not df.empty and not bool(df[column].eq(value).fillna(False).all()):
+            raise ValueError(f"incoming frame contains rows outside partition {column}={value!r}")
+    settings = settings or get_settings()
+
+    if settings.warehouse == "duckdb":
+        settings.duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+        con = duckdb.connect(str(settings.duckdb_path))
+        try:
+            con.register("incoming", df)
+            con.execute("BEGIN TRANSACTION")
+            con.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+            con.execute(
+                f'CREATE TABLE IF NOT EXISTS "{schema}"."{table}" '
+                "AS SELECT * FROM incoming WHERE 1 = 0"
+            )
+            predicate = " AND ".join(f'"{column}" = ?' for column in partition)
+            con.execute(
+                f'DELETE FROM "{schema}"."{table}" WHERE {predicate}',
+                list(partition.values()),
+            )
+            if not df.empty:
+                con.execute(f'INSERT INTO "{schema}"."{table}" BY NAME SELECT * FROM incoming')
+            con.execute("COMMIT")
+        except Exception:
+            con.execute("ROLLBACK")
+            raise
+        finally:
+            con.unregister("incoming")
+            con.close()
+    else:
+        engine = create_engine(settings.pg_dsn)
+        try:
+            with engine.begin() as conn:
+                conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
+                df.head(0).to_sql(table, conn, schema=schema, if_exists="append", index=False)
+                predicate = " AND ".join(
+                    f'"{column}" = :partition_{index}' for index, column in enumerate(partition)
+                )
+                values = {
+                    f"partition_{index}": value for index, value in enumerate(partition.values())
+                }
+                conn.execute(text(f'DELETE FROM "{schema}"."{table}" WHERE {predicate}'), values)
+                if not df.empty:
+                    df.to_sql(table, conn, schema=schema, if_exists="append", index=False)
+        finally:
+            engine.dispose()
+
+    log.info(
+        "warehouse.replace_table_partition",
+        target=settings.warehouse,
+        table=f"{schema}.{table}",
+        partition=partition,
+        rows=len(df),
+    )
+    return len(df)

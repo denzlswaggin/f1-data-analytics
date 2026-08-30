@@ -16,10 +16,8 @@ from dagster import (
     AssetSelection,
     Definitions,
     RunFailureSensorContext,
-    RunRequest,
     define_asset_job,
     run_failure_sensor,
-    schedule,
 )
 from dagster_dbt import DbtCliResource
 from ingestion.alerts import AlertDeliveryError, send_webhook_alert
@@ -27,7 +25,6 @@ from ingestion.config import get_settings
 from ingestion.logging import get_logger
 
 from orchestration.assets import (
-    CURRENT_SEASON,
     DBT_PROJECT_DIR,
     SEASON_PARTITIONS,
     dbt_models,
@@ -53,6 +50,10 @@ from orchestration.assets import (
     raw_team_radio,
     raw_telemetry,
     raw_weather,
+)
+from orchestration.round_refresh import (
+    latest_round_schedule,
+    round_refresh_job,
 )
 
 log = get_logger(__name__)
@@ -88,11 +89,10 @@ all_assets = [
     race_overtakes,
 ]
 
-# Full end-to-end refresh: ingest -> dbt -> ratings + replay, partitioned by
-# season. The heavy / cache-dependent FastF1 + OpenF1 ingests — raw.telemetry,
-# raw.positions, raw.race_control and raw.team_radio — are excluded from the
-# weekly job; materialise them on demand. Downstream dbt/analytics are
-# unpartitioned and rebuild each run from whatever has been ingested.
+# Broad season refresh: ingest -> dbt -> ratings + replay, partitioned by
+# season. Heavy cache-dependent sources remain excluded here; the scheduled
+# round_refresh_job handles those one completed race at a time. This job stays
+# available for explicit season rebuilds and historical maintenance.
 refresh_job = define_asset_job(
     name="refresh_pipeline",
     selection=AssetSelection.all()
@@ -112,12 +112,6 @@ backfill_ingest_job = define_asset_job(
     selection=AssetSelection.groups("ingest"),
     partitions_def=SEASON_PARTITIONS,
 )
-
-
-# Race weekends finish Sunday; refresh the current season Monday morning.
-@schedule(job=refresh_job, cron_schedule="0 6 * * 1", name="race_weekend_refresh")
-def race_weekend_schedule() -> RunRequest:
-    return RunRequest(partition_key=str(CURRENT_SEASON))
 
 
 # Structured alert on any run failure. Delivery uses a configurable generic
@@ -158,8 +152,8 @@ defs = Definitions(
         driver_ratings_v2_are_sane,
         driver_pace_profile_is_sane,
     ],
-    jobs=[refresh_job, backfill_ingest_job],
-    schedules=[race_weekend_schedule],
+    jobs=[refresh_job, backfill_ingest_job, round_refresh_job],
+    schedules=[latest_round_schedule],
     sensors=[alert_on_run_failure],
     resources={
         "dbt": DbtCliResource(

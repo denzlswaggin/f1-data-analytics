@@ -14,7 +14,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from analytics.pipeline import build_race_replay
+from analytics.pipeline import build_race_replay, build_race_replay_incremental
 from analytics.replay import resample_race
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
@@ -207,3 +207,32 @@ def test_build_race_replay_materialises_mart(tmp_path: Path) -> None:
     persisted = read_query("select * from marts.race_replay", settings)
     assert len(persisted) == len(result)
     assert set(persisted["driver_code"]) == {"A", "B"}
+
+
+def test_incremental_replay_preserves_other_rounds(tmp_path: Path) -> None:
+    db_path = tmp_path / "f1.duckdb"
+    _seed_warehouse(db_path)
+    settings = Settings(warehouse="duckdb", duckdb_path=db_path)
+
+    first = build_race_replay_incremental(2026, 1, tick_s=1.0, settings=settings)
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute(
+            "insert into marts.race_replay "
+            "select season, 2 as round, driver_code, t_s, x, y, running_order, "
+            "gap_to_leader_s, gap_to_ahead_s from marts.race_replay where round = 1"
+        )
+    finally:
+        con.close()
+
+    corrected = build_race_replay_incremental(2026, 1, tick_s=2.0, settings=settings)
+    counts = read_query(
+        "select round, count(*) as n from marts.race_replay group by round order by round",
+        settings,
+    )
+
+    assert len(corrected) < len(first)
+    assert dict(zip(counts["round"], counts["n"], strict=True)) == {
+        1: len(corrected),
+        2: len(first),
+    }

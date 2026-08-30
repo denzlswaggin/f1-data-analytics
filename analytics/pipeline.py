@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 from ingestion.config import Settings, get_settings
-from ingestion.loaders.warehouse import read_query, replace_table
+from ingestion.loaders.warehouse import read_query, replace_table, replace_table_partition
 from ingestion.logging import get_logger
 
 from analytics.overtakes import detect_overtakes
@@ -305,6 +305,41 @@ def build_race_replay(
     return replay
 
 
+def build_race_replay_incremental(
+    season: int,
+    rnd: int,
+    tick_s: float = 1.0,
+    retire_buffer_s: float | None = None,
+    settings: Settings | None = None,
+) -> pd.DataFrame:
+    """Build and replace exactly one race in ``marts.race_replay``.
+
+    Unlike the legacy single-race helper, this preserves every other race in
+    the mart. It is therefore safe for unattended round-level refreshes and for
+    targeted corrections of an already materialised race.
+    """
+    settings = settings or get_settings()
+    buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
+    replay = _build_one_replay(
+        season, rnd, tick_s, buf, settings.replay_retire_max_linger_s, settings
+    )
+    replace_table_partition(
+        replay,
+        schema="marts",
+        table="race_replay",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    log.info(
+        "replay.materialised_partition",
+        season=season,
+        round=rnd,
+        rows=len(replay),
+        drivers=replay["driver_code"].nunique() if not replay.empty else 0,
+    )
+    return replay
+
+
 def build_race_replays(
     season: int,
     rounds: list[int],
@@ -409,6 +444,23 @@ def build_race_overtakes(season: int, rnd: int, settings: Settings | None = None
     passes = _build_one_overtakes(season, rnd, settings)
     replace_table(passes, schema="marts", table="race_overtakes", settings=settings)
     log.info("overtakes.materialised", season=season, round=rnd, passes=len(passes))
+    return passes
+
+
+def build_race_overtakes_incremental(
+    season: int, rnd: int, settings: Settings | None = None
+) -> pd.DataFrame:
+    """Detect and replace exactly one race in ``marts.race_overtakes``."""
+    settings = settings or get_settings()
+    passes = _build_one_overtakes(season, rnd, settings)
+    replace_table_partition(
+        passes,
+        schema="marts",
+        table="race_overtakes",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    log.info("overtakes.materialised_partition", season=season, round=rnd, passes=len(passes))
     return passes
 
 
