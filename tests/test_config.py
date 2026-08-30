@@ -27,3 +27,9 @@ def test_current_season_accepts_environment_override(
     monkeypatch.chdir(tmp_path)
     settings = Settings()
     assert settings.current_season == 2030
+
+
+def test_required_health_resources_are_trimmed_and_deduplicated() -> None:
+    settings = Settings(health_required_resources=" laps,telemetry, laps, ")
+
+    assert settings.required_health_resources == ("laps", "telemetry")

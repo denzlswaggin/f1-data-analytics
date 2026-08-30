@@ -1,0 +1,9 @@
+# Install only after `make prod-backup` and `make prod-restore-drill-latest`
+# succeed interactively. Replace the repository path and route output to the
+# host's monitored logging service. Cron inherits no interactive shell setup.
+
+# Portable backup every Monday after the race-weekend refresh window.
+30 9 * * 1 cd /srv/f1-data-analytics && /usr/bin/make prod-backup
+
+# Verify the newest portable backup on the first day of every month.
+30 10 1 * * cd /srv/f1-data-analytics && /usr/bin/make prod-restore-drill-latest

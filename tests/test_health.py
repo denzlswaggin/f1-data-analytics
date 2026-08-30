@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 from ingestion.config import Settings
-from ingestion.health import evaluate_pipeline_health
-from ingestion.loaders.warehouse import load_dataframe
+from ingestion.health import evaluate_pipeline_health, record_pipeline_health
+from ingestion.loaders.warehouse import load_dataframe, read_query
 
 
 def _core_frame(season: int) -> pd.DataFrame:
@@ -52,3 +52,33 @@ def test_pipeline_health_handles_missing_audit_table(tmp_path: Path) -> None:
     assert checks == [checks[0]]
     assert checks[0].name == "audit_table"
     assert not checks[0].passed
+
+
+def test_pipeline_health_requires_configured_heavy_resources(tmp_path: Path) -> None:
+    settings = Settings(
+        duckdb_path=tmp_path / "health.duckdb",
+        current_season=2024,
+        health_required_resources="laps, telemetry",
+    )
+    for resource in ("races", "results", "qualifying", "laps"):
+        load_dataframe(_core_frame(2024), resource, 2024, settings)
+
+    checks = evaluate_pipeline_health(settings, max_age_hours=24)
+    by_name = {check.name: check for check in checks}
+
+    assert by_name["required_resource_laps"].passed
+    assert not by_name["required_resource_telemetry"].passed
+
+
+def test_pipeline_health_history_is_append_only(tmp_path: Path) -> None:
+    settings = Settings(duckdb_path=tmp_path / "health.duckdb", current_season=2024)
+    for resource in ("races", "results", "qualifying"):
+        load_dataframe(_core_frame(2024), resource, 2024, settings)
+    checks = evaluate_pipeline_health(settings, max_age_hours=24)
+
+    assert record_pipeline_health(checks, settings) == len(checks)
+    assert record_pipeline_health(checks, settings) == len(checks)
+
+    history = read_query("select * from ops.pipeline_health_history", settings)
+    assert len(history) == len(checks) * 2
+    assert set(history["check_name"]) >= {"audit_table", "latest_load_age"}

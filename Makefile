@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup check
+.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
 
 # Prefer the repository virtual environment without requiring it. CI and
 # containers deliberately fall back to the Python found on PATH. Callers may
@@ -61,6 +61,7 @@ pg-down: ## Stop compose services
 
 prod-up: ## Start persistent Postgres and Dagster services
 	test -f .env.production || (echo "Copy .env.production.example to .env.production first" && exit 1)
+	mkdir -p data/backups
 	docker compose --env-file .env.production up -d --build
 
 prod-down: ## Stop the persistent services without deleting volumes
@@ -76,6 +77,13 @@ prod-smoke: ## Check the persistent stack and Dagster definitions
 
 prod-backup: ## Back up the Postgres warehouse and Dagster history
 	mkdir -p data/backups
-	docker compose --env-file .env.production exec -T postgres sh -c 'pg_dump -Fc -U "$$POSTGRES_USER" "$$POSTGRES_DB"' > data/backups/f1.dump
+	docker compose --env-file .env.production exec -T --user "$$(id -u):$$(id -g)" dagster-webserver f1-ingest backup-postgres --directory /app/data/backups
+
+prod-restore-drill: ## Verify BACKUP in an isolated temporary database
+	test -n "$(BACKUP)" || (echo "Usage: make prod-restore-drill BACKUP=data/backups/f1-...dump" && exit 1)
+	docker compose --env-file .env.production exec -T --user "$$(id -u):$$(id -g)" dagster-webserver f1-ingest restore-drill --backup /app/$(BACKUP)
+
+prod-restore-drill-latest: ## Verify the newest backup in an isolated database
+	docker compose --env-file .env.production exec -T --user "$$(id -u):$$(id -g)" dagster-webserver f1-ingest restore-drill-latest --directory /app/data/backups
 
 check: lint typecheck test ## Run lint, typecheck and tests

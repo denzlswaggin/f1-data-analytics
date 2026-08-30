@@ -10,13 +10,19 @@ Examples::
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from ingestion.config import get_settings
-from ingestion.health import evaluate_pipeline_health
+from ingestion.health import evaluate_pipeline_health, record_pipeline_health
 from ingestion.logging import configure_logging, get_logger
+from ingestion.maintenance import (
+    create_postgres_backup,
+    latest_postgres_backup,
+    run_postgres_restore_drill,
+)
 from ingestion.pipeline import backfill as run_backfill
 from ingestion.pipeline import (
     ingest_ergast_laps,
@@ -144,15 +150,70 @@ def health(
         float,
         typer.Option(help="Maximum age of the latest audited successful load."),
     ] = 192.0,
+    require_resource: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--require-resource",
+            help="Additional audited resource to require; repeatable (for heavy sources).",
+        ),
+    ] = None,
+    record: Annotated[
+        bool,
+        typer.Option("--record/--no-record", help="Append results to ops health history."),
+    ] = True,
 ) -> None:
     """Fail unless the persistent pipeline has fresh, non-empty core loads."""
     configure_logging()
-    checks = evaluate_pipeline_health(season=season, max_age_hours=max_age_hours)
+    settings = get_settings()
+    required = require_resource if require_resource is not None else None
+    checks = evaluate_pipeline_health(
+        settings,
+        season=season,
+        max_age_hours=max_age_hours,
+        required_resources=required,
+    )
     for check in checks:
         marker = "PASS" if check.passed else "FAIL"
         typer.echo(f"{marker:<4} {check.name}: {check.detail}")
+    if record:
+        record_pipeline_health(checks, settings, season=season)
     if not all(check.passed for check in checks):
         raise typer.Exit(code=1)
+
+
+@app.command("backup-postgres")
+def backup_postgres(
+    directory: Annotated[
+        Path, typer.Option(help="Directory for the dump and checksum manifest.")
+    ] = Path("data/backups"),
+) -> None:
+    """Create an atomic, checksummed PostgreSQL backup."""
+    configure_logging()
+    backup = create_postgres_backup(directory)
+    typer.echo(f"Created {backup} and {backup.with_suffix('.dump.json')}.")
+
+
+@app.command("restore-drill")
+def restore_drill(
+    backup: Annotated[Path, typer.Option(exists=True, dir_okay=False, help="Dump to test.")],
+) -> None:
+    """Restore a backup into an isolated temporary database and remove it."""
+    configure_logging()
+    audit_rows = run_postgres_restore_drill(backup)
+    typer.echo(f"Restore drill passed ({audit_rows} ingestion audit rows).")
+
+
+@app.command("restore-drill-latest")
+def restore_drill_latest(
+    directory: Annotated[
+        Path, typer.Option(exists=True, file_okay=False, help="Directory containing dumps.")
+    ] = Path("data/backups"),
+) -> None:
+    """Run an isolated restore drill against the newest timestamped backup."""
+    configure_logging()
+    backup = latest_postgres_backup(directory)
+    audit_rows = run_postgres_restore_drill(backup)
+    typer.echo(f"Restore drill passed for {backup} ({audit_rows} ingestion audit rows).")
 
 
 @app.command("restore-partition")

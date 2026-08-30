@@ -198,7 +198,9 @@ FastF1 cache, and compute logs across restarts. See the
 single-partition recovery. Maintainers should also apply the documented
 [repository protection settings](docs/repository-settings.md); rulesets are
 GitHub-side configuration and are not automatically enabled by cloning this
-repository.
+repository. A guarded [AWS Terraform data-plane template](deploy/terraform/aws)
+is available for private RDS and a versioned S3 lake; it must be reviewed and
+applied by an operator with an encrypted remote state backend.
 
 ## Roadmap
 

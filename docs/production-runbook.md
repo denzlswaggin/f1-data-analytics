@@ -1,10 +1,11 @@
 # Production runbook
 
-This is the smallest durable deployment of the platform: one Postgres instance
+The Compose stack is the smallest durable deployment of the platform: one Postgres instance
 stores both the analytics warehouse and Dagster metadata, while named volumes
 retain the Parquet lake, FastF1 cache, and compute logs. It is suitable for a
-single-host portfolio deployment. A managed Postgres and object-store URI can
-replace the local volumes without changing ingestion code.
+single-host portfolio deployment. For a managed AWS data plane, use the
+[reviewable Terraform template](../deploy/terraform/aws/README.md). The template
+is not evidence that infrastructure has been deployed.
 
 ## Start and verify
 
@@ -22,24 +23,65 @@ survive container restarts because Dagster storage uses Postgres.
 
 `make prod-smoke` fails unless all containers are healthy, definitions load,
 the current season has non-empty audit records for races/results/qualifying,
-and the latest load is at most eight days old. For a direct check:
+and the latest load is at most eight days old. Each invocation appends its
+results to `ops.pipeline_health_history`. For a direct check:
 
 ```bash
 docker compose --env-file .env.production exec dagster-webserver \
   f1-ingest health --max-age-hours 192
 ```
 
+Core sources are mandatory. If a deployment also promises heavy FastF1 data,
+set `F1_HEALTH_REQUIRED_RESOURCES=laps,telemetry,positions,race_control`; only
+listed sources become hard health gates. An ad-hoc policy can instead repeat
+`--require-resource telemetry` on the CLI. This avoids reporting an intentionally
+lightweight deployment as unhealthy.
+
+Review recent availability and freshness outcomes with:
+
+```sql
+select checked_at, season, check_name, passed, detail
+from ops.pipeline_health_history
+order by checked_at desc, check_name;
+```
+
+Keep at least 30 days of this small table and graph the pass ratio and
+`latest_load_age` detail in the platform monitor. Alert on any failed check and
+on absence of a recorded check after the scheduled refresh window.
+
+## Failure alerts
+
+Set `F1_ALERT_WEBHOOK_URL` to an HTTPS endpoint owned by the incident system or
+a Slack/PagerDuty relay. If it needs authentication, store
+`F1_ALERT_WEBHOOK_BEARER_TOKEN` in the deployment secret manager. Dagster's
+failure sensor posts an event, severity, message, run ID, and job name. It never
+logs the endpoint or token. Test routing in a non-production channel by causing
+a disposable Dagster test job to fail; a successful HTTP response proves
+delivery, while webhook delivery errors remain visible in structured daemon
+logs without hiding the original run failure.
+
 ## Routine operations
 
 ```bash
 make prod-logs       # follow Postgres, webserver, and daemon
-make prod-backup     # data/backups/f1.dump (warehouse + Dagster metadata)
+make prod-backup     # timestamped dump + SHA-256 manifest in data/backups
 make prod-down       # stops services but preserves every named volume
 ```
 
-Copy `data/backups/f1.dump` off the host after each race weekend. The local lake
+`make prod-backup` writes to a partial filename, validates that `pg_dump`
+produced bytes, atomically publishes the dump, and writes a checksum manifest.
+Copy both files off the host after each race weekend. The local lake
 volume is a second recovery source for raw data; for a remote deployment set
 `F1_LAKE_URI` to versioned object storage and apply its lifecycle/backup policy.
+
+Schedule the backup command after every refresh with the host scheduler or the
+workload platform, and alert on a non-zero exit. A guarded
+[crontab example](../deploy/cron/f1-maintenance.crontab.example) runs weekly
+backups and a monthly drill; install it only after both commands succeed
+interactively. Managed RDS point-in-time
+backups and S3 versioning are additional recovery layers, not substitutes for a
+portable dump. Do not put database passwords in command arguments; the tooling
+passes `PGPASSWORD` only to the PostgreSQL child process.
 
 Do not use `docker compose down -v` during normal operation: `-v` deletes the
 warehouse, lake, caches, and logs.
@@ -69,6 +111,24 @@ If the lake partition is also absent, rerun the matching ingestion asset for
 that season in Dagster; API retries use exponential backoff. Empty responses are
 not written, so they cannot replace a valid partition silently.
 
+## Automated restore drill
+
+Run a drill against each backup before relying on it:
+
+```bash
+make prod-restore-drill BACKUP=data/backups/f1-20260830T120000Z.dump
+# Scheduler-friendly selection of the newest timestamped dump:
+make prod-restore-drill-latest
+```
+
+The command verifies the manifest checksum, creates a randomly named temporary
+database, restores with `--exit-on-error`, confirms the ingestion audit table is
+queryable, and drops the temporary database even after failure. It never targets
+the production database. The operator needs `CREATEDB`; grant that capability
+to a dedicated restore-drill identity rather than the normal ingestion role.
+Record the result and duration in the operations monitor. Run this at least
+monthly and after PostgreSQL major-version or backup-tooling changes.
+
 ## Restore Postgres after host loss
 
 Start a fresh stack, stop the Dagster services, and restore the custom-format
@@ -78,13 +138,28 @@ the target host and dump before running it.
 ```bash
 docker compose --env-file .env.production stop dagster-webserver dagster-daemon
 docker compose --env-file .env.production exec -T postgres \
-  pg_restore --clean --if-exists --no-owner -U f1 -d f1 < data/backups/f1.dump
+  pg_restore --clean --if-exists --no-owner -U f1 -d f1 < data/backups/f1-20260830T120000Z.dump
 docker compose --env-file .env.production start dagster-webserver dagster-daemon
 make prod-smoke
 ```
 
 When database/user names differ, substitute the values from
-`.env.production`. A restore drill should be run before relying on a backup.
+`.env.production`. Verify the adjacent checksum manifest and complete a restore
+drill before using a dump in an incident.
+
+## Managed data-plane notes
+
+The AWS template keeps RDS private, encrypts it, delegates the master password
+to Secrets Manager, retains automated backups, and prevents accidental destroy.
+The lake bucket blocks public access, requires TLS, encrypts objects, and keeps
+old versions for a bounded recovery window. Attach the emitted least-privilege
+lake policy to the Dagster workload role and inject the RDS secret at runtime.
+
+CloudWatch CPU and free-storage alarms can publish to an existing SNS topic via
+`alarm_sns_topic_arn`. Add provider-native alarms for connection saturation,
+replica/failover events, and backup failures according to the chosen RDS class.
+Keep Terraform state in an encrypted, locked remote backend controlled by the
+deployment organization.
 
 ## Incident checklist
 

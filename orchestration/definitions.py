@@ -22,6 +22,7 @@ from dagster import (
     schedule,
 )
 from dagster_dbt import DbtCliResource
+from ingestion.alerts import AlertDeliveryError, send_webhook_alert
 from ingestion.config import get_settings
 from ingestion.logging import get_logger
 
@@ -119,9 +120,10 @@ def race_weekend_schedule() -> RunRequest:
     return RunRequest(partition_key=str(CURRENT_SEASON))
 
 
-# Structured alert on any run failure. Logs via structlog (JSON in prod); this is
-# the single place to wire a Slack / PagerDuty webhook when one is available.
-@run_failure_sensor(description="Emit a structured alert when any run fails.")
+# Structured alert on any run failure. Delivery uses a configurable generic
+# webhook so Slack/PagerDuty relays and self-hosted incident systems work without
+# hard-coding a provider SDK or credential.
+@run_failure_sensor(description="Log and deliver a webhook alert when any run fails.")
 def alert_on_run_failure(context: RunFailureSensorContext) -> None:
     log.error(
         "dagster.run_failed",
@@ -129,6 +131,22 @@ def alert_on_run_failure(context: RunFailureSensorContext) -> None:
         job_name=context.dagster_run.job_name,
         error=context.failure_event.message,
     )
+    try:
+        delivered = send_webhook_alert(
+            "dagster.run_failed",
+            context.failure_event.message or "Dagster run failed without an error message",
+            attributes={
+                "run_id": context.dagster_run.run_id,
+                "job_name": context.dagster_run.job_name,
+            },
+            settings=settings,
+        )
+        if not delivered:
+            log.warning("dagster.alert_webhook_not_configured")
+    except AlertDeliveryError as exc:
+        # The original failed run remains the incident of record. Alert transport
+        # errors are logged without recursively failing another Dagster run.
+        log.error("dagster.alert_delivery_failed", error=str(exc))
 
 
 defs = Definitions(

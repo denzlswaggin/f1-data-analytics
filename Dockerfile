@@ -13,6 +13,12 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# The production image performs portable database backups and restore drills;
+# keep the PostgreSQL client version decoupled from the managed server version.
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install core first, then the dbt extra in a separate resolve — installing them
 # together overflows pip's backtracking resolver (see CLAUDE.md). psycopg2-binary,
 # pyarrow, duckdb and numpy all ship manylinux wheels, so no build toolchain.
