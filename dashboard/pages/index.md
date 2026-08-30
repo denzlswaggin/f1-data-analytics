@@ -9,6 +9,10 @@ least-squares fit on the teammate graph. Higher rating = faster relative to
 teammates. The interval is a 90% comparison-bootstrap interval, not a guaranteed
 rank range.
 
+Start with the [latest transformed race](latest-race), compare two careers in
+[Compare Drivers](driver-comparison), or inspect the full
+[methodology and data contract](methodology).
+
 ```sql rating_coverage
 select * from f1.data_coverage where section = 'driver_rating'
 ```

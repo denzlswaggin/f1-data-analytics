@@ -10,7 +10,8 @@ plays flags, safety cars and penalties in sync. Detected **on-track overtakes**
 light up on the map as they happen and sit on their own ⇄ seek lane below. Click a
 car to follow it (its overtakes and radio filter to that driver), scroll to zoom,
 click the timeline markers to jump to key moments, and click a 📻 marker to play
-**team radio** (where available). _Demo: 2024 Bahrain Grand Prix._
+**team radio** (where available). The picker contains every replay partition in
+the currently published snapshot.
 
 ```sql replay_races
 select distinct

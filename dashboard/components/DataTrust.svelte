@@ -10,6 +10,7 @@
         : row.first_season === row.last_season
             ? String(row.first_season)
             : `${row.first_season}–${row.last_season}`;
+    $: latest = row.latest_event_date == null ? '—' : String(row.latest_event_date);
     const number = (value) => value == null ? '—' : Number(value).toLocaleString('en-US');
 </script>
 
@@ -18,6 +19,7 @@
     <span><strong>Sample</strong> {number(row.sample_rows)} {sampleLabel}</span>
     <span><strong>{entityLabel}</strong> {number(row.entity_count)}</span>
     <span><strong>Races</strong> {number(row.race_count)}</span>
+    <span><strong>Latest event</strong> {latest}</span>
     <span><strong>Method</strong> {method}</span>
 </div>
 

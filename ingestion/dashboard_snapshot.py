@@ -151,6 +151,27 @@ def _validate_snapshot(path: Path) -> str | None:
         connection.close()
 
 
+def _write_snapshot_metadata(
+    path: Path,
+    *,
+    version: str,
+    generated_at: dt.datetime,
+    source: str,
+    latest_event_date: str | None,
+) -> None:
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema if not exists dashboard")
+        connection.execute(
+            "create table dashboard.snapshot_metadata as "
+            "select ?::varchar as version, ?::timestamptz as generated_at, "
+            "?::varchar as source, ?::date as latest_event_date",
+            [version, generated_at, source, latest_event_date],
+        )
+    finally:
+        connection.close()
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -220,6 +241,13 @@ def build_dashboard_snapshot(
             else _copy_postgres(settings, temporary)
         )
         latest_event_date = _validate_snapshot(temporary)
+        _write_snapshot_metadata(
+            temporary,
+            version=version,
+            generated_at=now,
+            source=settings.warehouse,
+            latest_event_date=latest_event_date,
+        )
         os.replace(temporary, final_path)
     finally:
         temporary.unlink(missing_ok=True)

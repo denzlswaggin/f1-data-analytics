@@ -47,6 +47,11 @@ def test_builds_versioned_snapshot_and_latest_copy(tmp_path: Path) -> None:
     assert (tmp_path / "snapshots/latest.duckdb").is_file()
     payload = json.loads((tmp_path / "snapshots/latest.json").read_text())
     assert payload["sha256"] == manifest.sha256
+    with duckdb.connect(str(tmp_path / "snapshots/latest.duckdb"), read_only=True) as connection:
+        metadata = connection.execute(
+            "select version, source, latest_event_date from dashboard.snapshot_metadata"
+        ).fetchone()
+    assert metadata == ("test-v1", "duckdb", dt.date(2026, 8, 30))
 
 
 def test_fetch_verifies_checksum(tmp_path: Path) -> None:
