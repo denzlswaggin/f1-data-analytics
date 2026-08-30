@@ -202,6 +202,14 @@ repository. A guarded [AWS Terraform data-plane template](deploy/terraform/aws)
 is available for private RDS and a versioned S3 lake; it must be reviewed and
 applied by an operator with an encrypted remote state backend.
 
+The public dashboard is built from a checksum-verified, immutable DuckDB export,
+not from the mutable warehouse or an API backfill inside the Pages job. Build a
+local snapshot with `make dashboard-snapshot`; production publishes the same
+artifact to versioned object storage with
+`python scripts/dashboard_snapshot.py build --publish-uri s3://...`. See
+[versioned dashboard snapshots](docs/dashboard-snapshots.md) for the object
+contract and rollback procedure.
+
 ## Roadmap
 
 - [x] **M1 — Foundations**: scaffold, ingestion, warehouse, CI

@@ -1,0 +1,63 @@
+name: Publish Dashboard Snapshot
+
+on:
+  workflow_run:
+    workflows: ["Scheduled Ingest"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: dashboard-snapshot
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      F1_WAREHOUSE: postgres
+      F1_PG_HOST: ${{ secrets.F1_PG_HOST }}
+      F1_PG_PORT: ${{ vars.F1_PG_PORT || '5432' }}
+      F1_PG_USER: ${{ secrets.F1_PG_USER }}
+      F1_PG_PASSWORD: ${{ secrets.F1_PG_PASSWORD }}
+      F1_PG_DATABASE: ${{ secrets.F1_PG_DATABASE }}
+      F1_DASHBOARD_SNAPSHOT_URI: ${{ vars.F1_DASHBOARD_SNAPSHOT_URI }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install snapshot publisher
+        run: pip install -e ".[cloud]"
+
+      - name: Configure snapshot writer credentials
+        if: startsWith(vars.F1_DASHBOARD_SNAPSHOT_URI, 's3://')
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.F1_SNAPSHOT_WRITER_ROLE_ARN }}
+          aws-region: ${{ vars.F1_AWS_REGION || 'eu-central-1' }}
+
+      - name: Export and publish immutable snapshot
+        run: |
+          test -n "$F1_DASHBOARD_SNAPSHOT_URI"
+          python scripts/dashboard_snapshot.py build \
+            --output-dir data/dashboard \
+            --publish-uri "$F1_DASHBOARD_SNAPSHOT_URI"
+
+      - name: Validate published data
+        env:
+          F1_DUCKDB_PATH: data/dashboard/latest.duckdb
+        run: python scripts/check_dashboard_data.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-snapshot-manifest
+          path: data/dashboard/latest.json
+          if-no-files-found: error

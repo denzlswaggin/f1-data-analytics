@@ -1,6 +1,7 @@
 name: f1
 type: duckdb
 options:
-  # Path is relative to this source folder (dashboard/sources/f1/).
-  # ../../../ climbs to the repo root, where the pipeline writes the warehouse.
-  filename: ../../../data/warehouse/f1.duckdb
+  # Evidence consumes an immutable export, never the mutable operational warehouse.
+  # `make dashboard-snapshot` creates this file for local development; CI fetches
+  # the checksum-verified latest version from object storage.
+  filename: ../../../data/dashboard/latest.duckdb
