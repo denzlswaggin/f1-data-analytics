@@ -65,6 +65,9 @@ jobs:
           npm run sources:strict
           npm run build:strict
 
+      - name: Enforce dashboard bundle budget
+        run: python scripts/check_dashboard_bundle.py dashboard/build
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
