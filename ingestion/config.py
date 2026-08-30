@@ -102,6 +102,23 @@ class Settings(BaseSettings):
     # away). Circuit-relative so one value travels between tracks.
     overtake_proximity_frac: float = Field(default=0.02, gt=0)
 
+    # Round-level Dagster refresh performance budgets. A run that exceeds one
+    # of these bounds fails visibly instead of silently drifting into an
+    # ever-longer weekly batch. Defaults are deliberately generous for FastF1
+    # cache misses and can be tightened after observing production history.
+    round_ingest_budget_seconds: float = Field(default=7200.0, gt=0)
+    round_transform_budget_seconds: float = Field(default=900.0, gt=0)
+    round_analytics_budget_seconds: float = Field(default=900.0, gt=0)
+
+    @property
+    def round_refresh_budget_seconds(self) -> float:
+        """Maximum expected runtime for the three round-refresh stages."""
+        return (
+            self.round_ingest_budget_seconds
+            + self.round_transform_budget_seconds
+            + self.round_analytics_budget_seconds
+        )
+
     # Logging
     log_level: str = "INFO"
     log_json: bool = False

@@ -11,8 +11,15 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
+import pytest
 from ingestion.config import Settings
-from ingestion.loaders.warehouse import latest_loaded_round, load_dataframe, read_query
+from ingestion.loaders.warehouse import (
+    latest_loaded_round,
+    load_dataframe,
+    read_query,
+    replace_table,
+    replace_table_partition,
+)
 
 
 def _settings(tmp_path: Path) -> Settings:
@@ -68,6 +75,64 @@ def test_replace_rounds_appends_new_rounds(tmp_path: Path) -> None:
     load_dataframe(_round_frame(2024, [3]), "laps", 2024, settings, replace_rounds=True)
     out = read_query("select round from raw.laps order by round", settings)
     assert out["round"].tolist() == [1, 2, 3]
+
+
+def test_replace_table_partition_preserves_other_mart_rounds(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    initial = pd.DataFrame(
+        {
+            "season": [2026, 2026, 2025],
+            "round": [1, 2, 1],
+            "value": ["old", "keep", "also keep"],
+        }
+    )
+    replace_table(initial, "marts", "race_replay", settings)
+    correction = pd.DataFrame({"season": [2026], "round": [1], "value": ["new"]})
+    replace_table_partition(
+        correction,
+        "marts",
+        "race_replay",
+        {"season": 2026, "round": 1},
+        settings,
+    )
+
+    rows = read_query(
+        "select season, round, value from marts.race_replay order by season, round", settings
+    )
+    assert rows.to_dict("records") == [
+        {"season": 2025, "round": 1, "value": "also keep"},
+        {"season": 2026, "round": 1, "value": "new"},
+        {"season": 2026, "round": 2, "value": "keep"},
+    ]
+
+
+def test_replace_table_partition_deletes_empty_partition(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    frame = pd.DataFrame({"season": [2026, 2026], "round": [1, 2], "value": ["a", "b"]})
+    replace_table(frame, "marts", "race_overtakes", settings)
+    replace_table_partition(
+        frame.iloc[0:0],
+        "marts",
+        "race_overtakes",
+        {"season": 2026, "round": 1},
+        settings,
+    )
+
+    rows = read_query("select round from marts.race_overtakes order by round", settings)
+    assert rows["round"].tolist() == [2]
+
+
+def test_replace_table_partition_rejects_mixed_input(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    mixed = pd.DataFrame({"season": [2026, 2026], "round": [1, 2], "value": ["a", "b"]})
+    with pytest.raises(ValueError, match="outside partition round=1"):
+        replace_table_partition(
+            mixed,
+            "marts",
+            "race_replay",
+            {"season": 2026, "round": 1},
+            settings,
+        )
 
 
 def test_replace_rounds_replaces_only_its_own_rounds(tmp_path: Path) -> None:

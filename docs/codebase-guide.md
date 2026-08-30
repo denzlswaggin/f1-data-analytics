@@ -171,9 +171,27 @@ enforce this:
   updates `raw.ingestion_partitions`, which drives targeted late-data refreshes.
   `tests/test_warehouse.py` locks these behaviours in.
 
-`warehouse.py` also exposes two helpers used elsewhere: `read_query(sql)` (run a
+`warehouse.py` also exposes helpers used elsewhere: `read_query(sql)` (run a
 read-only query, get a DataFrame back) and `replace_table(df, schema, table)`
 (fully replace a non-partitioned table — used to write `marts.driver_ratings`).
+`replace_table_partition(...)` atomically deletes and inserts one exact mart
+partition on DuckDB and Postgres; the scheduled replay/overtake builders use it
+so round 12 can be corrected without rebuilding rounds 1–11.
+
+### Round-level orchestration
+
+`orchestration/round_refresh.py` is the unattended production path. Its Dagster
+job has a multi-dimensional `season × round_session` partition (for example
+`2026 × 8:R`; Dagster permits two dimensions) and performs a
+strict sequence: refresh the small season endpoints, ingest one race partition,
+run dbt, then incrementally materialize that race's replay and overtakes. The
+Monday schedule resolves only the latest race dated before today; the same job
+can be launched for any explicit partition as a targeted backfill. Season asset
+jobs remain available for broad historical backfills.
+
+Every stage is timed and exposes duration/budget/utilisation metadata. The
+budget settings live in `Settings`, making performance drift a visible failed
+run instead of an unnoticed growth in weekly batch time.
 
 ### The client robustness pattern
 
@@ -419,7 +437,8 @@ base path for deployment.
   two backends. Pass a `Settings` explicitly into functions to test them (as the
   tests do) — this dodges the `lru_cache` on `get_settings()`.
 - **Idempotency.** Re-running anything is safe: parquet partitions overwrite,
-  warehouse loads delete-then-insert per season, marts fully replace.
+  warehouse loads delete-then-insert per season or round, global marts fully
+  replace, and replay/overtake marts replace only the requested race.
 - **Cross-dialect SQL.** The single biggest source of "works in dev, breaks in
   prod" bugs. See [section 4](#the-cross-dialect-rule-memorise-this).
 - **Testing.** Python tests in `tests/` (`pytest`) run in CI with only the `.[dev]`

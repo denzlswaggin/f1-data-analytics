@@ -17,8 +17,11 @@ make prod-smoke
 ```
 
 Dagster is served on `http://localhost:3001`. Enable the
-`race_weekend_refresh` schedule in Dagster after the first successful manual
-materialization. The daemon, run history, event log, schedules, and sensor state
+`latest_round_refresh` schedule in Dagster after the first successful manual
+materialization of the current season's `raw.races` asset. The schedule runs at
+06:00 every Monday and selects the greatest round whose race date is before the
+current day, so it never launches a whole-season FastF1 reload. The daemon, run
+history, event log, schedules, and sensor state
 survive container restarts because Dagster storage uses Postgres.
 
 `make prod-smoke` fails unless all containers are healthy, definitions load,
@@ -86,6 +89,24 @@ passes `PGPASSWORD` only to the PostgreSQL child process.
 Do not use `docker compose down -v` during normal operation: `-v` deletes the
 warehouse, lake, caches, and logs.
 
+The operational job is partitioned by `season × round_session` (for example,
+`2026 × 8:R`). Dagster supports two multi-partition dimensions, so the second
+dimension keeps the round and session together without losing either value. The
+schedule uses the `R` (race) session and one latest-completed round; select any explicit
+partition in Dagster to rerun a correction or backfill a missed weekend. It
+refreshes the small season-level races/results/qualifying endpoints, ingests only
+the selected round for laps, pit stops, weather, telemetry, positions,
+race-control, and radio, then runs dbt and replaces only that race in replay and
+overtakes. The existing `backfill_ingest` and `refresh_pipeline` jobs remain the
+season-range interfaces for historical work.
+
+Each of the ingest, dbt, and analytics steps publishes `duration_seconds`, its
+configured budget, and utilisation in Dagster metadata. Defaults are 7,200 / 900
+/ 900 seconds and can be changed with
+`F1_ROUND_{INGEST,TRANSFORM,ANALYTICS}_BUDGET_SECONDS`. A budget breach fails the
+run after recording the measurement; the writes are partition-idempotent, so a
+retry is safe.
+
 ## Recover one corrupted or missing partition
 
 The loader records one row in `raw.ingestion_partitions` for every successful
@@ -102,10 +123,11 @@ docker compose --env-file .env.production exec dagster-webserver \
   f1-ingest restore-partition --resource telemetry --season 2026 --round 8
 ```
 
-Then materialize the affected downstream dbt assets and analytics assets in
+Then run that exact `season × round:R` partition of `round_refresh_job` in
 Dagster. `mart_lap_telemetry` compares its stored `source_loaded_at` with the
 partition audit, so late corrections rebuild the touched race without a full
-telemetry refresh. Finish with `make prod-smoke`.
+telemetry refresh; replay and overtakes use the same targeted replacement
+contract. Finish with `make prod-smoke`.
 
 If the lake partition is also absent, rerun the matching ingestion asset for
 that season in Dagster; API retries use exponential backoff. Empty responses are
