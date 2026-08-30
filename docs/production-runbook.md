@@ -24,6 +24,10 @@ current day, so it never launches a whole-season FastF1 reload. The daemon, run
 history, event log, schedules, and sensor state
 survive container restarts because Dagster storage uses Postgres.
 
+Dagster is the authoritative ingestion scheduler. GitHub Actions only exports a
+read-only dashboard snapshot after the Monday run; it does not run a second,
+ephemeral ingestion pipeline.
+
 `make prod-smoke` fails unless all containers are healthy, definitions load,
 the current season has non-empty audit records for races/results/qualifying,
 and the latest load is at most eight days old. Each invocation appends its

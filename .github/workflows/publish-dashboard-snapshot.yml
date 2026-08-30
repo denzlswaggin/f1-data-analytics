@@ -1,9 +1,10 @@
 name: Publish Dashboard Snapshot
 
 on:
-  workflow_run:
-    workflows: ["Scheduled Ingest"]
-    types: [completed]
+  schedule:
+    # Dagster refreshes the latest completed round at 06:00 UTC. Export only
+    # after that persistent job and its blocking checks have had time to finish.
+    - cron: "0 8 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +17,6 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     env:
       F1_WAREHOUSE: postgres

@@ -79,8 +79,9 @@ Evidence dashboard → GitHub Pages }**.
   race-weekend schedule, and the `DbtCliResource`.
 - **`dashboard/`** — Evidence.dev (BI-as-code). `sources/f1/*.sql` query the marts; `pages/index.md`,
   `pages/race-pace.md` and `pages/saturday-vs-sunday.md` render. `evidence.config.yaml` sets `deployment.basePath: /f1-data-analytics`.
-- **`.github/workflows/`** — `ci.yml` (quality + dbt + orchestration jobs), `scheduled-ingest.yml`,
-  `deploy-dashboard.yml`.
+- **`.github/workflows/`** — `ci.yml` (quality + dbt + orchestration jobs),
+  `publish-dashboard-snapshot.yml`, and `deploy-dashboard.yml`. Dagster is the
+  only ingestion scheduler; Actions exports and deploys immutable snapshots.
 
 ## The three insights (methodology)
 
