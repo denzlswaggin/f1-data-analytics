@@ -23,6 +23,7 @@ x-platform: &platform
     - f1_lake:/app/data/raw
     - f1_fastf1_cache:/app/data/fastf1_cache
     - f1_dagster_logs:/app/data/dagster
+    - ./data/backups:/app/data/backups
   restart: unless-stopped
 
 services:

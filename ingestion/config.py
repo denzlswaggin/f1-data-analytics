@@ -11,7 +11,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 WarehouseKind = Literal["duckdb", "postgres"]
@@ -105,6 +105,24 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
     log_json: bool = False
+
+    # Operations. Core resources are always checked; list optional heavy
+    # resources as a comma-separated value when the deployment ingests them.
+    health_required_resources: str = ""
+    alert_webhook_url: str = ""
+    alert_webhook_bearer_token: SecretStr = SecretStr("")
+    alert_webhook_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+
+    @property
+    def required_health_resources(self) -> tuple[str, ...]:
+        """Optional resources required by this deployment's health policy."""
+        return tuple(
+            dict.fromkeys(
+                resource.strip()
+                for resource in self.health_required_resources.split(",")
+                if resource.strip()
+            )
+        )
 
     @property
     def pg_dsn(self) -> str:

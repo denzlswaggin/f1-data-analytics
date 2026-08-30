@@ -1,0 +1,14 @@
+aws_region                    = "eu-central-1"
+name_prefix                  = "f1-analytics-prod"
+vpc_id                       = "vpc-0123456789abcdef0"
+private_subnet_ids           = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+application_security_group_ids = ["sg-0123456789abcdef0"]
+lake_bucket_name             = "replace-with-a-globally-unique-f1-lake-name"
+
+# Set false only for a consciously cost-limited portfolio environment.
+database_multi_az = true
+
+tags = {
+  Environment = "production"
+  Owner       = "data-platform"
+}
