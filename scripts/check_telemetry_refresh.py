@@ -77,8 +77,7 @@ def main() -> None:
     max_refresh_seconds = float(os.getenv("F1_TELEMETRY_REFRESH_MAX_SECONDS", "30"))
     if refresh_seconds > max_refresh_seconds:
         raise SystemExit(
-            f"telemetry refresh took {refresh_seconds:.2f}s "
-            f"(limit: {max_refresh_seconds:.2f}s)"
+            f"telemetry refresh took {refresh_seconds:.2f}s (limit: {max_refresh_seconds:.2f}s)"
         )
 
     with duckdb.connect(str(warehouse), read_only=True) as connection:
