@@ -195,7 +195,10 @@ object storage instead of local disk — the ingestion code is unchanged.
 The Compose deployment keeps the warehouse, Dagster run history, Parquet lake,
 FastF1 cache, and compute logs across restarts. See the
 [production runbook](docs/production-runbook.md) for health checks, backups, and
-single-partition recovery.
+single-partition recovery. Maintainers should also apply the documented
+[repository protection settings](docs/repository-settings.md); rulesets are
+GitHub-side configuration and are not automatically enabled by cloning this
+repository.
 
 ## Roadmap
 
