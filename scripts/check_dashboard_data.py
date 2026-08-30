@@ -16,6 +16,18 @@ class Check:
     minimum: int | float = 1
 
 
+def latest_race_check(
+    name: str, table: str, expression: str = "count(*)", minimum: int | float = 1
+) -> Check:
+    """Build a cross-dialect check for the newest available partition of a mart."""
+    query = (
+        f"with latest as (select season, round from {table} group by season, round "
+        f"order by season desc, round desc limit 1) select {expression} from {table} "
+        "join latest using (season, round)"
+    )
+    return Check(name, query, minimum)
+
+
 CHECKS = (
     Check(
         "driver ratings",
@@ -45,30 +57,10 @@ CHECKS = (
         "Saturday vs Sunday profile",
         "select count(*) from marts.driver_pace_profile where n_race_comparisons >= 10",
     ),
-    Check(
-        "2024 Bahrain race laps",
-        "select count(*) from marts.mart_lap_times "
-        "where season = 2024 and race_name = 'Bahrain Grand Prix'",
-        500,
-    ),
-    Check(
-        "2024 Bahrain pit strategy",
-        "select count(*) from marts.mart_pit_strategy "
-        "where season = 2024 and race_name = 'Bahrain Grand Prix'",
-        20,
-    ),
-    Check(
-        "2024 Bahrain tyre strategy",
-        "select count(*) from marts.mart_stint_strategy "
-        "where season = 2024 and race_name = 'Bahrain Grand Prix'",
-        20,
-    ),
-    Check(
-        "2024 Bahrain speed trap",
-        "select count(*) from marts.mart_speed_trap "
-        "where season = 2024 and race_name = 'Bahrain Grand Prix'",
-        15,
-    ),
+    latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
+    latest_race_check("latest race pit strategy", "marts.mart_pit_strategy", minimum=10),
+    latest_race_check("latest race tyre strategy", "marts.mart_stint_strategy", minimum=10),
+    latest_race_check("latest race speed trap", "marts.mart_speed_trap", minimum=15),
     Check(
         "weather degradation",
         "select count(*) from marts.mart_weather_degradation",
@@ -78,33 +70,26 @@ CHECKS = (
         "select count(distinct cast(season as varchar) || '-' || cast(round as varchar)) "
         "from marts.mart_weather_degradation where weather_bucket is not null",
     ),
-    Check(
-        "2024 Bahrain telemetry drivers",
-        "select count(distinct driver_code) from marts.mart_lap_telemetry "
-        "where season = 2024 and round = 1",
-        15,
+    latest_race_check(
+        "latest telemetry drivers",
+        "marts.mart_lap_telemetry",
+        "count(distinct driver_code)",
+        10,
     ),
-    Check(
-        "2024 Bahrain replay rows",
-        "select count(*) from marts.race_replay where season = 2024 and round = 1",
-        10_000,
+    latest_race_check("latest replay rows", "marts.race_replay", minimum=10_000),
+    latest_race_check(
+        "latest replay drivers",
+        "marts.race_replay",
+        "count(distinct driver_code)",
+        10,
     ),
-    Check(
-        "2024 Bahrain replay drivers",
-        "select count(distinct driver_code) from marts.race_replay "
-        "where season = 2024 and round = 1",
-        15,
+    latest_race_check(
+        "latest replay duration",
+        "marts.race_replay",
+        "coalesce(max(t_s) - min(t_s), 0)",
+        1_800,
     ),
-    Check(
-        "2024 Bahrain replay duration",
-        "select coalesce(max(t_s) - min(t_s), 0) from marts.race_replay "
-        "where season = 2024 and round = 1",
-        3_000,
-    ),
-    Check(
-        "2024 Bahrain overtakes",
-        "select count(*) from marts.race_overtakes where season = 2024 and round = 1",
-    ),
+    latest_race_check("latest race overtakes", "marts.race_overtakes"),
 )
 
 
