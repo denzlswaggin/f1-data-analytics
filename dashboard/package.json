@@ -1,7 +1,10 @@
 {
-  "name": "my-evidence-project",
+  "name": "f1-data-analytics-dashboard",
   "version": "0.0.1",
   "scripts": {
+    "predev": "python ../scripts/check_dashboard_snapshot.py ../data/dashboard/latest.duckdb",
+    "prebuild": "python ../scripts/check_dashboard_snapshot.py ../data/dashboard/latest.duckdb",
+    "prebuild:strict": "python ../scripts/check_dashboard_snapshot.py ../data/dashboard/latest.duckdb",
     "build": "evidence build",
     "build:strict": "evidence build:strict",
     "dev": "evidence dev --open /",
