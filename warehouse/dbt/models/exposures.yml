@@ -17,5 +17,6 @@ exposures:
       - ref('mart_weather_degradation')
       - ref('mart_speed_trap')
       - ref('mart_lap_telemetry')
+      - ref('mart_race_story')
     owner:
       name: Patrik Kriz
