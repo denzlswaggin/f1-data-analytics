@@ -18,5 +18,6 @@ exposures:
       - ref('mart_speed_trap')
       - ref('mart_lap_telemetry')
       - ref('mart_race_story')
+      - ref('mart_adjusted_stint_degradation')
     owner:
       name: Patrik Kriz
