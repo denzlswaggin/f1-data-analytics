@@ -1,5 +1,5 @@
 ---
-title: Tyre Strategy
+title: Which Tyres Faded?
 ---
 
 Who ran which compound, for how long, and when they pitted — the classic F1

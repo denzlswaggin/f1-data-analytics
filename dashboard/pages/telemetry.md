@@ -1,5 +1,5 @@
 ---
-title: Telemetry — Speed Traces & Track Map
+title: Where Does Each Driver Gain Time?
 ---
 
 Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.

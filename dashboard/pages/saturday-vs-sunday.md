@@ -1,5 +1,5 @@
 ---
-title: Saturday vs Sunday
+title: Who Gains on Sunday?
 ---
 
 The headline [driver rating](/) is built from **qualifying** teammate gaps: one clean

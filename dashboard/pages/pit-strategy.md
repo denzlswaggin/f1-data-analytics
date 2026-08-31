@@ -1,5 +1,5 @@
 ---
-title: Pit-Cycle Position Swings
+title: Which Pit Cycles Changed the Race?
 ---
 
 This page describes a driver's track position the lap **before** each stop versus

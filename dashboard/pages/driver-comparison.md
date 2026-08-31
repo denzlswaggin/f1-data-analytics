@@ -1,5 +1,5 @@
 ---
-title: Compare Drivers
+title: Compare Drivers Honestly
 ---
 
 Compare two drivers on the same season scale. Ratings are relative to the
