@@ -49,6 +49,14 @@ coverage as (
     union all
 
     select
+        'race_story', cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct driver_code), 1, sum(pace_samples), season, season
+    from marts.mart_race_story
+    group by season, round, race_name
+
+    union all
+
+    select
         'pit_cycle', cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_id), 1, count(positions_gained), season, season
     from marts.mart_pit_strategy
