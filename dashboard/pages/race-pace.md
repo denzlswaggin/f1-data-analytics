@@ -1,5 +1,5 @@
 ---
-title: Race Pace & Tyre Stints
+title: Where Was the Race Won?
 ---
 
 Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and

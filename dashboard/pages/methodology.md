@@ -1,5 +1,5 @@
 ---
-title: Methodology & Data
+title: Can I Trust This Result?
 ---
 
 ## What the rating means

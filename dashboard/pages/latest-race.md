@@ -1,5 +1,5 @@
 ---
-title: Latest Race
+title: How the Latest Race Unfolded
 ---
 
 ```sql snapshot
