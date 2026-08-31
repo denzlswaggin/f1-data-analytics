@@ -1,5 +1,5 @@
 ---
-title: Teammate-Normalised Driver Ratings
+title: Who Is Fastest Beyond the Car?
 ---
 
 Teammate qualifying gaps reduce much of the shared car-performance effect, though
@@ -12,6 +12,10 @@ rank range.
 Start with the [latest transformed race](latest-race), compare two careers in
 [Compare Drivers](driver-comparison), or inspect the full
 [methodology and data contract](methodology).
+
+## Start with a question
+
+<InsightNav />
 
 ```sql rating_coverage
 select * from f1.data_coverage where section = 'driver_rating'
