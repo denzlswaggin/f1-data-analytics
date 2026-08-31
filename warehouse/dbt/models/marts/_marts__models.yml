@@ -192,6 +192,29 @@ models:
               config:
                 severity: warn
 
+  - name: mart_adjusted_stint_degradation
+    description: >
+      Per-driver-stint tyre fall-off after subtracting a leave-one-out peer mean
+      on the same race lap and compound. This controls shared fuel burn, track
+      evolution, and compound choice before fitting residual pace versus tyre age.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [season, round, driver_code, stint]
+    columns:
+      - name: adjusted_deg_sec_per_lap
+        description: Residual pace slope versus tyre age; higher means faster fall-off.
+        data_tests: [not_null]
+      - name: comparable_laps
+        data_tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 5
+              strictly: false
+      - name: cliff_signal
+        description: True when the final three comparable laps lose at least 0.8 s to the first three.
+        data_tests:
+          - accepted_values:
+              values: [true, false]
+
   - name: mart_stint_strategy
     description: >
       Per-driver tyre-stint sequence for a race — one row per (season, round,
