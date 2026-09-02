@@ -1,5 +1,5 @@
 ---
-title: Telemetry — Speed Traces & Track Map
+title: Where Does Each Driver Gain Time?
 ---
 
 Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
@@ -38,8 +38,18 @@ where section = 'telemetry'
 
 ## Speed trace — {inputs.season.value} {inputs.race.label}
 
-Speed vs lap distance for every driver's fastest lap. Braking zones show as the
-dips; the fastest cars hold more speed through them.
+Pick two drivers. Limiting the trace to a duel makes braking, minimum speed and
+acceleration differences readable instead of overlaying the entire field.
+
+```sql duel_drivers
+select distinct driver_code, driver_name
+from f1.telemetry_fastest_lap
+where race_label = '${inputs.race.value}'
+order by driver_code
+```
+
+<Dropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" />
+<Dropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" />
 
 ```sql speed_trace
 select
@@ -47,7 +57,8 @@ select
     distance_m,
     speed_kph
 from f1.telemetry_fastest_lap
-where season = ${inputs.season.value} and round = ${inputs.race.value}
+where race_label = '${inputs.race.value}'
+    and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by driver_code, distance_m
 ```
 
@@ -59,6 +70,91 @@ order by driver_code, distance_m
     xAxisTitle="lap distance (m)"
     yAxisTitle="speed (km/h)"
     chartAreaHeight=360
+/>
+
+```sql time_delta
+with ordered as (
+    select
+        driver_code,
+        distance_m,
+        speed_kph,
+        lag(distance_m) over (partition by driver_code order by distance_m) as prev_distance_m,
+        lag(speed_kph) over (partition by driver_code order by distance_m) as prev_speed_kph
+    from f1.telemetry_fastest_lap
+    where race_label = '${inputs.race.value}'
+        and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
+),
+segments as (
+    select
+        driver_code,
+        distance_m,
+        case
+            when prev_distance_m is null or speed_kph + prev_speed_kph <= 0 then 0
+            else 7.2 * (distance_m - prev_distance_m) / (speed_kph + prev_speed_kph)
+        end as segment_sec
+    from ordered
+),
+elapsed as (
+    select
+        driver_code,
+        distance_m,
+        sum(segment_sec) over (
+            partition by driver_code order by distance_m rows unbounded preceding
+        ) as elapsed_sec
+    from segments
+),
+driver_a as (
+    select distance_m, elapsed_sec
+    from elapsed
+    where driver_code = '${inputs.driver_a.value}'
+),
+driver_b as (
+    select distance_m, elapsed_sec
+    from elapsed
+    where driver_code = '${inputs.driver_b.value}'
+)
+select
+    driver_a.distance_m,
+    driver_b.elapsed_sec - driver_a.elapsed_sec as delta_sec
+from driver_a
+inner join driver_b using (distance_m)
+order by distance_m
+```
+
+## Where the lap was won
+
+The line accumulates time from the speed traces. Positive means Driver B is behind
+Driver A; a rising section is where A gains, and a falling section is where B gains.
+
+<LineChart
+    data={time_delta}
+    x=distance_m
+    y=delta_sec
+    xAxisTitle="lap distance (m)"
+    yAxisTitle="Driver B − Driver A (s)"
+    chartAreaHeight=300
+>
+    <ReferenceLine y=0 label="level" />
+</LineChart>
+
+```sql inputs_trace
+select driver_code, distance_m, throttle, brake
+from f1.telemetry_fastest_lap
+where race_label = '${inputs.race.value}'
+    and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
+order by driver_code, distance_m
+```
+
+## Pedal inputs
+
+<LineChart
+    data={inputs_trace}
+    x=distance_m
+    y=throttle
+    series=driver_code
+    xAxisTitle="lap distance (m)"
+    yAxisTitle="throttle (%)"
+    chartAreaHeight=240
 />
 
 ## Track map by gear
