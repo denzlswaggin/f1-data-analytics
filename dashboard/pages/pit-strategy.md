@@ -8,7 +8,7 @@ This page describes a driver's track position the lap **before** each stop versu
 **two laps after**, alongside the stop's stationary time. Positive means places
 were gained across that window. It is not a counterfactual undercut/overcut
 estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
-observed position. Ergast-sourced (pit-stop timing from ~2011).
+observed position. Jolpica-sourced (pit-stop timing from ~2011).
 
 <KeyInsight label="What this can tell you">
 Use the page to spot pit cycles worth investigating. Position swing is observed context, not proof of an undercut or strategic causality.
@@ -89,7 +89,9 @@ order by net_positions desc
     swapXY=true
     labels=true
     sort=false
-/>
+>
+    <ReferenceLine y=0 label="no net position change" />
+</BarChart>
 
 ## Stop speed versus cycle outcome
 

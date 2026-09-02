@@ -51,7 +51,9 @@ limit 15
     swapXY=true
     sort=false
     labels=true
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 <ExpandableSection title="View career leaderboard data">
 <DataTable data={top_drivers} rows=15>
@@ -98,7 +100,9 @@ limit 15
     swapXY=true
     sort=false
     labels=true
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 <ExpandableSection title="View current-form leaderboard data">
 <DataTable data={latest_dynamic_ratings} rows=15>
@@ -143,7 +147,9 @@ order by season
     x=season
     y=rating
     yAxisTitle="rating"
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</LineChart>
 
 <ExpandableSection title="View season rating data">
 <DataTable data={driver_dynamic_form} rows=20>
@@ -173,7 +179,9 @@ order by season
     x=season
     y=mean_pace_gap
     yAxisTitle="pace gap %"
-/>
+>
+    <ReferenceLine y=0 label="level with teammate" />
+</LineChart>
 
 <ExpandableSection title="View teammate-gap data">
 <DataTable data={driver_seasons}>

@@ -77,8 +77,10 @@ Evidence dashboard → GitHub Pages }**.
 - **`orchestration/`** — Dagster. `assets.py` mirrors dbt sources as `raw.*` assets, wraps the dbt project
   via `@dbt_assets`, and adds the `driver_ratings` asset; `definitions.py` holds the job, a weekly
   race-weekend schedule, and the `DbtCliResource`.
-- **`dashboard/`** — Evidence.dev (BI-as-code). `sources/f1/*.sql` query the marts; `pages/index.md`,
-  `pages/race-pace.md` and `pages/saturday-vs-sunday.md` render. `evidence.config.yaml` sets `deployment.basePath: /f1-data-analytics`.
+- **`dashboard/`** — Evidence.dev (BI-as-code). `sources/f1/*.sql` query the marts; `pages/index.md`
+  is the overview, `pages/driver-ratings.md` holds the headline leaderboard, and race/driver pages share
+  navigation, filters, confidence details, and related-analysis components. `evidence.config.yaml` sets
+  `deployment.basePath: /f1-data-analytics`.
 - **`.github/workflows/`** — `ci.yml` (quality + dbt + orchestration jobs),
   `publish-dashboard-snapshot.yml`, and `deploy-dashboard.yml`. Dagster is the
   only ingestion scheduler; Actions exports and deploys immutable snapshots.

@@ -154,8 +154,7 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code, distance_m
 ```
 
-## Pedal inputs
-
+<ExpandableSection title="Compare pedal inputs">
 <LineChart
     data={inputs_trace}
     x=distance_m
@@ -165,6 +164,7 @@ order by driver_code, distance_m
     yAxisTitle="throttle (%)"
     chartAreaHeight=240
 />
+</ExpandableSection>
 
 ## Track map by gear
 

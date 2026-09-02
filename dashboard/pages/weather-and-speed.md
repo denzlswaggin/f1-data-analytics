@@ -109,7 +109,9 @@ order by compound, weather_bucket
     series=weather_bucket
     type=grouped
     yAxisTitle="avg observed slope (s/lap)"
-/>
+>
+    <ReferenceLine y=0 label="stable lap-time slope" />
+</BarChart>
 
 <ExpandableSection title="View weather slope data">
 <DataTable data={deg_by_weather}>
