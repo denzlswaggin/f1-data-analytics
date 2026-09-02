@@ -12,13 +12,15 @@ slope** (s/lap). The slope is descriptive and not adjusted for fuel, traffic or
 track evolution. Built from FastF1 per-lap compound + stint data. _Hover a stint
 for its lap range, tyre age, and observed slope._
 
+<KeyInsight label="How to read the strategy chart">
+Blocks show compound and stint length. Darkening indicates observed fall-off, while the adjusted chart below removes much of the shared fuel and track trend.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.stint_strategy
 order by season desc
 ```
-
-<Dropdown data={seasons} name=season value=season title="Season" />
 
 ```sql races
 select distinct round, race_name
@@ -27,7 +29,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Compare stint timing, compound choice and fall-off.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql tyre_coverage
 select * from f1.data_coverage
@@ -83,6 +88,7 @@ where cliff_signal
 order by late_stint_loss_sec desc
 ```
 
+<ExpandableSection title="View stint degradation data">
 <DataTable data={adjusted_deg} rows=40 search=true>
     <Column id=driver_code title="Driver" />
     <Column id=stint />
@@ -93,6 +99,7 @@ order by late_stint_loss_sec desc
     <Column id=late_stint_loss_sec title="Late loss (s)" fmt="+0.00;-0.00" />
     <Column id=cliff_signal title="Cliff" />
 </DataTable>
+</ExpandableSection>
 
 The cliff flag requires at least 0.8 seconds of residual loss between the first
 and final three comparable laps. It is a review signal, not a tyre-failure forecast.
@@ -114,9 +121,13 @@ group by driver_code, driver_name
 order by pos
 ```
 
+<ExpandableSection title="View strategy summary">
 <DataTable data={strategies} rows=20>
     <Column id=pos title="Pos" align=center />
     <Column id=driver_code title="Driver" />
     <Column id=stops title="Stops" align=center />
     <Column id=strategy title="Compound sequence" />
 </DataTable>
+</ExpandableSection>
+
+<RelatedAnalysis section="race" current="tyre-strategy" season={inputs.season.value} race={inputs.race.value} />

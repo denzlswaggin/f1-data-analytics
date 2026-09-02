@@ -4,6 +4,10 @@ title: Can I Trust This Result?
 
 <AppNav />
 
+<KeyInsight label="Short answer" tone="positive">
+The dashboard publishes immutable, checksum-verified snapshots and exposes sample coverage. Results still describe the available data rather than proving causality.
+</KeyInsight>
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,
@@ -46,3 +50,5 @@ by source because FastF1 telemetry is substantially heavier than Jolpica results
 
 For equations, validation and known limitations, see the
 [model documentation](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/dynamic-rating-model.md).
+
+<RelatedAnalysis section="trust" current="methodology" />

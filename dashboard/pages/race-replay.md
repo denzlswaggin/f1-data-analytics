@@ -4,16 +4,12 @@ title: Watch the Race Unfold
 
 <AppNav />
 
-Watch a Grand Prix replay: every car placed on the circuit at its **true position
-on the shared race clock**, reconstructed from FastF1 positional telemetry. Press
-play, scrub the timeline, or speed it up — the running order and intervals on the
-left update live as the race unfolds, and the **race-control feed** on the right
-plays flags, safety cars and penalties in sync. Detected **on-track overtakes**
-light up on the map as they happen and sit on their own ⇄ seek lane below. Click a
-car to follow it (its overtakes and radio filter to that driver), scroll to zoom,
-click the timeline markers to jump to key moments, and click a 📻 marker to play
-**team radio** (where available). The picker contains every replay partition in
-the currently published snapshot.
+Replay every car on a shared race clock reconstructed from FastF1 positional
+telemetry. Running order, race control, overtakes and available radio stay in sync.
+
+<KeyInsight label="Replay controls">
+Press play or scrub the timeline. Select a car to follow it and filter its passes and radio; select any event marker to jump to that moment.
+</KeyInsight>
 
 ```sql replay_seasons
 select distinct
@@ -22,8 +18,6 @@ select distinct
 from f1.race_replay_meta
 order by season desc
 ```
-
-<Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
 
 ```sql replay_races
 select distinct
@@ -37,7 +31,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a replay" description="Only races available in the published snapshot are listed.">
+    <Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
+    <Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql replay_coverage
 select * from f1.data_coverage
@@ -98,8 +95,7 @@ order by t_s
 
 <TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={`${inputs.season.label} ${inputs.race.label}`} />
 
-## How it's built
-
+<ExpandableSection title="How the replay is built">
 Each car's X/Y is sampled by FastF1 at ~5 Hz on the session clock but at slightly
 different instants. A pure-numpy step (`analytics/replay.py`) interpolates every
 car onto one uniform time grid, reconstructs lap progress from lap timing to rank
@@ -113,3 +109,6 @@ physically side-by-side (which is what distinguishes a real pass from a pit-cycl
 position change, since the pitting car's projected gap momentarily collapses too).
 Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
 highlight above.
+</ExpandableSection>
+
+<RelatedAnalysis section="race" current="race-replay" season={inputs.season.value} race={inputs.race.value} />

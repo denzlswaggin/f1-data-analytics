@@ -8,13 +8,15 @@ Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
 Compare who carried more speed where, then see a single driver's racing line
 coloured by gear. _FastF1 telemetry covers the current season to date._
 
+<KeyInsight label="How to compare laps">
+Use the cumulative delta to find where time was gained; use speed and pedal traces to explain how it was gained.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.telemetry_fastest_lap
 order by season desc
 ```
-
-<Dropdown data={seasons} name=season value=season title="Season" />
 
 ```sql tel_races
 select distinct round, race_name
@@ -23,7 +25,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={tel_races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Fastest-lap telemetry coverage varies by season.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={tel_races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql telemetry_coverage
 select * from f1.data_coverage
@@ -50,8 +55,10 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<Dropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" />
-<Dropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" />
+<FilterBar title="Choose a duel" description="Compare two fastest race laps point by point.">
+    <Dropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" />
+    <Dropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" />
+</FilterBar>
 
 ```sql speed_trace
 select
@@ -147,8 +154,7 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code, distance_m
 ```
 
-## Pedal inputs
-
+<ExpandableSection title="Compare pedal inputs">
 <LineChart
     data={inputs_trace}
     x=distance_m
@@ -158,6 +164,7 @@ order by driver_code, distance_m
     yAxisTitle="throttle (%)"
     chartAreaHeight=240
 />
+</ExpandableSection>
 
 ## Track map by gear
 
@@ -171,7 +178,9 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<Dropdown data={tel_drivers} name=driver value=driver_code label=driver_name />
+<FilterBar title="Choose a driver" description="Colour the racing line by selected gear.">
+    <Dropdown data={tel_drivers} name=driver value=driver_code label=driver_name title="Driver" />
+</FilterBar>
 
 ```sql track
 select
@@ -194,3 +203,5 @@ order by distance_m
     xAxisTitle=""
     yAxisTitle=""
 />
+
+<RelatedAnalysis section="race" current="telemetry" season={inputs.season.value} race={inputs.race.value} />

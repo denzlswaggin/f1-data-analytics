@@ -8,13 +8,15 @@ Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
 you: who carries the most speed down the longest straight, and how the observed
 lap-time slope changes with track conditions.
 
+<KeyInsight label="Keep the comparison honest">
+Straight-line speed is descriptive, not a pure power-unit ranking. Weather slopes also include fuel, traffic and track evolution.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.speed_trap
 order by season desc
 ```
-
-<Dropdown data={seasons} name=season value=season title="Season" />
 
 ```sql races
 select distinct round, race_name
@@ -23,7 +25,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Compare straight-line speed in the selected event.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql speed_coverage
 select * from f1.data_coverage
@@ -64,12 +69,14 @@ order by top_speed_kph desc
     sort=false
 />
 
+<ExpandableSection title="View straight-line speed data">
 <DataTable data={race_speed} rows=12>
     <Column id=driver_name title="Driver" />
     <Column id=team title="Team" />
     <Column id=top_speed_kph title="Top (km/h)" fmt='0.0' />
     <Column id=avg_speed_kph title="Avg (km/h)" fmt='0.0' />
 </DataTable>
+</ExpandableSection>
 
 ## Observed lap-time slope by track conditions
 
@@ -102,11 +109,17 @@ order by compound, weather_bucket
     series=weather_bucket
     type=grouped
     yAxisTitle="avg observed slope (s/lap)"
-/>
+>
+    <ReferenceLine y=0 label="stable lap-time slope" />
+</BarChart>
 
+<ExpandableSection title="View weather slope data">
 <DataTable data={deg_by_weather}>
     <Column id=compound title="Compound" />
     <Column id=weather_bucket title="Conditions" />
     <Column id=avg_deg_sec_per_lap title="Avg slope (s/lap)" fmt='0.000' />
     <Column id=laps title="Laps" />
 </DataTable>
+</ExpandableSection>
+
+<RelatedAnalysis section="race" current="weather-and-speed" season={inputs.season.value} race={inputs.race.value} />

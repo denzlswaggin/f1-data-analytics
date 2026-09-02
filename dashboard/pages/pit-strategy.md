@@ -8,15 +8,17 @@ This page describes a driver's track position the lap **before** each stop versu
 **two laps after**, alongside the stop's stationary time. Positive means places
 were gained across that window. It is not a counterfactual undercut/overcut
 estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
-observed position. Ergast-sourced (pit-stop timing from ~2011).
+observed position. Jolpica-sourced (pit-stop timing from ~2011).
+
+<KeyInsight label="What this can tell you">
+Use the page to spot pit cycles worth investigating. Position swing is observed context, not proof of an undercut or strategic causality.
+</KeyInsight>
 
 ```sql seasons
 select distinct season
 from f1.pit_strategy
 order by season desc
 ```
-
-<Dropdown data={seasons} name=season value=season title="Season" />
 
 ```sql races
 select distinct round, race_name
@@ -25,7 +27,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Inspect every pit cycle in the selected Grand Prix.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql pit_coverage
 select * from f1.data_coverage
@@ -84,7 +89,9 @@ order by net_positions desc
     swapXY=true
     labels=true
     sort=false
-/>
+>
+    <ReferenceLine y=0 label="no net position change" />
+</BarChart>
 
 ## Stop speed versus cycle outcome
 
@@ -109,6 +116,7 @@ red flag are labelled separately.
 
 ## Every stop
 
+<ExpandableSection title="View every stop">
 <DataTable data={race_stops} rows=20>
     <Column id=driver_name title="Driver" />
     <Column id=stop_number title="Stop" />
@@ -118,9 +126,11 @@ red flag are labelled separately.
     <Column id=position_after title="Pos after" />
     <Column id=positions_gained title="Gained" />
 </DataTable>
+</ExpandableSection>
 
 ## Evidence by stop
 
+<ExpandableSection title="View stop-level evidence">
 <DataTable data={impact} rows=30 search=true>
     <Column id=driver_name title="Driver" />
     <Column id=stop_number title="Stop" />
@@ -130,7 +140,10 @@ red flag are labelled separately.
     <Column id=positions_gained title="Positions" fmt='+0;-0' />
     <Column id=impact_label title="Context" />
 </DataTable>
+</ExpandableSection>
 
 Even a clean positive cycle is not automatically an undercut: rival stops,
 traffic, tyre warm-up and retirements can still explain the movement. The chart
 is designed to identify candidates for replay inspection, not award causal credit.
+
+<RelatedAnalysis section="race" current="pit-strategy" season={inputs.season.value} race={inputs.race.value} />

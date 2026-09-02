@@ -4,6 +4,11 @@ This Evidence project reads an immutable DuckDB snapshot from
 `../data/dashboard/latest.duckdb`. It deliberately does not query the mutable
 operational warehouse.
 
+The homepage is a concise overview. Analysis is grouped into race, driver, and
+methodology paths; `driver-ratings` contains the full teammate-normalised
+leaderboard that previously occupied the homepage. Shared page components keep
+filters, data-confidence details, reading cues, and related links consistent.
+
 From the repository root, prepare the complete local data contract and start the
 dashboard with:
 

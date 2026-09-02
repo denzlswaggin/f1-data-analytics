@@ -25,6 +25,10 @@ so the comparison is like-for-like — and both are relative to the field, so a 
 zero means "improves on Sunday exactly as much as the average driver does", not "no
 improvement".
 
+<KeyInsight label="How to read delta">
+Positive means stronger relative race pace; negative means stronger relative qualifying pace. Zero is the field average, not “no improvement”.
+</KeyInsight>
+
 ```sql profile_coverage
 select * from f1.data_coverage where section = 'pace_profile'
 ```
@@ -35,7 +39,9 @@ select * from f1.data_coverage where section = 'pace_profile'
 select 5 as n union all select 10 union all select 20 union all select 30
 ```
 
-<Dropdown data={min_races_options} name=minraces value=n defaultValue={10} title="Min. race comparisons" />
+<FilterBar title="Set evidence threshold" description="Higher thresholds trade coverage for stability.">
+    <Dropdown data={min_races_options} name=minraces value=n defaultValue={10} title="Min. race comparisons" />
+</FilterBar>
 
 ```sql pace
 select *
@@ -101,10 +107,13 @@ line is the field average, not "no change".
     swapXY=true
     sort=false
     xAxisTitle="delta (race rating − qualifying rating)"
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 ## Full table
 
+<ExpandableSection title="View the full driver table">
 <DataTable data={pace} rows=20 search=true>
     <Column id=delta_rank title="#" />
     <Column id=driver_name title="Driver" />
@@ -117,9 +126,9 @@ line is the field average, not "no change".
     <Column id=first_season title="From" fmt='0000' />
     <Column id=last_season title="To" fmt='0000' />
 </DataTable>
+</ExpandableSection>
 
-## Reading this honestly
-
+<ExpandableSection title="Read the limitations">
 - **Race pace is noisier than qualifying.** A lap can be ruined by traffic, dirty air or
   a slow stop, none of which is driver pace. The comparability filters (same lap, same
   compound, tyre age within a few laps, outliers trimmed) remove most of that, but not
@@ -130,8 +139,11 @@ line is the field average, not "no change".
 - **This measures margin over a teammate**, not championship results. A driver in a
   weak car can rate highly, and a great driver paired with another great driver will
   rate lower than their reputation.
+</ExpandableSection>
 
 ---
 
 _Race pace from FastF1 per-lap timing; qualifying from Jolpica-F1. Gaps built in dbt,
 both ratings solved in Python. See the [repo README](https://github.com/denzlswaggin/f1-data-analytics) for methodology._
+
+<RelatedAnalysis section="drivers" current="saturday-vs-sunday" />

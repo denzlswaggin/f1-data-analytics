@@ -8,13 +8,15 @@ Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car a
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
 stints fall. The coverage panel below states the races actually available.
 
+<KeyInsight label="How to read race pace">
+Negative controlled deltas are faster. Compare two drivers on the same lap and compound instead of reading raw lap time alone.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.lap_times
 order by season desc
 ```
-
-<Dropdown data={seasons} name=season value=season title="Season" />
 
 ```sql races
 select distinct round, race_name
@@ -23,7 +25,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql pace_coverage
 select * from f1.data_coverage
@@ -45,8 +50,10 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
-<Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+<FilterBar title="Choose a duel" description="Two traces remain readable across a full race.">
+    <Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
+    <Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+</FilterBar>
 
 ```sql race_laps
 with contextual as (
@@ -118,8 +125,7 @@ having count(*) >= 5
 order by race_phase, controlled_delta_sec
 ```
 
-## Who was quick in each phase?
-
+<ExpandableSection title="Compare every driver by race phase">
 <BarChart
     data={phase_pace}
     x=driver_code
@@ -127,7 +133,9 @@ order by race_phase, controlled_delta_sec
     series=race_phase
     type=grouped
     yAxisTitle="controlled pace delta (s) — lower is faster"
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 <DataTable data={phase_pace} rows=60 search=true>
     <Column id=driver_code title="Driver" />
@@ -135,8 +143,7 @@ order by race_phase, controlled_delta_sec
     <Column id=controlled_delta_sec title="Delta (s)" fmt="+0.000;-0.000" />
     <Column id=comparable_laps title="Laps" />
 </DataTable>
-
-## Tyre-stint pace by compound
+</ExpandableSection>
 
 ```sql compound_pace
 select
@@ -150,6 +157,7 @@ group by compound
 order by avg_lap_sec
 ```
 
+<ExpandableSection title="Compare tyre-stint pace by compound">
 <BarChart
     data={compound_pace}
     x=compound
@@ -165,13 +173,7 @@ order by avg_lap_sec
     <Column id=best_lap_sec title="Best (s)" fmt='0.00' />
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
-
-## Observed lap-time slope vs tyre age — {inputs.season.value} {inputs.race.label}
-
-Linear slope of lap time against tyre age over green-flag laps. Positive means
-laps became slower as the set aged; negative means they became faster. This
-descriptive slope is not adjusted for fuel burn, traffic or track evolution, so
-it should not be read as pure tyre wear.
+</ExpandableSection>
 
 ```sql race_deg
 select
@@ -183,6 +185,11 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by deg_sec_per_lap desc
 ```
 
+<ExpandableSection title="Inspect observed lap-time slope vs tyre age">
+Linear slope of lap time against tyre age over green-flag laps. Positive means
+laps became slower as the set aged; negative means they became faster. This
+descriptive slope is not adjusted for fuel burn, traffic or track evolution.
+
 <BarChart
     data={race_deg}
     x=compound
@@ -191,3 +198,6 @@ order by deg_sec_per_lap desc
     labels=true
     sort=false
 />
+</ExpandableSection>
+
+<RelatedAnalysis section="race" current="race-pace" season={inputs.season.value} race={inputs.race.value} />

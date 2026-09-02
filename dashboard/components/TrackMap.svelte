@@ -24,8 +24,9 @@
     const UI_MS = 66;
 
     let containerWidth = 900;
-    $: width = Math.max(320, containerWidth);
-    $: height = Math.round(width * 0.6);
+    $: width = Math.max(280, containerWidth);
+    $: compact = width < 620;
+    $: height = Math.round(width * (compact ? 0.82 : 0.6));
 
     let trackCanvas, carsCanvas, trackCtx, carsCtx;
     let playing = false;
@@ -82,6 +83,7 @@
     }
     // Newest-first messages up to the current time (recomputes as `t` advances).
     $: recentMsgs = msgs.filter((m) => m.t <= uiT).slice(-7).reverse();
+    $: currentMsg = recentMsgs[0] || null;
     function jumpTo(sec) {
         t = Math.max(0, Math.min(tMax, sec));
         if (!playing) drawFrame();
@@ -93,6 +95,17 @@
     function onTimelineKey(e) {
         if (e.key === 'ArrowLeft') jumpTo(t - 5);
         else if (e.key === 'ArrowRight') jumpTo(t + 5);
+        else if (e.key === 'Home') jumpTo(0);
+        else if (e.key === 'End') jumpTo(tMax);
+        else return;
+        e.preventDefault();
+    }
+
+    function onDriverKey(e, code) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleSelect(code);
+        }
     }
 
     // --- team radio (OpenF1 audio clips; partial coverage) ---
@@ -541,6 +554,8 @@
             {width}
             {height}
             class="cars {dragging ? 'grabbing' : hovered ? 'pick' : 'grab'}"
+            role="img"
+            aria-label="Animated circuit map. Use the running order to select a driver."
             on:mousemove={onMove}
             on:mousedown={onDown}
             on:mouseup={onUp}
@@ -555,11 +570,11 @@
 
         <div class="tm-board">
             <div class="tm-board-h">Order · interval</div>
-            {#each leaderboard as row (row.code)}
+            {#each (compact ? leaderboard.slice(0, 10) : leaderboard) as row (row.code)}
                 <div
                     class="tm-brow {selected === row.code ? 'sel' : ''}"
                     on:click={() => toggleSelect(row.code)}
-                    on:keydown={(e) => e.key === 'Enter' && toggleSelect(row.code)}
+                    on:keydown={(e) => onDriverKey(e, row.code)}
                     role="button"
                     tabindex="0"
                 >
@@ -608,9 +623,17 @@
         {#if selected}<div class="tm-follow">{`Following ${selected}${view.zoom > 1 ? ' · camera locked' : ''} · click to release`}</div>{/if}
     </div>
 
+    {#if currentMsg}
+        <div class="tm-mobile-event" aria-live="polite">
+            <span class="mdot" style="background:{EVT_COLOR[currentMsg.type]}"></span>
+            <strong>{fmtClock(Math.max(0, currentMsg.t))}</strong>
+            <span>{currentMsg.message}</span>
+        </div>
+    {/if}
+
     <div class="tm-controls">
         <button on:click={toggle} class="tm-btn tm-play">{playing ? '❚❚ Pause' : '▶ Play'}</button>
-        <input type="range" min="0" max={tMax} step="0.5" value={uiT} on:input={onScrub} class="tm-scrub" />
+        <input type="range" min="0" max={tMax} step="0.5" value={uiT} on:input={onScrub} class="tm-scrub" aria-label="Replay time" />
         <label class="tm-speed">
             Speed
             <select bind:value={speed}>
@@ -872,6 +895,7 @@
         color: #e8eaed;
         backdrop-filter: blur(2px);
     }
+    .tm-mobile-event { display: none; }
     .tm-msg {
         display: flex;
         align-items: baseline;
@@ -1064,6 +1088,15 @@
         font-weight: 600;
     }
     .tm-btn:hover { border-color: rgba(128, 128, 128, 0.8); }
+    .tm-btn:focus-visible,
+    .tm-brow:focus-visible,
+    .tm-timeline:focus-visible,
+    .tm-mark:focus-visible,
+    .tm-ot-mark:focus-visible,
+    .tm-radio-mark:focus-visible {
+        outline: 2px solid #71b9f4;
+        outline-offset: 2px;
+    }
     .tm-play { min-width: 92px; }
     .tm-scrub {
         flex: 1;
@@ -1079,5 +1112,40 @@
         margin-top: 6px;
         font-size: 11px;
         opacity: 0.55;
+    }
+    @media (max-width: 619px) {
+        .tm-msgs { display: none; }
+        .tm-board { min-width: 116px; font-size: 10px; padding: 5px 6px; }
+        .tm-brow { gap: 4px; }
+        .tm-brow .cd { width: 29px; }
+        .tm-clock { font-size: 11px; }
+        .tm-follow { right: 8px; bottom: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .tm-radio-caption { max-width: 88%; font-size: 11px; }
+        .tm-mobile-event {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.45rem;
+            min-height: 2.3rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem 0.65rem;
+            border-radius: 0.45rem;
+            background: rgba(128, 128, 128, 0.1);
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+        .tm-mobile-event .mdot { width: 7px; height: 7px; margin-top: 0.25rem; border-radius: 50%; flex: none; }
+        .tm-mobile-event strong { font-variant-numeric: tabular-nums; }
+        .tm-controls { flex-wrap: wrap; gap: 8px; }
+        .tm-scrub { flex-basis: 100%; order: -1; min-width: 0; }
+        .tm-play { min-width: 82px; }
+        .tm-speed { margin-left: auto; }
+        .tm-hint { line-height: 1.45; }
+        .tm-radio, .tm-overtakes { align-items: flex-start; flex-direction: column; gap: 4px; }
+        .tm-radio-track, .tm-ot-track { width: 100%; flex: none; }
+        .tm-mark { width: 8px; margin-left: -4px; }
+        .tm-radio-mark, .tm-ot-mark { width: 14px; height: 14px; top: -1px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .tm-mark, .tm-radio-mark, .tm-ot-mark { transition: none; }
     }
 </style>
