@@ -2,6 +2,8 @@
 title: How Did Conditions Shape Performance?
 ---
 
+<AppNav />
+
 Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
 you: who carries the most speed down the longest straight, and how the observed
 lap-time slope changes with track conditions.

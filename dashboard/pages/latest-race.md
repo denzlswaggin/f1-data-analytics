@@ -2,6 +2,8 @@
 title: How the Latest Race Unfolded
 ---
 
+<AppNav />
+
 ```sql snapshot
 select * from f1.snapshot_metadata
 ```

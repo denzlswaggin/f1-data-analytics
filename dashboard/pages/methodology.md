@@ -2,6 +2,8 @@
 title: Can I Trust This Result?
 ---
 
+<AppNav />
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,

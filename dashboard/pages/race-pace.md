@@ -2,6 +2,8 @@
 title: Where Was the Race Won?
 ---
 
+<AppNav />
+
 Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
 stints fall. The coverage panel below states the races actually available.

@@ -2,6 +2,8 @@
 title: Watch the Race Unfold
 ---
 
+<AppNav />
+
 Watch a Grand Prix replay: every car placed on the circuit at its **true position
 on the shared race clock**, reconstructed from FastF1 positional telemetry. Press
 play, scrub the timeline, or speed it up — the running order and intervals on the
