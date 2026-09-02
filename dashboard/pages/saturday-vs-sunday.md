@@ -111,6 +111,7 @@ line is the field average, not "no change".
 
 ## Full table
 
+<ExpandableSection title="View the full driver table">
 <DataTable data={pace} rows=20 search=true>
     <Column id=delta_rank title="#" />
     <Column id=driver_name title="Driver" />
@@ -123,6 +124,7 @@ line is the field average, not "no change".
     <Column id=first_season title="From" fmt='0000' />
     <Column id=last_season title="To" fmt='0000' />
 </DataTable>
+</ExpandableSection>
 
 ## Reading this honestly
 

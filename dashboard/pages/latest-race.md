@@ -102,6 +102,7 @@ context still matter, so this is an execution signal rather than a causal score.
 
 ## Driver-by-driver evidence
 
+<ExpandableSection title="View driver-by-driver evidence">
 <DataTable data={story} rows=22 search=true>
     <Column id=finish_position title="Finish" />
     <Column id=driver_name title="Driver" />
@@ -112,9 +113,11 @@ context still matter, so this is an execution signal rather than a causal score.
     <Column id=stops />
     <Column id=story_label title="Interpretation" />
 </DataTable>
+</ExpandableSection>
 
 ## Data at a glance
 
+<ExpandableSection title="View snapshot details">
 <DataTable data={race} rows=1 download=true>
     <Column id=race_label title="Race" />
     <Column id=lap_rows title="Clean lap rows" />
@@ -124,6 +127,7 @@ context still matter, so this is an execution signal rather than a causal score.
     <Column id=track_temp title="Track °C" fmt="0.0" />
     <Column id=replay_duration_sec title="Replay seconds" fmt="0" />
 </DataTable>
+</ExpandableSection>
 
 Continue with the [race replay](race-replay), [race pace](race-pace),
 [tyre strategy](tyre-strategy), or [telemetry comparison](telemetry). Each page

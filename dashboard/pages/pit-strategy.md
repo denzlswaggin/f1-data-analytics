@@ -114,6 +114,7 @@ red flag are labelled separately.
 
 ## Every stop
 
+<ExpandableSection title="View every stop">
 <DataTable data={race_stops} rows=20>
     <Column id=driver_name title="Driver" />
     <Column id=stop_number title="Stop" />
@@ -123,9 +124,11 @@ red flag are labelled separately.
     <Column id=position_after title="Pos after" />
     <Column id=positions_gained title="Gained" />
 </DataTable>
+</ExpandableSection>
 
 ## Evidence by stop
 
+<ExpandableSection title="View stop-level evidence">
 <DataTable data={impact} rows=30 search=true>
     <Column id=driver_name title="Driver" />
     <Column id=stop_number title="Stop" />
@@ -135,6 +138,7 @@ red flag are labelled separately.
     <Column id=positions_gained title="Positions" fmt='+0;-0' />
     <Column id=impact_label title="Context" />
 </DataTable>
+</ExpandableSection>
 
 Even a clean positive cycle is not automatically an undercut: rival stops,
 traffic, tyre warm-up and retirements can still explain the movement. The chart

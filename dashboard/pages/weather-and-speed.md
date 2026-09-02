@@ -69,12 +69,14 @@ order by top_speed_kph desc
     sort=false
 />
 
+<ExpandableSection title="View straight-line speed data">
 <DataTable data={race_speed} rows=12>
     <Column id=driver_name title="Driver" />
     <Column id=team title="Team" />
     <Column id=top_speed_kph title="Top (km/h)" fmt='0.0' />
     <Column id=avg_speed_kph title="Avg (km/h)" fmt='0.0' />
 </DataTable>
+</ExpandableSection>
 
 ## Observed lap-time slope by track conditions
 
@@ -109,9 +111,11 @@ order by compound, weather_bucket
     yAxisTitle="avg observed slope (s/lap)"
 />
 
+<ExpandableSection title="View weather slope data">
 <DataTable data={deg_by_weather}>
     <Column id=compound title="Compound" />
     <Column id=weather_bucket title="Conditions" />
     <Column id=avg_deg_sec_per_lap title="Avg slope (s/lap)" fmt='0.000' />
     <Column id=laps title="Laps" />
 </DataTable>
+</ExpandableSection>

@@ -86,13 +86,16 @@ from each 90% bootstrap interval. It is an interpretation aid, not a new fitted 
 and correlation between the two ratings are not available from the published
 summary table.
 
+<ExpandableSection title="View shared-season probabilities">
 <DataTable data={comparison_probability} rows=30>
     <Column id=season fmt="0000" />
     <Column id=rating_delta title="A − B" fmt="+0.000;-0.000" />
     <Column id=probability_a_faster title="P(A faster)" fmt="0.0%" />
     <Column id=evidence_status title="Evidence" />
 </DataTable>
+</ExpandableSection>
 
+<ExpandableSection title="View and download season ratings">
 <DataTable data={comparison} rows=40 download=true>
     <Column id=season fmt="0000" />
     <Column id=driver_name title="Driver" />
@@ -102,6 +105,7 @@ summary table.
     <Column id=form_delta title="YoY change" fmt="+0.000;-0.000" />
     <Column id=n_comparisons title="Head-to-heads" />
 </DataTable>
+</ExpandableSection>
 
 ## Career benchmark
 
@@ -112,4 +116,6 @@ where driver_id in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by rating desc
 ```
 
+<ExpandableSection title="View career benchmark">
 <DataTable data={career} rows=2 download=true />
+</ExpandableSection>

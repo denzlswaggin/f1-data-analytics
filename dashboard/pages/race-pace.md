@@ -136,12 +136,14 @@ order by race_phase, controlled_delta_sec
     yAxisTitle="controlled pace delta (s) — lower is faster"
 />
 
+<ExpandableSection title="View phase pace data">
 <DataTable data={phase_pace} rows=60 search=true>
     <Column id=driver_code title="Driver" />
     <Column id=race_phase title="Phase" />
     <Column id=controlled_delta_sec title="Delta (s)" fmt="+0.000;-0.000" />
     <Column id=comparable_laps title="Laps" />
 </DataTable>
+</ExpandableSection>
 
 ## Tyre-stint pace by compound
 
@@ -166,12 +168,14 @@ order by avg_lap_sec
     sort=false
 />
 
+<ExpandableSection title="View compound pace data">
 <DataTable data={compound_pace}>
     <Column id=compound title="Compound" />
     <Column id=laps />
     <Column id=best_lap_sec title="Best (s)" fmt='0.00' />
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
+</ExpandableSection>
 
 ## Observed lap-time slope vs tyre age — {inputs.season.value} {inputs.race.label}
 

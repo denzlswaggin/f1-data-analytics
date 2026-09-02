@@ -53,6 +53,7 @@ limit 15
     labels=true
 />
 
+<ExpandableSection title="View career leaderboard data">
 <DataTable data={top_drivers} rows=15>
     <Column id=rank title="#" />
     <Column id=driver_name title="Driver" />
@@ -63,6 +64,7 @@ limit 15
     <Column id=first_season title="From" fmt='0000' />
     <Column id=last_season title="To" fmt='0000' />
 </DataTable>
+</ExpandableSection>
 
 ## Current form — dynamic model
 
@@ -98,6 +100,7 @@ limit 15
     labels=true
 />
 
+<ExpandableSection title="View current-form leaderboard data">
 <DataTable data={latest_dynamic_ratings} rows=15>
     <Column id=rank title="#" />
     <Column id=driver_name title="Driver" />
@@ -107,6 +110,7 @@ limit 15
     <Column id=form_delta title="YoY change" fmt='+0.000;-0.000' />
     <Column id=n_comparisons title="Head-to-heads" />
 </DataTable>
+</ExpandableSection>
 
 ## Explore a driver's season-by-season pace
 
@@ -141,6 +145,7 @@ order by season
     yAxisTitle="rating"
 />
 
+<ExpandableSection title="View season rating data">
 <DataTable data={driver_dynamic_form} rows=20>
     <Column id=season fmt='0000' />
     <Column id=rating fmt='0.000' />
@@ -149,6 +154,7 @@ order by season
     <Column id=form_delta title="YoY change" fmt='+0.000;-0.000' />
     <Column id=n_comparisons title="Head-to-heads" />
 </DataTable>
+</ExpandableSection>
 
 ```sql driver_seasons
 select
@@ -169,12 +175,14 @@ order by season
     yAxisTitle="pace gap %"
 />
 
+<ExpandableSection title="View teammate-gap data">
 <DataTable data={driver_seasons}>
     <Column id=season fmt='0000' />
     <Column id=mean_pace_gap title="Mean gap %" fmt='0.000' />
     <Column id=teammate_win_pct title="Quali win %" fmt='0.0' />
     <Column id=races_compared title="Races" />
 </DataTable>
+</ExpandableSection>
 
 ---
 
