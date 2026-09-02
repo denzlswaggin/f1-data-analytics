@@ -6,9 +6,9 @@
     const num = (value) => value == null ? null : Number(value);
     let clientWidth = 840;
 
-    $: width = Math.max(360, clientWidth || 840);
-    $: height = 360;
-    $: pad = { left: 52, right: 18, top: 34, bottom: 38 };
+    $: width = Math.max(280, clientWidth || 840);
+    $: height = width < 480 ? 320 : 360;
+    $: pad = { left: width < 480 ? 44 : 52, right: 18, top: 34, bottom: 38 };
     $: rows = (data || []).map((row) => ({
         ...row,
         season: num(row.season),
@@ -34,6 +34,9 @@
         rows: rows.filter((row) => row.driver_name === name).sort((a, b) => a.season - b.season)
     }));
     $: yTicks = Array.from({ length: 5 }, (_, index) => y0 + (index * (y1 - y0)) / 4);
+    $: maxXTicks = width < 480 ? 5 : width < 720 ? 8 : 12;
+    $: xStep = Math.max(1, Math.ceil(seasons.length / maxXTicks));
+    $: xTicks = seasons.filter((_, index) => index % xStep === 0 || index === seasons.length - 1);
     const path = (group) => group.rows.map((row, index) => `${index ? 'L' : 'M'} ${x(row.season)} ${y(row.rating)}`).join(' ');
 </script>
 
@@ -50,7 +53,10 @@
                 <line class="grid" x1={pad.left} x2={width - pad.right} y1={y(tick)} y2={y(tick)} />
                 <text class="axis" x={pad.left - 8} y={y(tick) + 4} text-anchor="end">{tick.toFixed(2)}</text>
             {/each}
-            {#each seasons as season}
+            {#if y0 < 0 && y1 > 0}
+                <line class="zero" x1={pad.left} x2={width - pad.right} y1={y(0)} y2={y(0)} />
+            {/if}
+            {#each xTicks as season}
                 <text class="axis" x={x(season)} y={height - 12} text-anchor="middle">{season}</text>
             {/each}
             {#each groups as group}
@@ -67,6 +73,16 @@
                 {/each}
             {/each}
         </svg>
+        <div class="sr-only">
+            {#each groups as group}
+                <strong>{group.name}</strong>
+                <ul>
+                    {#each group.rows as row}
+                        <li>{row.season}: {row.rating.toFixed(3)}, 90% interval {row.lo?.toFixed(3) ?? 'not available'} to {row.hi?.toFixed(3) ?? 'not available'}</li>
+                    {/each}
+                </ul>
+            {/each}
+        </div>
     {:else}
         <div class="empty">No overlapping rating data.</div>
     {/if}
@@ -79,8 +95,20 @@
     .legend span { display: inline-flex; align-items: center; gap: 5px; }
     .legend i { width: 12px; height: 3px; border-radius: 2px; }
     .grid { stroke: currentColor; stroke-opacity: 0.11; }
+    .zero { stroke: currentColor; stroke-opacity: 0.35; stroke-dasharray: 4 4; }
     .axis { fill: currentColor; opacity: 0.62; font-size: 11px; }
     .interval { stroke-width: 1.5; stroke-opacity: 0.55; }
     .cap { stroke-width: 1.5; stroke-opacity: 0.75; }
     .empty { padding: 2rem 0; opacity: 0.6; }
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
 </style>
