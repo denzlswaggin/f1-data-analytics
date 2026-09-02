@@ -50,3 +50,5 @@ by source because FastF1 telemetry is substantially heavier than Jolpica results
 
 For equations, validation and known limitations, see the
 [model documentation](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/dynamic-rating-model.md).
+
+<RelatedAnalysis section="trust" current="methodology" />

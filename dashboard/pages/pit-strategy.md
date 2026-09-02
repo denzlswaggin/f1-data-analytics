@@ -143,3 +143,5 @@ red flag are labelled separately.
 Even a clean positive cycle is not automatically an undercut: rival stops,
 traffic, tyre warm-up and retirements can still explain the movement. The chart
 is designed to identify candidates for replay inspection, not award causal credit.
+
+<RelatedAnalysis section="race" current="pit-strategy" season={inputs.season.value} race={inputs.race.value} />

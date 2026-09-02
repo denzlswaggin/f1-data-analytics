@@ -143,3 +143,5 @@ line is the field average, not "no change".
 
 _Race pace from FastF1 per-lap timing; qualifying from Jolpica-F1. Gaps built in dbt,
 both ratings solved in Python. See the [repo README](https://github.com/denzlswaggin/f1-data-analytics) for methodology._
+
+<RelatedAnalysis section="drivers" current="saturday-vs-sunday" />

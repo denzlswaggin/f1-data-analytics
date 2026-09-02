@@ -187,3 +187,5 @@ order by season
 ---
 
 _Built with dbt + DuckDB; solved in Python. See the [repo README](https://github.com/denzlswaggin/f1-data-analytics) for methodology._
+
+<RelatedAnalysis section="drivers" current="driver-ratings" />

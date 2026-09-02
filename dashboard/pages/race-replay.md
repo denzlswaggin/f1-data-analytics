@@ -110,3 +110,5 @@ physically side-by-side (which is what distinguishes a real pass from a pit-cycl
 position change, since the pitting car's projected gap momentarily collapses too).
 Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
 highlight above.
+
+<RelatedAnalysis section="race" current="race-replay" season={inputs.season.value} race={inputs.race.value} />

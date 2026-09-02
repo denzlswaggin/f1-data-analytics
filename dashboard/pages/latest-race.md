@@ -129,6 +129,4 @@ context still matter, so this is an execution signal rather than a causal score.
 </DataTable>
 </ExpandableSection>
 
-Continue with the [race replay](race-replay), [race pace](race-pace),
-[tyre strategy](tyre-strategy), or [telemetry comparison](telemetry). Each page
-defaults to the newest partition it actually contains and states its coverage.
+<RelatedAnalysis section="race" current="latest-race" />

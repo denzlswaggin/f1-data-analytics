@@ -129,3 +129,5 @@ order by pos
     <Column id=strategy title="Compound sequence" />
 </DataTable>
 </ExpandableSection>
+
+<RelatedAnalysis section="race" current="tyre-strategy" season={inputs.season.value} race={inputs.race.value} />

@@ -168,6 +168,8 @@ order by avg_lap_sec
     sort=false
 />
 
+<RelatedAnalysis section="race" current="race-pace" season={inputs.season.value} race={inputs.race.value} />
+
 <ExpandableSection title="View compound pace data">
 <DataTable data={compound_pace}>
     <Column id=compound title="Compound" />

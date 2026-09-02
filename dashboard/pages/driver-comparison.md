@@ -119,3 +119,5 @@ order by rating desc
 <ExpandableSection title="View career benchmark">
 <DataTable data={career} rows=2 download=true />
 </ExpandableSection>
+
+<RelatedAnalysis section="drivers" current="driver-comparison" />

@@ -203,3 +203,5 @@ order by distance_m
     xAxisTitle=""
     yAxisTitle=""
 />
+
+<RelatedAnalysis section="race" current="telemetry" season={inputs.season.value} race={inputs.race.value} />

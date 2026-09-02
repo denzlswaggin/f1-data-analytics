@@ -119,3 +119,5 @@ order by compound, weather_bucket
     <Column id=laps title="Laps" />
 </DataTable>
 </ExpandableSection>
+
+<RelatedAnalysis section="race" current="weather-and-speed" season={inputs.season.value} race={inputs.race.value} />
