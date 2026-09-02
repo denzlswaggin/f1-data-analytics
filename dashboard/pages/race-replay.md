@@ -13,19 +13,39 @@ click the timeline markers to jump to key moments, and click a 📻 marker to pl
 **team radio** (where available). The picker contains every replay partition in
 the currently published snapshot.
 
-```sql replay_races
+```sql replay_seasons
 select distinct
-    race_name,
-    case when race_name = '__NO_DATA__' then 'No replay data available' else race_name end as race_label
+    season,
+    case when season = 0 then 'No replay data available' else cast(season as varchar) end as season_label
 from f1.race_replay_meta
-order by race_name
+order by season desc
 ```
 
-<Dropdown data={replay_races} name=race value=race_name label=race_label />
+<Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
+
+```sql replay_races
+select distinct
+    round,
+    case
+        when race_name = '__NO_DATA__' then 'No replay data available'
+        else replace(race_name, cast(season as varchar) || ' ', '')
+    end as race_name
+from f1.race_replay_meta
+where season = ${inputs.season.value}
+order by round
+```
+
+<Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
 
 ```sql replay_coverage
 select * from f1.data_coverage
-where section = 'race_replay' and race_label = '${inputs.race.value}'
+where section = 'race_replay'
+    and race_label = (
+        select race_name
+        from f1.race_replay_meta
+        where season = ${inputs.season.value} and round = ${inputs.race.value}
+        limit 1
+    )
 ```
 
 <DataTrust data={replay_coverage} sampleLabel="car ticks" entityLabel="Drivers" method="reconstructed replay; experimental overtake detector" />
@@ -40,7 +60,7 @@ select
     gap_to_leader_s,
     gap_to_ahead_s
 from f1.race_replay
-where race_name = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code <> '__NO_DATA__'
 order by driver_code, t_s
 ```
@@ -48,33 +68,33 @@ order by driver_code, t_s
 ```sql replay_meta
 select driver_code, driver_name, team, team_color
 from f1.race_replay_meta
-where race_name = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code <> '__NO_DATA__'
 ```
 
 ```sql race_ctrl
 select t_s, category, flag, scope, message, driver_code
 from f1.race_control
-where race_name = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by t_s
 ```
 
 ```sql radio
 select t_s, driver_code, recording_url, transcript
 from f1.team_radio
-where race_name = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by t_s
 ```
 
 ```sql overtakes
 select t_s, for_position, passer_code, passed_code, gap_at_pass_s
 from f1.race_overtakes
-where race_name = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and passer_code <> '__NO_DATA__'
 order by t_s
 ```
 
-<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={inputs.race.value} />
+<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={`${inputs.season.label} ${inputs.race.label}`} />
 
 ## How it's built
 
