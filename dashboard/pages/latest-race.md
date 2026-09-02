@@ -70,12 +70,14 @@ limit 1
 <BigValue data={execution_gain} value=driver_name title="Biggest execution gain" />
 <BigValue data={pass_leader} value=driver_name title="Most on-track passes" />
 
+<KeyInsight label="Race in one sentence">
 The winner, <Value data={winner} column=driver_name />, ranked
 **P<Value data={winner} column=pace_rank />** on same-lap, same-compound pace.
 <Value data={execution_gain} column=driver_name /> finished
 <Value data={execution_gain} column=outcome_vs_pace fmt="+0;-0" /> positions ahead of
 their controlled-pace rank, while <Value data={pass_leader} column=driver_name /> made
 <Value data={pass_leader} column=passes_made /> detected on-track passes.
+</KeyInsight>
 
 ```sql execution_chart
 select driver_name, outcome_vs_pace, story_label

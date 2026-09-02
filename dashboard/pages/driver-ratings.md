@@ -11,6 +11,10 @@ least-squares fit on the teammate graph. Higher rating = faster relative to
 teammates. The interval is a 90% comparison-bootstrap interval, not a guaranteed
 rank range.
 
+<KeyInsight label="How to read the rating">
+Higher is faster relative to teammates. Treat overlapping 90% intervals as an uncertain ordering, not a definitive rank.
+</KeyInsight>
+
 Compare two careers in [Compare Drivers](driver-comparison), contrast qualifying
 and race pace in [Saturday vs Sunday](saturday-vs-sunday), or inspect the full
 [methodology and data contract](methodology).

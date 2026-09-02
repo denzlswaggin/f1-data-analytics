@@ -8,6 +8,10 @@ Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car a
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
 stints fall. The coverage panel below states the races actually available.
 
+<KeyInsight label="How to read race pace">
+Negative controlled deltas are faster. Compare two drivers on the same lap and compound instead of reading raw lap time alone.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.lap_times

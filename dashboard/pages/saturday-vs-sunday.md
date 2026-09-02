@@ -25,6 +25,10 @@ so the comparison is like-for-like — and both are relative to the field, so a 
 zero means "improves on Sunday exactly as much as the average driver does", not "no
 improvement".
 
+<KeyInsight label="How to read delta">
+Positive means stronger relative race pace; negative means stronger relative qualifying pace. Zero is the field average, not “no improvement”.
+</KeyInsight>
+
 ```sql profile_coverage
 select * from f1.data_coverage where section = 'pace_profile'
 ```

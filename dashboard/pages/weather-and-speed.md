@@ -8,6 +8,10 @@ Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
 you: who carries the most speed down the longest straight, and how the observed
 lap-time slope changes with track conditions.
 
+<KeyInsight label="Keep the comparison honest">
+Straight-line speed is descriptive, not a pure power-unit ranking. Weather slopes also include fuel, traffic and track evolution.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.speed_trap

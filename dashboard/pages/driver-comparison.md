@@ -8,6 +8,10 @@ Compare two drivers on the same season scale. Ratings are relative to the
 connected teammate graph, not absolute lap-time predictions. Overlapping 90%
 intervals are evidence that the ordering is uncertain.
 
+<KeyInsight label="How to read the comparison">
+Compare the gap and its uncertainty in seasons both drivers share. This is relative form, not a predicted head-to-head lap time.
+</KeyInsight>
+
 ```sql drivers
 select distinct driver_id, driver_name
 from f1.driver_ratings_v2

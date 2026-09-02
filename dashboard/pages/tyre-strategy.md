@@ -12,6 +12,10 @@ slope** (s/lap). The slope is descriptive and not adjusted for fuel, traffic or
 track evolution. Built from FastF1 per-lap compound + stint data. _Hover a stint
 for its lap range, tyre age, and observed slope._
 
+<KeyInsight label="How to read the strategy chart">
+Blocks show compound and stint length. Darkening indicates observed fall-off, while the adjusted chart below removes much of the shared fuel and track trend.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.stint_strategy

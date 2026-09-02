@@ -4,6 +4,10 @@ title: Can I Trust This Result?
 
 <AppNav />
 
+<KeyInsight label="Short answer" tone="positive">
+The dashboard publishes immutable, checksum-verified snapshots and exposes sample coverage. Results still describe the available data rather than proving causality.
+</KeyInsight>
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,
