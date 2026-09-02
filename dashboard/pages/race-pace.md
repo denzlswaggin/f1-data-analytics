@@ -6,17 +6,32 @@ Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car a
 yellow laps filtered out). Pick a race to see how pace evolved and where tyre
 stints fall. The coverage panel below states the races actually available.
 
-```sql races
-select distinct race_label
+```sql seasons
+select distinct season
 from f1.lap_times
-order by race_label desc
+order by season desc
 ```
 
-<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+<Dropdown data={seasons} name=season value=season title="Season" />
+
+```sql races
+select distinct round, race_name
+from f1.lap_times
+where season = ${inputs.season.value}
+order by round
+```
+
+<Dropdown data={races} name=race value=round label=race_name title="Race" />
 
 ```sql pace_coverage
 select * from f1.data_coverage
-where section = 'race_pace' and race_label = '${inputs.race.value}'
+where section = 'race_pace'
+    and race_label = (
+        select race_label
+        from f1.lap_times
+        where season = ${inputs.season.value} and round = ${inputs.race.value}
+        limit 1
+    )
 ```
 
 <DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="descriptive, filtered timing" />
@@ -30,11 +45,11 @@ select
     stint,
     position
 from f1.lap_times
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code, lap_number
 ```
 
-## Lap-time evolution — {inputs.race.value}
+## Lap-time evolution — {inputs.season.value} {inputs.race.label}
 
 <LineChart
     data={race_laps}
@@ -54,7 +69,7 @@ select
     round(min(lap_time_sec), 2) as best_lap_sec,
     round(avg(lap_time_sec), 2) as avg_lap_sec
 from f1.lap_times
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 group by compound
 order by avg_lap_sec
 ```
@@ -75,7 +90,7 @@ order by avg_lap_sec
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
 
-## Observed lap-time slope vs tyre age — {inputs.race.value}
+## Observed lap-time slope vs tyre age — {inputs.season.value} {inputs.race.label}
 
 Linear slope of lap time against tyre age over green-flag laps. Positive means
 laps became slower as the set aged; negative means they became faster. This
@@ -88,7 +103,7 @@ select
     deg_sec_per_lap,
     n_laps
 from f1.tyre_degradation
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by deg_sec_per_lap desc
 ```
 

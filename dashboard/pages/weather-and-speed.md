@@ -6,22 +6,37 @@ Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
 you: who carries the most speed down the longest straight, and how the observed
 lap-time slope changes with track conditions.
 
-```sql races
-select distinct race_label
+```sql seasons
+select distinct season
 from f1.speed_trap
-order by race_label desc
+order by season desc
 ```
 
-<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+<Dropdown data={seasons} name=season value=season title="Season" />
+
+```sql races
+select distinct round, race_name
+from f1.speed_trap
+where season = ${inputs.season.value}
+order by round
+```
+
+<Dropdown data={races} name=race value=round label=race_name title="Race" />
 
 ```sql speed_coverage
 select * from f1.data_coverage
-where section = 'speed_trap' and race_label = '${inputs.race.value}'
+where section = 'speed_trap'
+    and race_label = (
+        select race_label
+        from f1.speed_trap
+        where season = ${inputs.season.value} and round = ${inputs.race.value}
+        limit 1
+    )
 ```
 
 <DataTrust data={speed_coverage} sampleLabel="driver summaries" entityLabel="Drivers" method="descriptive speed-trap sample" />
 
-## Straight-line speed — {inputs.race.value}
+## Straight-line speed — {inputs.season.value} {inputs.race.label}
 
 Fastest speed-trap reading on the longest straight (SpeedST), over green-flag
 laps. A rough proxy for power-unit output and low-drag efficiency.
@@ -33,7 +48,7 @@ select
     top_speed_kph,
     avg_speed_kph
 from f1.speed_trap
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by top_speed_kph desc
 ```
 
