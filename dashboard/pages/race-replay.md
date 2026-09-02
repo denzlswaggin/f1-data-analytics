@@ -23,8 +23,6 @@ from f1.race_replay_meta
 order by season desc
 ```
 
-<Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
-
 ```sql replay_races
 select distinct
     round,
@@ -37,7 +35,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a replay" description="Only races available in the published snapshot are listed.">
+    <Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
+    <Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql replay_coverage
 select * from f1.data_coverage

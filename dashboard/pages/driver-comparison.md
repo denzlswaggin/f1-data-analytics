@@ -14,8 +14,10 @@ from f1.driver_ratings_v2
 order by driver_name
 ```
 
-<Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" />
-<Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="lewis_hamilton" />
+<FilterBar title="Choose drivers" description="Ratings use seasons shared by both drivers.">
+    <Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
+    <Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="lewis_hamilton" title="Driver B" />
+</FilterBar>
 
 ```sql comparison
 select

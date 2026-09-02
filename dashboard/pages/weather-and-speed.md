@@ -14,8 +14,6 @@ from f1.speed_trap
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season title="Season" />
-
 ```sql races
 select distinct round, race_name
 from f1.speed_trap
@@ -23,7 +21,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Compare straight-line speed in the selected event.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql speed_coverage
 select * from f1.data_coverage

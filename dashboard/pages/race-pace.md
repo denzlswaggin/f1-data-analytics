@@ -14,8 +14,6 @@ from f1.lap_times
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season title="Season" />
-
 ```sql races
 select distinct round, race_name
 from f1.lap_times
@@ -23,7 +21,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql pace_coverage
 select * from f1.data_coverage
@@ -45,8 +46,10 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
-<Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+<FilterBar title="Choose a duel" description="Two traces remain readable across a full race.">
+    <Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
+    <Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+</FilterBar>
 
 ```sql race_laps
 with contextual as (

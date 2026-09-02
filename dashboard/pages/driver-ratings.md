@@ -112,7 +112,9 @@ from f1.season_pace
 order by driver_name
 ```
 
-<Dropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="max_verstappen" />
+<FilterBar title="Explore one driver" description="Follow season-by-season form and teammate gap.">
+    <Dropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver" />
+</FilterBar>
 
 ```sql driver_dynamic_form
 select

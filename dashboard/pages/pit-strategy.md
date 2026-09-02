@@ -16,8 +16,6 @@ from f1.pit_strategy
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season title="Season" />
-
 ```sql races
 select distinct round, race_name
 from f1.pit_strategy
@@ -25,7 +23,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Inspect every pit cycle in the selected Grand Prix.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql pit_coverage
 select * from f1.data_coverage

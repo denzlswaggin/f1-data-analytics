@@ -18,8 +18,6 @@ from f1.stint_strategy
 order by season desc
 ```
 
-<Dropdown data={seasons} name=season value=season title="Season" />
-
 ```sql races
 select distinct round, race_name
 from f1.stint_strategy
@@ -27,7 +25,10 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<Dropdown data={races} name=race value=round label=race_name title="Race" />
+<FilterBar title="Choose a race" description="Compare stint timing, compound choice and fall-off.">
+    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+</FilterBar>
 
 ```sql tyre_coverage
 select * from f1.data_coverage
