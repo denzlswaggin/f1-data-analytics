@@ -11,14 +11,15 @@
             ? String(row.first_season)
             : `${row.first_season}–${row.last_season}`;
     $: latest = row.latest_event_date == null ? '—' : String(row.latest_event_date);
+    $: hasData = Number(row.sample_rows || 0) > 0;
     const number = (value) => value == null ? '—' : Number(value).toLocaleString('en-US');
 </script>
 
 <details class="data-trust">
     <summary>
-        <span class="status" aria-hidden="true"></span>
-        <strong>Data confidence</strong>
-        <span>{seasons} · {number(row.sample_rows)} {sampleLabel}</span>
+        <span class="status" class:empty={!hasData} aria-hidden="true"></span>
+        <strong>{hasData ? 'Data confidence' : 'No published data'}</strong>
+        <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${sampleLabel}` : 'Try another selection'}</span>
     </summary>
     <div class="details" aria-label="Data coverage and method">
         <span><strong>Coverage</strong> {seasons}</span>
@@ -52,6 +53,7 @@
     summary:focus-visible { outline: 2px solid var(--color-primary, #2563eb); outline-offset: 2px; }
     summary > span:not(.status) { opacity: 0.68; }
     .status { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--color-positive, #16a34a); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-positive, #16a34a) 15%, transparent); }
+    .status.empty { background: currentColor; box-shadow: none; opacity: 0.35; }
     .details {
         display: flex;
         flex-wrap: wrap;
