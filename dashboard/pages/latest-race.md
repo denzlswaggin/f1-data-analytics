@@ -94,7 +94,9 @@ order by outcome_vs_pace desc
     swapXY=true
     sort=false
     xAxisTitle="finish positions versus controlled pace rank"
-/>
+>
+    <ReferenceLine y=0 label="matched pace rank" />
+</BarChart>
 
 Positive means the driver finished ahead of their controlled-pace rank; negative
 means pace was not converted into the result. Reliability, penalties and race

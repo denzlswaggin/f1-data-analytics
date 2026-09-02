@@ -89,7 +89,9 @@ order by net_positions desc
     swapXY=true
     labels=true
     sort=false
-/>
+>
+    <ReferenceLine y=0 label="no net position change" />
+</BarChart>
 
 ## Stop speed versus cycle outcome
 

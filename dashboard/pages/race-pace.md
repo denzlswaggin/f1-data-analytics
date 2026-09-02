@@ -133,7 +133,9 @@ order by race_phase, controlled_delta_sec
     series=race_phase
     type=grouped
     yAxisTitle="controlled pace delta (s) — lower is faster"
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 <DataTable data={phase_pace} rows=60 search=true>
     <Column id=driver_code title="Driver" />

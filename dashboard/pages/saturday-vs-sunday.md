@@ -107,7 +107,9 @@ line is the field average, not "no change".
     swapXY=true
     sort=false
     xAxisTitle="delta (race rating − qualifying rating)"
-/>
+>
+    <ReferenceLine y=0 label="field average" />
+</BarChart>
 
 ## Full table
 
