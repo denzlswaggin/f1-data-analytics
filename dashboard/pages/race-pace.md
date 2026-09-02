@@ -125,8 +125,7 @@ having count(*) >= 5
 order by race_phase, controlled_delta_sec
 ```
 
-## Who was quick in each phase?
-
+<ExpandableSection title="Compare every driver by race phase">
 <BarChart
     data={phase_pace}
     x=driver_code
@@ -136,7 +135,6 @@ order by race_phase, controlled_delta_sec
     yAxisTitle="controlled pace delta (s) — lower is faster"
 />
 
-<ExpandableSection title="View phase pace data">
 <DataTable data={phase_pace} rows=60 search=true>
     <Column id=driver_code title="Driver" />
     <Column id=race_phase title="Phase" />
@@ -144,8 +142,6 @@ order by race_phase, controlled_delta_sec
     <Column id=comparable_laps title="Laps" />
 </DataTable>
 </ExpandableSection>
-
-## Tyre-stint pace by compound
 
 ```sql compound_pace
 select
@@ -159,6 +155,7 @@ group by compound
 order by avg_lap_sec
 ```
 
+<ExpandableSection title="Compare tyre-stint pace by compound">
 <BarChart
     data={compound_pace}
     x=compound
@@ -168,9 +165,6 @@ order by avg_lap_sec
     sort=false
 />
 
-<RelatedAnalysis section="race" current="race-pace" season={inputs.season.value} race={inputs.race.value} />
-
-<ExpandableSection title="View compound pace data">
 <DataTable data={compound_pace}>
     <Column id=compound title="Compound" />
     <Column id=laps />
@@ -178,13 +172,6 @@ order by avg_lap_sec
     <Column id=avg_lap_sec title="Avg (s)" fmt='0.00' />
 </DataTable>
 </ExpandableSection>
-
-## Observed lap-time slope vs tyre age — {inputs.season.value} {inputs.race.label}
-
-Linear slope of lap time against tyre age over green-flag laps. Positive means
-laps became slower as the set aged; negative means they became faster. This
-descriptive slope is not adjusted for fuel burn, traffic or track evolution, so
-it should not be read as pure tyre wear.
 
 ```sql race_deg
 select
@@ -196,6 +183,11 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by deg_sec_per_lap desc
 ```
 
+<ExpandableSection title="Inspect observed lap-time slope vs tyre age">
+Linear slope of lap time against tyre age over green-flag laps. Positive means
+laps became slower as the set aged; negative means they became faster. This
+descriptive slope is not adjusted for fuel burn, traffic or track evolution.
+
 <BarChart
     data={race_deg}
     x=compound
@@ -204,3 +196,6 @@ order by deg_sec_per_lap desc
     labels=true
     sort=false
 />
+</ExpandableSection>
+
+<RelatedAnalysis section="race" current="race-pace" season={inputs.season.value} race={inputs.race.value} />

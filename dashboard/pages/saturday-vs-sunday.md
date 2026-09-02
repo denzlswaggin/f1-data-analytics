@@ -126,8 +126,7 @@ line is the field average, not "no change".
 </DataTable>
 </ExpandableSection>
 
-## Reading this honestly
-
+<ExpandableSection title="Read the limitations">
 - **Race pace is noisier than qualifying.** A lap can be ruined by traffic, dirty air or
   a slow stop, none of which is driver pace. The comparability filters (same lap, same
   compound, tyre age within a few laps, outliers trimmed) remove most of that, but not
@@ -138,6 +137,7 @@ line is the field average, not "no change".
 - **This measures margin over a teammate**, not championship results. A driver in a
   weak car can rate highly, and a great driver paired with another great driver will
   rate lower than their reputation.
+</ExpandableSection>
 
 ---
 

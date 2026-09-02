@@ -95,8 +95,7 @@ order by t_s
 
 <TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={`${inputs.season.label} ${inputs.race.label}`} />
 
-## How it's built
-
+<ExpandableSection title="How the replay is built">
 Each car's X/Y is sampled by FastF1 at ~5 Hz on the session clock but at slightly
 different instants. A pure-numpy step (`analytics/replay.py`) interpolates every
 car onto one uniform time grid, reconstructs lap progress from lap timing to rank
@@ -110,5 +109,6 @@ physically side-by-side (which is what distinguishes a real pass from a pit-cycl
 position change, since the pitting car's projected gap momentarily collapses too).
 Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
 highlight above.
+</ExpandableSection>
 
 <RelatedAnalysis section="race" current="race-replay" season={inputs.season.value} race={inputs.race.value} />
