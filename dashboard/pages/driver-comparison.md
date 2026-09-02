@@ -8,14 +8,20 @@ Compare two drivers on the same season scale. Ratings are relative to the
 connected teammate graph, not absolute lap-time predictions. Overlapping 90%
 intervals are evidence that the ordering is uncertain.
 
+<KeyInsight label="How to read the comparison">
+Compare the gap and its uncertainty in seasons both drivers share. This is relative form, not a predicted head-to-head lap time.
+</KeyInsight>
+
 ```sql drivers
 select distinct driver_id, driver_name
 from f1.driver_ratings_v2
 order by driver_name
 ```
 
-<Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" />
-<Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="lewis_hamilton" />
+<FilterBar title="Choose drivers" description="Ratings use seasons shared by both drivers.">
+    <Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
+    <Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="lewis_hamilton" title="Driver B" />
+</FilterBar>
 
 ```sql comparison
 select
@@ -80,13 +86,16 @@ from each 90% bootstrap interval. It is an interpretation aid, not a new fitted 
 and correlation between the two ratings are not available from the published
 summary table.
 
+<ExpandableSection title="View shared-season probabilities">
 <DataTable data={comparison_probability} rows=30>
     <Column id=season fmt="0000" />
     <Column id=rating_delta title="A − B" fmt="+0.000;-0.000" />
     <Column id=probability_a_faster title="P(A faster)" fmt="0.0%" />
     <Column id=evidence_status title="Evidence" />
 </DataTable>
+</ExpandableSection>
 
+<ExpandableSection title="View and download season ratings">
 <DataTable data={comparison} rows=40 download=true>
     <Column id=season fmt="0000" />
     <Column id=driver_name title="Driver" />
@@ -96,6 +105,7 @@ summary table.
     <Column id=form_delta title="YoY change" fmt="+0.000;-0.000" />
     <Column id=n_comparisons title="Head-to-heads" />
 </DataTable>
+</ExpandableSection>
 
 ## Career benchmark
 
@@ -106,4 +116,8 @@ where driver_id in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by rating desc
 ```
 
+<ExpandableSection title="View career benchmark">
 <DataTable data={career} rows=2 download=true />
+</ExpandableSection>
+
+<RelatedAnalysis section="drivers" current="driver-comparison" />

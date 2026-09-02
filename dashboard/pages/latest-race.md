@@ -70,12 +70,14 @@ limit 1
 <BigValue data={execution_gain} value=driver_name title="Biggest execution gain" />
 <BigValue data={pass_leader} value=driver_name title="Most on-track passes" />
 
+<KeyInsight label="Race in one sentence">
 The winner, <Value data={winner} column=driver_name />, ranked
 **P<Value data={winner} column=pace_rank />** on same-lap, same-compound pace.
 <Value data={execution_gain} column=driver_name /> finished
 <Value data={execution_gain} column=outcome_vs_pace fmt="+0;-0" /> positions ahead of
 their controlled-pace rank, while <Value data={pass_leader} column=driver_name /> made
 <Value data={pass_leader} column=passes_made /> detected on-track passes.
+</KeyInsight>
 
 ```sql execution_chart
 select driver_name, outcome_vs_pace, story_label
@@ -100,6 +102,7 @@ context still matter, so this is an execution signal rather than a causal score.
 
 ## Driver-by-driver evidence
 
+<ExpandableSection title="View driver-by-driver evidence">
 <DataTable data={story} rows=22 search=true>
     <Column id=finish_position title="Finish" />
     <Column id=driver_name title="Driver" />
@@ -110,9 +113,11 @@ context still matter, so this is an execution signal rather than a causal score.
     <Column id=stops />
     <Column id=story_label title="Interpretation" />
 </DataTable>
+</ExpandableSection>
 
 ## Data at a glance
 
+<ExpandableSection title="View snapshot details">
 <DataTable data={race} rows=1 download=true>
     <Column id=race_label title="Race" />
     <Column id=lap_rows title="Clean lap rows" />
@@ -122,7 +127,6 @@ context still matter, so this is an execution signal rather than a causal score.
     <Column id=track_temp title="Track °C" fmt="0.0" />
     <Column id=replay_duration_sec title="Replay seconds" fmt="0" />
 </DataTable>
+</ExpandableSection>
 
-Continue with the [race replay](race-replay), [race pace](race-pace),
-[tyre strategy](tyre-strategy), or [telemetry comparison](telemetry). Each page
-defaults to the newest partition it actually contains and states its coverage.
+<RelatedAnalysis section="race" current="latest-race" />
