@@ -25,12 +25,263 @@ from sqlalchemy import create_engine, inspect, text
 from ingestion.config import Settings, get_settings
 
 DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
-REQUIRED_TABLES = (
-    ("staging", "stg_races"),
-    ("marts", "driver_ratings"),
-    ("marts", "driver_ratings_v2"),
-    ("marts", "mart_driver_season_pace"),
-)
+
+# This is the serving contract, not merely a minimum snapshot smoke test. Every
+# public Evidence source must be able to compile against a freshly exported
+# database. Optional datasets still materialise an empty table with the declared
+# columns, so their absence is always a broken pipeline rather than "no data".
+DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
+    ("staging", "stg_races"): {"season", "round", "race_name", "race_date"},
+    ("staging", "stg_driver_codes"): {
+        "season",
+        "driver_code",
+        "driver_id",
+        "driver_name",
+    },
+    ("staging", "stg_laps"): {
+        "season",
+        "round",
+        "session",
+        "driver_code",
+        "team",
+        "lap_start_sec",
+        "lap_time_sec",
+    },
+    ("staging", "stg_race_control"): {
+        "season",
+        "round",
+        "session",
+        "session_time_sec",
+        "category",
+        "flag",
+        "scope",
+        "message",
+        "driver_code",
+        "lap",
+    },
+    ("staging", "stg_team_radio"): {
+        "season",
+        "round",
+        "session_time_sec",
+        "session",
+        "driver_code",
+        "recording_url",
+        "transcript",
+    },
+    ("staging", "constructor_colors"): {"team", "team_color"},
+    ("intermediate", "int_teammate_quali_gaps"): {
+        "race_key",
+        "season",
+        "driver_id",
+        "teammate_id",
+        "pace_gap",
+    },
+    ("intermediate", "int_teammate_race_gaps"): {
+        "race_key",
+        "season",
+        "driver_id",
+        "teammate_id",
+        "pace_gap",
+        "n_laps",
+    },
+    ("marts", "driver_ratings"): {
+        "rank",
+        "driver_id",
+        "driver_name",
+        "nationality",
+        "rating",
+        "rating_lo",
+        "rating_hi",
+        "n_boot",
+        "pace_deficit",
+        "n_comparisons",
+        "n_seasons",
+        "first_season",
+        "last_season",
+    },
+    ("marts", "driver_ratings_v2"): {
+        "season",
+        "rank",
+        "driver_id",
+        "driver_name",
+        "nationality",
+        "rating",
+        "rating_lo",
+        "rating_hi",
+        "n_boot",
+        "pace_deficit",
+        "form_delta",
+        "n_comparisons",
+    },
+    ("marts", "driver_pace_profile"): {
+        "delta_rank",
+        "driver_id",
+        "driver_name",
+        "nationality",
+        "quali_rating",
+        "race_rating",
+        "delta",
+        "quali_rank",
+        "race_rank",
+        "n_quali_comparisons",
+        "n_race_comparisons",
+        "n_seasons",
+        "first_season",
+        "last_season",
+    },
+    ("marts", "mart_driver_season_pace"): {
+        "driver_id",
+        "driver_name",
+        "season",
+        "races_compared",
+        "teammate_quali_wins",
+        "teammate_win_pct",
+        "mean_pace_gap",
+        "stddev_pace_gap",
+    },
+    ("marts", "mart_lap_times"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "team",
+        "lap_number",
+        "stint",
+        "compound",
+        "tyre_life",
+        "position",
+        "lap_time_sec",
+    },
+    ("marts", "mart_pit_strategy"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_id",
+        "driver_name",
+        "stop_number",
+        "pit_lap",
+        "duration_sec",
+        "position_before",
+        "position_after",
+        "positions_gained",
+    },
+    ("marts", "mart_speed_trap"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "driver_name",
+        "team",
+        "n_laps",
+        "top_speed_kph",
+        "avg_speed_kph",
+    },
+    ("marts", "mart_stint_strategy"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "driver_name",
+        "team",
+        "stint",
+        "compound",
+        "start_lap",
+        "end_lap",
+        "stint_laps",
+        "tyre_life_end",
+        "started_fresh",
+        "finish_position",
+        "deg_sec_per_lap",
+    },
+    ("marts", "mart_tyre_degradation"): {
+        "season",
+        "round",
+        "race_name",
+        "compound",
+        "n_laps",
+        "deg_sec_per_lap",
+        "best_lap_sec",
+        "avg_lap_sec",
+    },
+    ("marts", "mart_weather_degradation"): {
+        "season",
+        "round",
+        "race_name",
+        "compound",
+        "weather_bucket",
+        "avg_track_temp",
+        "avg_air_temp",
+        "n_laps",
+        "deg_sec_per_lap",
+        "avg_lap_sec",
+    },
+    ("marts", "mart_lap_telemetry"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "driver_name",
+        "lap_number",
+        "compound",
+        "distance_m",
+        "speed_kph",
+        "throttle",
+        "brake",
+        "drs",
+        "gear",
+        "x",
+        "y",
+    },
+    ("marts", "race_replay"): {
+        "season",
+        "round",
+        "driver_code",
+        "t_s",
+        "x",
+        "y",
+        "running_order",
+        "gap_to_leader_s",
+        "gap_to_ahead_s",
+    },
+    ("marts", "race_overtakes"): {
+        "season",
+        "round",
+        "t_s",
+        "for_position",
+        "passer_code",
+        "passed_code",
+        "gap_at_pass_s",
+    },
+    ("marts", "mart_race_story"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "finish_position",
+        "is_classified",
+        "pace_samples",
+        "controlled_pace_delta_sec",
+        "pace_rank",
+        "outcome_vs_pace",
+        "story_label",
+    },
+    ("marts", "mart_adjusted_stint_degradation"): {
+        "season",
+        "round",
+        "race_name",
+        "driver_code",
+        "stint",
+        "compound",
+        "comparable_laps",
+        "stint_length",
+        "adjusted_deg_sec_per_lap",
+        "raw_deg_sec_per_lap",
+        "late_stint_loss_sec",
+        "cliff_signal",
+    },
+}
+
+REQUIRED_TABLES = tuple(DASHBOARD_CONTRACT)
 
 
 @dataclass(frozen=True)
@@ -131,7 +382,8 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
     return rows
 
 
-def _validate_snapshot(path: Path) -> str | None:
+def validate_dashboard_snapshot(path: Path) -> str | None:
+    """Validate that a snapshot can compile every public dashboard source."""
     connection = duckdb.connect(str(path), read_only=True)
     try:
         available = {
@@ -143,6 +395,23 @@ def _validate_snapshot(path: Path) -> str | None:
         missing = sorted(set(REQUIRED_TABLES) - available)
         if missing:
             raise ValueError(f"dashboard snapshot is missing required tables: {missing}")
+        broken_columns: list[str] = []
+        for (schema, table), required in DASHBOARD_CONTRACT.items():
+            columns = {
+                str(row[0])
+                for row in connection.execute(
+                    "select column_name from information_schema.columns "
+                    "where table_schema = ? and table_name = ?",
+                    [schema, table],
+                ).fetchall()
+            }
+            missing_columns = sorted(required - columns)
+            if missing_columns:
+                broken_columns.append(f"{schema}.{table}: {missing_columns}")
+        if broken_columns:
+            raise ValueError(
+                "dashboard snapshot has incompatible columns: " + "; ".join(broken_columns)
+            )
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
         value = _scalar(connection, "select max(race_date) from staging.stg_races")
@@ -240,7 +509,7 @@ def build_dashboard_snapshot(
             if settings.warehouse == "duckdb"
             else _copy_postgres(settings, temporary)
         )
-        latest_event_date = _validate_snapshot(temporary)
+        latest_event_date = validate_dashboard_snapshot(temporary)
         _write_snapshot_metadata(
             temporary,
             version=version,
@@ -287,7 +556,7 @@ def fetch_dashboard_snapshot(uri: str, output: Path) -> SnapshotManifest:
         filesystem.get(remote, str(temporary))
         if _sha256(temporary) != manifest.sha256:
             raise ValueError("downloaded dashboard snapshot checksum does not match its manifest")
-        _validate_snapshot(temporary)
+        validate_dashboard_snapshot(temporary)
         os.replace(temporary, output)
     finally:
         temporary.unlink(missing_ok=True)

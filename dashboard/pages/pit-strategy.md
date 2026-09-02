@@ -1,5 +1,5 @@
 ---
-title: Pit-Cycle Position Swings
+title: Which Pit Cycles Changed the Race?
 ---
 
 This page describes a driver's track position the lap **before** each stop versus
@@ -52,6 +52,13 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by pit_lap
 ```
 
+```sql impact
+select *
+from f1.strategy_impact
+where season = ${inputs.season.value} and round = ${inputs.race.value}
+order by pit_lap
+```
+
 ## Position swing across each stop — {inputs.season.value} {inputs.race.label}
 
 ```sql driver_net
@@ -77,6 +84,27 @@ order by net_positions desc
     sort=false
 />
 
+## Stop speed versus cycle outcome
+
+This separates two facts that the previous net-position number mixed together:
+how quick the stationary stop was relative to the race average, and what happened
+to track position across the cycle. Stops within two laps of a safety car, VSC or
+red flag are labelled separately.
+
+<ScatterPlot
+    data={impact}
+    x=stop_delta_sec
+    y=positions_gained
+    series=impact_label
+    xAxisTitle="stationary time versus race average (s)"
+    yAxisTitle="observed positions gained"
+    tooltipTitle=driver_name
+    pointSize=24
+>
+    <ReferenceLine x=0 label="race-average stop" />
+    <ReferenceLine y=0 label="position held" />
+</ScatterPlot>
+
 ## Every stop
 
 <DataTable data={race_stops} rows=20>
@@ -89,11 +117,18 @@ order by net_positions desc
     <Column id=positions_gained title="Gained" />
 </DataTable>
 
-## Quickest stops of the race
+## Evidence by stop
 
-<DataTable data={driver_net} rows=10>
+<DataTable data={impact} rows=30 search=true>
     <Column id=driver_name title="Driver" />
-    <Column id=stops />
-    <Column id=avg_stop_sec title="Avg stationary (s)" fmt='0.00' />
-    <Column id=net_positions title="Net places" />
+    <Column id=stop_number title="Stop" />
+    <Column id=pit_lap title="Lap" />
+    <Column id=duration_sec title="Stationary (s)" fmt='0.00' />
+    <Column id=stop_delta_sec title="vs average" fmt='+0.00;-0.00' />
+    <Column id=positions_gained title="Positions" fmt='+0;-0' />
+    <Column id=impact_label title="Context" />
 </DataTable>
+
+Even a clean positive cycle is not automatically an undercut: rival stops,
+traffic, tyre warm-up and retirements can still explain the movement. The chart
+is designed to identify candidates for replay inspection, not award causal credit.

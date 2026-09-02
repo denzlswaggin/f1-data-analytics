@@ -7,7 +7,11 @@ from pathlib import Path
 import duckdb
 import pytest
 from ingestion.config import Settings
-from ingestion.dashboard_snapshot import build_dashboard_snapshot, fetch_dashboard_snapshot
+from ingestion.dashboard_snapshot import (
+    DASHBOARD_CONTRACT,
+    build_dashboard_snapshot,
+    fetch_dashboard_snapshot,
+)
 
 
 def _warehouse(path: Path) -> None:
@@ -15,14 +19,51 @@ def _warehouse(path: Path) -> None:
     try:
         for schema in ("staging", "intermediate", "marts"):
             connection.execute(f"create schema {schema}")
+        duck_type = {
+            "season": "integer",
+            "round": "integer",
+            "lap_number": "integer",
+            "stint": "integer",
+            "start_lap": "integer",
+            "end_lap": "integer",
+            "n_laps": "integer",
+            "n_comparisons": "integer",
+            "pit_lap": "integer",
+            "race_date": "date",
+            "rating": "double",
+            "rating_lo": "double",
+            "rating_hi": "double",
+            "form_delta": "double",
+            "quali_rating": "double",
+            "race_rating": "double",
+            "delta": "double",
+            "mean_pace_gap": "double",
+            "pace_gap": "double",
+            "lap_start_sec": "double",
+            "session_time_sec": "double",
+            "lap_time_sec": "double",
+            "duration_sec": "double",
+            "top_speed_kph": "double",
+            "deg_sec_per_lap": "double",
+            "distance_m": "double",
+            "speed_kph": "double",
+            "t_s": "double",
+            "x": "double",
+            "y": "double",
+        }
+        for (schema, table), columns in DASHBOARD_CONTRACT.items():
+            definitions = ", ".join(
+                f'"{column}" {duck_type.get(column, "varchar")}' for column in sorted(columns)
+            )
+            connection.execute(f'create table {schema}."{table}" ({definitions})')
         connection.execute(
-            "create table staging.stg_races as select 2026 season, date '2026-08-30' race_date"
+            "insert into staging.stg_races (season, round, race_name, race_date) "
+            "values (2026, 1, 'Test Grand Prix', date '2026-08-30')"
         )
-        connection.execute("create table intermediate.gaps as select 1 id")
-        connection.execute("create table marts.driver_ratings as select 'driver' driver_id")
-        connection.execute("create table marts.driver_ratings_v2 as select 'driver' driver_id")
         connection.execute(
-            "create table marts.mart_driver_season_pace as select 'driver' driver_id"
+            "insert into marts.driver_ratings "
+            "(driver_id, rating, rating_lo, rating_hi, n_comparisons) "
+            "values ('driver', 1.0, 0.9, 1.1, 10)"
         )
     finally:
         connection.close()
@@ -74,3 +115,18 @@ def test_fetch_verifies_checksum(tmp_path: Path) -> None:
     (published / manifest.version / manifest.database_file).write_bytes(b"corrupt")
     with pytest.raises(ValueError, match="checksum"):
         fetch_dashboard_snapshot(f"file://{published}", installed)
+
+
+def test_snapshot_rejects_incompatible_dashboard_columns(tmp_path: Path) -> None:
+    source = tmp_path / "source.duckdb"
+    _warehouse(source)
+    with duckdb.connect(str(source)) as connection:
+        connection.execute("alter table marts.driver_ratings drop column rating_lo")
+    settings = Settings(warehouse="duckdb", duckdb_path=source, lake_dir=tmp_path / "lake")
+
+    with pytest.raises(ValueError, match=r"driver_ratings.*rating_lo"):
+        build_dashboard_snapshot(
+            tmp_path / "snapshots",
+            settings=settings,
+            version="broken-columns",
+        )

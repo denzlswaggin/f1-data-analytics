@@ -1,5 +1,5 @@
 ---
-title: Race Pace & Tyre Stints
+title: Where Was the Race Won?
 ---
 
 Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
@@ -36,29 +36,103 @@ where section = 'race_pace'
 
 <DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="descriptive, filtered timing" />
 
+```sql drivers
+select distinct driver_code
+from f1.lap_times
+where season = ${inputs.season.value} and round = ${inputs.race.value}
+order by driver_code
+```
+
+<Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
+<Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+
 ```sql race_laps
+with contextual as (
+    select
+        *,
+        avg(lap_time_sec) over (partition by lap_number, compound) as field_lap_avg_sec,
+        count(*) over (partition by lap_number, compound) as field_lap_size
+    from f1.lap_times
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
+)
 select
     driver_code,
     lap_number,
-    lap_time_sec,
     compound,
-    stint,
-    position
-from f1.lap_times
-where season = ${inputs.season.value} and round = ${inputs.race.value}
+    lap_time_sec - field_lap_avg_sec as controlled_delta_sec
+from contextual
+where field_lap_size >= 3
+    and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by driver_code, lap_number
 ```
 
-## Lap-time evolution — {inputs.season.value} {inputs.race.label}
+## Controlled pace duel — {inputs.season.value} {inputs.race.label}
+
+The chart subtracts the field average on the **same race lap and compound**,
+controlling fuel load and compound choice. Negative values are faster than the
+comparison field; two selected drivers stay readable throughout the race.
 
 <LineChart
     data={race_laps}
     x=lap_number
-    y=lap_time_sec
+    y=controlled_delta_sec
     series=driver_code
-    yAxisTitle="lap time (s)"
+    yAxisTitle="delta to same-lap/compound field (s)"
     chartAreaHeight=360
+>
+    <ReferenceLine y=0 label="field average" />
+</LineChart>
+
+```sql phase_pace
+with race as (
+    select
+        *,
+        max(lap_number) over () as race_laps,
+        avg(lap_time_sec) over (partition by lap_number, compound) as field_lap_avg_sec,
+        count(*) over (partition by lap_number, compound) as field_lap_size
+    from f1.lap_times
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
+),
+phased as (
+    select
+        driver_code,
+        case
+            when lap_number <= race_laps * 0.25 then 'Opening'
+            when lap_number <= race_laps * 0.70 then 'Middle'
+            else 'Closing'
+        end as race_phase,
+        lap_time_sec - field_lap_avg_sec as controlled_delta_sec
+    from race
+    where field_lap_size >= 3
+)
+select
+    driver_code,
+    race_phase,
+    avg(controlled_delta_sec) as controlled_delta_sec,
+    count(*) as comparable_laps
+from phased
+group by driver_code, race_phase
+having count(*) >= 5
+order by race_phase, controlled_delta_sec
+```
+
+## Who was quick in each phase?
+
+<BarChart
+    data={phase_pace}
+    x=driver_code
+    y=controlled_delta_sec
+    series=race_phase
+    type=grouped
+    yAxisTitle="controlled pace delta (s) — lower is faster"
 />
+
+<DataTable data={phase_pace} rows=60 search=true>
+    <Column id=driver_code title="Driver" />
+    <Column id=race_phase title="Phase" />
+    <Column id=controlled_delta_sec title="Delta (s)" fmt="+0.000;-0.000" />
+    <Column id=comparable_laps title="Laps" />
+</DataTable>
 
 ## Tyre-stint pace by compound
 

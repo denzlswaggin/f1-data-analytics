@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
+.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dashboard-prepare dashboard-dev dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
 
 # Prefer the repository virtual environment without requiring it. CI and
 # containers deliberately fall back to the Python found on PATH. Callers may
@@ -49,6 +49,14 @@ dbt-docs-check: dbt-docs ## Generate docs, then fail if any model/source lacks a
 
 dashboard-snapshot: ## Export a versioned, read-only Evidence database
 	$(PYTHON) scripts/dashboard_snapshot.py build --output-dir data/dashboard
+
+dashboard-prepare: ## Validate marts, export the snapshot and refresh Evidence sources
+	$(PYTHON) scripts/check_dashboard_data.py
+	$(MAKE) dashboard-snapshot
+	cd dashboard && npm run sources:strict
+
+dashboard-dev: dashboard-prepare ## Prepare data and launch the local dashboard
+	cd dashboard && npm run dev
 
 dagster: ## Launch the Dagster UI (asset graph + schedules)
 	$(DAGSTER) dev -m orchestration.definitions
