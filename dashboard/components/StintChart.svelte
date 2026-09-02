@@ -46,13 +46,13 @@
     $: maxLap = Math.max(1, ...rows.flatMap((r) => r.stints.map((s) => s.end_lap)));
     $: legend = Object.keys(COMPOUND).filter((k) => new Set((data || []).map((d) => d.compound)).has(k));
 
-    $: width = clientWidth || 900;
+    $: width = Math.max(280, clientWidth || 900);
     $: height = padT + rows.length * rowH + axisH;
     $: plotL = padL;
     $: plotR = width - padR;
     $: plotW = Math.max(1, plotR - plotL);
     $: xOf = (lap) => plotL + (lap / maxLap) * plotW;
-    $: ticks = buildTicks(maxLap);
+    $: ticks = buildTicks(maxLap, width);
 
     function buildRows(d) {
         const byDriver = new Map();
@@ -85,12 +85,17 @@
         return out;
     }
 
-    function buildTicks(mx) {
-        const step = mx > 60 ? 10 : 5;
+    function buildTicks(mx, chartWidth) {
+        const step = chartWidth < 440 ? (mx > 60 ? 20 : 10) : (mx > 60 ? 10 : 5);
         const t = [];
         for (let l = 0; l <= mx; l += step) t.push(l);
         if (t[t.length - 1] !== mx) t.push(mx);
         return t;
+    }
+
+    function stintLabel(driver, stint) {
+        const slope = stint.deg == null ? '' : `, ${stint.deg.toFixed(2)} seconds per lap observed slope`;
+        return `${driver.driver_code}, ${compoundOf(stint.compound).name}, laps ${stint.start_lap} to ${stint.end_lap}, ${stint.stint_laps} laps${slope}`;
     }
 </script>
 
@@ -118,7 +123,7 @@
             width="100%"
             height={height}
             role="img"
-            aria-label="Tyre strategy chart"
+            aria-label={title ? `Tyre strategy chart — ${title}` : 'Tyre strategy chart'}
         >
             <defs>
                 <!-- Left→right transparent→black; each stint's overlay scales its
@@ -155,6 +160,9 @@
                         height={barH}
                         rx="2"
                         fill={compoundOf(s.compound).color}
+                        tabindex="0"
+                        role="img"
+                        aria-label={stintLabel(r, s)}
                     >
                         <title
                             >{r.driver_code} · {compoundOf(s.compound).name} · laps {s.start_lap}–{s.end_lap}
@@ -274,6 +282,7 @@
         stroke: currentColor;
         stroke-width: 1.25;
     }
+    .sc-stint:focus { stroke: var(--color-primary, #2563eb); stroke-width: 2; outline: none; }
     .sc-pit-tick {
         stroke: currentColor;
         stroke-opacity: 0.55;
