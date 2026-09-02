@@ -8,17 +8,32 @@ were gained across that window. It is not a counterfactual undercut/overcut
 estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
 observed position. Ergast-sourced (pit-stop timing from ~2011).
 
-```sql races
-select distinct race_label
+```sql seasons
+select distinct season
 from f1.pit_strategy
-order by race_label desc
+order by season desc
 ```
 
-<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+<Dropdown data={seasons} name=season value=season title="Season" />
+
+```sql races
+select distinct round, race_name
+from f1.pit_strategy
+where season = ${inputs.season.value}
+order by round
+```
+
+<Dropdown data={races} name=race value=round label=race_name title="Race" />
 
 ```sql pit_coverage
 select * from f1.data_coverage
-where section = 'pit_cycle' and race_label = '${inputs.race.value}'
+where section = 'pit_cycle'
+    and race_label = (
+        select race_label
+        from f1.pit_strategy
+        where season = ${inputs.season.value} and round = ${inputs.race.value}
+        limit 1
+    )
 ```
 
 <DataTrust data={pit_coverage} sampleLabel="pit stops" entityLabel="Drivers" method="descriptive window; not counterfactual" />
@@ -33,7 +48,7 @@ select
     position_after,
     positions_gained
 from f1.pit_strategy
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by pit_lap
 ```
 
@@ -53,7 +68,7 @@ select
     count(*) as stops,
     round(avg(duration_sec), 2) as avg_stop_sec
 from f1.pit_strategy
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and positions_gained is not null
 group by driver_name
 order by net_positions desc

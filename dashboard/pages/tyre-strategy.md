@@ -10,17 +10,32 @@ slope** (s/lap). The slope is descriptive and not adjusted for fuel, traffic or
 track evolution. Built from FastF1 per-lap compound + stint data. _Hover a stint
 for its lap range, tyre age, and observed slope._
 
-```sql races
-select distinct race_label
+```sql seasons
+select distinct season
 from f1.stint_strategy
-order by race_label desc
+order by season desc
 ```
 
-<Dropdown data={races} name=race value=race_label defaultValue="2024 Bahrain Grand Prix" />
+<Dropdown data={seasons} name=season value=season title="Season" />
+
+```sql races
+select distinct round, race_name
+from f1.stint_strategy
+where season = ${inputs.season.value}
+order by round
+```
+
+<Dropdown data={races} name=race value=round label=race_name title="Race" />
 
 ```sql tyre_coverage
 select * from f1.data_coverage
-where section = 'tyre_strategy' and race_label = '${inputs.race.value}'
+where section = 'tyre_strategy'
+    and race_label = (
+        select race_label
+        from f1.stint_strategy
+        where season = ${inputs.season.value} and round = ${inputs.race.value}
+        limit 1
+    )
 ```
 
 <DataTrust data={tyre_coverage} sampleLabel="stints" entityLabel="Drivers" method="descriptive, unadjusted slope" />
@@ -28,11 +43,11 @@ where section = 'tyre_strategy' and race_label = '${inputs.race.value}'
 ```sql race_stints
 select *
 from f1.stint_strategy
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by finish_position, stint
 ```
 
-<StintChart data={race_stints} title={inputs.race.value} />
+<StintChart data={race_stints} title={`${inputs.season.value} ${inputs.race.label}`} />
 
 ## Fuel- and track-adjusted fall-off
 
@@ -92,7 +107,7 @@ select
     count(*) - 1 as stops,
     string_agg(compound, ' → ' order by stint) as strategy
 from f1.stint_strategy
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 group by driver_code, driver_name
 order by pos
 ```
