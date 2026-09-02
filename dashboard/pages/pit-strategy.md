@@ -2,6 +2,8 @@
 title: Which Pit Cycles Changed the Race?
 ---
 
+<AppNav />
+
 This page describes a driver's track position the lap **before** each stop versus
 **two laps after**, alongside the stop's stationary time. Positive means places
 were gained across that window. It is not a counterfactual undercut/overcut

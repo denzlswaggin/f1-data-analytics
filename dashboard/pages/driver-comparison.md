@@ -2,6 +2,8 @@
 title: Compare Drivers Honestly
 ---
 
+<AppNav />
+
 Compare two drivers on the same season scale. Ratings are relative to the
 connected teammate graph, not absolute lap-time predictions. Overlapping 90%
 intervals are evidence that the ordering is uncertain.

@@ -2,7 +2,9 @@
 title: Who Gains on Sunday?
 ---
 
-The headline [driver rating](/) is built from **qualifying** teammate gaps: one clean
+<AppNav />
+
+The headline [driver rating](driver-ratings) is built from **qualifying** teammate gaps: one clean
 lap, no traffic, no fuel, no tyre management. It says who is fastest on Saturday and
 nothing about Sunday.
 

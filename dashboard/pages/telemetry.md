@@ -2,6 +2,8 @@
 title: Where Does Each Driver Gain Time?
 ---
 
+<AppNav />
+
 Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
 Compare who carried more speed where, then see a single driver's racing line
 coloured by gear. _FastF1 telemetry covers the current season to date._

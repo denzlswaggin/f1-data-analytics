@@ -2,6 +2,8 @@
 title: Which Tyres Faded?
 ---
 
+<AppNav />
+
 Who ran which compound, for how long, and when they pitted — the classic F1
 **strategy chart**. Each row is a driver (ordered by finish), each coloured block a
 tyre stint on the true race-lap axis; a vertical tick marks every pit stop, and each
