@@ -55,11 +55,11 @@ order by pit_lap
 ```sql impact
 select *
 from f1.strategy_impact
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by pit_lap
 ```
 
-## Position swing across each stop — {inputs.race.value}
+## Position swing across each stop — {inputs.season.value} {inputs.race.label}
 
 ```sql driver_net
 select

@@ -58,7 +58,7 @@ evolution trend that makes raw lap times look like tyre degradation.
 ```sql adjusted_deg
 select *
 from f1.adjusted_stint_degradation
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 <ScatterPlot
@@ -95,7 +95,7 @@ order by late_stint_loss_sec desc
 The cliff flag requires at least 0.8 seconds of residual loss between the first
 and final three comparable laps. It is a review signal, not a tyre-failure forecast.
 
-## Strategy summary — {inputs.race.value}
+## Strategy summary — {inputs.season.value} {inputs.race.label}
 
 Number of stops and the compound sequence each driver ran, in finishing order.
 

@@ -39,7 +39,7 @@ where section = 'race_pace'
 ```sql drivers
 select distinct driver_code
 from f1.lap_times
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
@@ -53,7 +53,7 @@ with contextual as (
         avg(lap_time_sec) over (partition by lap_number, compound) as field_lap_avg_sec,
         count(*) over (partition by lap_number, compound) as field_lap_size
     from f1.lap_times
-    where race_label = '${inputs.race.value}'
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
 )
 select
     driver_code,
@@ -66,7 +66,7 @@ where field_lap_size >= 3
 order by driver_code, lap_number
 ```
 
-## Controlled pace duel — {inputs.race.value}
+## Controlled pace duel — {inputs.season.value} {inputs.race.label}
 
 The chart subtracts the field average on the **same race lap and compound**,
 controlling fuel load and compound choice. Negative values are faster than the
@@ -91,7 +91,7 @@ with race as (
         avg(lap_time_sec) over (partition by lap_number, compound) as field_lap_avg_sec,
         count(*) over (partition by lap_number, compound) as field_lap_size
     from f1.lap_times
-    where race_label = '${inputs.race.value}'
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
 ),
 phased as (
     select

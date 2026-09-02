@@ -21,8 +21,8 @@ pace as (
     select
         season,
         round,
-        max(race_name) as race_name,
         driver_code,
+        max(race_name) as race_name,
         max(driver_id) as driver_id,
         max(driver_name) as driver_name,
         max(team) as team,
@@ -61,16 +61,16 @@ joined as (
         pace_ranked.driver_id,
         pace_ranked.driver_name,
         pace_ranked.team,
+        pace_ranked.pace_samples,
+        pace_ranked.controlled_pace_delta_sec,
         results.grid_position,
         results.finish_position,
         results.status,
+        cast(pace_ranked.pace_rank as integer) as pace_rank,
         case
             when results.is_classified or results.status = 'Lapped' then true
             else false
         end as is_classified,
-        pace_ranked.pace_samples,
-        pace_ranked.controlled_pace_delta_sec,
-        cast(pace_ranked.pace_rank as integer) as pace_rank,
         coalesce(stops.stops, 0) as stops
     from pace_ranked
     inner join {{ ref('stg_results') }} as results

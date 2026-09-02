@@ -44,7 +44,7 @@ acceleration differences readable instead of overlaying the entire field.
 ```sql duel_drivers
 select distinct driver_code, driver_name
 from f1.telemetry_fastest_lap
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
@@ -57,7 +57,7 @@ select
     distance_m,
     speed_kph
 from f1.telemetry_fastest_lap
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by driver_code, distance_m
 ```
@@ -81,7 +81,7 @@ with ordered as (
         lag(distance_m) over (partition by driver_code order by distance_m) as prev_distance_m,
         lag(speed_kph) over (partition by driver_code order by distance_m) as prev_speed_kph
     from f1.telemetry_fastest_lap
-    where race_label = '${inputs.race.value}'
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
         and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 ),
 segments as (
@@ -140,7 +140,7 @@ Driver A; a rising section is where A gains, and a falling section is where B ga
 ```sql inputs_trace
 select driver_code, distance_m, throttle, brake
 from f1.telemetry_fastest_lap
-where race_label = '${inputs.race.value}'
+where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by driver_code, distance_m
 ```
