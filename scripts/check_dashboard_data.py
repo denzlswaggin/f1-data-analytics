@@ -65,6 +65,12 @@ CHECKS = (
         "and rating_lo <= rating and rating <= rating_hi",
         15,
     ),
+    recent_season_coverage_check(
+        "dynamic ratings recent-season coverage", "marts.driver_ratings_v2"
+    ),
+    recent_season_coverage_check(
+        "season pace recent-season coverage", "marts.mart_driver_season_pace"
+    ),
     Check(
         "driver season history",
         "select count(*) from marts.mart_driver_season_pace where driver_id = 'max_verstappen'",
@@ -132,6 +138,12 @@ CHECKS = (
     ),
     recent_season_coverage_check(
         "race replay recent-season coverage", "marts.race_replay"
+    ),
+    recent_season_coverage_check(
+        "race control recent-season coverage", "staging.stg_race_control"
+    ),
+    recent_season_coverage_check(
+        "team radio recent-season coverage", "staging.stg_team_radio"
     ),
     latest_race_check("latest replay rows", "marts.race_replay", minimum=10_000),
     latest_race_check(
