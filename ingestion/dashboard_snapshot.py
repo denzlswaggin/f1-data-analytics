@@ -435,7 +435,15 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
             )
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
-        value = _scalar(connection, "select max(race_date) from staging.stg_races")
+        value = _scalar(
+            connection,
+            "select coalesce("
+            "(select max(races.race_date) from staging.stg_races as races "
+            "join (select distinct season, round from marts.mart_lap_times) as represented "
+            "using (season, round)), "
+            "(select max(race_date) from staging.stg_races)"
+            ")",
+        )
         return None if value is None else str(value)
     finally:
         connection.close()
