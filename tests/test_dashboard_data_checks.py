@@ -19,7 +19,9 @@ def test_recent_season_coverage_accepts_all_three_latest_seasons() -> None:
 
     check = recent_season_coverage_check("example coverage", "marts.example")
 
-    assert connection.execute(check.query).fetchone()[0] == 0
+    result = connection.execute(check.query).fetchone()
+    assert result is not None
+    assert result[0] == 0
 
 
 def test_recent_season_coverage_reports_a_missing_middle_season() -> None:
@@ -37,4 +39,6 @@ def test_recent_season_coverage_reports_a_missing_middle_season() -> None:
 
     check = recent_season_coverage_check("example coverage", "marts.example")
 
-    assert connection.execute(check.query).fetchone()[0] == 1
+    result = connection.execute(check.query).fetchone()
+    assert result is not None
+    assert result[0] == 1
