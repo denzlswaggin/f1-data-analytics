@@ -14,6 +14,7 @@ class Check:
     name: str
     query: str
     minimum: int | float = 1
+    maximum: int | float | None = None
 
 
 def latest_race_check(
@@ -26,6 +27,21 @@ def latest_race_check(
         "join latest using (season, round)"
     )
     return Check(name, query, minimum)
+
+
+def recent_season_coverage_check(name: str, table: str, seasons: int = 3) -> Check:
+    """Require a mart to cover every recent season available in race results."""
+    query = (
+        "with cutoff as (select max(season) - "
+        f"{seasons - 1} as first_season from staging.stg_results), expected as ("
+        "select distinct season from staging.stg_results, cutoff "
+        "where season >= first_season"
+        "), covered as ("
+        f"select distinct season from {table}"
+        ") select count(*) from expected left join covered using (season) "
+        "where covered.season is null"
+    )
+    return Check(name, query, minimum=0, maximum=0)
 
 
 CHECKS = (
@@ -49,6 +65,12 @@ CHECKS = (
         "and rating_lo <= rating and rating <= rating_hi",
         15,
     ),
+    recent_season_coverage_check(
+        "dynamic ratings recent-season coverage", "marts.driver_ratings_v2"
+    ),
+    recent_season_coverage_check(
+        "season pace recent-season coverage", "marts.mart_driver_season_pace"
+    ),
     Check(
         "driver season history",
         "select count(*) from marts.mart_driver_season_pace where driver_id = 'max_verstappen'",
@@ -57,10 +79,45 @@ CHECKS = (
         "Saturday vs Sunday profile",
         "select count(*) from marts.driver_pace_profile where n_race_comparisons >= 10",
     ),
+    recent_season_coverage_check(
+        "race pace recent-season coverage", "marts.mart_lap_times"
+    ),
     latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
+    recent_season_coverage_check(
+        "pit strategy recent-season coverage", "marts.mart_pit_strategy"
+    ),
     latest_race_check("latest race pit strategy", "marts.mart_pit_strategy", minimum=10),
+    Check(
+        "pit strategy race coverage",
+        "with expected as ("
+        "select distinct season, round from staging.stg_laps where session = 'R'"
+        "), covered as ("
+        "select distinct season, round from marts.mart_pit_strategy"
+        ") select count(*) from expected left join covered using (season, round) "
+        "where covered.season is null",
+        minimum=0,
+        maximum=0,
+    ),
+    Check(
+        "pit strategy usable race coverage",
+        "select count(*) from ("
+        "select season, round from marts.mart_pit_strategy group by season, round "
+        "having count(positions_gained) = 0"
+        ") as races_without_position_windows",
+        minimum=0,
+        maximum=0,
+    ),
+    recent_season_coverage_check(
+        "tyre strategy recent-season coverage", "marts.mart_stint_strategy"
+    ),
     latest_race_check("latest race tyre strategy", "marts.mart_stint_strategy", minimum=10),
+    recent_season_coverage_check(
+        "speed trap recent-season coverage", "marts.mart_speed_trap"
+    ),
     latest_race_check("latest race speed trap", "marts.mart_speed_trap", minimum=15),
+    recent_season_coverage_check(
+        "weather recent-season coverage", "marts.mart_weather_degradation"
+    ),
     Check(
         "weather degradation",
         "select count(*) from marts.mart_weather_degradation",
@@ -76,6 +133,18 @@ CHECKS = (
         "count(distinct driver_code)",
         10,
     ),
+    recent_season_coverage_check(
+        "telemetry recent-season coverage", "marts.mart_lap_telemetry"
+    ),
+    recent_season_coverage_check(
+        "race replay recent-season coverage", "marts.race_replay"
+    ),
+    recent_season_coverage_check(
+        "race control recent-season coverage", "staging.stg_race_control"
+    ),
+    recent_season_coverage_check(
+        "team radio recent-season coverage", "staging.stg_team_radio"
+    ),
     latest_race_check("latest replay rows", "marts.race_replay", minimum=10_000),
     latest_race_check(
         "latest replay drivers",
@@ -88,6 +157,21 @@ CHECKS = (
         "marts.race_replay",
         "coalesce(max(t_s) - min(t_s), 0)",
         1_800,
+    ),
+    Check(
+        "complete replay partitions",
+        "with lap_windows as ("
+        "select season, round, min(lap_start_sec) as race_start, "
+        "max(lap_start_sec + lap_time_sec) as race_end "
+        "from staging.stg_laps where session = 'R' "
+        "and lap_start_sec is not null and lap_time_sec is not null group by season, round"
+        "), replay_windows as ("
+        "select season, round, max(t_s) - min(t_s) as replay_duration "
+        "from marts.race_replay group by season, round"
+        ") select count(*) from replay_windows join lap_windows using (season, round) "
+        "where replay_duration < 0.9 * (race_end - race_start)",
+        minimum=0,
+        maximum=0,
     ),
     latest_race_check("latest race overtakes", "marts.race_overtakes"),
 )
@@ -107,6 +191,8 @@ def main() -> None:
 
             if value is None or value < check.minimum:
                 failures.append(f"{check.name}: got {value}, expected at least {check.minimum}")
+            elif check.maximum is not None and value > check.maximum:
+                failures.append(f"{check.name}: got {value}, expected at most {check.maximum}")
             else:
                 print(f"PASS {check.name}: {value}")
 

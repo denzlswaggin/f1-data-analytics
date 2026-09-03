@@ -1,5 +1,6 @@
 ---
 title: Can I Trust This Result?
+max_width: 1600
 ---
 
 <AppNav />

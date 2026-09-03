@@ -4,7 +4,6 @@ PAGES_DIR = Path(__file__).parents[1] / "dashboard" / "pages"
 RACE_PAGES = {
     "pit-strategy.md",
     "race-pace.md",
-    "race-replay.md",
     "telemetry.md",
     "tyre-strategy.md",
     "weather-and-speed.md",
@@ -28,3 +27,24 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
         assert 'defaultValue="2024 Bahrain Grand Prix"' not in content
         assert "race_label = '${inputs.race.value}'" not in content
         assert "race_name = '${inputs.race.value}'" not in content
+
+
+def test_replay_picker_resets_the_race_when_the_season_changes() -> None:
+    page = (PAGES_DIR / "race-replay.md").read_text(encoding="utf-8")
+    component = (PAGES_DIR.parent / "components" / "ReplayRacePicker.svelte").read_text(
+        encoding="utf-8"
+    )
+
+    assert "<ReplayRacePicker seasons={replay_seasons} races={replay_races} />" in page
+    assert "cast(season as integer) as season" in page
+    assert "cast(round as integer) as round" in page
+    assert "cast(cast(season as integer) as varchar)" in page
+    assert "substr(race_name, strpos(race_name, ' ') + 1)" in page
+    assert (
+        "where season = ${inputs.season.value}"
+        not in page.split("```sql replay_races", 1)[1].split("```", 1)[0]
+    )
+    assert "const seasonChanged" in component
+    assert "const requestedRace = seasonChanged ? null : rawValue('race')" in component
+    assert "publish('race', firstRace.round, firstRace.race_name)" in component
+    assert "a truncated upstream feed is withheld" in page

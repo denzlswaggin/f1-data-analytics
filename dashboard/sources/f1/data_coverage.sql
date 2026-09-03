@@ -1,7 +1,13 @@
 -- Honest coverage metadata for every public dashboard section. `latest_event_date`
 -- is the newest race represented by the data, not the ingestion refresh time.
 with races as (
-    select season, round, race_name, race_date from staging.stg_races
+    select race.season, race.round, race.race_name, race.race_date
+    from staging.stg_races as race
+    where exists (
+        select 1
+        from marts.mart_lap_times as laps
+        where laps.season = race.season and laps.round = race.round
+    )
 ),
 
 fastest_telemetry_laps as (

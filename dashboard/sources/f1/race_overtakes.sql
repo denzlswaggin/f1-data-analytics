@@ -11,7 +11,10 @@ select
     o.for_position,
     o.passer_code,
     o.passed_code,
-    o.gap_at_pass_s
+    o.gap_at_pass_s,
+    o.confidence,
+    o.evidence,
+    o.reason
 from marts.race_overtakes o
 left join staging.stg_races rc
     on rc.season = o.season
@@ -27,6 +30,9 @@ select
     0,
     '__NO_DATA__',
     '__NO_DATA__',
-    cast(0 as double)
+    cast(0 as double),
+    cast(0 as double),
+    'no replay data',
+    'unavailable'
 where not exists (select 1 from marts.race_overtakes)
 order by race_name, t_s

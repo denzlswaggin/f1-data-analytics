@@ -44,3 +44,5 @@ dashboard/build/
 Thumbs.db
 .idea/
 .vscode/
+# Evidence can create a local profile when its generated SSR bundle is run.
+/customization/

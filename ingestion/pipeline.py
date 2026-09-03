@@ -183,7 +183,12 @@ def ingest_weather(
 
 
 def ingest_telemetry(
-    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+    season: int,
+    rounds: list[int],
+    session: str = "R",
+    settings: Settings | None = None,
+    *,
+    fastest_only: bool = False,
 ) -> int:
     """Ingest FastF1 distance-resampled telemetry for a set of rounds (heavy)."""
     settings = settings or get_settings()
@@ -192,7 +197,9 @@ def ingest_telemetry(
     client = FastF1Client(settings)
     frames = []
     for rnd in rounds:
-        df = client.load_session_telemetry(season, rnd, session)
+        df = client.load_session_telemetry(
+            season, rnd, session, fastest_only=fastest_only
+        )
         if not df.empty:
             frames.append(df)
 

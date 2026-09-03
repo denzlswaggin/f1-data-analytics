@@ -12,7 +12,7 @@ from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
-from analytics.replay import resample_race
+from analytics.replay import IncompleteReplayError, resample_race, validate_replay_sources
 from analytics.validation import bootstrap_ratings
 
 log = get_logger(__name__)
@@ -323,7 +323,14 @@ def _replay_positions_query(season: int, rnd: int) -> str:
 
 def _replay_laps_query(season: int, rnd: int) -> str:
     return f"""
-        select driver_code, lap_number, lap_start_sec, lap_time_sec
+        select
+            driver_code,
+            lap_number,
+            lap_start_sec,
+            lap_time_sec,
+            stint,
+            compound,
+            tyre_life
         from staging.stg_laps
         where season = {int(season)} and round = {int(rnd)} and session = 'R'
     """
@@ -346,6 +353,7 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
+    validate_replay_sources(positions, laps)
     replay = resample_race(
         positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s, max_linger_s=max_linger_s
     )
@@ -418,6 +426,37 @@ def build_race_replay_incremental(
     return replay
 
 
+def _build_replay_frames(
+    specs: list[tuple[int, int]],
+    tick_s: float,
+    retire_buffer_s: float,
+    max_linger_s: float,
+    settings: Settings,
+) -> list[pd.DataFrame]:
+    """Build complete replay partitions and skip known-truncated source feeds."""
+    frames: list[pd.DataFrame] = []
+    for season, rnd in specs:
+        try:
+            frames.append(
+                _build_one_replay(
+                    season,
+                    rnd,
+                    tick_s,
+                    retire_buffer_s,
+                    max_linger_s,
+                    settings,
+                )
+            )
+        except IncompleteReplayError as exc:
+            log.warning(
+                "replay.partition_skipped",
+                season=season,
+                round=rnd,
+                reason=str(exc),
+            )
+    return frames
+
+
 def build_race_replays(
     season: int,
     rounds: list[int],
@@ -435,7 +474,8 @@ def build_race_replays(
     settings = settings or get_settings()
     buf = retire_buffer_s if retire_buffer_s is not None else settings.replay_retire_buffer_s
     linger = settings.replay_retire_max_linger_s
-    frames = [_build_one_replay(season, rnd, tick_s, buf, linger, settings) for rnd in rounds]
+    specs = [(season, rnd) for rnd in rounds]
+    frames = _build_replay_frames(specs, tick_s, buf, linger, settings)
     non_empty = [f for f in frames if not f.empty]
     combined = (
         pd.concat(non_empty, ignore_index=True)
@@ -471,7 +511,7 @@ def build_all_replays(
         settings,
     )
     specs = [(int(s), int(r)) for s, r in zip(pairs["season"], pairs["round"], strict=True)]
-    frames = [_build_one_replay(s, r, tick_s, buf, linger, settings) for s, r in specs]
+    frames = _build_replay_frames(specs, tick_s, buf, linger, settings)
     non_empty = [f for f in frames if not f.empty]
     combined = (
         pd.concat(non_empty, ignore_index=True)

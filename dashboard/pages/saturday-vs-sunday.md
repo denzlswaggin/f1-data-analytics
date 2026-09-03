@@ -1,5 +1,6 @@
 ---
 title: Who Gains on Sunday?
+max_width: 1600
 ---
 
 <AppNav />
@@ -51,11 +52,11 @@ order by delta_rank
 ```
 
 ```sql diagonal
-select min(least(quali_rating, race_rating)) as v
-from f1.driver_pace_profile
-where n_race_comparisons >= ${inputs.minraces.value}
-union all
-select max(greatest(quali_rating, race_rating)) as v
+select
+    min(least(quali_rating, race_rating)) as x1,
+    min(least(quali_rating, race_rating)) as y1,
+    max(greatest(quali_rating, race_rating)) as x2,
+    max(greatest(quali_rating, race_rating)) as y2
 from f1.driver_pace_profile
 where n_race_comparisons >= ${inputs.minraces.value}
 ```
@@ -77,7 +78,15 @@ the diagonal *is* the delta.
     yAxisTitle="Race rating (higher = faster)"
     tooltipTitle=driver_name
 >
-    <ReferenceLine data={diagonal} x=v y=v label="equal on both days" labelPosition=belowEnd />
+    <ReferenceLine
+        data={diagonal}
+        x=x1
+        y=y1
+        x2=x2
+        y2=y2
+        label="equal on both days"
+        labelPosition=belowEnd
+    />
 </ScatterPlot>
 
 ## Biggest movers

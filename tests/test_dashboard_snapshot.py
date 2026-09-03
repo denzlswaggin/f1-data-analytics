@@ -58,7 +58,11 @@ def _warehouse(path: Path) -> None:
             connection.execute(f'create table {schema}."{table}" ({definitions})')
         connection.execute(
             "insert into staging.stg_races (season, round, race_name, race_date) "
-            "values (2026, 1, 'Test Grand Prix', date '2026-08-30')"
+            "values (2026, 1, 'Test Grand Prix', date '2026-08-30'), "
+            "(2026, 2, 'Future Grand Prix', date '2026-12-06')"
+        )
+        connection.execute(
+            "insert into marts.mart_lap_times (season, round) values (2026, 1)"
         )
         connection.execute(
             "insert into marts.driver_ratings "

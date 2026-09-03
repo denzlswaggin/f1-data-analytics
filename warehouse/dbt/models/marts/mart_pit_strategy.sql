@@ -3,15 +3,26 @@
 -- For each stop, compare the driver's track position the lap *before* the stop
 -- with their position two laps *after* it — the window over which an under/
 -- overcut plays out. `positions_gained` > 0 means places gained across the
--- cycle. Ergast-sourced: per-lap positions (~1996+) joined to pit-stop timing
--- (~2011+). Null positions (e.g. a stop on lap 1) leave the delta null.
+-- cycle. Jolpica pit-stop timing (~2011+) is joined to the FastF1 race laps
+-- already loaded for the rest of the dashboard, avoiding a duplicate lap-data
+-- backfill. Null positions (e.g. a stop on lap 1) leave the delta null.
 with stops as (
     select * from {{ ref('stg_pitstops') }}
 ),
 
 positions as (
-    select season, round, driver_id, lap_number, position
-    from {{ ref('stg_ergast_laps') }}
+    select
+        laps.season,
+        laps.round,
+        codes.driver_id,
+        laps.lap_number,
+        laps.position
+    from {{ ref('stg_laps') }} as laps
+    inner join {{ ref('stg_driver_codes') }} as codes
+        on codes.season = laps.season
+        and codes.driver_code = laps.driver_code
+    where laps.session = 'R'
+        and laps.position is not null
 ),
 
 races as (
@@ -63,3 +74,5 @@ left join races
     and races.round = joined.round
 left join drivers
     on drivers.driver_id = joined.driver_id
+where joined.position_before is not null
+    or joined.position_after is not null

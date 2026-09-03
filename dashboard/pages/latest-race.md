@@ -1,5 +1,6 @@
 ---
 title: How the Latest Race Unfolded
+max_width: 1600
 ---
 
 <AppNav />

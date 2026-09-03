@@ -33,6 +33,14 @@ _RETIRE_BUFFER_S = 5.0
 # Default safety cap (s): a retiree is never shown more than this long past its last
 # completed lap, guarding against a recovered car whose position keeps moving.
 _RETIRE_MAX_LINGER_S = 120.0
+# Refuse to publish a replay when the position feed covers only a fragment of
+# the lap-timing race window. A small tail is tolerated because the two FastF1
+# feeds do not always stop on exactly the same timestamp.
+_MIN_POSITION_COVERAGE = 0.90
+
+
+class IncompleteReplayError(ValueError):
+    """Raised when a position feed covers too little of its race window."""
 
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
@@ -65,6 +73,115 @@ def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     return prog
 
 
+def _lap_state_curves(
+    grid: np.ndarray, laps_d: pd.DataFrame
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return the current lap and tyre state for each point on ``grid``.
+
+    Lap attributes are step values: a new lap, stint, compound and tyre age take
+    effect at that lap's ``lap_start_sec``. ``lap_progress`` is the continuous
+    0..1 fraction through the current lap. It freezes at 1 after the driver's
+    final recorded lap, matching the existing progress/ranking behaviour.
+
+    Tyre columns are optional for backwards-compatible use of ``resample_race``
+    with the original four-column lap contract. Missing attributes remain null.
+    """
+    shape = grid.shape
+    lap_number = np.full(shape, np.nan)
+    lap_progress = np.full(shape, np.nan)
+    stint = np.full(shape, np.nan)
+    compound = np.full(shape, None, dtype=object)
+    tyre_life = np.full(shape, np.nan)
+    if laps_d.empty:
+        return lap_number, lap_progress, stint, compound, tyre_life
+
+    ordered = (
+        laps_d.dropna(subset=["lap_start_sec", "lap_number"])
+        .sort_values(["lap_start_sec", "lap_number"])
+        .drop_duplicates(subset=["lap_start_sec"], keep="last")
+    )
+    if ordered.empty:
+        return lap_number, lap_progress, stint, compound, tyre_life
+
+    starts = ordered["lap_start_sec"].to_numpy(dtype="float64")
+    durations = pd.to_numeric(ordered["lap_time_sec"], errors="coerce").to_numpy(dtype="float64")
+    indices = np.searchsorted(starts, grid, side="right") - 1
+    valid = indices >= 0
+    selected = indices[valid]
+
+    lap_values = pd.to_numeric(ordered["lap_number"], errors="coerce").to_numpy(dtype="float64")
+    lap_number[valid] = lap_values[selected]
+
+    selected_durations = durations[selected]
+    timed = valid.copy()
+    timed[valid] = np.isfinite(selected_durations) & (selected_durations > 0)
+    timed_indices = indices[timed]
+    lap_progress[timed] = np.clip(
+        (grid[timed] - starts[timed_indices]) / durations[timed_indices],
+        0.0,
+        1.0,
+    )
+
+    if "stint" in ordered:
+        stint_values = pd.to_numeric(ordered["stint"], errors="coerce").to_numpy(dtype="float64")
+        stint[valid] = stint_values[selected]
+    if "compound" in ordered:
+        compound_values = ordered["compound"].astype("string").to_numpy(dtype=object)
+        compound[valid] = compound_values[selected]
+    if "tyre_life" in ordered:
+        tyre_values = pd.to_numeric(ordered["tyre_life"], errors="coerce").to_numpy(dtype="float64")
+        tyre_life[valid] = tyre_values[selected]
+
+    return lap_number, lap_progress, stint, compound, tyre_life
+
+
+def replay_source_coverage(positions: pd.DataFrame, laps: pd.DataFrame) -> float | None:
+    """Return position-feed coverage of the race window as a 0..1 ratio.
+
+    The median first/last position timestamp is used so one driver with a stray
+    late packet cannot make a truncated feed look complete. ``None`` means the
+    inputs are empty or do not contain a usable race window.
+    """
+    if positions.empty or laps.empty:
+        return None
+
+    lap_start = pd.to_numeric(laps["lap_start_sec"], errors="coerce")
+    lap_end = lap_start + pd.to_numeric(laps["lap_time_sec"], errors="coerce")
+    race_start = float(lap_start.min())
+    race_end = float(lap_end.max())
+    if not np.isfinite(race_start) or not np.isfinite(race_end) or race_end <= race_start:
+        return None
+
+    driver_windows = positions.groupby("driver_code")["session_time_sec"].agg(["min", "max"])
+    if driver_windows.empty:
+        return None
+    position_start = float(driver_windows["min"].median())
+    position_end = float(driver_windows["max"].median())
+    if not np.isfinite(position_start) or not np.isfinite(position_end):
+        return None
+
+    covered_start = max(race_start, position_start)
+    covered_end = min(race_end, position_end)
+    covered = max(0.0, covered_end - covered_start)
+    return min(1.0, covered / (race_end - race_start))
+
+
+def validate_replay_sources(
+    positions: pd.DataFrame,
+    laps: pd.DataFrame,
+    *,
+    minimum_coverage: float = _MIN_POSITION_COVERAGE,
+) -> None:
+    """Raise when non-empty position data cannot support a full-race replay."""
+    coverage = replay_source_coverage(positions, laps)
+    if coverage is not None and coverage < minimum_coverage:
+        raise IncompleteReplayError(
+            "position feed covers only "
+            f"{coverage:.1%} of the lap-timing race window; expected at least "
+            f"{minimum_coverage:.0%}"
+        )
+
+
 def resample_race(
     positions: pd.DataFrame,
     laps: pd.DataFrame,
@@ -75,8 +192,9 @@ def resample_race(
     """Resample a race onto a shared time grid with running order and gaps.
 
     ``positions`` needs ``driver_code``, ``session_time_sec``, ``x``, ``y``.
-    ``laps`` needs ``driver_code``, ``lap_number``, ``lap_start_sec``,
-    ``lap_time_sec``. Returns one row per driver per tick with ``t_s`` (seconds
+    ``laps`` needs ``driver_code``, ``lap_number``, ``lap_start_sec`` and
+    ``lap_time_sec``; optional ``stint``, ``compound`` and ``tyre_life`` values
+    enrich each tick. Returns one row per driver per tick with ``t_s`` (seconds
     since race start), ``x``, ``y``, ``running_order``, ``gap_to_leader_s`` and
     ``gap_to_ahead_s`` — restricted to ticks where the car is on track.
 
@@ -114,6 +232,11 @@ def resample_race(
     X = np.full((n, n_ticks), np.nan)
     Y = np.full((n, n_ticks), np.nan)
     P = np.full((n, n_ticks), np.nan)
+    lap_number = np.full((n, n_ticks), np.nan)
+    lap_progress = np.full((n, n_ticks), np.nan)
+    stint = np.full((n, n_ticks), np.nan)
+    compound = np.full((n, n_ticks), None, dtype=object)
+    tyre_life = np.full((n, n_ticks), np.nan)
     active = np.zeros((n, n_ticks), dtype=bool)
     # Session time each car crosses the line for the last time (finish/retirement).
     t_finish = np.full(n, np.inf)
@@ -129,6 +252,13 @@ def resample_race(
         Y[i] = np.interp(grid, pt, py)
         dl = laps[laps["driver_code"] == d].sort_values("lap_number")
         P[i] = _progress_curve(grid, dl)
+        (
+            lap_number[i],
+            lap_progress[i],
+            stint[i],
+            compound[i],
+            tyre_life[i],
+        ) = _lap_state_curves(grid, dl)
         if not dl.empty:
             last = dl.iloc[-1]
             dur = last["lap_time_sec"]
@@ -198,6 +328,11 @@ def resample_race(
                     "t_s": np.round(grid[mask] - t0, 2),
                     "x": np.rint(X[i, mask]),
                     "y": np.rint(Y[i, mask]),
+                    "lap_number": lap_number[i, mask],
+                    "lap_progress": np.round(lap_progress[i, mask], 4),
+                    "stint": stint[i, mask],
+                    "compound": compound[i, mask],
+                    "tyre_life": tyre_life[i, mask],
                     "running_order": order[i, mask],
                     "gap_to_leader_s": np.round(G[i, mask], 2),
                     "gap_to_ahead_s": np.round(ahead[i, mask], 2),
@@ -206,7 +341,9 @@ def resample_race(
         )
 
     out = pd.concat(frames, ignore_index=True) if frames else _empty_replay()
-    out["running_order"] = out["running_order"].astype("Int64")
+    for column in ["lap_number", "stint", "tyre_life", "running_order"]:
+        out[column] = out[column].astype("Int64")
+    out["compound"] = out["compound"].astype("string")
     log.info("replay.resampled", drivers=n, ticks=n_ticks, rows=len(out), tick_s=tick_s)
     return out
 
@@ -218,6 +355,11 @@ def _empty_replay() -> pd.DataFrame:
             "t_s",
             "x",
             "y",
+            "lap_number",
+            "lap_progress",
+            "stint",
+            "compound",
+            "tyre_life",
             "running_order",
             "gap_to_leader_s",
             "gap_to_ahead_s",

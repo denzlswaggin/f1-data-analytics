@@ -1,5 +1,6 @@
 ---
 title: Who Is Fastest Beyond the Car?
+max_width: 1600
 ---
 
 <AppNav />

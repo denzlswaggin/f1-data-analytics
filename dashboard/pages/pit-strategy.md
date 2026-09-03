@@ -1,5 +1,6 @@
 ---
 title: Which Pit Cycles Changed the Race?
+max_width: 1600
 ---
 
 <AppNav />
@@ -8,7 +9,8 @@ This page describes a driver's track position the lap **before** each stop versu
 **two laps after**, alongside the stop's stationary time. Positive means places
 were gained across that window. It is not a counterfactual undercut/overcut
 estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
-observed position. Jolpica-sourced (pit-stop timing from ~2011).
+observed position. Pit-stop timing comes from Jolpica; position context comes from
+the FastF1 race laps loaded elsewhere in this dashboard.
 
 <KeyInsight label="What this can tell you">
 Use the page to spot pit cycles worth investigating. Position swing is observed context, not proof of an undercut or strategic causality.
@@ -33,17 +35,22 @@ order by round
 </FilterBar>
 
 ```sql pit_coverage
-select * from f1.data_coverage
-where section = 'pit_cycle'
-    and race_label = (
-        select race_label
-        from f1.pit_strategy
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+select
+    count(*) as sample_rows,
+    count(distinct driver_id) as entity_count,
+    count(distinct cast(season as varchar) || '-' || cast(round as varchar)) as race_count,
+    count(positions_gained) as usable_samples,
+    min(season) as first_season,
+    max(season) as last_season,
+    (
+        select max(latest_event_date)
+        from f1.data_coverage
+        where section = 'pit_cycle'
+    ) as latest_event_date
+from f1.pit_strategy
 ```
 
-<DataTrust data={pit_coverage} sampleLabel="pit stops" entityLabel="Drivers" method="descriptive window; not counterfactual" />
+<DataTrust data={pit_coverage} sampleLabel="pit stops across the published races" entityLabel="Drivers" method="descriptive window; not counterfactual" />
 
 ```sql race_stops
 select

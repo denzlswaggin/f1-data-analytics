@@ -1,39 +1,46 @@
 ---
 title: Watch the Race Unfold
+max_width: 1600
 ---
 
 <AppNav />
 
 Replay every car on a shared race clock reconstructed from FastF1 positional
 telemetry. Running order, race control, overtakes and available radio stay in sync.
+Only full-race position feeds are published; a truncated upstream feed is withheld
+instead of presenting a partial race as a complete replay.
 
 <KeyInsight label="Replay controls">
-Press play or scrub the timeline. Select a car to follow it and filter its passes and radio; select any event marker to jump to that moment.
+Press play or scrub the timeline. Use Space to play or pause and the arrow keys to
+move five seconds. Select a car for its live lap, tyre and gap detail. The unified
+timeline filters race control, detected passes and radio, then jumps to the exact moment.
 </KeyInsight>
 
 ```sql replay_seasons
 select distinct
-    season,
-    case when season = 0 then 'No replay data available' else cast(season as varchar) end as season_label
+    cast(season as integer) as season,
+    case
+        when season = 0 then 'No replay data available'
+        else cast(cast(season as integer) as varchar)
+    end as season_label
 from f1.race_replay_meta
 order by season desc
 ```
 
 ```sql replay_races
 select distinct
-    round,
+    cast(season as integer) as season,
+    cast(round as integer) as round,
     case
         when race_name = '__NO_DATA__' then 'No replay data available'
-        else replace(race_name, cast(season as varchar) || ' ', '')
+        else substr(race_name, strpos(race_name, ' ') + 1)
     end as race_name
 from f1.race_replay_meta
-where season = ${inputs.season.value}
-order by round
+order by season desc, round
 ```
 
 <FilterBar title="Choose a replay" description="Only races available in the published snapshot are listed.">
-    <Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
-    <Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+    <ReplayRacePicker seasons={replay_seasons} races={replay_races} />
 </FilterBar>
 
 ```sql replay_coverage
@@ -47,7 +54,7 @@ where section = 'race_replay'
     )
 ```
 
-<DataTrust data={replay_coverage} sampleLabel="car ticks" entityLabel="Drivers" method="reconstructed replay; experimental overtake detector" />
+<DataTrust data={replay_coverage} sampleLabel="car ticks" entityLabel="Drivers" method="reconstructed replay; confidence-scored pass detector" />
 
 ```sql replay
 select
@@ -64,8 +71,23 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code, t_s
 ```
 
+```sql replay_laps
+select driver_code, lap_number, lap_start_t_s, lap_time_sec, stint, compound, tyre_life
+from f1.race_replay_laps
+where season = ${inputs.season.value} and round = ${inputs.race.value}
+order by driver_code, lap_number
+```
+
 ```sql replay_meta
-select driver_code, driver_name, team, team_color
+select
+    driver_code,
+    driver_name,
+    team,
+    team_color,
+    grid_position,
+    finish_position,
+    status,
+    is_classified
 from f1.race_replay_meta
 where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code <> '__NO_DATA__'
@@ -86,14 +108,14 @@ order by t_s
 ```
 
 ```sql overtakes
-select t_s, for_position, passer_code, passed_code, gap_at_pass_s
+select t_s, for_position, passer_code, passed_code, gap_at_pass_s, confidence, evidence, reason
 from f1.race_overtakes
 where season = ${inputs.season.value} and round = ${inputs.race.value}
     and passer_code <> '__NO_DATA__'
 order by t_s
 ```
 
-<TrackMap data={replay} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={`${inputs.season.label} ${inputs.race.label}`} />
+<TrackMap data={replay} laps={replay_laps} meta={replay_meta} messages={race_ctrl} radio={radio} overtakes={overtakes} title={`${inputs.season.label} ${inputs.race.label}`} />
 
 <ExpandableSection title="How the replay is built">
 Each car's X/Y is sampled by FastF1 at ~5 Hz on the session clock but at slightly
@@ -104,11 +126,16 @@ the field, and derives the time gaps — landing a lean `marts.race_replay` tabl
 ticks in the browser for smooth motion.
 
 A second pure step (`analytics/overtakes.py`) reads that replay feed and flags
-**on-track overtakes** — a clean, single-position swap where the two cars are
-physically side-by-side (which is what distinguishes a real pass from a pit-cycle
-position change, since the pitting car's projected gap momentarily collapses too).
-Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
-highlight above.
+**detected on-track overtakes**. It accepts a clean adjacent swap, including a
+short timing-feed dropout, only when the cars are physically close and the new
+order persists. Every accepted event includes a confidence score and its detector
+evidence; pit-cycle position changes and ranking flicker remain excluded. Those
+events feed the ⇄ markers and the on-map highlight above.
+
+Before either mart is published, position timestamps are checked against the
+lap-timing race window. Batch rebuilds skip any partition below 90% coverage and
+report it explicitly, so an upstream outage cannot turn into a misleadingly short
+race or overtake count.
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="race-replay" season={inputs.season.value} race={inputs.race.value} />

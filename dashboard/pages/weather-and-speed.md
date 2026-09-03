@@ -1,5 +1,6 @@
 ---
 title: How Did Conditions Shape Performance?
+max_width: 1600
 ---
 
 <AppNav />

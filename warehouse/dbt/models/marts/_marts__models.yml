@@ -91,7 +91,8 @@ models:
   - name: mart_pit_strategy
     description: >
       Undercut/overcut outcome per pit stop: track-position change across the
-      stop window (lap before vs two laps after) plus stop duration. Ergast-sourced.
+      stop window (lap before vs two laps after) plus stop duration. Pit-stop
+      timing comes from Jolpica and positions from the loaded FastF1 race laps.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, driver_id, stop_number]

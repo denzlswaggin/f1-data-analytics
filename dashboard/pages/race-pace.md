@@ -1,5 +1,6 @@
 ---
 title: Where Was the Race Won?
+max_width: 1600
 ---
 
 <AppNav />

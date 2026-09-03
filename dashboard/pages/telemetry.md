@@ -1,5 +1,6 @@
 ---
 title: Where Does Each Driver Gain Time?
+max_width: 1600
 ---
 
 <AppNav />

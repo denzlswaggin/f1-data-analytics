@@ -38,12 +38,25 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "driver_id",
         "driver_name",
     },
+    ("staging", "stg_results"): {
+        "season",
+        "round",
+        "driver_code",
+        "grid_position",
+        "finish_position",
+        "status",
+        "is_classified",
+    },
     ("staging", "stg_laps"): {
         "season",
         "round",
         "session",
         "driver_code",
         "team",
+        "lap_number",
+        "stint",
+        "compound",
+        "tyre_life",
         "lap_start_sec",
         "lap_time_sec",
     },
@@ -242,6 +255,11 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "running_order",
         "gap_to_leader_s",
         "gap_to_ahead_s",
+        "lap_number",
+        "lap_progress",
+        "stint",
+        "compound",
+        "tyre_life",
     },
     ("marts", "race_overtakes"): {
         "season",
@@ -251,6 +269,9 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "passer_code",
         "passed_code",
         "gap_at_pass_s",
+        "confidence",
+        "evidence",
+        "reason",
     },
     ("marts", "mart_race_story"): {
         "season",
@@ -414,7 +435,15 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
             )
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
-        value = _scalar(connection, "select max(race_date) from staging.stg_races")
+        value = _scalar(
+            connection,
+            "select coalesce("
+            "(select max(races.race_date) from staging.stg_races as races "
+            "join (select distinct season, round from marts.mart_lap_times) as represented "
+            "using (season, round)), "
+            "(select max(race_date) from staging.stg_races)"
+            ")",
+        )
         return None if value is None else str(value)
     finally:
         connection.close()
