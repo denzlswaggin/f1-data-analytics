@@ -33,6 +33,10 @@ _RETIRE_BUFFER_S = 5.0
 # Default safety cap (s): a retiree is never shown more than this long past its last
 # completed lap, guarding against a recovered car whose position keeps moving.
 _RETIRE_MAX_LINGER_S = 120.0
+# Refuse to publish a replay when the position feed covers only a fragment of
+# the lap-timing race window. A small tail is tolerated because the two FastF1
+# feeds do not always stop on exactly the same timestamp.
+_MIN_POSITION_COVERAGE = 0.90
 
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
@@ -63,6 +67,53 @@ def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     prog: np.ndarray = np.interp(grid, np.asarray(xp), np.asarray(fp))
     prog[grid < xp[0]] = np.nan
     return prog
+
+
+def replay_source_coverage(positions: pd.DataFrame, laps: pd.DataFrame) -> float | None:
+    """Return position-feed coverage of the race window as a 0..1 ratio.
+
+    The median first/last position timestamp is used so one driver with a stray
+    late packet cannot make a truncated feed look complete. ``None`` means the
+    inputs are empty or do not contain a usable race window.
+    """
+    if positions.empty or laps.empty:
+        return None
+
+    lap_start = pd.to_numeric(laps["lap_start_sec"], errors="coerce")
+    lap_end = lap_start + pd.to_numeric(laps["lap_time_sec"], errors="coerce")
+    race_start = float(lap_start.min())
+    race_end = float(lap_end.max())
+    if not np.isfinite(race_start) or not np.isfinite(race_end) or race_end <= race_start:
+        return None
+
+    driver_windows = positions.groupby("driver_code")["session_time_sec"].agg(["min", "max"])
+    if driver_windows.empty:
+        return None
+    position_start = float(driver_windows["min"].median())
+    position_end = float(driver_windows["max"].median())
+    if not np.isfinite(position_start) or not np.isfinite(position_end):
+        return None
+
+    covered_start = max(race_start, position_start)
+    covered_end = min(race_end, position_end)
+    covered = max(0.0, covered_end - covered_start)
+    return min(1.0, covered / (race_end - race_start))
+
+
+def validate_replay_sources(
+    positions: pd.DataFrame,
+    laps: pd.DataFrame,
+    *,
+    minimum_coverage: float = _MIN_POSITION_COVERAGE,
+) -> None:
+    """Raise when non-empty position data cannot support a full-race replay."""
+    coverage = replay_source_coverage(positions, laps)
+    if coverage is not None and coverage < minimum_coverage:
+        raise ValueError(
+            "position feed covers only "
+            f"{coverage:.1%} of the lap-timing race window; expected at least "
+            f"{minimum_coverage:.0%}"
+        )
 
 
 def resample_race(

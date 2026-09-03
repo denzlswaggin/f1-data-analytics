@@ -12,7 +12,7 @@ from analytics.pace_profile import build_pace_profile
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
-from analytics.replay import resample_race
+from analytics.replay import resample_race, validate_replay_sources
 from analytics.validation import bootstrap_ratings
 
 log = get_logger(__name__)
@@ -346,6 +346,7 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
+    validate_replay_sources(positions, laps)
     replay = resample_race(
         positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s, max_linger_s=max_linger_s
     )

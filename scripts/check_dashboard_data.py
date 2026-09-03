@@ -14,6 +14,7 @@ class Check:
     name: str
     query: str
     minimum: int | float = 1
+    maximum: int | float | None = None
 
 
 def latest_race_check(
@@ -89,6 +90,21 @@ CHECKS = (
         "coalesce(max(t_s) - min(t_s), 0)",
         1_800,
     ),
+    Check(
+        "complete replay partitions",
+        "with lap_windows as ("
+        "select season, round, min(lap_start_sec) as race_start, "
+        "max(lap_start_sec + lap_time_sec) as race_end "
+        "from staging.stg_laps where session = 'R' "
+        "and lap_start_sec is not null and lap_time_sec is not null group by season, round"
+        "), replay_windows as ("
+        "select season, round, max(t_s) - min(t_s) as replay_duration "
+        "from marts.race_replay group by season, round"
+        ") select count(*) from replay_windows join lap_windows using (season, round) "
+        "where replay_duration < 0.9 * (race_end - race_start)",
+        minimum=0,
+        maximum=0,
+    ),
     latest_race_check("latest race overtakes", "marts.race_overtakes"),
 )
 
@@ -107,6 +123,8 @@ def main() -> None:
 
             if value is None or value < check.minimum:
                 failures.append(f"{check.name}: got {value}, expected at least {check.minimum}")
+            elif check.maximum is not None and value > check.maximum:
+                failures.append(f"{check.name}: got {value}, expected at most {check.maximum}")
             else:
                 print(f"PASS {check.name}: {value}")
 

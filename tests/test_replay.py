@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from analytics.pipeline import build_race_replay, build_race_replay_incremental
-from analytics.replay import resample_race
+from analytics.replay import replay_source_coverage, resample_race, validate_replay_sources
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
@@ -171,6 +171,17 @@ def test_resample_race_validates_and_handles_empty() -> None:
     with pytest.raises(ValueError, match="positions is missing"):
         resample_race(positions.drop(columns=["x"]), laps)
     assert resample_race(positions.iloc[0:0], laps).empty
+
+
+def test_replay_source_coverage_rejects_truncated_position_feed() -> None:
+    positions, laps = _synthetic_race()
+
+    assert replay_source_coverage(positions, laps) == pytest.approx(22.0 / 24.0)
+    validate_replay_sources(positions, laps)
+
+    truncated = positions[positions["session_time_sec"] <= 5.0]
+    with pytest.raises(ValueError, match="position feed covers only"):
+        validate_replay_sources(truncated, laps)
 
 
 def _seed_warehouse(db_path: Path) -> None:
