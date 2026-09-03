@@ -1,5 +1,6 @@
 ---
 title: Which Tyres Faded?
+max_width: 1600
 ---
 
 <AppNav />

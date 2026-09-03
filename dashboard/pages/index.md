@@ -1,5 +1,6 @@
 ---
 title: F1 Analytics — See Beyond the Result
+max_width: 1600
 ---
 
 <AppNav />

@@ -1,5 +1,6 @@
 ---
 title: Which Pit Cycles Changed the Race?
+max_width: 1600
 ---
 
 <AppNav />

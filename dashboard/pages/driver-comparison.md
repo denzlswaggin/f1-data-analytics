@@ -1,5 +1,6 @@
 ---
 title: Compare Drivers Honestly
+max_width: 1600
 ---
 
 <AppNav />

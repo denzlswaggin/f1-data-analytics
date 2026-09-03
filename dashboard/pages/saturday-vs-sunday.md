@@ -1,5 +1,6 @@
 ---
 title: Who Gains on Sunday?
+max_width: 1600
 ---
 
 <AppNav />
