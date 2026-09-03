@@ -7,6 +7,7 @@ REPLAY_LAPS_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_laps.s
 OVERTAKE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_overtakes.sql"
 META_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_meta.sql"
 TRACK_MAP = ROOT / "dashboard" / "components" / "TrackMap.svelte"
+EVENT_TIMELINE = ROOT / "dashboard" / "components" / "replay" / "EventTimeline.svelte"
 
 
 def test_replay_serving_contract_includes_live_timing_context() -> None:
@@ -38,8 +39,21 @@ def test_replay_uses_separate_broadcast_ui_components() -> None:
 
     assert "./replay/TimingTower.svelte" in component
     assert "./replay/DriverDetail.svelte" in component
+    assert "./replay/EventTimeline.svelte" in component
     assert "<TimingTower" in component
     assert "<DriverDetail" in component
+    assert "<EventTimeline" in component
+
+
+def test_event_timeline_unifies_replay_intelligence() -> None:
+    component = EVENT_TIMELINE.read_text(encoding="utf-8")
+
+    assert "buildEvents(messages, overtakes, radio)" in component
+    assert "Race control" in component
+    assert "Overtakes" in component
+    assert "Radio" in component
+    assert "relevantToSelection" in component
+    assert "onPlayRadio" in component
 
 
 def test_position_change_is_anchored_to_the_official_grid() -> None:

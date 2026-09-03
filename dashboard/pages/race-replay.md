@@ -11,8 +11,8 @@ instead of presenting a partial race as a complete replay.
 
 <KeyInsight label="Replay controls">
 Press play or scrub the timeline. Use Space to play or pause and the arrow keys to
-move five seconds. Select a car for its live lap, tyre and gap detail; event, pass
-and radio markers jump to the exact replay moment.
+move five seconds. Select a car for its live lap, tyre and gap detail. The unified
+timeline filters race control, detected passes and radio, then jumps to the exact moment.
 </KeyInsight>
 
 ```sql replay_seasons

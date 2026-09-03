@@ -8,6 +8,7 @@
     import { onMount, onDestroy } from 'svelte';
     import TimingTower from './replay/TimingTower.svelte';
     import DriverDetail from './replay/DriverDetail.svelte';
+    import EventTimeline from './replay/EventTimeline.svelte';
 
     export let data = [];
     export let laps = [];
@@ -67,7 +68,6 @@
         yellow: '#e8d33d', drs: '#39a0ff', penalty: '#ff7ab3', info: '#9aa0b0',
     };
     let msgs = [];
-    let keyEvents = [];
     function classify(m) {
         const f = (m.flag || '').toUpperCase();
         const c = (m.category || '').toUpperCase();
@@ -89,7 +89,6 @@
         list.sort((a, b) => a.t - b.t);
         for (const m of list) m.type = classify(m);
         msgs = list;
-        keyEvents = list.filter((m) => ['sc', 'red', 'chequered', 'penalty'].includes(m.type));
     }
     // Newest-first messages up to the current time (recomputes as `t` advances).
     $: recentMsgs = msgs.filter((m) => m.t <= uiT).slice(-7).reverse();
@@ -123,19 +122,6 @@
         if (document.fullscreenElement) document.exitFullscreen?.();
         else rootEl.requestFullscreen?.();
     }
-    function onTimelineClick(e) {
-        const r = e.currentTarget.getBoundingClientRect();
-        jumpTo(((e.clientX - r.left) / r.width) * tMax);
-    }
-    function onTimelineKey(e) {
-        if (e.key === 'ArrowLeft') jumpTo(t - 5);
-        else if (e.key === 'ArrowRight') jumpTo(t + 5);
-        else if (e.key === 'Home') jumpTo(0);
-        else if (e.key === 'End') jumpTo(tMax);
-        else return;
-        e.preventDefault();
-    }
-
     function onGlobalKey(e) {
         const tag = e.target?.tagName?.toLowerCase();
         if (['input', 'select', 'textarea', 'button', 'a'].includes(tag)) return;
@@ -161,10 +147,6 @@
             transcript: r.transcript || null,
         }))
         .sort((a, b) => a.t - b.t);
-    // Followed a driver? show only their clips — otherwise show the whole field's.
-    $: displayedRadio = selected ? radioClips.filter((c) => c.code === selected) : radioClips;
-    $: codeColor = Object.fromEntries(drivers.map((d) => [d.code, d.color]));
-
     // --- overtakes (detected on-track passes, aligned to the replay clock) ---
     let passes = [];
     $: passes = (overtakes || [])
@@ -194,6 +176,11 @@
             audioEl.play().catch(() => {});
         }
         play(); // roll the replay on from this moment
+    }
+    function playTimelineRadio({ clip }) {
+        const url = clip?.recording_url || clip?.url;
+        const match = radioClips.find((item) => item.url === url);
+        if (match) playRadio(match);
     }
     function stopRadio() {
         // Pause AND fully release the media resource. A merely-paused <audio> keeps
@@ -754,7 +741,10 @@
         {/if}
 
         {#if nowPlaying && nowPlaying.transcript}
-            <div class="tm-radio-caption">📻 {nowPlaying.code}: “{nowPlaying.transcript}”</div>
+            <div class="tm-radio-caption">
+                <span>📻 {nowPlaying.code}: “{nowPlaying.transcript}”</span>
+                <button type="button" on:click={stopRadio} aria-label="Stop team radio">Stop</button>
+            </div>
         {/if}
 
         {#if activePass}
@@ -810,83 +800,17 @@
         />
     {/if}
 
-    {#if keyEvents.length && tMax > 0}
-        <div
-            class="tm-timeline"
-            on:click={onTimelineClick}
-            on:keydown={onTimelineKey}
-            role="slider"
-            tabindex="0"
-            aria-label="event timeline — click to seek"
-            aria-valuemin="0"
-            aria-valuemax={Math.round(tMax)}
-            aria-valuenow={Math.round(uiT)}
-        >
-            <div class="tm-timeline-fill" style="width:{(uiT / tMax) * 100}%"></div>
-            {#each keyEvents as e (e.t + '|' + e.message)}
-                <button
-                    class="tm-mark {e.type}"
-                    style="left:{(Math.max(0, e.t) / tMax) * 100}%"
-                    title="{fmtClock(Math.max(0, e.t))} — {e.message}"
-                    aria-label={e.message}
-                    on:click|stopPropagation={() => jumpTo(e.t)}
-                ></button>
-            {/each}
-        </div>
-    {/if}
-
-    {#if tMax > 0 && passes.length}
-        <div class="tm-overtakes">
-            <span class="tm-ot-label">
-                ⇄ Overtakes{#if selected} · {selected}{/if}
-                <span class="tm-ot-count">{displayedPasses.length}</span>
-            </span>
-            {#if displayedPasses.length}
-                <div class="tm-ot-track">
-                    {#each displayedPasses as p (p.t + '|' + p.passer + '|' + p.passed)}
-                        <button
-                            class="tm-ot-mark"
-                            style="left:{(p.t / tMax) * 100}%; background:{codeColor[p.passer] || '#2fbf71'}"
-                            title="{fmtClock(p.t)} — {p.passer} ▸ {p.passed} for P{p.pos} · {fmtConfidence(p.confidence)}"
-                            aria-label="{p.passer} passes {p.passed} for P{p.pos} at {fmtClock(p.t)}, {fmtConfidence(p.confidence)}"
-                            on:click={() => jumpTo(p.t)}
-                        ></button>
-                    {/each}
-                </div>
-            {:else if selected}
-                <span class="tm-ot-none">no overtakes involving {selected}</span>
-            {/if}
-        </div>
-    {/if}
-
     {#if tMax > 0}
-        <div class="tm-radio">
-            <span class="tm-radio-label">
-                📻 Team radio{#if selected} · {selected}{/if}
-                {#if nowPlaying}
-                    <button class="tm-radio-stop" on:click={stopRadio}>⏹ {nowPlaying.code}</button>
-                {/if}
-            </span>
-            {#if displayedRadio.length}
-                <div class="tm-radio-track">
-                    {#each displayedRadio as c (c.url)}
-                        <button
-                            class="tm-radio-mark {nowPlaying && nowPlaying.url === c.url ? 'on' : ''}"
-                            style="left:{(c.t / tMax) * 100}%; background:{codeColor[c.code] || '#2dd4bf'}"
-                            title="{fmtClock(c.t)} — {c.code}: {c.transcript || 'team radio'} (click to play)"
-                            aria-label="{c.code} team radio at {fmtClock(c.t)}"
-                            on:click={() => playRadio(c)}
-                        ></button>
-                    {/each}
-                </div>
-            {:else if selected}
-                <span class="tm-radio-none">no team radio for {selected} in this race</span>
-            {:else if radioClips.length}
-                <div class="tm-radio-track"></div>
-            {:else}
-                <span class="tm-radio-none">none available for this race — try Barcelona or Hungary</span>
-            {/if}
-        </div>
+        <EventTimeline
+            duration={tMax}
+            currentTime={uiT}
+            {messages}
+            {overtakes}
+            {radio}
+            selectedCode={selected}
+            onSeek={({ time }) => jumpTo(time)}
+            onPlayRadio={playTimelineRadio}
+        />
     {/if}
 
     <!-- The transcript caption shows only while the clip is playing: `ended` (or a
@@ -895,10 +819,8 @@
     <audio bind:this={audioEl} preload="none" on:ended={stopRadio} on:error={stopRadio}></audio>
 
     <div class="tm-hint">
-        Scroll to zoom · drag to pan · hover for details · click a car to follow it (filters its
-        overtakes + team radio; zoom in and the camera locks onto it) · click an event marker to jump
-        to safety cars / penalties · click an ⇄ overtake marker to jump to a pass · click a 📻 marker
-        to play that team radio and roll on
+        Space plays or pauses · arrows jump five seconds · scroll to zoom · drag to pan · select a
+        driver to follow their race and filter the unified event timeline
     </div>
 </div>
 
@@ -968,6 +890,7 @@
     }
     .tm-broadcast :global(.tower) { height: 100%; }
     .tm > :global(.detail) { margin-top: 0.75rem; }
+    .tm > :global(.timeline) { margin-top: 0.75rem; }
     @media (max-width: 979px) {
         .tm-broadcast { grid-template-columns: minmax(0, 1fr); }
         .tm-broadcast :global(.tower) { height: auto; }
@@ -1058,6 +981,9 @@
     .tm-radio-caption {
         position: absolute;
         left: 50%;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
         transform: translateX(-50%);
         bottom: 34px;
         max-width: 72%;
@@ -1069,6 +995,23 @@
         border: 1px solid rgba(45, 212, 191, 0.35);
         padding: 5px 12px;
         border-radius: 8px;
+    }
+    .tm-radio-caption span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .tm-radio-caption button {
+        flex: none;
+        padding: 2px 7px;
+        color: inherit;
+        background: rgba(45, 212, 191, 0.12);
+        border: 1px solid rgba(45, 212, 191, 0.45);
+        border-radius: 5px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 10px;
     }
     .tm-msgs {
         position: absolute;
@@ -1114,137 +1057,6 @@
         opacity: 0.5;
         font-style: italic;
     }
-    .tm-timeline {
-        position: relative;
-        height: 12px;
-        margin-top: 8px;
-        border-radius: 6px;
-        background: rgba(128, 128, 128, 0.18);
-        cursor: pointer;
-    }
-    .tm-timeline-fill {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        background: rgba(128, 128, 128, 0.32);
-        border-radius: 6px 0 0 6px;
-    }
-    .tm-mark {
-        position: absolute;
-        top: -2px;
-        width: 3px;
-        height: 16px;
-        margin-left: -1.5px;
-        padding: 0;
-        border: none;
-        border-radius: 2px;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-    .tm-mark:hover {
-        transform: scaleY(1.35);
-    }
-    .tm-mark.sc { background: #e8a33d; }
-    .tm-mark.red { background: #e8002d; }
-    .tm-mark.chequered { background: #e8eaed; }
-    .tm-mark.penalty { background: #ff7ab3; }
-    .tm-radio {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 8px;
-    }
-    .tm-radio-label {
-        font-size: 11px;
-        opacity: 0.75;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .tm-radio-stop {
-        cursor: pointer;
-        border: 1px solid rgba(45, 212, 191, 0.5);
-        background: rgba(45, 212, 191, 0.12);
-        color: inherit;
-        border-radius: 5px;
-        padding: 1px 6px;
-        font-size: 10.5px;
-    }
-    .tm-radio-track {
-        position: relative;
-        flex: 1;
-        height: 12px;
-        border-radius: 6px;
-        background: rgba(45, 212, 191, 0.12);
-    }
-    .tm-radio-none {
-        font-size: 11px;
-        opacity: 0.45;
-        font-style: italic;
-    }
-    .tm-radio-mark {
-        position: absolute;
-        top: 1px;
-        width: 10px;
-        height: 10px;
-        margin-left: -5px;
-        padding: 0;
-        border: 1px solid rgba(8, 12, 18, 0.6);
-        border-radius: 50%;
-        background: #2dd4bf;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-    .tm-radio-mark:hover { transform: scale(1.4); }
-    .tm-radio-mark.on {
-        background: #eafffb;
-        box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.7);
-    }
-    .tm-overtakes {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 8px;
-    }
-    .tm-ot-label {
-        font-size: 11px;
-        opacity: 0.75;
-        white-space: nowrap;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .tm-ot-count {
-        font-variant-numeric: tabular-nums;
-        opacity: 0.55;
-    }
-    .tm-ot-track {
-        position: relative;
-        flex: 1;
-        height: 12px;
-        border-radius: 6px;
-        background: rgba(47, 191, 113, 0.12);
-    }
-    .tm-ot-none {
-        font-size: 11px;
-        opacity: 0.45;
-        font-style: italic;
-    }
-    .tm-ot-mark {
-        position: absolute;
-        top: 1px;
-        width: 9px;
-        height: 10px;
-        margin-left: -4.5px;
-        padding: 0;
-        border: 1px solid rgba(8, 12, 18, 0.6);
-        border-radius: 2px;
-        cursor: pointer;
-        transition: transform 0.1s;
-    }
-    .tm-ot-mark:hover { transform: scale(1.4); }
     .tm-pass-caption {
         position: absolute;
         left: 50%;
@@ -1278,10 +1090,7 @@
     }
     .tm-btn:hover { border-color: rgba(128, 128, 128, 0.8); }
     .tm-btn:focus-visible,
-    .tm-timeline:focus-visible,
-    .tm-mark:focus-visible,
-    .tm-ot-mark:focus-visible,
-    .tm-radio-mark:focus-visible {
+    .tm-radio-caption button:focus-visible {
         outline: 2px solid #71b9f4;
         outline-offset: 2px;
     }
@@ -1327,12 +1136,5 @@
         .tm-play { min-width: 82px; }
         .tm-speed { margin-left: auto; }
         .tm-hint { line-height: 1.45; }
-        .tm-radio, .tm-overtakes { align-items: flex-start; flex-direction: column; gap: 4px; }
-        .tm-radio-track, .tm-ot-track { width: 100%; flex: none; }
-        .tm-mark { width: 8px; margin-left: -4px; }
-        .tm-radio-mark, .tm-ot-mark { width: 14px; height: 14px; top: -1px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-        .tm-mark, .tm-radio-mark, .tm-ot-mark { transition: none; }
     }
 </style>
