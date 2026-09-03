@@ -60,6 +60,26 @@ CHECKS = (
     ),
     latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
     latest_race_check("latest race pit strategy", "marts.mart_pit_strategy", minimum=10),
+    Check(
+        "pit strategy race coverage",
+        "with expected as ("
+        "select distinct season, round from staging.stg_laps where session = 'R'"
+        "), covered as ("
+        "select distinct season, round from marts.mart_pit_strategy"
+        ") select count(*) from expected left join covered using (season, round) "
+        "where covered.season is null",
+        minimum=0,
+        maximum=0,
+    ),
+    Check(
+        "pit strategy usable race coverage",
+        "select count(*) from ("
+        "select season, round from marts.mart_pit_strategy group by season, round "
+        "having count(positions_gained) = 0"
+        ") as races_without_position_windows",
+        minimum=0,
+        maximum=0,
+    ),
     latest_race_check("latest race tyre strategy", "marts.mart_stint_strategy", minimum=10),
     latest_race_check("latest race speed trap", "marts.mart_speed_trap", minimum=15),
     Check(
