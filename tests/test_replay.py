@@ -24,6 +24,11 @@ EXPECTED_COLUMNS = [
     "t_s",
     "x",
     "y",
+    "lap_number",
+    "lap_progress",
+    "stint",
+    "compound",
+    "tyre_life",
     "running_order",
     "gap_to_leader_s",
     "gap_to_ahead_s",
@@ -57,10 +62,42 @@ def _synthetic_race() -> tuple[pd.DataFrame, pd.DataFrame]:
     )
     laps = pd.DataFrame(
         [
-            {"driver_code": "A", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 10.0},
-            {"driver_code": "A", "lap_number": 2, "lap_start_sec": 10.0, "lap_time_sec": 10.0},
-            {"driver_code": "B", "lap_number": 1, "lap_start_sec": 0.0, "lap_time_sec": 12.0},
-            {"driver_code": "B", "lap_number": 2, "lap_start_sec": 12.0, "lap_time_sec": 12.0},
+            {
+                "driver_code": "A",
+                "lap_number": 1,
+                "lap_start_sec": 0.0,
+                "lap_time_sec": 10.0,
+                "stint": 1,
+                "compound": "SOFT",
+                "tyre_life": 1,
+            },
+            {
+                "driver_code": "A",
+                "lap_number": 2,
+                "lap_start_sec": 10.0,
+                "lap_time_sec": 10.0,
+                "stint": 2,
+                "compound": "MEDIUM",
+                "tyre_life": 1,
+            },
+            {
+                "driver_code": "B",
+                "lap_number": 1,
+                "lap_start_sec": 0.0,
+                "lap_time_sec": 12.0,
+                "stint": 1,
+                "compound": "HARD",
+                "tyre_life": 1,
+            },
+            {
+                "driver_code": "B",
+                "lap_number": 2,
+                "lap_start_sec": 12.0,
+                "lap_time_sec": 12.0,
+                "stint": 1,
+                "compound": "HARD",
+                "tyre_life": 2,
+            },
         ]
     )
     return positions, laps
@@ -95,6 +132,37 @@ def test_resample_race_order_gaps_and_window() -> None:
     assert (b_early["running_order"] == 2).all()
     assert (b_early[b_early["t_s"] >= 12.0]["gap_to_leader_s"] > 0).all()
     assert (b_late["running_order"] == 1).all()
+
+
+def test_resample_race_adds_lap_progress_and_tyre_state() -> None:
+    positions, laps = _synthetic_race()
+    out = resample_race(positions, laps, tick_s=1.0)
+    a = out[out["driver_code"] == "A"].set_index("t_s")
+
+    assert a.loc[5.0, "lap_number"] == 1
+    assert a.loc[5.0, "lap_progress"] == pytest.approx(0.5)
+    assert a.loc[5.0, "stint"] == 1
+    assert a.loc[5.0, "compound"] == "SOFT"
+    assert a.loc[5.0, "tyre_life"] == 1
+
+    # The new stint becomes active exactly at the second lap's start.
+    assert a.loc[10.0, "lap_number"] == 2
+    assert a.loc[10.0, "lap_progress"] == pytest.approx(0.0)
+    assert a.loc[10.0, "stint"] == 2
+    assert a.loc[10.0, "compound"] == "MEDIUM"
+    assert a.loc[10.0, "tyre_life"] == 1
+    assert a.loc[20.0, "lap_progress"] == pytest.approx(1.0)
+
+
+def test_resample_race_keeps_original_lap_input_contract() -> None:
+    positions, laps = _synthetic_race()
+    laps = laps.drop(columns=["stint", "compound", "tyre_life"])
+
+    out = resample_race(positions, laps, tick_s=1.0)
+
+    assert out["lap_number"].notna().all()
+    assert out["lap_progress"].notna().all()
+    assert out[["stint", "compound", "tyre_life"]].isna().all().all()
 
 
 def _retiree_race() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -170,7 +238,9 @@ def test_resample_race_validates_and_handles_empty() -> None:
     positions, laps = _synthetic_race()
     with pytest.raises(ValueError, match="positions is missing"):
         resample_race(positions.drop(columns=["x"]), laps)
-    assert resample_race(positions.iloc[0:0], laps).empty
+    empty = resample_race(positions.iloc[0:0], laps)
+    assert empty.empty
+    assert list(empty.columns) == EXPECTED_COLUMNS
 
 
 def test_replay_source_coverage_rejects_truncated_position_feed() -> None:
@@ -230,8 +300,9 @@ def test_incremental_replay_preserves_other_rounds(tmp_path: Path) -> None:
     try:
         con.execute(
             "insert into marts.race_replay "
-            "select season, 2 as round, driver_code, t_s, x, y, running_order, "
-            "gap_to_leader_s, gap_to_ahead_s from marts.race_replay where round = 1"
+            "select season, 2 as round, driver_code, t_s, x, y, lap_number, lap_progress, "
+            "stint, compound, tyre_life, running_order, gap_to_leader_s, gap_to_ahead_s "
+            "from marts.race_replay where round = 1"
         )
     finally:
         con.close()

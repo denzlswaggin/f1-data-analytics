@@ -323,7 +323,14 @@ def _replay_positions_query(season: int, rnd: int) -> str:
 
 def _replay_laps_query(season: int, rnd: int) -> str:
     return f"""
-        select driver_code, lap_number, lap_start_sec, lap_time_sec
+        select
+            driver_code,
+            lap_number,
+            lap_start_sec,
+            lap_time_sec,
+            stint,
+            compound,
+            tyre_life
         from staging.stg_laps
         where season = {int(season)} and round = {int(rnd)} and session = 'R'
     """
