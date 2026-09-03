@@ -6,8 +6,11 @@
     // and drag to pan. Fed by two Evidence queries: `data` (the per-car-per-tick
     // replay feed) and `meta` (per-driver names/teams/colours), joined by driver_code.
     import { onMount, onDestroy } from 'svelte';
+    import TimingTower from './replay/TimingTower.svelte';
+    import DriverDetail from './replay/DriverDetail.svelte';
 
     export let data = [];
+    export let laps = [];
     export let meta = [];
     export let messages = [];
     export let radio = [];
@@ -24,11 +27,12 @@
     const UI_MS = 66;
 
     let containerWidth = 900;
-    $: width = Math.max(280, containerWidth);
+    $: splitLayout = containerWidth >= 980;
+    $: width = Math.max(280, splitLayout ? containerWidth - 352 : containerWidth);
     $: compact = width < 620;
     $: height = Math.round(width * (compact ? 0.82 : 0.6));
 
-    let trackCanvas, carsCanvas, trackCtx, carsCtx;
+    let rootEl, trackCanvas, carsCanvas, trackCtx, carsCtx;
     let playing = false;
     let t = 0, speed = 6, tMax = 0, raf = null, lastTs = null;
     let uiT = 0; // throttled copy of `t` that drives the DOM (see UI_MS)
@@ -38,10 +42,15 @@
     let bounds = null;
     let trackPts = null; // cached single-lap circuit outline (see build)
     let leaderboard = [];
+    let totalLaps = null;
+    let lapStarts = [];
 
     // View (zoom / pan) and interaction state.
     let view = { zoom: 1, ox: 0, oy: 0 };
     let selected = null; // driver_code being followed
+    $: selectedDriver = selected
+        ? leaderboard.find((driver) => driver.code === selected) || null
+        : null;
     let hovered = null; // {code, name, team, order, gap, ahead, cx, cy}
     let activePass = null; // overtake currently highlighted on the map
     let screenPos = []; // last-rendered car screen positions, for hit-testing
@@ -49,7 +58,8 @@
 
     const asNum = (v) => (v == null ? null : Number(v));
 
-    $: build(data, meta);
+    let loadedReplay = null;
+    $: build(data, meta, laps, title);
 
     // --- race-control message feed (aligned to the replay clock via t_s) ---
     const EVT_COLOR = {
@@ -84,9 +94,34 @@
     // Newest-first messages up to the current time (recomputes as `t` advances).
     $: recentMsgs = msgs.filter((m) => m.t <= uiT).slice(-7).reverse();
     $: currentMsg = recentMsgs[0] || null;
+    $: currentLap = leaderboard.length
+        ? Math.max(0, ...leaderboard.map((driver) => driver.lap_number || 0)) || null
+        : null;
+    $: racePhase = uiT >= tMax && tMax > 0
+        ? 'Finished'
+        : currentMsg?.type === 'red'
+            ? 'Red flag'
+            : currentMsg?.type === 'sc'
+                ? 'Safety car'
+                : playing
+                    ? 'Replay running'
+                    : uiT > 0
+                        ? 'Paused'
+                        : 'Ready';
     function jumpTo(sec) {
         t = Math.max(0, Math.min(tMax, sec));
         if (!playing) drawFrame();
+    }
+    function jumpLap(direction) {
+        if (!lapStarts.length) return;
+        const currentIndex = Math.max(0, lapStarts.findLastIndex((start) => start <= t + 0.5));
+        const target = lapStarts[Math.max(0, Math.min(lapStarts.length - 1, currentIndex + direction))];
+        jumpTo(target);
+    }
+    function toggleFullscreen() {
+        if (!rootEl || typeof document === 'undefined') return;
+        if (document.fullscreenElement) document.exitFullscreen?.();
+        else rootEl.requestFullscreen?.();
     }
     function onTimelineClick(e) {
         const r = e.currentTarget.getBoundingClientRect();
@@ -97,6 +132,16 @@
         else if (e.key === 'ArrowRight') jumpTo(t + 5);
         else if (e.key === 'Home') jumpTo(0);
         else if (e.key === 'End') jumpTo(tMax);
+        else return;
+        e.preventDefault();
+    }
+
+    function onGlobalKey(e) {
+        const tag = e.target?.tagName?.toLowerCase();
+        if (['input', 'select', 'textarea', 'button', 'a'].includes(tag)) return;
+        if (e.code === 'Space') toggle();
+        else if (e.key === 'ArrowLeft') jumpTo(t - 5);
+        else if (e.key === 'ArrowRight') jumpTo(t + 5);
         else return;
         e.preventDefault();
     }
@@ -126,6 +171,7 @@
         .map((r) => ({
             t: Number(r.t_s), pos: asNum(r.for_position),
             passer: r.passer_code || '', passed: r.passed_code || '', gap: asNum(r.gap_at_pass_s),
+            confidence: asNum(r.confidence), evidence: r.evidence || '', reason: r.reason || '',
         }))
         .sort((a, b) => a.t - b.t);
     // Following a car? show only passes it was involved in (as passer or passed).
@@ -163,7 +209,16 @@
         nowPlaying = null;
     }
 
-    function build(rows, metaRows) {
+    function build(rows, metaRows, lapRows, replayTitle) {
+        if (loadedReplay !== null && loadedReplay !== replayTitle) {
+            pause();
+            stopRadio();
+            t = 0;
+            uiT = 0;
+            selected = null;
+            hovered = null;
+        }
+        loadedReplay = replayTitle;
         if (!rows || !rows.length) {
             drivers = [];
             bounds = null;
@@ -172,6 +227,37 @@
         }
         const metaMap = {};
         for (const m of metaRows || []) metaMap[m.driver_code] = m;
+        const lapList = Array.from(lapRows || []);
+        const lapMap = new Map();
+        for (const lap of lapList) {
+            const code = lap.driver_code;
+            if (!lapMap.has(code)) lapMap.set(code, []);
+            lapMap.get(code).push({
+                lap: asNum(lap.lap_number),
+                start: asNum(lap.lap_start_t_s),
+                duration: asNum(lap.lap_time_sec),
+                stint: asNum(lap.stint),
+                compound: lap.compound || null,
+                tyreLife: asNum(lap.tyre_life),
+            });
+        }
+        for (const context of lapMap.values()) context.sort((a, b) => a.start - b.start);
+
+        function lapState(code, time) {
+            const context = lapMap.get(code) || [];
+            let lo = 0, hi = context.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (context[mid].start <= time) lo = mid + 1;
+                else hi = mid;
+            }
+            const lap = context[lo - 1];
+            if (!lap) return null;
+            return {
+                ...lap,
+                progress: lap.duration > 0 ? Math.max(0, Math.min(1, (time - lap.start) / lap.duration)) : null,
+            };
+        }
 
         const groups = new Map();
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, tmax = 0;
@@ -182,11 +268,17 @@
                 groups.set(row.driver_code, g);
             }
             const x = Number(row.x), y = Number(row.y), tt = Number(row.t_s);
+            const lap = lapState(row.driver_code, tt);
             g.samples.push({
                 t: tt, x, y,
                 order: asNum(row.running_order),
                 gap: asNum(row.gap_to_leader_s),
                 ahead: asNum(row.gap_to_ahead_s),
+                lap: asNum(row.lap_number) ?? lap?.lap ?? null,
+                lapProgress: asNum(row.lap_progress) ?? lap?.progress ?? null,
+                stint: asNum(row.stint) ?? lap?.stint ?? null,
+                compound: row.compound || lap?.compound || null,
+                tyreLife: asNum(row.tyre_life) ?? lap?.tyreLife ?? null,
             });
             if (x < minX) minX = x;
             if (x > maxX) maxX = x;
@@ -204,9 +296,28 @@
             g.name = m.driver_name || g.code;
             g.team = m.team || '';
             g.color = m.team_color || '#9aa0a6';
+            g.finishPosition = asNum(m.finish_position);
+            g.isClassified = m.is_classified == null ? null : Boolean(m.is_classified);
+            g.startOrder = g.samples.find((sample) => sample.order != null)?.order ?? null;
             out.push(g);
         }
         drivers = out;
+        let maxLap = 0;
+        for (const lap of lapList) maxLap = Math.max(maxLap, asNum(lap.lap_number) || 0);
+        if (!maxLap) {
+            for (const driver of out) {
+                for (const sample of driver.samples) maxLap = Math.max(maxLap, sample.lap || 0);
+            }
+        }
+        totalLaps = maxLap || null;
+        const starts = new Map();
+        for (const row of lapList) {
+            const lap = asNum(row.lap_number);
+            const time = asNum(row.lap_start_t_s);
+            if (lap == null || time == null) continue;
+            starts.set(lap, Math.min(starts.get(lap) ?? Infinity, time));
+        }
+        lapStarts = [...starts.entries()].sort((a, b) => a[0] - b[0]).map(([, time]) => time);
         bounds = { minX, maxX, minY, maxY };
         // Cache a single clean lap of the circuit for the track outline. The reference
         // driver's samples retrace the same track once per lap (dozens of times over a
@@ -302,6 +413,29 @@
             x: smooth ? catmull(p0.x, a.x, b.x, p3.x, f) : a.x + (b.x - a.x) * f,
             y: smooth ? catmull(p0.y, a.y, b.y, p3.y, f) : a.y + (b.y - a.y) * f,
             order: a.order, gap: a.gap, ahead: a.ahead,
+            lap: a.lap, lapProgress: a.lapProgress, stint: a.stint,
+            compound: a.compound, tyreLife: a.tyreLife,
+        };
+    }
+
+    function timingRow(g, p, status = 'racing') {
+        return {
+            code: g.code,
+            name: g.name,
+            team: g.team,
+            color: g.color,
+            order: p.order,
+            gap: p.gap,
+            ahead: p.ahead,
+            lap_number: p.lap,
+            lap_progress: p.lapProgress,
+            stint: p.stint,
+            compound: p.compound,
+            tyre_life: p.tyreLife,
+            pit_stops: p.stint == null ? null : Math.max(0, p.stint - 1),
+            position_change:
+                g.startOrder == null || p.order == null ? null : g.startOrder - p.order,
+            status,
         };
     }
 
@@ -311,7 +445,18 @@
         const board = [], sp = [];
         for (const g of drivers) {
             const p = sampleAt(g, t);
-            if (!p) continue;
+            if (!p) {
+                if (t > g.tmax && g.samples.length) {
+                    const last = g.samples[g.samples.length - 1];
+                    const status = g.isClassified === true
+                        ? 'finished'
+                        : g.isClassified === false
+                            ? 'retired'
+                            : 'out';
+                    board.push(timingRow(g, last, status));
+                }
+                continue;
+            }
             const X = wx(p.x), Y = wy(p.y);
             const isSel = selected != null && g.code === selected;
             const dim = selected != null && !isSel;
@@ -331,8 +476,7 @@
             carsCtx.globalAlpha = 1;
             sp.push({ code: g.code, name: g.name, team: g.team, color: g.color, X, Y,
                       order: p.order, gap: p.gap, ahead: p.ahead });
-            if (p.order != null)
-                board.push({ code: g.code, color: g.color, order: p.order, gap: p.gap, ahead: p.ahead });
+            if (p.order != null) board.push(timingRow(g, p));
         }
         board.sort((a, b) => a.order - b.order);
         screenPos = sp;
@@ -515,17 +659,20 @@
     // Interval to the car ahead, F1 timing-tower style, 3 decimals.
     const fmtInterval = (a) => (a == null ? '' : a <= 0 ? 'LEADER' : '+' + a.toFixed(3));
     const fmtGap = (g) => (g == null || g <= 0 ? '—' : '+' + g.toFixed(3));
+    const fmtConfidence = (value) => value == null ? 'confidence unavailable' : `${Math.round(value * 100)}% confidence`;
 
     onMount(() => {
         trackCtx = trackCanvas.getContext('2d');
         carsCtx = carsCanvas.getContext('2d');
         // Wheel needs a non-passive listener to preventDefault the page scroll.
         carsCanvas.addEventListener('wheel', onWheel, { passive: false });
+        window.addEventListener('keydown', onGlobalKey);
         queueDraw();
     });
     onDestroy(() => {
         pause();
         if (carsCanvas) carsCanvas.removeEventListener('wheel', onWheel);
+        if (typeof window !== 'undefined') window.removeEventListener('keydown', onGlobalKey);
     });
 
     // Redraw on resize / new data (independent of `t`, so playback is unaffected).
@@ -545,8 +692,19 @@
     }
 </script>
 
-<div class="tm" bind:clientWidth={containerWidth}>
-    {#if title}<div class="tm-title">{title}</div>{/if}
+<div class="tm" bind:this={rootEl} bind:clientWidth={containerWidth}>
+    <header class="tm-header">
+        <div>
+            <span class="tm-eyebrow">Race replay</span>
+            {#if title}<h2 class="tm-title">{title}</h2>{/if}
+        </div>
+        <div class="tm-session" aria-live="polite">
+            <span class="tm-session-dot" class:active={playing}></span>
+            <strong>{racePhase}</strong>
+            {#if currentLap}<span>Lap {currentLap}{totalLaps ? ` / ${totalLaps}` : ''}</span>{/if}
+        </div>
+    </header>
+    <div class="tm-broadcast">
     <div class="tm-stage" style="width:{width}px;height:{height}px">
         <canvas bind:this={trackCanvas} {width} {height}></canvas>
         <canvas
@@ -567,24 +725,6 @@
                 Replay data is not available for this race.
             </div>
         {/if}
-
-        <div class="tm-board">
-            <div class="tm-board-h">Order · interval</div>
-            {#each (compact ? leaderboard.slice(0, 10) : leaderboard) as row (row.code)}
-                <div
-                    class="tm-brow {selected === row.code ? 'sel' : ''}"
-                    on:click={() => toggleSelect(row.code)}
-                    on:keydown={(e) => onDriverKey(e, row.code)}
-                    role="button"
-                    tabindex="0"
-                >
-                    <span class="pos">{row.order}</span>
-                    <span class="sw" style="background:{row.color}"></span>
-                    <span class="cd">{row.code}</span>
-                    <span class="gp">{fmtInterval(row.ahead)}</span>
-                </div>
-            {/each}
-        </div>
 
         {#if hovered}
             <div
@@ -616,11 +756,23 @@
         {/if}
 
         {#if activePass}
-            <div class="tm-pass-caption">⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos}</div>
+            <div class="tm-pass-caption">
+                ⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos} · {fmtConfidence(activePass.confidence)}
+            </div>
         {/if}
 
         <div class="tm-clock">{fmtClock(uiT)} / {fmtClock(tMax)}</div>
         {#if selected}<div class="tm-follow">{`Following ${selected}${view.zoom > 1 ? ' · camera locked' : ''} · click to release`}</div>{/if}
+    </div>
+    <TimingTower
+        {leaderboard}
+        selectedCode={selected}
+        title="Live timing"
+        maxRows={splitLayout ? null : compact ? 10 : null}
+        statusLabel={racePhase}
+        active={playing}
+        onSelect={({ code }) => toggleSelect(code)}
+    />
     </div>
 
     {#if currentMsg}
@@ -633,6 +785,8 @@
 
     <div class="tm-controls">
         <button on:click={toggle} class="tm-btn tm-play">{playing ? '❚❚ Pause' : '▶ Play'}</button>
+        <button on:click={() => jumpTo(t - 5)} class="tm-btn tm-skip" aria-label="Back 5 seconds">−5s</button>
+        <button on:click={() => jumpTo(t + 5)} class="tm-btn tm-skip" aria-label="Forward 5 seconds">+5s</button>
         <input type="range" min="0" max={tMax} step="0.5" value={uiT} on:input={onScrub} class="tm-scrub" aria-label="Replay time" />
         <label class="tm-speed">
             Speed
@@ -640,8 +794,19 @@
                 {#each SPEEDS as sp}<option value={sp}>{sp}×</option>{/each}
             </select>
         </label>
+        <button on:click={() => jumpLap(-1)} class="tm-btn tm-lap" aria-label="Previous lap">← Lap</button>
+        <button on:click={() => jumpLap(1)} class="tm-btn tm-lap" aria-label="Next lap">Lap →</button>
         <button on:click={resetView} class="tm-btn" title="Reset zoom & pan">Reset view</button>
+        <button on:click={toggleFullscreen} class="tm-btn" title="Open replay fullscreen">Fullscreen</button>
     </div>
+
+    {#if selectedDriver}
+        <DriverDetail
+            driver={selectedDriver}
+            {totalLaps}
+            onClose={() => toggleSelect(selected)}
+        />
+    {/if}
 
     {#if keyEvents.length && tMax > 0}
         <div
@@ -680,8 +845,8 @@
                         <button
                             class="tm-ot-mark"
                             style="left:{(p.t / tMax) * 100}%; background:{codeColor[p.passer] || '#2fbf71'}"
-                            title="{fmtClock(p.t)} — {p.passer} ▸ {p.passed} for P{p.pos}"
-                            aria-label="{p.passer} passes {p.passed} for P{p.pos} at {fmtClock(p.t)}"
+                            title="{fmtClock(p.t)} — {p.passer} ▸ {p.passed} for P{p.pos} · {fmtConfidence(p.confidence)}"
+                            aria-label="{p.passer} passes {p.passed} for P{p.pos} at {fmtClock(p.t)}, {fmtConfidence(p.confidence)}"
                             on:click={() => jumpTo(p.t)}
                         ></button>
                     {/each}
@@ -741,9 +906,69 @@
         margin: 0.5rem 0 1.25rem;
         font-family: system-ui, sans-serif;
     }
+    .tm:fullscreen {
+        box-sizing: border-box;
+        padding: 1.25rem;
+        overflow: auto;
+        color: #f5f7fb;
+        background: #080a0e;
+    }
+    .tm-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.65rem;
+    }
+    .tm-eyebrow {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: #747d91;
+        font-size: 0.6rem;
+        font-weight: 750;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+    }
     .tm-title {
-        font-weight: 600;
-        margin-bottom: 0.4rem;
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+    }
+    .tm-session {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        color: #6f7889;
+        font-size: 0.68rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .tm-session strong { color: inherit; font-size: inherit; text-transform: uppercase; }
+    .tm-session span:last-child {
+        padding-left: 0.45rem;
+        border-left: 1px solid rgba(128, 128, 128, 0.3);
+    }
+    .tm-session-dot {
+        width: 0.45rem;
+        height: 0.45rem;
+        background: #8b93a7;
+        border-radius: 50%;
+    }
+    .tm-session-dot.active {
+        background: #ef304b;
+        box-shadow: 0 0 0 4px rgba(239, 48, 75, 0.12);
+    }
+    .tm-broadcast {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 336px;
+        align-items: start;
+        gap: 1rem;
+    }
+    .tm-broadcast :global(.tower) { height: 100%; }
+    .tm > :global(.detail) { margin-top: 0.75rem; }
+    @media (max-width: 979px) {
+        .tm-broadcast { grid-template-columns: minmax(0, 1fr); }
+        .tm-broadcast :global(.tower) { height: auto; }
     }
     .tm-stage {
         position: relative;
@@ -773,19 +998,6 @@
     .cars.grab { cursor: grab; }
     .cars.grabbing { cursor: grabbing; }
     .cars.pick { cursor: pointer; }
-    .tm-board {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(8, 12, 18, 0.72);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 6px 8px;
-        color: #e8eaed;
-        font-size: 11px;
-        min-width: 138px;
-        backdrop-filter: blur(2px);
-    }
     .tm-board-h {
         font-size: 9px;
         letter-spacing: 0.08em;
@@ -793,38 +1005,12 @@
         opacity: 0.6;
         margin-bottom: 3px;
     }
-    .tm-brow {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        line-height: 1.55;
-        cursor: pointer;
-        border-radius: 3px;
-        padding: 0 2px;
-    }
-    .tm-brow:hover { background: rgba(255, 255, 255, 0.08); }
-    .tm-brow.sel { background: rgba(255, 255, 255, 0.16); }
-    .tm-brow .pos {
-        width: 16px;
-        text-align: right;
-        opacity: 0.7;
-        font-variant-numeric: tabular-nums;
-    }
     .sw {
         display: inline-block;
         width: 9px;
         height: 9px;
         border-radius: 2px;
         flex: none;
-    }
-    .tm-brow .cd {
-        font-weight: 600;
-        width: 34px;
-    }
-    .tm-brow .gp {
-        margin-left: auto;
-        opacity: 0.8;
-        font-variant-numeric: tabular-nums;
     }
     .tm-tip {
         position: absolute;
@@ -1077,6 +1263,7 @@
         align-items: center;
         gap: 12px;
         margin-top: 10px;
+        flex-wrap: wrap;
     }
     .tm-btn {
         cursor: pointer;
@@ -1089,7 +1276,6 @@
     }
     .tm-btn:hover { border-color: rgba(128, 128, 128, 0.8); }
     .tm-btn:focus-visible,
-    .tm-brow:focus-visible,
     .tm-timeline:focus-visible,
     .tm-mark:focus-visible,
     .tm-ot-mark:focus-visible,
@@ -1098,6 +1284,7 @@
         outline-offset: 2px;
     }
     .tm-play { min-width: 92px; }
+    .tm-skip, .tm-lap { padding-inline: 9px; font-variant-numeric: tabular-nums; }
     .tm-scrub {
         flex: 1;
         min-width: 120px;
@@ -1115,9 +1302,7 @@
     }
     @media (max-width: 619px) {
         .tm-msgs { display: none; }
-        .tm-board { min-width: 116px; font-size: 10px; padding: 5px 6px; }
-        .tm-brow { gap: 4px; }
-        .tm-brow .cd { width: 29px; }
+        .tm-header { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
         .tm-clock { font-size: 11px; }
         .tm-follow { right: 8px; bottom: 28px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .tm-radio-caption { max-width: 88%; font-size: 11px; }

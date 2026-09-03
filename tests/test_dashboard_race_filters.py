@@ -36,7 +36,10 @@ def test_replay_picker_resets_the_race_when_the_season_changes() -> None:
     )
 
     assert "<ReplayRacePicker seasons={replay_seasons} races={replay_races} />" in page
-    assert "select distinct\n    season,\n    round" in page
+    assert "cast(season as integer) as season" in page
+    assert "cast(round as integer) as round" in page
+    assert "cast(cast(season as integer) as varchar)" in page
+    assert "substr(race_name, strpos(race_name, ' ') + 1)" in page
     assert (
         "where season = ${inputs.season.value}"
         not in page.split("```sql replay_races", 1)[1].split("```", 1)[0]
