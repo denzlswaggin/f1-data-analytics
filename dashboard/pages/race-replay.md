@@ -6,6 +6,8 @@ title: Watch the Race Unfold
 
 Replay every car on a shared race clock reconstructed from FastF1 positional
 telemetry. Running order, race control, overtakes and available radio stay in sync.
+Only full-race position feeds are published; a truncated upstream feed is withheld
+instead of presenting a partial race as a complete replay.
 
 <KeyInsight label="Replay controls">
 Press play or scrub the timeline. Select a car to follow it and filter its passes and radio; select any event marker to jump to that moment.
@@ -108,6 +110,11 @@ physically side-by-side (which is what distinguishes a real pass from a pit-cycl
 position change, since the pitting car's projected gap momentarily collapses too).
 Those land in `marts.race_overtakes` and feed the ⇄ markers and the on-map
 highlight above.
+
+Before either mart is published, position timestamps are checked against the
+lap-timing race window. Batch rebuilds skip any partition below 90% coverage and
+report it explicitly, so an upstream outage cannot turn into a misleadingly short
+race or overtake count.
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="race-replay" season={inputs.season.value} race={inputs.race.value} />

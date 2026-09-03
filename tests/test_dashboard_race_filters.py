@@ -43,3 +43,4 @@ def test_replay_picker_resets_the_race_when_the_season_changes() -> None:
     assert "const seasonChanged" in component
     assert "const requestedRace = seasonChanged ? null : rawValue('race')" in component
     assert "publish('race', firstRace.round, firstRace.race_name)" in component
+    assert "a truncated upstream feed is withheld" in page
