@@ -34,6 +34,10 @@
 
     $: totalDuration = Math.max(0, num(duration) || 0);
     $: playhead = clamp(num(currentTime) || 0, 0, totalDuration);
+    $: visibleFilters = selectedCode
+        ? FILTERS.filter((filter) => filter.id !== 'control')
+        : FILTERS;
+    $: if (selectedCode && activeFilter === 'control') activeFilter = 'all';
     $: scopedEvents = mergedEvents.filter(relevantToSelection);
     $: filteredEvents = scopedEvents.filter((event) => activeFilter === 'all' || event.category === activeFilter);
     $: nearbyEvents = [...filteredEvents]
@@ -118,9 +122,9 @@
 
     function relevantToSelection(event) {
         if (!selectedCode) return true;
-        if (event.category === 'control') return !event.driverCode || event.driverCode === selectedCode;
         if (event.category === 'overtake') return event.participants.includes(selectedCode);
-        return event.driverCode === selectedCode;
+        if (event.category === 'radio') return event.driverCode === selectedCode;
+        return false;
     }
 
     function formatTime(seconds) {
@@ -181,7 +185,7 @@
     </header>
 
     <div class="filters" aria-label="Filter race events">
-        {#each FILTERS as filter}
+        {#each visibleFilters as filter}
             <button
                 type="button"
                 class:active={activeFilter === filter.id}
@@ -191,7 +195,7 @@
                 {filter.label}<span>{counts[filter.id] || 0}</span>
             </button>
         {/each}
-        {#if selectedCode}<p>Showing events for <strong>{selectedCode}</strong></p>{/if}
+        {#if selectedCode}<p>Showing overtakes &amp; radio for <strong>{selectedCode}</strong></p>{/if}
     </div>
 
     <div class="track-wrap">

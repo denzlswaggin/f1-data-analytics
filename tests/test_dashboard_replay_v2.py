@@ -56,6 +56,17 @@ def test_event_timeline_unifies_replay_intelligence() -> None:
     assert "onPlayRadio" in component
 
 
+def test_selected_driver_timeline_only_shows_their_overtakes_and_radio() -> None:
+    component = EVENT_TIMELINE.read_text(encoding="utf-8")
+
+    assert "filter.id !== 'control'" in component
+    assert "event.category === 'overtake'" in component
+    assert "event.participants.includes(selectedCode)" in component
+    assert "event.category === 'radio'" in component
+    assert "event.driverCode === selectedCode" in component
+    assert "Showing overtakes &amp; radio for" in component
+
+
 def test_position_change_is_anchored_to_the_official_grid() -> None:
     source = META_SOURCE.read_text(encoding="utf-8")
     component = TRACK_MAP.read_text(encoding="utf-8")
