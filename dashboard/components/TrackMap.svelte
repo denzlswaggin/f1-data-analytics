@@ -298,7 +298,9 @@
             g.color = m.team_color || '#9aa0a6';
             g.finishPosition = asNum(m.finish_position);
             g.isClassified = m.is_classified == null ? null : Boolean(m.is_classified);
-            g.startOrder = g.samples.find((sample) => sample.order != null)?.order ?? null;
+            g.resultStatus = m.status || null;
+            g.startOrder = asNum(m.grid_position);
+            if (g.startOrder != null && g.startOrder <= 0) g.startOrder = null;
             out.push(g);
         }
         drivers = out;

@@ -5,6 +5,7 @@ PAGE = ROOT / "dashboard" / "pages" / "race-replay.md"
 REPLAY_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay.sql"
 REPLAY_LAPS_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_laps.sql"
 OVERTAKE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_overtakes.sql"
+META_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_meta.sql"
 TRACK_MAP = ROOT / "dashboard" / "components" / "TrackMap.svelte"
 
 
@@ -39,3 +40,11 @@ def test_replay_uses_separate_broadcast_ui_components() -> None:
     assert "./replay/DriverDetail.svelte" in component
     assert "<TimingTower" in component
     assert "<DriverDetail" in component
+
+
+def test_position_change_is_anchored_to_the_official_grid() -> None:
+    source = META_SOURCE.read_text(encoding="utf-8")
+    component = TRACK_MAP.read_text(encoding="utf-8")
+
+    assert "results.grid_position" in source
+    assert "g.startOrder = asNum(m.grid_position)" in component

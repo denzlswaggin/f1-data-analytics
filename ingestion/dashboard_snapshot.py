@@ -38,6 +38,15 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "driver_id",
         "driver_name",
     },
+    ("staging", "stg_results"): {
+        "season",
+        "round",
+        "driver_code",
+        "grid_position",
+        "finish_position",
+        "status",
+        "is_classified",
+    },
     ("staging", "stg_laps"): {
         "season",
         "round",

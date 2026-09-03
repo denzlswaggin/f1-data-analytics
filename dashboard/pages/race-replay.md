@@ -78,7 +78,15 @@ order by driver_code, lap_number
 ```
 
 ```sql replay_meta
-select driver_code, driver_name, team, team_color, finish_position, is_classified
+select
+    driver_code,
+    driver_name,
+    team,
+    team_color,
+    grid_position,
+    finish_position,
+    status,
+    is_classified
 from f1.race_replay_meta
 where season = ${inputs.season.value} and round = ${inputs.race.value}
     and driver_code <> '__NO_DATA__'

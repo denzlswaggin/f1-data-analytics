@@ -28,8 +28,10 @@ select
     coalesce(dc.driver_name, d.driver_code) as driver_name,
     t.team,
     coalesce(cc.team_color, '#9aa0a6')      as team_color,
-    story.finish_position,
-    story.is_classified
+    results.grid_position,
+    results.finish_position,
+    results.status,
+    results.is_classified
 from drivers d
 left join team t
     on t.season = d.season and t.round = d.round and t.driver_code = d.driver_code
@@ -37,10 +39,10 @@ left join staging.stg_driver_codes dc
     on dc.season = d.season and dc.driver_code = d.driver_code
 left join staging.constructor_colors cc
     on cc.team = t.team
-left join marts.mart_race_story story
-    on story.season = d.season
-    and story.round = d.round
-    and story.driver_code = d.driver_code
+left join staging.stg_results results
+    on results.season = d.season
+    and results.round = d.round
+    and results.driver_code = d.driver_code
 left join staging.stg_races rc
     on rc.season = d.season and rc.round = d.round
 
@@ -54,6 +56,8 @@ select
     'Replay unavailable',
     null,
     '#9aa0a6',
+    null,
+    null,
     null,
     null
 where not exists (select 1 from drivers)
