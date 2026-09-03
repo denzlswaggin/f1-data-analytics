@@ -331,10 +331,11 @@ def replay(
     if df.empty:
         typer.echo(f"No replay data for {season} {scope} (need positions + laps ingested).")
         return
+    race_count = df[["season", "round"]].drop_duplicates().shape[0]
+    label = scope if season is None else f"{season} {scope}"
     typer.echo(
-        f"Built marts.race_replay for {season} {scope}: "
-        f"{len(df)} rows, {df['driver_code'].nunique()} drivers, "
-        f"{df['round'].nunique()} race(s) at {tick}s ticks."
+        f"Built marts.race_replay for {label}: {len(df)} rows, "
+        f"{df['driver_code'].nunique()} drivers, {race_count} race(s) at {tick}s ticks."
     )
 
 
