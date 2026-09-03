@@ -56,14 +56,6 @@ def test_event_timeline_unifies_replay_intelligence() -> None:
     assert "onPlayRadio" in component
 
 
-def test_replay_uses_a_wide_viewport_layout() -> None:
-    component = TRACK_MAP.read_text(encoding="utf-8")
-
-    assert "width: min(1600px, calc(100vw - 2rem))" in component
-    assert "transform: translateX(-50%)" in component
-    assert ".tm:fullscreen" in component
-
-
 def test_position_change_is_anchored_to_the_official_grid() -> None:
     source = META_SOURCE.read_text(encoding="utf-8")
     component = TRACK_MAP.read_text(encoding="utf-8")

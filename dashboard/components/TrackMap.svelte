@@ -826,23 +826,16 @@
 
 <style>
     .tm {
-        position: relative;
-        left: 50%;
-        width: min(1600px, calc(100vw - 2rem));
+        width: 100%;
         margin: 0.5rem 0 1.25rem;
         font-family: system-ui, sans-serif;
-        transform: translateX(-50%);
     }
     .tm:fullscreen {
         box-sizing: border-box;
-        left: auto;
-        width: 100%;
-        margin: 0;
         padding: 1.25rem;
         overflow: auto;
         color: #f5f7fb;
         background: #080a0e;
-        transform: none;
     }
     .tm-header {
         display: flex;
@@ -1119,7 +1112,6 @@
         opacity: 0.55;
     }
     @media (max-width: 619px) {
-        .tm { width: calc(100vw - 1rem); }
         .tm-msgs { display: none; }
         .tm-header { align-items: flex-start; flex-direction: column; gap: 0.45rem; }
         .tm-clock { font-size: 11px; }
