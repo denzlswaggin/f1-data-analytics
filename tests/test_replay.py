@@ -14,7 +14,7 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from analytics.pipeline import build_race_replay, build_race_replay_incremental
+from analytics.pipeline import build_race_replay, build_race_replay_incremental, build_race_replays
 from analytics.replay import replay_source_coverage, resample_race, validate_replay_sources
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
@@ -247,3 +247,29 @@ def test_incremental_replay_preserves_other_rounds(tmp_path: Path) -> None:
         1: len(corrected),
         2: len(first),
     }
+
+
+def test_multi_race_builder_skips_truncated_partitions(tmp_path: Path) -> None:
+    db_path = tmp_path / "f1.duckdb"
+    _seed_warehouse(db_path)
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute(
+            "insert into staging.stg_laps "
+            "(driver_code, lap_number, lap_start_sec, lap_time_sec, season, round, session) "
+            "select driver_code, lap_number, lap_start_sec, lap_time_sec, season, 2, session "
+            "from staging.stg_laps where round = 1"
+        )
+        con.execute(
+            "insert into staging.stg_positions "
+            "(driver_code, session_time_sec, x, y, season, round, session) "
+            "select driver_code, session_time_sec, x, y, season, 2, session "
+            "from staging.stg_positions where round = 1 and session_time_sec <= 5"
+        )
+    finally:
+        con.close()
+
+    settings = Settings(warehouse="duckdb", duckdb_path=db_path)
+    result = build_race_replays(2026, [1, 2], tick_s=1.0, settings=settings)
+
+    assert set(result["round"]) == {1}

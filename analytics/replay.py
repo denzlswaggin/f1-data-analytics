@@ -39,6 +39,10 @@ _RETIRE_MAX_LINGER_S = 120.0
 _MIN_POSITION_COVERAGE = 0.90
 
 
+class IncompleteReplayError(ValueError):
+    """Raised when a position feed covers too little of its race window."""
+
+
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     """Fractional laps completed by each grid time for one driver.
 
@@ -109,7 +113,7 @@ def validate_replay_sources(
     """Raise when non-empty position data cannot support a full-race replay."""
     coverage = replay_source_coverage(positions, laps)
     if coverage is not None and coverage < minimum_coverage:
-        raise ValueError(
+        raise IncompleteReplayError(
             "position feed covers only "
             f"{coverage:.1%} of the lap-timing race window; expected at least "
             f"{minimum_coverage:.0%}"
