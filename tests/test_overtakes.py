@@ -20,7 +20,16 @@ from analytics.pipeline import build_race_overtakes
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
-EXPECTED_COLUMNS = ["t_s", "for_position", "passer_code", "passed_code", "gap_at_pass_s"]
+EXPECTED_COLUMNS = [
+    "t_s",
+    "for_position",
+    "passer_code",
+    "passed_code",
+    "gap_at_pass_s",
+    "confidence",
+    "evidence",
+    "reason",
+]
 
 
 def _replay(
@@ -65,6 +74,56 @@ def test_detect_overtakes_clean_pass() -> None:
     assert row["for_position"] == 1
     assert row["t_s"] == pytest.approx(5.0)
     assert row["gap_at_pass_s"] == pytest.approx(0.4)
+    assert row["confidence"] == pytest.approx(0.96)
+    assert "distance=0.00" in row["evidence"]
+    assert "persistence=confirmed" in row["evidence"]
+    assert row["reason"] == "clean_adjacent_swap"
+
+
+def test_detect_overtakes_bridges_one_incomplete_ranking_tick() -> None:
+    # B's timing update is absent at t=5, then the adjacent A/B order resolves at
+    # t=6. The detector may bridge this short incomplete transition.
+    together = lambda code, t: 100.0 + t * 10.0  # noqa: E731
+    frame = _replay(lambda t: (1, 2) if t < 6 else (2, 1), together)
+    missing_b = (frame["driver_code"] == "B") & (frame["t_s"] == 5)
+    frame.loc[missing_b, "running_order"] = np.nan
+
+    out = detect_overtakes(frame)
+
+    assert len(out) == 1
+    row = out.iloc[0]
+    assert row["t_s"] == pytest.approx(6.0)
+    assert row["passer_code"] == "B"
+    assert row["reason"] == "adjacent_swap_after_short_transition"
+    assert "transition_s=2.00" in row["evidence"]
+    assert 0.0 <= row["confidence"] <= 1.0
+
+
+def test_detect_overtakes_rejects_distant_multi_tick_transition() -> None:
+    # B falls to P3 while the order changes. That is not a clean adjacent A/B
+    # exchange even though the final frame puts B ahead of A.
+    together = lambda code, t: 100.0 + t * 10.0  # noqa: E731
+    frame = _replay(
+        lambda t: (1, 2) if t < 5 else ((1, 3) if t == 5 else (2, 1)),
+        together,
+    )
+
+    out = detect_overtakes(frame)
+
+    assert out.empty
+
+
+def test_detect_overtakes_does_not_bridge_stale_transition() -> None:
+    # Missing timing for longer than the two-second transition window must not
+    # turn an old adjacent order into evidence for a new pass.
+    together = lambda code, t: 100.0 + t * 10.0  # noqa: E731
+    frame = _replay(lambda t: (1, 2) if t < 7 else (2, 1), together)
+    missing_b = (frame["driver_code"] == "B") & frame["t_s"].isin([5.0, 6.0])
+    frame.loc[missing_b, "running_order"] = np.nan
+
+    out = detect_overtakes(frame)
+
+    assert out.empty
 
 
 def test_detect_overtakes_excludes_pit_cycle() -> None:

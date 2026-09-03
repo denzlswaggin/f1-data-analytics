@@ -41,8 +41,21 @@ _START_GUARD_S = 3.0
 # pitting car is displaced well beyond it. Circuit-relative so it travels between
 # tracks; ~2% of the extent is a few tens of metres.
 _PROXIMITY_FRAC = 0.02
+# A ranking update can briefly omit one of the two cars while timing data catches
+# up. Look through that short incomplete interval instead of requiring both sides
+# of the swap to appear in consecutive replay ticks.
+_TRANSITION_S = 2.0
 
-_COLUMNS = ["t_s", "for_position", "passer_code", "passed_code", "gap_at_pass_s"]
+_COLUMNS = [
+    "t_s",
+    "for_position",
+    "passer_code",
+    "passed_code",
+    "gap_at_pass_s",
+    "confidence",
+    "evidence",
+    "reason",
+]
 
 
 def _stays_ahead(
@@ -72,12 +85,82 @@ def _stays_ahead(
     return True
 
 
+def _transition_anchor(
+    holder_arr: np.ndarray,
+    order_a: dict[str, np.ndarray],
+    ticks: np.ndarray,
+    i: int,
+    jp: int,
+    jp1: int,
+    position: int,
+    passer: str,
+    passed: str,
+    transition_s: float,
+) -> int | None:
+    """Return the pre-pass tick for a clean adjacent short transition.
+
+    Timing feeds occasionally omit one car's running order for a tick while a
+    swap resolves. Such an incomplete tick is safe to bridge, but a finite order
+    outside the two contested places is not: that is a multi-car/distant change,
+    not a clean adjacent pass.
+    """
+    passer_order = order_a[passer]
+    passed_order = order_a[passed]
+    for j in range(i - 1, -1, -1):
+        if ticks[i] - ticks[j] > transition_s:
+            break
+        if holder_arr[j, jp] == passed and holder_arr[j, jp1] == passer:
+            contested = {position, position + 1}
+            for k in range(j + 1, i):
+                pair = (passer_order[k], passed_order[k])
+                finite = [int(order) for order in pair if np.isfinite(order)]
+                if any(order not in contested for order in finite):
+                    break
+                if len(finite) == 2 and passer_order[k] < passed_order[k]:
+                    break
+            else:
+                return j
+    return None
+
+
+def _confidence_and_evidence(
+    *,
+    distance: float,
+    proximity_limit: float,
+    gap_s: float,
+    battle_gap_s: float,
+    transition_s: float,
+    consecutive: bool,
+) -> tuple[float, str, str]:
+    """Score and explain the evidence behind an accepted pass."""
+    proximity_margin = (
+        1.0 if np.isinf(proximity_limit) else 1.0 - min(distance / proximity_limit, 1.0)
+    )
+    gap_margin = 1.0 - min(max(gap_s, 0.0) / battle_gap_s, 1.0)
+    temporal_clarity = 1.0 if consecutive else 0.75
+    confidence = float(
+        np.clip(
+            0.5 + 0.2 * proximity_margin + 0.2 * gap_margin + 0.1 * temporal_clarity,
+            0,
+            1,
+        )
+    )
+    reason = "clean_adjacent_swap" if consecutive else "adjacent_swap_after_short_transition"
+    evidence = (
+        f"transition_s={transition_s:.2f};distance={distance:.2f};"
+        f"proximity_limit={proximity_limit:.2f};gap_s={gap_s:.2f};"
+        f"gap_limit_s={battle_gap_s:.2f};persistence=confirmed"
+    )
+    return round(confidence, 3), evidence, reason
+
+
 def detect_overtakes(
     replay: pd.DataFrame,
     battle_gap_s: float = _BATTLE_GAP_S,
     persist_s: float = _PERSIST_S,
     start_guard_s: float = _START_GUARD_S,
     proximity_frac: float = _PROXIMITY_FRAC,
+    transition_s: float = _TRANSITION_S,
 ) -> pd.DataFrame:
     """Detect on-track overtakes from one race's replay frame.
 
@@ -86,15 +169,16 @@ def detect_overtakes(
     in ``marts.race_replay``). Returns one row per confirmed pass — ``t_s`` (when
     the pass completes), ``for_position`` (the position the passer gains),
     ``passer_code``, ``passed_code`` and ``gap_at_pass_s`` (their interval just
-    after the swap) — sorted by ``t_s``.
+    after the swap). ``confidence``, ``evidence`` and ``reason`` make the accepted
+    detector evidence explicit. Results are sorted by ``t_s``.
 
-    A pass is counted when, between two consecutive ticks, the holder of a position
-    changes from B to A **and** A was directly behind B on the previous tick (a
-    clean single-place swap) **and** the two cars are physically close at the
-    completion tick (``proximity_frac`` of the track extent — this is what excludes
-    pit-cycle swaps) **and** their interval is under ``battle_gap_s`` **and** A
-    stays ahead of B for ``persist_s`` afterwards. Ticks before ``start_guard_s``
-    are skipped.
+    A pass is counted when the holder of a position changes from B to A and the
+    pair can be traced back to the opposite adjacent order within ``transition_s``.
+    An intermediate tick may omit one of the pair, but neither car may occupy a
+    finite position outside the two contested places. The cars must also be close
+    at completion (the pit-cycle discriminator), have an interval under
+    ``battle_gap_s`` and remain swapped for ``persist_s``. Ticks before
+    ``start_guard_s`` are skipped.
     """
     required = {"driver_code", "t_s", "running_order", "gap_to_ahead_s", "x", "y"}
     missing = required - set(replay.columns)
@@ -131,7 +215,7 @@ def detect_overtakes(
     x_a = _by_code("x")
     y_a = _by_code("y")
 
-    rows: list[tuple[float, int, str, str, float]] = []
+    rows: list[tuple[float, int, str, str, float, float, str, str]] = []
     for p in positions:
         if (p + 1) not in pos_idx:
             continue  # no car directly behind the last position
@@ -142,24 +226,59 @@ def detect_overtakes(
             if t_now < start_guard_s:
                 continue
             passer = holder_arr[i, jp]
-            passed = holder_arr[i - 1, jp]
+            passed = holder_arr[i, jp1]
             if not isinstance(passer, str) or not isinstance(passed, str) or passer == passed:
                 continue
-            # The passer must have been directly behind (at p+1) the tick before,
-            # and the passed car must now sit directly behind it — a clean swap.
-            if holder_arr[i - 1, jp1] != passer or holder_arr[i, jp1] != passed:
+            # Only evaluate the completion tick, then find the nearby pre-swap
+            # adjacent order through at most one short incomplete transition.
+            if holder_arr[i - 1, jp] == passer:
+                continue
+            anchor = _transition_anchor(
+                holder_arr,
+                order_a,
+                ticks,
+                i,
+                jp,
+                jp1,
+                p,
+                passer,
+                passed,
+                transition_s,
+            )
+            if anchor is None:
                 continue
             # Physical proximity at the completion tick — the pit-cycle discriminator.
             dx = x_a[passer][i] - x_a[passed][i]
             dy = y_a[passer][i] - y_a[passed][i]
-            if not np.hypot(dx, dy) < prox_units:
+            distance = float(np.hypot(dx, dy))
+            if not distance < prox_units:
                 continue
             gap_now = gap_a[passed][i]  # the passed car's new interval to the passer
             if not gap_now < battle_gap_s:
                 continue
             if not _stays_ahead(order_a, passer, passed, ticks, i, persist_s):
                 continue
-            rows.append((t_now, int(p), passer, passed, round(float(gap_now), 2)))
+            transition_duration = float(ticks[i] - ticks[anchor])
+            confidence, evidence, reason = _confidence_and_evidence(
+                distance=distance,
+                proximity_limit=prox_units,
+                gap_s=float(gap_now),
+                battle_gap_s=battle_gap_s,
+                transition_s=transition_duration,
+                consecutive=anchor == i - 1,
+            )
+            rows.append(
+                (
+                    t_now,
+                    int(p),
+                    passer,
+                    passed,
+                    round(float(gap_now), 2),
+                    confidence,
+                    evidence,
+                    reason,
+                )
+            )
 
     if not rows:
         return _empty_overtakes()
