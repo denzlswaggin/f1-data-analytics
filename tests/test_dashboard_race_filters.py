@@ -31,15 +31,16 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
 
 def test_replay_picker_resets_the_race_when_the_season_changes() -> None:
     page = (PAGES_DIR / "race-replay.md").read_text(encoding="utf-8")
-    component = (
-        PAGES_DIR.parent / "components" / "ReplayRacePicker.svelte"
-    ).read_text(encoding="utf-8")
+    component = (PAGES_DIR.parent / "components" / "ReplayRacePicker.svelte").read_text(
+        encoding="utf-8"
+    )
 
     assert "<ReplayRacePicker seasons={replay_seasons} races={replay_races} />" in page
     assert "select distinct\n    season,\n    round" in page
-    assert "where season = ${inputs.season.value}" not in page.split("```sql replay_races", 1)[1].split(
-        "```", 1
-    )[0]
+    assert (
+        "where season = ${inputs.season.value}"
+        not in page.split("```sql replay_races", 1)[1].split("```", 1)[0]
+    )
     assert "const seasonChanged" in component
     assert "const requestedRace = seasonChanged ? null : rawValue('race')" in component
     assert "publish('race', firstRace.round, firstRace.race_name)" in component
