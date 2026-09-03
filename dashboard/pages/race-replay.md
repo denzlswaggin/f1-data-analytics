@@ -21,19 +21,18 @@ order by season desc
 
 ```sql replay_races
 select distinct
+    season,
     round,
     case
         when race_name = '__NO_DATA__' then 'No replay data available'
         else replace(race_name, cast(season as varchar) || ' ', '')
     end as race_name
 from f1.race_replay_meta
-where season = ${inputs.season.value}
-order by round
+order by season desc, round
 ```
 
 <FilterBar title="Choose a replay" description="Only races available in the published snapshot are listed.">
-    <Dropdown data={replay_seasons} name=season value=season label=season_label title="Season" />
-    <Dropdown data={replay_races} name=race value=round label=race_name title="Race" />
+    <ReplayRacePicker seasons={replay_seasons} races={replay_races} />
 </FilterBar>
 
 ```sql replay_coverage
