@@ -76,6 +76,19 @@ def resample_lap_telemetry(tel: pd.DataFrame, step_m: float) -> pd.DataFrame:
     )
 
 
+def select_fastest_driver_laps(laps: pd.DataFrame) -> pd.DataFrame:
+    """Select the fastest timed lap for every driver in a session."""
+    if laps.empty or not {"Driver", "LapTime"}.issubset(laps.columns):
+        return laps.iloc[0:0]
+
+    timed = laps.loc[laps["Driver"].notna() & laps["LapTime"].notna()]
+    if timed.empty:
+        return timed
+
+    fastest_indices = timed.groupby("Driver", sort=False)["LapTime"].idxmin()
+    return laps.loc[fastest_indices].sort_values("Driver")
+
+
 def thin_positions(
     df: pd.DataFrame, rate_hz: float, time_col: str = "session_time_sec"
 ) -> pd.DataFrame:
@@ -242,11 +255,20 @@ class FastF1Client:
         log.info("fastf1.weather", season=season, round=rnd, session=session, rows=len(out))
         return out
 
-    def load_session_telemetry(self, season: int, rnd: int, session: str = "R") -> pd.DataFrame:
+    def load_session_telemetry(
+        self,
+        season: int,
+        rnd: int,
+        session: str = "R",
+        *,
+        fastest_only: bool = False,
+    ) -> pd.DataFrame:
         """Return distance-resampled car telemetry: one row per driver/lap/point.
 
         Heavy: FastF1 downloads full-resolution telemetry per lap; this resamples
         each lap onto the configured distance grid to keep the warehouse compact.
+        ``fastest_only`` keeps the one timed lap per driver consumed by the
+        dashboard while retaining race-level coverage.
         """
         ff1 = self._ensure_loaded()
         sess = ff1.get_session(season, rnd, session)
@@ -256,9 +278,10 @@ class FastF1Client:
             log.warning("fastf1.no_laps_for_telemetry", season=season, round=rnd, session=session)
             return pd.DataFrame()
 
+        laps_to_process = select_fastest_driver_laps(laps) if fastest_only else laps
         step = float(self.settings.fastf1_telemetry_resample_m)
         frames: list[pd.DataFrame] = []
-        for _, lap in laps.iterlaps():
+        for _, lap in laps_to_process.iterlaps():
             try:
                 tel = lap.get_telemetry()
             except Exception as exc:

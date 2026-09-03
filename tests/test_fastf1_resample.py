@@ -7,6 +7,7 @@ import pandas as pd
 from ingestion.clients.fastf1_client import (
     clean_positions,
     resample_lap_telemetry,
+    select_fastest_driver_laps,
     thin_positions,
 )
 
@@ -53,6 +54,23 @@ def test_resample_grid_spacing_and_columns() -> None:
 def test_resample_empty_without_distance() -> None:
     assert resample_lap_telemetry(pd.DataFrame({"Speed": [1, 2]}), 25.0).empty
     assert resample_lap_telemetry(pd.DataFrame(), 25.0).empty
+
+
+def test_select_fastest_driver_laps_returns_one_timed_lap_per_driver() -> None:
+    laps = pd.DataFrame(
+        {
+            "Driver": ["VER", "VER", "NOR", "NOR", "HAM"],
+            "LapNumber": [1, 2, 1, 2, 1],
+            "LapTime": pd.to_timedelta([90.0, 89.0, 91.0, 92.0, None], unit="s"),
+        }
+    )
+
+    selected = select_fastest_driver_laps(laps)
+
+    assert selected[["Driver", "LapNumber"]].to_records(index=False).tolist() == [
+        ("NOR", 1),
+        ("VER", 2),
+    ]
 
 
 def test_thin_positions_caps_rate_and_sorts() -> None:

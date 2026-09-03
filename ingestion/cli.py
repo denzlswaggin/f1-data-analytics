@@ -54,6 +54,13 @@ IncrementalOpt = Annotated[
         help="Load only rounds past the high-watermark (max round already in raw.<table>).",
     ),
 ]
+FastestOnlyOpt = Annotated[
+    bool,
+    typer.Option(
+        "--fastest-only",
+        help="Store only each driver's fastest timed lap for dashboard coverage.",
+    ),
+]
 
 
 def _print_summary(summary: dict[tuple[str, int], int]) -> None:
@@ -317,6 +324,7 @@ def telemetry(
     to_round: ToRoundOpt = None,
     session: SessionOpt = "R",
     incremental: IncrementalOpt = False,
+    fastest_only: FastestOnlyOpt = False,
 ) -> None:
     """Ingest FastF1 distance-resampled telemetry (heavy; requires `telemetry` extra)."""
     configure_logging()
@@ -326,8 +334,14 @@ def telemetry(
     if not rounds:
         typer.echo(f"{season}: telemetry already up to date — nothing new to load.")
         return
-    log.info("cli.telemetry.start", season=season, rounds=rounds, session=session)
-    rows = ingest_telemetry(season, rounds, session)
+    log.info(
+        "cli.telemetry.start",
+        season=season,
+        rounds=rounds,
+        session=session,
+        fastest_only=fastest_only,
+    )
+    rows = ingest_telemetry(season, rounds, session, fastest_only=fastest_only)
     _echo_rounds(rows, season, rounds, "telemetry rows")
 
 
