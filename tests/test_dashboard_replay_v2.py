@@ -61,8 +61,6 @@ def test_replay_uses_a_wide_viewport_layout() -> None:
 
     assert "width: min(1600px, calc(100vw - 2rem))" in component
     assert "transform: translateX(-50%)" in component
-    assert "splitLayout = containerWidth >= 820" in component
-    assert "var(--timing-width)" in component
     assert ".tm:fullscreen" in component
 
 

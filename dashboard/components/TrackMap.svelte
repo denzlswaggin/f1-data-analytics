@@ -27,14 +27,9 @@
     // 20-row tower doesn't re-render 60x/s and compete with the map on the main thread.
     const UI_MS = 66;
 
-    const BROADCAST_GAP = 16;
     let containerWidth = 900;
-    $: splitLayout = containerWidth >= 820;
-    $: timingWidth = Math.min(336, Math.max(288, containerWidth * 0.24));
-    $: width = Math.max(
-        280,
-        splitLayout ? containerWidth - timingWidth - BROADCAST_GAP : containerWidth,
-    );
+    $: splitLayout = containerWidth >= 980;
+    $: width = Math.max(280, splitLayout ? containerWidth - 352 : containerWidth);
     $: compact = width < 620;
     $: height = Math.round(width * (compact ? 0.82 : 0.6));
 
@@ -698,7 +693,7 @@
             {#if currentLap}<span>Lap {currentLap}{totalLaps ? ` / ${totalLaps}` : ''}</span>{/if}
         </div>
     </header>
-    <div class="tm-broadcast" style={`--timing-width: ${timingWidth}px`}>
+    <div class="tm-broadcast">
     <div class="tm-stage" style="width:{width}px;height:{height}px">
         <canvas bind:this={trackCanvas} {width} {height}></canvas>
         <canvas
@@ -896,14 +891,14 @@
     }
     .tm-broadcast {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) var(--timing-width);
+        grid-template-columns: minmax(0, 1fr) 336px;
         align-items: start;
         gap: 1rem;
     }
     .tm-broadcast :global(.tower) { height: 100%; }
     .tm > :global(.detail) { margin-top: 0.75rem; }
     .tm > :global(.timeline) { margin-top: 0.75rem; }
-    @media (max-width: 819px) {
+    @media (max-width: 979px) {
         .tm-broadcast { grid-template-columns: minmax(0, 1fr); }
         .tm-broadcast :global(.tower) { height: auto; }
     }
