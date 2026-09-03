@@ -29,6 +29,21 @@ def latest_race_check(
     return Check(name, query, minimum)
 
 
+def recent_season_coverage_check(name: str, table: str, seasons: int = 3) -> Check:
+    """Require a mart to cover every recent season available in race results."""
+    query = (
+        "with cutoff as (select max(season) - "
+        f"{seasons - 1} as first_season from staging.stg_results), expected as ("
+        "select distinct season from staging.stg_results, cutoff "
+        "where season >= first_season"
+        "), covered as ("
+        f"select distinct season from {table}"
+        ") select count(*) from expected left join covered using (season) "
+        "where covered.season is null"
+    )
+    return Check(name, query, minimum=0, maximum=0)
+
+
 CHECKS = (
     Check(
         "driver ratings",
@@ -58,7 +73,13 @@ CHECKS = (
         "Saturday vs Sunday profile",
         "select count(*) from marts.driver_pace_profile where n_race_comparisons >= 10",
     ),
+    recent_season_coverage_check(
+        "race pace recent-season coverage", "marts.mart_lap_times"
+    ),
     latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
+    recent_season_coverage_check(
+        "pit strategy recent-season coverage", "marts.mart_pit_strategy"
+    ),
     latest_race_check("latest race pit strategy", "marts.mart_pit_strategy", minimum=10),
     Check(
         "pit strategy race coverage",
@@ -80,8 +101,17 @@ CHECKS = (
         minimum=0,
         maximum=0,
     ),
+    recent_season_coverage_check(
+        "tyre strategy recent-season coverage", "marts.mart_stint_strategy"
+    ),
     latest_race_check("latest race tyre strategy", "marts.mart_stint_strategy", minimum=10),
+    recent_season_coverage_check(
+        "speed trap recent-season coverage", "marts.mart_speed_trap"
+    ),
     latest_race_check("latest race speed trap", "marts.mart_speed_trap", minimum=15),
+    recent_season_coverage_check(
+        "weather recent-season coverage", "marts.mart_weather_degradation"
+    ),
     Check(
         "weather degradation",
         "select count(*) from marts.mart_weather_degradation",
@@ -96,6 +126,12 @@ CHECKS = (
         "marts.mart_lap_telemetry",
         "count(distinct driver_code)",
         10,
+    ),
+    recent_season_coverage_check(
+        "telemetry recent-season coverage", "marts.mart_lap_telemetry"
+    ),
+    recent_season_coverage_check(
+        "race replay recent-season coverage", "marts.race_replay"
     ),
     latest_race_check("latest replay rows", "marts.race_replay", minimum=10_000),
     latest_race_check(
