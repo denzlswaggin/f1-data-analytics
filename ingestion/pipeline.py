@@ -197,9 +197,7 @@ def ingest_telemetry(
     client = FastF1Client(settings)
     frames = []
     for rnd in rounds:
-        df = client.load_session_telemetry(
-            season, rnd, session, fastest_only=fastest_only
-        )
+        df = client.load_session_telemetry(season, rnd, session, fastest_only=fastest_only)
         if not df.empty:
             frames.append(df)
 

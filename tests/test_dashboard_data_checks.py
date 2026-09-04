@@ -33,8 +33,7 @@ def test_recent_season_coverage_reports_a_missing_middle_season() -> None:
         "select * from (values (2024), (2025), (2026)) as results(season)"
     )
     connection.execute(
-        "create table marts.example as "
-        "select * from (values (2024), (2026)) as seasons(season)"
+        "create table marts.example as select * from (values (2024), (2026)) as seasons(season)"
     )
 
     check = recent_season_coverage_check("example coverage", "marts.example")

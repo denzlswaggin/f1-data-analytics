@@ -61,9 +61,7 @@ def _warehouse(path: Path) -> None:
             "values (2026, 1, 'Test Grand Prix', date '2026-08-30'), "
             "(2026, 2, 'Future Grand Prix', date '2026-12-06')"
         )
-        connection.execute(
-            "insert into marts.mart_lap_times (season, round) values (2026, 1)"
-        )
+        connection.execute("insert into marts.mart_lap_times (season, round) values (2026, 1)")
         connection.execute(
             "insert into marts.driver_ratings "
             "(driver_id, rating, rating_lo, rating_hi, n_comparisons) "
