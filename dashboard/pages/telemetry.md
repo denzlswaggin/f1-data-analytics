@@ -7,7 +7,8 @@ max_width: 1600
 
 Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
 Compare who carried more speed where, then see a single driver's racing line
-coloured by gear. _FastF1 telemetry covers the current season to date._
+coloured by gear. _FastF1 coverage varies by season; the panel below states the
+exact races and latest event present in the published snapshot._
 
 <KeyInsight label="How to compare laps">
 Use the cumulative delta to find where time was gained; use speed and pedal traces to explain how it was gained.

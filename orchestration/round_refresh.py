@@ -10,6 +10,9 @@ import time
 from collections.abc import Callable
 
 from analytics.pipeline import (
+    build_driver_pace_profile,
+    build_driver_ratings,
+    build_driver_ratings_v2,
     build_race_overtakes_incremental,
     build_race_replay_incremental,
 )
@@ -39,7 +42,7 @@ from ingestion.pipeline import (
     latest_completed_round,
 )
 
-from orchestration.assets import CURRENT_SEASON, FIRST_SEASON
+from orchestration.assets import CURRENT_SEASON, FIRST_SEASON, PACE_PROFILE_FROM_SEASON
 
 ROUND_PARTITIONS = MultiPartitionsDefinition(
     {
@@ -149,17 +152,31 @@ def materialize_round_analytics(
     season, rnd, _session = _partition_values(context)
     settings = get_settings()
 
-    def build_partition() -> dict[str, int]:
-        replay = build_race_replay_incremental(season, rnd, settings=settings)
-        overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
-        return {"replay_rows": len(replay), "overtakes": len(overtakes)}
-
     return _within_budget(
         context,
         "round_analytics",
         settings.round_analytics_budget_seconds,
-        build_partition,
+        lambda: _build_round_analytics(season, rnd, settings),
     )
+
+
+def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[str, int]:
+    """Refresh every Python-built mart affected by a completed round."""
+    ratings = build_driver_ratings(settings=settings)
+    dynamic_ratings = build_driver_ratings_v2(settings=settings)
+    pace_profile = build_driver_pace_profile(
+        from_season=PACE_PROFILE_FROM_SEASON,
+        settings=settings,
+    )
+    replay = build_race_replay_incremental(season, rnd, settings=settings)
+    overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
+    return {
+        "ratings": len(ratings),
+        "dynamic_ratings": len(dynamic_ratings),
+        "pace_profiles": len(pace_profile),
+        "replay_rows": len(replay),
+        "overtakes": len(overtakes),
+    }
 
 
 @job(partitions_def=ROUND_PARTITIONS)

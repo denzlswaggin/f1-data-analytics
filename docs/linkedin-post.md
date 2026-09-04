@@ -6,7 +6,7 @@
 
 I built a data platform to find out. The trick: teammates drive **identical
 cars**, so the qualifying gap between them isolates driver skill. Chain those gaps
-across every team and every season (2006–2025) with a least-squares "Massey"
+across every team and every season (2006–2026) with a least-squares "Massey"
 rating, and you get one cross-era leaderboard:
 
 1️⃣ Max Verstappen

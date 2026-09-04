@@ -30,8 +30,9 @@ ephemeral ingestion pipeline.
 
 `make prod-smoke` fails unless all containers are healthy, definitions load,
 the current season has non-empty audit records for races/results/qualifying,
-and the latest load is at most eight days old. Each invocation appends its
-results to `ops.pipeline_health_history`. For a direct check:
+and every required resource's latest load is at most eight days old. Each
+invocation appends its results to `ops.pipeline_health_history`. For a direct
+check:
 
 ```bash
 docker compose --env-file .env.production exec dagster-webserver \
@@ -43,6 +44,13 @@ set `F1_HEALTH_REQUIRED_RESOURCES=laps,telemetry,positions,race_control`; only
 listed sources become hard health gates. An ad-hoc policy can instead repeat
 `--require-resource telemetry` on the CLI. This avoids reporting an intentionally
 lightweight deployment as unhealthy.
+
+OpenF1 normally serves historical team-radio data anonymously, but restricts
+all REST access while a live F1 session is in progress. Set
+`F1_OPENF1_USERNAME` and `F1_OPENF1_PASSWORD` in the deployment secret manager
+when round refreshes must also work during that window. The client exchanges
+them for a short-lived OAuth token and never logs either credential. A temporary
+`F1_OPENF1_ACCESS_TOKEN` can be used for an ad-hoc local run.
 
 Review recent availability and freshness outcomes with:
 

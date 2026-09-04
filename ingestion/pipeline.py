@@ -197,9 +197,7 @@ def ingest_telemetry(
     client = FastF1Client(settings)
     frames = []
     for rnd in rounds:
-        df = client.load_session_telemetry(
-            season, rnd, session, fastest_only=fastest_only
-        )
+        df = client.load_session_telemetry(season, rnd, session, fastest_only=fastest_only)
         if not df.empty:
             frames.append(df)
 
@@ -332,7 +330,11 @@ def ingest_team_radio(
     from ingestion.clients.fastf1_client import FastF1Client
     from ingestion.clients.openf1 import OpenF1Client
 
-    of1 = OpenF1Client()
+    of1 = OpenF1Client(
+        username=settings.openf1_username,
+        password=settings.openf1_password.get_secret_value(),
+        access_token=settings.openf1_access_token.get_secret_value(),
+    )
     key_by_date: dict[str, int] = {}
     for sess in of1.race_sessions(season):
         day = str(sess.get("date_start") or "")[:10]

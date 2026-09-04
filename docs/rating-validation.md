@@ -11,7 +11,7 @@ python -m analytics.cli validate      # backtest + shrinkage sweep + bootstrap C
 ```
 
 Code: `analytics/validation.py` (pure functions, unit-tested in `tests/test_validation.py`).
-Numbers below are over 2006–2025 (≈8.4k directed teammate gaps, ~100 drivers).
+Numbers below are over 2006–2026 (8,424 directed teammate gaps, 101 rated drivers).
 
 ## 1. Does the rating predict the *future*? (temporal backtest)
 
@@ -22,13 +22,13 @@ pairings whose both drivers were already rated. Predicted gap for `(i, j)` is
 
 | Metric | Result | Read |
 | --- | --- | --- |
-| Race-level sign accuracy | **0.605** | The higher-rated driver out-qualifies their teammate 60.5% of individual sessions (vs 0.50 chance), over **2,443** out-of-sample predictions in 16 test seasons. |
-| Season-battle sign accuracy | **0.678** | Averaging each pair's races into one season-long battle (**146** of them), the rating calls the winner 67.8% of the time. |
+| Race-level sign accuracy | **0.605** | The higher-rated driver out-qualifies their teammate 60.5% of individual sessions (vs 0.50 chance), over **2,453** out-of-sample predictions in 16 test seasons. |
+| Season-battle sign accuracy | **0.680** | Averaging each pair's races into one season-long battle (**147** of them), the rating calls the winner 68.0% of the time. |
 | Correlation (r) | 0.111 | Weak but positive linear agreement on magnitudes. |
 | MAE vs predict-zero baseline | 0.64 vs 0.62 (skill −0.03) | **No single-race magnitude skill** — see below. |
 
 **Honest interpretation.** The rating has clear *ordinal* predictive power — it knows who
-is faster — and that signal strengthens as you average out noise (60.5% per race → 67.8%
+is faster — and that signal strengthens as you average out noise (60.5% per race → 68.0%
 per season). It has essentially **no magnitude skill on a single session**: one qualifying
 lap is dominated by track evolution, traffic, and one-off mistakes, so predicting the exact
 gap does no better than guessing zero. That's the expected, defensible result for a skill
@@ -42,12 +42,12 @@ the ranking would be a hyperparameter artifact. It doesn't:
 
 | `prior_weight` | Spearman vs default | Top-20 kept | mean |rating| |
 | ---: | ---: | ---: | ---: |
-| 0 (pure least-squares) | 0.884 | 0.75 | 0.481 |
-| 2 | 0.970 | 0.90 | 0.353 |
+| 0 (pure least-squares) | 0.883 | 0.75 | 0.483 |
+| 2 | 0.970 | 0.90 | 0.354 |
 | 4 | 0.989 | 0.90 | 0.307 |
 | **8 (default)** | 1.000 | 1.00 | 0.256 |
-| 16 | 0.988 | 0.95 | 0.203 |
-| 32 | 0.959 | 0.85 | 0.152 |
+| 16 | 0.989 | 0.95 | 0.202 |
+| 32 | 0.961 | 0.85 | 0.152 |
 
 Rank order is **highly stable** (Spearman ≥ 0.88 everywhere, ≥ 0.97 across a wide 2–16
 band); the prior only compresses the *spread* (mean |rating| shrinks from 0.48 → 0.15), as
@@ -60,13 +60,13 @@ is each driver's confidence band (`bootstrap_ratings`, deterministic given a see
 
 | # | Driver | Rating | 90% CI | in-boot |
 | ---: | --- | ---: | --- | ---: |
-| 1 | Verstappen | 0.923 | [0.47, 1.33] | 150/150 |
-| 2 | Sato | 0.878 | **[0.39, 1.42]** | 150 |
-| 3 | Davidson | 0.840 | **[0.43, 1.18]** | 150 |
-| 4 | Russell | 0.619 | [0.36, 0.88] | 150 |
-| 5 | Leclerc | 0.563 | [0.36, 0.74] | 150 |
-| 7 | Vettel | 0.463 | [0.34, 0.61] | 150 |
-| 9 | Norris | 0.435 | **[−0.12, 0.92]** | 150 |
+| 1 | Verstappen | 0.919 | [0.48, 1.56] | 300/300 |
+| 2 | Sato | 0.878 | **[0.35, 1.39]** | 300 |
+| 3 | Davidson | 0.840 | **[0.42, 1.20]** | 300 |
+| 4 | Russell | 0.619 | [0.37, 0.92] | 300 |
+| 5 | Leclerc | 0.559 | [0.37, 0.75] | 300 |
+| 7 | Vettel | 0.462 | [0.33, 0.59] | 300 |
+| 9 | Norris | 0.433 | **[−0.07, 0.88]** | 300 |
 
 The bands are the point of the exercise. **Verstappen's #1 is robust** — a narrow,
 well-clear band on a densely-connected driver. The suspiciously high **Sato / Davidson**

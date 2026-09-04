@@ -41,15 +41,15 @@ Verstappen → …), skill propagates between drivers who never shared a car. I 
 it with damped Jacobi iteration and add empirical-Bayes shrinkage so drivers with
 only a handful of teammate races don't top the board on noise.
 
-## The result (2006–2025)
+## The result (2006–2026)
 
 | Rank | Driver           | Rating | Head-to-heads |
 | ---: | ---------------- | -----: | ------------: |
-|    1 | Max Verstappen   |  0.946 |           224 |
-|    2 | George Russell   |  0.641 |           149 |
-|    3 | Charles Leclerc  |  0.578 |           171 |
-|    4 | Daniel Ricciardo |  0.504 |           252 |
-|    5 | Sebastian Vettel |  0.469 |           292 |
+|    1 | Max Verstappen   |  0.919 |           234 |
+|    2 | George Russell   |  0.619 |           161 |
+|    3 | Charles Leclerc  |  0.559 |           183 |
+|    4 | Daniel Ricciardo |  0.495 |           252 |
+|    5 | Sebastian Vettel |  0.462 |           292 |
 
 *(established drivers, ≥40 head-to-heads; higher = faster than teammates)*
 

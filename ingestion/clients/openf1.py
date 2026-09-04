@@ -20,14 +20,59 @@ log = get_logger(__name__)
 _BASE_URL = "https://api.openf1.org/v1"
 
 
+class OpenF1AuthenticationError(RuntimeError):
+    """OpenF1 requires credentials that were absent or rejected."""
+
+
 class OpenF1Client:
     """Thin, rate-limited reader for the OpenF1 endpoints we need."""
 
-    def __init__(self, base_url: str = _BASE_URL, min_interval_s: float = 0.35) -> None:
+    def __init__(
+        self,
+        base_url: str = _BASE_URL,
+        min_interval_s: float = 0.35,
+        *,
+        username: str = "",
+        password: str = "",
+        access_token: str = "",
+    ) -> None:
         self.base_url = base_url
         self._min_interval = min_interval_s
         self._last = 0.0
+        self._username = username
+        self._password = password
         self._session = requests.Session()
+        if access_token:
+            self._session.headers.update({"Authorization": f"Bearer {access_token}"})
+
+    @property
+    def token_url(self) -> str:
+        """OAuth endpoint adjacent to the versioned REST base URL."""
+        api_root = self.base_url.removesuffix("/v1")
+        return f"{api_root}/token"
+
+    def _authenticate(self) -> None:
+        if not self._username or not self._password:
+            raise OpenF1AuthenticationError(
+                "OpenF1 restricted access during a live session. Configure "
+                "F1_OPENF1_USERNAME and F1_OPENF1_PASSWORD (or a short-lived "
+                "F1_OPENF1_ACCESS_TOKEN) to refresh team radio now."
+            )
+        response = self._session.post(
+            self.token_url,
+            data={"username": self._username, "password": self._password},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            timeout=30,
+        )
+        if response.status_code != 200:
+            raise OpenF1AuthenticationError(
+                f"OpenF1 authentication failed with HTTP {response.status_code}"
+            )
+        payload = response.json()
+        token = payload.get("access_token") if isinstance(payload, dict) else None
+        if not isinstance(token, str) or not token:
+            raise OpenF1AuthenticationError("OpenF1 authentication returned no access token")
+        self._session.headers.update({"Authorization": f"Bearer {token}"})
 
     def _get(self, path: str, **params: Any) -> list[dict[str, Any]]:
         elapsed = time.monotonic() - self._last
@@ -35,6 +80,14 @@ class OpenF1Client:
             time.sleep(self._min_interval - elapsed)
         resp = self._session.get(f"{self.base_url}/{path}", params=params, timeout=30)
         self._last = time.monotonic()
+        if resp.status_code == 401:
+            self._authenticate()
+            resp = self._session.get(f"{self.base_url}/{path}", params=params, timeout=30)
+            self._last = time.monotonic()
+            if resp.status_code == 401:
+                raise OpenF1AuthenticationError(
+                    "OpenF1 rejected the configured credential with HTTP 401"
+                )
         if resp.status_code == 404:  # OpenF1's "no results" for an empty query
             return []
         resp.raise_for_status()

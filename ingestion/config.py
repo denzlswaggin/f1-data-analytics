@@ -64,6 +64,13 @@ class Settings(BaseSettings):
     jolpica_rate_limit_per_sec: float = Field(default=4.0, gt=0)
     jolpica_max_retries: int = Field(default=5, ge=0)
 
+    # OpenF1 team-radio API. Historical data is normally anonymous, but OpenF1
+    # restricts all REST calls while a live F1 session is in progress. Optional
+    # credentials let the unattended refresh obtain a short-lived OAuth token.
+    openf1_username: str = ""
+    openf1_password: SecretStr = SecretStr("")
+    openf1_access_token: SecretStr = SecretStr("")
+
     # FastF1 (Milestone 3)
     fastf1_cache_dir: Path = Path("data/fastf1_cache")
     # Distance grid (metres) for resampling per-lap telemetry — smaller = more

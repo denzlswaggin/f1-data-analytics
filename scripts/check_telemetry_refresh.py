@@ -26,10 +26,13 @@ def main() -> None:
         if key is None:
             raise SystemExit("raw.telemetry has no fixture row")
         season, round_, session, driver, lap, distance, old_speed = key
-        before_count = connection.execute(
+        before_count_row = connection.execute(
             "select count(*) from marts.mart_lap_telemetry where season = ? and round = ?",
             [season, round_],
-        ).fetchone()[0]
+        ).fetchone()
+        if before_count_row is None:
+            raise SystemExit("failed to count the telemetry partition before refresh")
+        before_count = before_count_row[0]
         new_speed = float(old_speed) + 1.0
         connection.execute(
             "update raw.telemetry set speed_kph = ? "
@@ -87,10 +90,13 @@ def main() -> None:
             "and lap_number = ? and distance_m = ?",
             [season, round_, driver, lap, distance],
         ).fetchone()
-        after_count = connection.execute(
+        after_count_row = connection.execute(
             "select count(*) from marts.mart_lap_telemetry where season = ? and round = ?",
             [season, round_],
-        ).fetchone()[0]
+        ).fetchone()
+        if after_count_row is None:
+            raise SystemExit("failed to count the telemetry partition after refresh")
+        after_count = after_count_row[0]
 
     if refreshed is None or abs(float(refreshed[0]) - new_speed) > 1e-9:
         raise SystemExit("late telemetry correction was not propagated")

@@ -43,7 +43,10 @@ Dagster is the only ingestion scheduler. The previous GitHub Actions workflow
 used an ephemeral DuckDB and discarded its data, so it was removed instead of
 leaving a second scheduler that could race or imply durability. Snapshot export
 runs at 08:00 UTC, two hours after Dagster's Monday refresh, and fails closed if
-the persistent warehouse or its required marts are unavailable.
+the persistent warehouse or its required marts are unavailable. A successful
+snapshot workflow then triggers the Pages deployment, so a scheduled deployment
+can never race the export or publish the previous snapshot by mistake. Pages can
+still be deployed manually when an already-published snapshot needs rebuilding.
 
 To roll back, replace `latest.json` with a prior version's manifest. Consumers
 will verify the referenced database before installing it.

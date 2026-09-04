@@ -44,7 +44,7 @@ This demonstrates detection and recovery, not merely a green CI badge.
 
 Explain the static teammate graph first, then V2's driver-season nodes and
 temporal edges. Lead with the holdout result: V2 improves only slightly (MAE
-0.643 vs 0.645; direction 0.609 vs 0.606). Keeping both models is a product and
+0.634 vs 0.638; direction 0.607 vs 0.605). Keeping both models is a product and
 scientific choice—the stable benchmark answers career pace, V2 answers form.
 
 Call out what the model does not control: upgrade timing, setup, reliability,
@@ -54,10 +54,10 @@ validity.”
 
 ## 3:45–4:30 — Quantify scope
 
-- 20 seasons, 398 race weekends, 102 drivers, 8,168 directed qualifying gaps.
-- 25 dbt models, 146 data tests, 3 unit tests, DuckDB/Postgres CI.
-- 1,190 controlled race gaps across 92 races.
-- 467 published driver-season V2 estimates with clustered intervals.
+- 21 seasons, 411 completed race weekends, 103 drivers, 8,424 directed qualifying gaps.
+- 27 dbt models, 156 data tests, 3 unit tests, DuckDB/Postgres CI.
+- 784 controlled race gaps across 60 races.
+- 490 published driver-season V2 estimates with clustered intervals.
 
 State that telemetry/replay is intentionally sample coverage in the current
 warehouse; the UI exposes that rather than implying a complete archive.

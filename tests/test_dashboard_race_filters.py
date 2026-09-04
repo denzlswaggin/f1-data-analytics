@@ -12,13 +12,15 @@ RACE_PAGES = {
 
 def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
     pages_with_race_dropdowns = {
-        page.name for page in PAGES_DIR.glob("*.md") if "name=race" in page.read_text()
+        page.name
+        for page in PAGES_DIR.glob("*.md")
+        if "name=race" in page.read_text(encoding="utf-8")
     }
 
     assert pages_with_race_dropdowns == RACE_PAGES
 
     for page_name in pages_with_race_dropdowns:
-        content = (PAGES_DIR / page_name).read_text()
+        content = (PAGES_DIR / page_name).read_text(encoding="utf-8")
 
         assert "name=season value=season" in content
         assert "name=race value=round label=race_name" in content
