@@ -9,10 +9,11 @@ lifecycle—source contracts, incremental ingestion, a recoverable lake, two
 warehouse dialects, tested transformations, orchestration, model validation,
 uncertainty, and a consumer-facing BI application.
 
-On the current local dataset it covers 2006–2025, 398 race weekends, 102 drivers,
-and 8,168 directed qualifying comparisons. Race analysis adds 1,190 controlled
-teammate gaps across 92 races. The browser-facing showcase includes 242,546
-telemetry rows and a 112,000-row animated race replay for the loaded sample.
+On the current local dataset it covers 2006–2026, 411 completed race weekends,
+103 drivers, and 8,424 directed qualifying comparisons. Race analysis adds 784
+controlled teammate gaps across 60 races. The browser-facing snapshot includes
+613,680 telemetry rows and 4,129,511 animated race-replay ticks across the races
+whose heavy sources have been loaded.
 
 ## The user problem
 
@@ -61,8 +62,8 @@ covers smoke checks, backup, incident triage, and restore drills.
 
 ## Transformation and quality evidence
 
-The dbt project contains 25 models in staging, intermediate, and marts. Its CI
-fixture runs 146 data tests and 3 unit tests against DuckDB and Postgres. Separate
+The dbt project contains 27 models in staging, intermediate, and marts. Its CI
+fixture runs 156 data tests and 3 unit tests against DuckDB and Postgres. Separate
 gates run Ruff, mypy, pytest, SQLFluff, Dagster definition validation, Compose
 validation, dbt documentation coverage, a targeted incremental-correction test,
 dashboard data checks, and an Evidence strict build.
@@ -80,8 +81,8 @@ current expanding-window evaluation:
 
 | Model | MAE | Direction accuracy |
 | --- | ---: | ---: |
-| Static career benchmark | 0.645 | 0.606 |
-| Dynamic latest-season model | 0.643 | 0.609 |
+| Static career benchmark | 0.638 | 0.605 |
+| Dynamic latest-season model | 0.634 | 0.607 |
 
 That is evidence of parity plus a small gain, not a breakthrough. V2 earns its
 place because it answers a different product question—how form evolves—and its

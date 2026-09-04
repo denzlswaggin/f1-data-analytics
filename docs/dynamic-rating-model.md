@@ -35,13 +35,13 @@ independent and preserves the season mix.
 ## Evaluation
 
 An expanding-window backtest fits on seasons before year `Y` and predicts the
-teammate gaps in `Y`. With the current 2006–2025 warehouse and the documented
+teammate gaps in `Y`. With the current 2006–2026 warehouse and the documented
 defaults (`prior_weight=8`, `temporal_weight=48`):
 
 | Model | MAE | Gap-direction accuracy |
 | --- | ---: | ---: |
-| Career-wide static benchmark | 0.645 | 0.606 |
-| Dynamic latest-season rating | 0.643 | 0.609 |
+| Career-wide static benchmark | 0.638 | 0.605 |
+| Dynamic latest-season rating | 0.634 | 0.607 |
 
 The improvement is marginal. V2 should therefore be used to explore form and
 career trajectories, not presented as a decisive predictive breakthrough. The

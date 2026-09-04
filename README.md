@@ -19,22 +19,22 @@ difference and the whole set is solved into one cross-era leaderboard via a
 Massey-style least-squares fit on the teammate graph (with empirical-Bayes
 shrinkage so thin-sample drivers don't top the board on noise).
 
-**Fastest qualifiers, 2006–2025** (teammate-normalised, drivers with ≥40 head-to-heads):
+**Fastest qualifiers, 2006–2026** (teammate-normalised, drivers with ≥40 head-to-heads):
 
 | Rank\* | Driver           | Rating | Head-to-heads | Seasons   |
 | -----: | ---------------- | -----: | ------------: | --------- |
-|      1 | Max Verstappen   |  0.946 |           224 | 2015–2025 |
-|      4 | George Russell   |  0.641 |           149 | 2019–2025 |
-|      5 | Charles Leclerc  |  0.578 |           171 | 2018–2025 |
-|      6 | Daniel Ricciardo |  0.504 |           252 | 2011–2024 |
-|      7 | Sebastian Vettel |  0.469 |           292 | 2007–2022 |
-|      8 | Pierre Gasly     |  0.441 |           169 | 2017–2025 |
-|      9 | Lando Norris     |  0.438 |           150 | 2019–2025 |
-|     11 | Nico Rosberg     |  0.351 |           202 | 2006–2016 |
-|     14 | Fernando Alonso  |  0.300 |           347 | 2006–2025 |
-|     15 | Lewis Hamilton   |  0.295 |           376 | 2007–2025 |
+|      1 | Max Verstappen   |  0.919 |           234 | 2015–2026 |
+|      4 | George Russell   |  0.619 |           161 | 2019–2026 |
+|      5 | Charles Leclerc  |  0.559 |           183 | 2018–2026 |
+|      6 | Daniel Ricciardo |  0.495 |           252 | 2011–2024 |
+|      7 | Sebastian Vettel |  0.462 |           292 | 2007–2022 |
+|      8 | Pierre Gasly     |  0.435 |           181 | 2017–2026 |
+|      9 | Lando Norris     |  0.433 |           162 | 2019–2026 |
+|     12 | Nico Rosberg     |  0.345 |           202 | 2006–2016 |
+|     14 | Fernando Alonso  |  0.293 |           358 | 2006–2026 |
+|     15 | Lewis Hamilton   |  0.288 |           388 | 2007–2026 |
 
-\* Global rank across all 100 drivers; the gaps (2, 3, 10, …) are lower-sample
+\* Global rank across all 101 rated drivers; the gaps (2, 3, 10, …) are lower-sample
 drivers omitted from this filtered view. Higher rating = faster vs teammates.
 Hamilton mid-pack is a genuinely debatable result — the metric measures *margin
 over teammate*, and his teammates (Alonso, Rosberg, Russell) were consistently
@@ -44,7 +44,7 @@ Reproduce:
 
 ```bash
 pip install -e ".[dbt]"                                  # dbt is a separate extra (see below)
-python -m ingestion.cli backfill --from 2006 --to 2025   # ~17k rows
+python -m ingestion.cli backfill --from 2006 --to 2026   # ~18k rows
 make dbt-build                                           # staging → intermediate → marts
 python -m analytics.cli ratings --top 20                 # solve + print leaderboard
 python -m analytics.cli ratings-v2 --top 20              # season-specific form + intervals
@@ -54,8 +54,8 @@ python -m analytics.cli ratings-v3 --final-holdout-season 2026  # joint research
 The V2 model adds one rating per driver-season, temporal smoothing between
 seasons, Q1/Q2/Q3 reliability weights, and a race-weekend cluster bootstrap. It
 is kept alongside the career-wide model because its expanding-window gain is
-small (MAE 0.643 vs 0.645; sign accuracy 0.609 vs 0.606 on the current
-2006–2025 dataset), while its main value is showing form changes honestly.
+small (MAE 0.634 vs 0.638; sign accuracy 0.607 vs 0.605 on the current
+2006–2026 dataset), while its main value is showing form changes honestly.
 
 ## The second cut — Saturday vs Sunday
 
@@ -80,32 +80,29 @@ comparison is like-for-like, and both are relative to the field — a delta of z
 Race pace needs FastF1 per-lap timing (2018+), so this runs over a narrower window than
 the qualifying leaderboard, bounded to one set of technical regulations.
 
-**2022–2025** (ground-effect era; 1,190 teammate race gaps over 92 races, averaging 28.7
+**2022–2026** (ground-effect era; 784 teammate race gaps over 60 races, averaging 28.5
 comparable laps each):
 
-| Driver          |  Delta | Quali  |  Race  | Races |
-| --------------- | -----: | -----: | -----: | ----: |
-| Logan Sargeant  | +1.048 | −1.185 | −0.137 |    26 |
-| Sergio Pérez    | +0.901 | −0.715 | +0.186 |    51 |
-| Lewis Hamilton  | +0.091 | −0.058 | +0.033 |    64 |
-| …               |        |        |        |       |
-| Esteban Ocon    | −0.129 | +0.131 | +0.002 |    56 |
-| Max Verstappen  | −0.145 | +0.796 | +0.651 |    66 |
-| Fernando Alonso | −0.164 | +0.357 | +0.192 |    56 |
-| Carlos Sainz    | −0.180 | +0.269 | +0.089 |    66 |
-| Yuki Tsunoda    | −0.244 | +0.066 | −0.178 |    55 |
-| Alexander Albon | −0.280 | +0.420 | +0.140 |    53 |
-| George Russell  | −0.324 | +0.361 | +0.037 |    68 |
+| Driver                |  Delta | Quali  |  Race  | Comparisons |
+| --------------------- | -----: | -----: | -----: | ----------: |
+| Lewis Hamilton        | +0.183 | −0.225 | −0.042 |          43 |
+| Pierre Gasly          | +0.166 | +0.002 | +0.168 |          35 |
+| Alexander Albon       | +0.059 | −0.044 | +0.014 |          32 |
+| Carlos Sainz          | −0.010 | +0.047 | +0.037 |          43 |
+| Nico Hülkenberg       | −0.021 | +0.102 | +0.081 |          28 |
+| Charles Leclerc       | −0.032 | +0.074 | +0.042 |          49 |
+| Andrea Kimi Antonelli | −0.123 | +0.148 | +0.025 |          28 |
+| Esteban Ocon          | −0.168 | +0.177 | +0.009 |          36 |
+| George Russell        | −0.387 | +0.463 | +0.076 |          46 |
 
 Drivers with fewer than ~25 comparable races are omitted here — the solver shrinks them
 toward the field mean, but a thin sample still deserves a caveat rather than a headline.
 
-The two biggest "racers" are exactly the drivers whose qualifying was demolished by a
-dominant teammate and who recovered on Sunday. Verstappen reads as a mild qualifying
-specialist not because his race pace is poor — it is the best in the field — but because
-his *margin* over a teammate shrinks from Saturday to Sunday.
+The ranking is a within-teammate comparison, not a raw finishing-order table. A positive
+delta means the driver's relative margin improves on Sunday; it does not by itself prove
+superior racecraft or isolate strategy and reliability.
 
-Spearman between the two ratings is **0.68** — strongly positive, but far enough from 1
+Spearman between the two ratings is **0.65** — strongly positive, but far enough from 1
 that the delta is carrying real information rather than restating the qualifying rating.
 
 Reproduce:
@@ -159,7 +156,7 @@ pip install -e ".[dev]"
 copy .env.example .env           # then edit as needed
 
 # 3. Backfill a single season into the local DuckDB warehouse (quick smoke test;
-#    the full driver-ratings dataset is the 2006–2025 backfill shown above)
+#    the full driver-ratings dataset is the 2006–2026 backfill shown above)
 python -m ingestion.cli backfill --season 2023
 
 # 4. (Optional) run the persistent Postgres + Dagster stack
