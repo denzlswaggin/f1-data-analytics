@@ -55,7 +55,7 @@ dashboard-prepare: ## Validate marts, export the snapshot and refresh Evidence s
 	$(MAKE) dashboard-snapshot
 	cd dashboard && npm run sources:strict
 
-dashboard-dev: dashboard-prepare ## Prepare data and launch the local dashboard
+dashboard-dev: dashboard-prepare ## Prepare data and launch Evidence with the replay app
 	cd dashboard && npm run dev
 
 dagster: ## Launch the Dagster UI (asset graph + schedules)

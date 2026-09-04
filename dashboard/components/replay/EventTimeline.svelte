@@ -38,7 +38,9 @@
         ? FILTERS.filter((filter) => filter.id !== 'control')
         : FILTERS;
     $: if (selectedCode && activeFilter === 'control') activeFilter = 'all';
-    $: scopedEvents = mergedEvents.filter(relevantToSelection);
+    // Keep selectedCode as an explicit reactive dependency. Svelte cannot infer
+    // dependencies hidden inside a function passed to Array.filter().
+    $: scopedEvents = mergedEvents.filter((event) => relevantToSelection(event, selectedCode));
     $: filteredEvents = scopedEvents.filter((event) => activeFilter === 'all' || event.category === activeFilter);
     $: nearbyEvents = [...filteredEvents]
         .sort((a, b) => Math.abs(a.time - playhead) - Math.abs(b.time - playhead) || a.time - b.time)
@@ -120,10 +122,10 @@
         return 'control';
     }
 
-    function relevantToSelection(event) {
-        if (!selectedCode) return true;
-        if (event.category === 'overtake') return event.participants.includes(selectedCode);
-        if (event.category === 'radio') return event.driverCode === selectedCode;
+    function relevantToSelection(event, driverCode) {
+        if (!driverCode) return true;
+        if (event.category === 'overtake') return event.participants.includes(driverCode);
+        if (event.category === 'radio') return event.driverCode === driverCode;
         return false;
     }
 
@@ -155,6 +157,11 @@
         const detail = { time: event.time, clip: event.raw, event };
         if (typeof onPlayRadio === 'function') onPlayRadio(detail);
         dispatch('playradio', detail);
+    }
+
+    function activateMarker(event) {
+        if (event.category === 'radio') playRadio(event);
+        else seek(event.time, event);
     }
 
     function onRailClick(event) {
@@ -218,8 +225,8 @@
                     class:past={event.time <= playhead}
                     style={`left: ${totalDuration ? clamp((event.time / totalDuration) * 100, 0, 100) : 0}%; --event-color: ${colorFor(event)}`}
                     title={labelFor(event)}
-                    aria-label={`Seek to ${labelFor(event)}`}
-                    on:click={() => seek(event.time, event)}
+                    aria-label={`${event.category === 'radio' ? 'Play' : 'Seek to'} ${labelFor(event)}`}
+                    on:click={() => activateMarker(event)}
                 >
                     <span class="tooltip" aria-hidden="true"><strong>{formatTime(event.time)}</strong>{event.label}</span>
                 </button>

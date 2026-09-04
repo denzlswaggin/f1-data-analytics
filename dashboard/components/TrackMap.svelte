@@ -140,13 +140,17 @@
     }
 
     // --- team radio (OpenF1 audio clips; partial coverage) ---
-    let radioClips = [];
-    $: radioClips = (radio || [])
-        .map((r) => ({
-            t: Number(r.t_s), code: r.driver_code || '', url: r.recording_url,
-            transcript: r.transcript || null,
-        }))
-        .sort((a, b) => a.t - b.t);
+    function normaliseRadioClip(row) {
+        const url = String(row?.recording_url || row?.url || '').trim();
+        if (!url) return null;
+        return {
+            t: Number(row?.t_s ?? row?.t ?? 0),
+            code: row?.driver_code || row?.code || '',
+            url,
+            transcript: row?.transcript || null,
+        };
+    }
+
     // --- overtakes (detected on-track passes, aligned to the replay clock) ---
     let passes = [];
     $: passes = (overtakes || [])
@@ -163,25 +167,45 @@
 
     let audioEl;
     let nowPlaying = null;
-    function playRadio(clip) {
+    let audioError = '';
+
+    async function playRadio(rawClip) {
+        const clip = normaliseRadioClip(rawClip);
+        if (!clip || !audioEl) {
+            audioError = 'This radio clip is unavailable.';
+            return;
+        }
+
         nowPlaying = clip;
+        audioError = '';
         jumpTo(clip.t);
         // Watch the moment in real time: at the default 6x the replay races ~50 s of
         // track through an 8 s clip — steppy and out of sync with the audio. 1x is
         // smooth and matches the radio.
         speed = 1;
-        if (audioEl) {
-            audioEl.src = clip.url;
-            audioEl.currentTime = 0;
-            audioEl.play().catch(() => {});
-        }
+        audioEl.pause();
+        audioEl.src = clip.url;
+        audioEl.load();
+        const playback = audioEl.play();
         play(); // roll the replay on from this moment
+        try {
+            await playback;
+        } catch {
+            if (!audioError) {
+                audioError = 'Playback was blocked. Press play in the audio controls to retry.';
+            }
+        }
     }
+
     function playTimelineRadio({ clip }) {
-        const url = clip?.recording_url || clip?.url;
-        const match = radioClips.find((item) => item.url === url);
-        if (match) playRadio(match);
+        playRadio(clip);
     }
+
+    function handleRadioError() {
+        if (!nowPlaying) return;
+        audioError = 'The source could not load this radio clip.';
+    }
+
     function stopRadio() {
         // Pause AND fully release the media resource. A merely-paused <audio> keeps
         // its decoded clip + media pipeline resident, which can bog the page's canvas
@@ -194,6 +218,7 @@
             audioEl.load();
         }
         nowPlaying = null;
+        audioError = '';
     }
 
     function build(rows, metaRows, lapRows, replayTitle) {
@@ -740,12 +765,20 @@
             </div>
         {/if}
 
-        {#if nowPlaying && nowPlaying.transcript}
-            <div class="tm-radio-caption">
-                <span>📻 {nowPlaying.code}: “{nowPlaying.transcript}”</span>
-                <button type="button" on:click={stopRadio} aria-label="Stop team radio">Stop</button>
-            </div>
-        {/if}
+        <div class="tm-radio-caption" hidden={!nowPlaying}>
+            <span>
+                📻 {nowPlaying?.code || 'Team'}:
+                {nowPlaying?.transcript ? `“${nowPlaying.transcript}”` : 'Team radio'}
+            </span>
+            <audio
+                bind:this={audioEl}
+                controls
+                preload="none"
+                on:error={handleRadioError}
+            ></audio>
+            {#if audioError}<small role="alert">{audioError}</small>{/if}
+            <button type="button" on:click={stopRadio} aria-label="Close team radio">Close</button>
+        </div>
 
         {#if activePass}
             <div class="tm-pass-caption">
@@ -812,11 +845,6 @@
             onPlayRadio={playTimelineRadio}
         />
     {/if}
-
-    <!-- The transcript caption shows only while the clip is playing: `ended` (or a
-         load error) clears nowPlaying so it disappears once the conversation is over
-         instead of staying stuck on screen. The stop button clears it early. -->
-    <audio bind:this={audioEl} preload="none" on:ended={stopRadio} on:error={stopRadio}></audio>
 
     <div class="tm-hint">
         Space plays or pauses · arrows jump five seconds · scroll to zoom · drag to pan · select a
@@ -980,14 +1008,16 @@
     }
     .tm-radio-caption {
         position: absolute;
+        z-index: 5;
         left: 50%;
-        display: flex;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: center;
         gap: 0.65rem;
         transform: translateX(-50%);
         bottom: 34px;
-        max-width: 72%;
-        text-align: center;
+        width: min(720px, 88%);
+        text-align: left;
         color: #eafffb;
         font-size: 12.5px;
         line-height: 1.4;
@@ -996,11 +1026,23 @@
         padding: 5px 12px;
         border-radius: 8px;
     }
+    .tm-radio-caption[hidden] { display: none; }
     .tm-radio-caption span {
+        grid-column: 1 / -1;
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+    .tm-radio-caption audio {
+        width: 100%;
+        min-width: 0;
+        height: 30px;
+    }
+    .tm-radio-caption small {
+        grid-column: 1 / -1;
+        color: #ffb4c0;
+        font-size: 10px;
     }
     .tm-radio-caption button {
         flex: none;
