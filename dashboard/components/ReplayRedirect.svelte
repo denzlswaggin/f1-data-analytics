@@ -2,7 +2,7 @@
     import { onMount } from 'svelte';
 
     const productionTarget = '/f1-data-analytics/replay/';
-    let target = productionTarget;
+    let target = '#';
 
     onMount(() => {
         const current = new URL(window.location.href);
@@ -15,6 +15,8 @@
             current.search = '';
             current.hash = '';
             target = current.toString();
+        } else {
+            target = productionTarget;
         }
 
         window.location.replace(target);

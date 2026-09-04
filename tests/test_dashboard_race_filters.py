@@ -1,6 +1,7 @@
 from pathlib import Path
 
 PAGES_DIR = Path(__file__).parents[1] / "dashboard" / "pages"
+ROOT = PAGES_DIR.parents[1]
 RACE_PAGES = {
     "pit-strategy.md",
     "race-pace.md",
@@ -42,3 +43,16 @@ def test_race_replay_redirects_to_the_dedicated_app() -> None:
     assert "current.port = '5173'" in component
     assert "'/f1-data-analytics/replay/'" in component
     assert "<a href={target}>Open race replay</a>" in component
+
+
+def test_replay_is_published_beside_the_evidence_dashboard() -> None:
+    vite_config = (ROOT / "web" / "vite.config.ts").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "deploy-dashboard.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "'/f1-data-analytics/replay'" in vite_config
+    assert "npm --prefix web run build:with-data" in workflow
+    assert "cp -R web/build/. dashboard/build/replay/" in workflow
+    assert "dashboard/package-lock.json" in workflow
+    assert "web/package-lock.json" in workflow

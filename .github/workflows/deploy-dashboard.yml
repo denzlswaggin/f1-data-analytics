@@ -58,7 +58,9 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: dashboard/package-lock.json
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            web/package-lock.json
 
       - name: Build Evidence dashboard
         working-directory: dashboard
@@ -67,8 +69,15 @@ jobs:
           npm run sources:strict
           npm run build:strict
 
+      - name: Build race replay
+        run: |
+          npm --prefix web ci
+          npm --prefix web run build:with-data
+          mkdir -p dashboard/build/replay
+          cp -R web/build/. dashboard/build/replay/
+
       - name: Enforce dashboard bundle budget
-        run: python scripts/check_dashboard_bundle.py dashboard/build
+        run: python scripts/check_dashboard_bundle.py dashboard/build --max-total-mb 275
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

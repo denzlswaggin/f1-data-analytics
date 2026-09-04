@@ -13,7 +13,7 @@ export default defineConfig({
 			},
 			adapter: adapter(),
 			paths: {
-				base: process.env.NODE_ENV === 'production' ? '/f1-data-analytics' : ''
+				base: process.env.NODE_ENV === 'production' ? '/f1-data-analytics/replay' : ''
 			}
 		})
 	],
