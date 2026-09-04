@@ -8,8 +8,10 @@ These lock in two contracts:
 
 from __future__ import annotations
 
+import datetime as dt
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 import pytest
 from ingestion.config import Settings
@@ -165,6 +167,38 @@ def test_round_loads_publish_partition_audit_records(tmp_path: Path) -> None:
         {"resource": "telemetry", "season": 2024, "round": 2, "session": "R", "row_count": 1},
     ]
     assert audit["load_id"].nunique() == 1
+
+
+def test_load_migrates_legacy_naive_audit_timestamps(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    legacy_loaded_at = dt.datetime.now(dt.UTC)
+    with duckdb.connect(str(settings.duckdb_path)) as connection:
+        connection.execute("create schema raw")
+        connection.execute(
+            "create table raw.ingestion_partitions ("
+            "resource varchar, season integer, round integer, session varchar, "
+            "loaded_at timestamp, load_id varchar, row_count bigint)"
+        )
+        connection.execute(
+            "insert into raw.ingestion_partitions values "
+            "('results', 2024, null, null, ?, 'legacy', 20)",
+            [legacy_loaded_at],
+        )
+
+    load_dataframe(_frame(2024, 1), "races", 2024, settings)
+
+    with duckdb.connect(str(settings.duckdb_path), read_only=True) as connection:
+        loaded_at_type = connection.execute(
+            "select data_type from information_schema.columns "
+            "where table_schema = 'raw' and table_name = 'ingestion_partitions' "
+            "and column_name = 'loaded_at'"
+        ).fetchone()
+        legacy_epoch = connection.execute(
+            "select epoch(loaded_at) from raw.ingestion_partitions where load_id = 'legacy'"
+        ).fetchone()
+    assert loaded_at_type == ("TIMESTAMP WITH TIME ZONE",)
+    assert legacy_epoch is not None
+    assert abs(float(legacy_epoch[0]) - legacy_loaded_at.timestamp()) < 1
 
 
 def test_reloaded_round_replaces_its_partition_audit_record(tmp_path: Path) -> None:

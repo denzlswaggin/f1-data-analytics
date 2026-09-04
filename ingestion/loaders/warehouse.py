@@ -129,19 +129,7 @@ def _load_duckdb(
         # fields without changing their schema; positional inserts would silently
         # cast values into the wrong destination columns.
         con.execute(f'INSERT INTO raw."{table}" BY NAME SELECT * FROM incoming')
-        con.execute(
-            """
-            CREATE TABLE IF NOT EXISTS raw.ingestion_partitions (
-                resource VARCHAR,
-                season INTEGER,
-                round INTEGER,
-                session VARCHAR,
-                loaded_at TIMESTAMPTZ,
-                load_id VARCHAR,
-                row_count BIGINT
-            )
-            """
-        )
+        _ensure_duckdb_ingestion_audit(con)
         for load in partition_loads:
             con.execute(
                 "DELETE FROM raw.ingestion_partitions "
@@ -164,6 +152,33 @@ def _load_duckdb(
     finally:
         con.unregister("incoming")
         con.close()
+
+
+def _ensure_duckdb_ingestion_audit(con: duckdb.DuckDBPyConnection) -> None:
+    """Create the audit table and migrate legacy timezone-naive timestamps."""
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS raw.ingestion_partitions (
+            resource VARCHAR,
+            season INTEGER,
+            round INTEGER,
+            session VARCHAR,
+            loaded_at TIMESTAMPTZ,
+            load_id VARCHAR,
+            row_count BIGINT
+        )
+        """
+    )
+    loaded_at_type = con.execute(
+        "select data_type from information_schema.columns "
+        "where table_schema = 'raw' and table_name = 'ingestion_partitions' "
+        "and column_name = 'loaded_at'"
+    ).fetchone()
+    if loaded_at_type is not None and loaded_at_type[0] == "TIMESTAMP":
+        con.execute(
+            "alter table raw.ingestion_partitions alter loaded_at type timestamptz "
+            "using loaded_at at time zone current_setting('TimeZone')"
+        )
 
 
 def _load_postgres(

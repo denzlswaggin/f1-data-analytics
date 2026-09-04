@@ -7,7 +7,7 @@
             season integer,
             round integer,
             session varchar,
-            loaded_at timestamp,
+            loaded_at timestamp with time zone,
             load_id varchar,
             row_count bigint
         )
