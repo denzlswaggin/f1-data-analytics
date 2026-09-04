@@ -330,7 +330,11 @@ def ingest_team_radio(
     from ingestion.clients.fastf1_client import FastF1Client
     from ingestion.clients.openf1 import OpenF1Client
 
-    of1 = OpenF1Client()
+    of1 = OpenF1Client(
+        username=settings.openf1_username,
+        password=settings.openf1_password.get_secret_value(),
+        access_token=settings.openf1_access_token.get_secret_value(),
+    )
     key_by_date: dict[str, int] = {}
     for sess in of1.race_sessions(season):
         day = str(sess.get("date_start") or "")[:10]
