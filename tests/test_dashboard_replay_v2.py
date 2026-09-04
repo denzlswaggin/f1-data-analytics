@@ -61,10 +61,24 @@ def test_selected_driver_timeline_only_shows_their_overtakes_and_radio() -> None
 
     assert "filter.id !== 'control'" in component
     assert "event.category === 'overtake'" in component
-    assert "event.participants.includes(selectedCode)" in component
+    assert "relevantToSelection(event, selectedCode)" in component
+    assert "event.participants.includes(driverCode)" in component
     assert "event.category === 'radio'" in component
-    assert "event.driverCode === selectedCode" in component
+    assert "event.driverCode === driverCode" in component
     assert "Showing overtakes &amp; radio for" in component
+
+
+def test_radio_playback_has_visible_controls_and_error_feedback() -> None:
+    track_map = TRACK_MAP.read_text(encoding="utf-8")
+    timeline = EVENT_TIMELINE.read_text(encoding="utf-8")
+
+    assert "normaliseRadioClip" in track_map
+    assert "playRadio(clip)" in track_map
+    assert "audioEl.play()" in track_map
+    assert "on:error={handleRadioError}" in track_map
+    assert 'role="alert"' in track_map
+    assert "controls" in track_map
+    assert "activateMarker(event)" in timeline
 
 
 def test_position_change_is_anchored_to_the_official_grid() -> None:
