@@ -5,8 +5,9 @@ name: Deploy Dashboard
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 7 * * 1" # Mondays 07:00 UTC, after race weekends
+  workflow_run:
+    workflows: ["Publish Dashboard Snapshot"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -19,6 +20,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
