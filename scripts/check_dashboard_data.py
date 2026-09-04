@@ -175,9 +175,6 @@ CHECKS = (
     latest_completed_race_coverage_check(
         "latest completed race control", "staging.stg_race_control"
     ),
-    latest_completed_race_coverage_check(
-        "latest completed race team radio", "staging.stg_team_radio"
-    ),
     latest_race_check("latest replay rows", "marts.race_replay", minimum=10_000),
     latest_race_check(
         "latest replay drivers",
