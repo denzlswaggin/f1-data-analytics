@@ -64,11 +64,26 @@ def evaluate_pipeline_health(
     for resource in expected_resources:
         rows = audits[audits["resource"] == resource]
         prefix = "core_resource" if resource in CORE_RESOURCES else "required_resource"
+        has_valid_rows = not rows.empty and bool((rows["row_count"] > 0).all())
         checks.append(
             HealthCheck(
                 f"{prefix}_{resource}",
-                not rows.empty and bool((rows["row_count"] > 0).all()),
+                has_valid_rows,
                 f"{len(rows)} non-empty audited partition(s)",
+            )
+        )
+        resource_loaded_at = pd.to_datetime(rows["loaded_at"], utc=True, errors="coerce").max()
+        resource_age_hours = (
+            float("inf")
+            if pd.isna(resource_loaded_at)
+            else (now - resource_loaded_at.to_pydatetime()).total_seconds() / 3600
+        )
+        checks.append(
+            HealthCheck(
+                f"{prefix}_{resource}_load_age",
+                resource_age_hours <= max_age_hours,
+                f"latest {resource} load is {resource_age_hours:.1f}h old "
+                f"(limit {max_age_hours:.1f}h)",
             )
         )
 
