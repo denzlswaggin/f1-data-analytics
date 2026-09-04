@@ -31,22 +31,14 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
         assert "race_name = '${inputs.race.value}'" not in content
 
 
-def test_replay_picker_resets_the_race_when_the_season_changes() -> None:
+def test_race_replay_redirects_to_the_dedicated_app() -> None:
     page = (PAGES_DIR / "race-replay.md").read_text(encoding="utf-8")
-    component = (PAGES_DIR.parent / "components" / "ReplayRacePicker.svelte").read_text(
+    component = (PAGES_DIR.parent / "components" / "ReplayRedirect.svelte").read_text(
         encoding="utf-8"
     )
 
-    assert "<ReplayRacePicker seasons={replay_seasons} races={replay_races} />" in page
-    assert "cast(season as integer) as season" in page
-    assert "cast(round as integer) as round" in page
-    assert "cast(cast(season as integer) as varchar)" in page
-    assert "substr(race_name, strpos(race_name, ' ') + 1)" in page
-    assert (
-        "where season = ${inputs.season.value}"
-        not in page.split("```sql replay_races", 1)[1].split("```", 1)[0]
-    )
-    assert "const seasonChanged" in component
-    assert "const requestedRace = seasonChanged ? null : rawValue('race')" in component
-    assert "publish('race', firstRace.round, firstRace.race_name)" in component
-    assert "a truncated upstream feed is withheld" in page
+    assert "<ReplayRedirect />" in page
+    assert "window.location.replace(target)" in component
+    assert "current.port = '5173'" in component
+    assert "'/f1-data-analytics/replay/'" in component
+    assert "<a href={target}>Open race replay</a>" in component
