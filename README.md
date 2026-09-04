@@ -222,6 +222,10 @@ cd ..
 make dashboard-dev
 ```
 
+This starts both interfaces: Evidence on `http://localhost:3000` and the dedicated
+race replay on `http://127.0.0.1:5173`. Opening **Watch the Race Unfold** in
+Evidence redirects to the replay automatically. Press `Ctrl+C` once to stop both.
+
 ### Run the persistent stack
 
 ```bash
@@ -243,6 +247,7 @@ analytics/        rating models, validation, replay and overtake detection
 warehouse/dbt/    staging, intermediate and mart models
 orchestration/    Dagster assets, jobs, schedules and checks
 dashboard/        Evidence pages and custom Svelte components
+web/              SvelteKit race replay application
 scripts/          snapshot, bundle and data-contract tooling
 deploy/           container and guarded AWS infrastructure templates
 tests/            unit, integration and regression coverage
