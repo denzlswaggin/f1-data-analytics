@@ -8,6 +8,8 @@ import type {
 	ReplayDriver,
 	ReplayEvent,
 	ReplaySample,
+	TrackPath,
+	TrackPoint,
 	TimingRow
 } from './types';
 
@@ -145,10 +147,119 @@ export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | nul
 	if (time === next.t) return next;
 	if (next.t - previous.t > MAX_REPLAY_SAMPLE_GAP_S) return null;
 	const fraction = (time - previous.t) / (next.t - previous.t || 1);
+	let lap = previous.lap;
+	let lapProgress = previous.lapProgress;
+	if (previous.lapProgress != null && next.lapProgress != null) {
+		if (previous.lap === next.lap) {
+			lapProgress = previous.lapProgress + (next.lapProgress - previous.lapProgress) * fraction;
+		} else if (previous.lap != null && next.lap === previous.lap + 1) {
+			const unwrapped =
+				previous.lapProgress + (next.lapProgress + 1 - previous.lapProgress) * fraction;
+			lap = unwrapped >= 1 ? next.lap : previous.lap;
+			lapProgress = unwrapped % 1;
+		}
+	}
 	return {
 		...previous,
 		x: previous.x + (next.x - previous.x) * fraction,
-		y: previous.y + (next.y - previous.y) * fraction
+		y: previous.y + (next.y - previous.y) * fraction,
+		lap,
+		lapProgress
+	};
+}
+
+type TrackCandidate = {
+	points: ReplaySample[];
+	score: number;
+};
+
+const percentile = (values: number[], fraction: number) => {
+	if (!values.length) return 0;
+	const ordered = [...values].sort((a, b) => a - b);
+	return ordered[Math.floor((ordered.length - 1) * fraction)];
+};
+
+/** Select a complete, geometrically stable lap and turn it into a closed circuit path. */
+export function buildTrackPath(drivers: ReplayDriver[]): TrackPath | null {
+	const candidates: TrackCandidate[] = [];
+	for (const driver of drivers) {
+		const laps = new Map<number, ReplaySample[]>();
+		for (const sample of driver.samples) {
+			if (sample.lap == null || sample.lapProgress == null) continue;
+			const group = laps.get(sample.lap) ?? [];
+			group.push(sample);
+			laps.set(sample.lap, group);
+		}
+		for (const samples of laps.values()) {
+			samples.sort((a, b) => Number(a.lapProgress) - Number(b.lapProgress));
+			if (
+				samples.length < 20 ||
+				Number(samples[0].lapProgress) > 0.08 ||
+				Number(samples.at(-1)?.lapProgress) < 0.92
+			)
+				continue;
+			const steps = samples
+				.slice(1)
+				.map((point, index) => Math.hypot(point.x - samples[index].x, point.y - samples[index].y))
+				.filter((distance) => distance > POSITION_EPSILON);
+			const typical = percentile(steps, 0.5);
+			const extreme = percentile(steps, 0.99);
+			const pathLength = steps.reduce((total, distance) => total + distance, 0);
+			const closure = Math.hypot(
+				samples.at(-1)!.x - samples[0].x,
+				samples.at(-1)!.y - samples[0].y
+			);
+			const coverage = Number(samples.at(-1)?.lapProgress) - Number(samples[0].lapProgress);
+			const score =
+				extreme / Math.max(typical, 1) +
+				(closure / Math.max(pathLength, 1)) * 10 +
+				Math.abs(1 - coverage) * 20;
+			candidates.push({ points: samples, score });
+		}
+	}
+
+	let source = candidates.sort((a, b) => a.score - b.score)[0]?.points;
+	if (!source)
+		source = [...drivers].sort((a, b) => b.samples.length - a.samples.length)[0]?.samples;
+	if (!source?.length) return null;
+
+	const points: TrackPoint[] = [];
+	for (const sample of source) {
+		const previous = points.at(-1);
+		if (!previous || Math.hypot(sample.x - previous.x, sample.y - previous.y) > POSITION_EPSILON)
+			points.push({ x: sample.x, y: sample.y });
+	}
+	if (points.length < 2) return null;
+	points.push({ ...points[0] });
+
+	const cumulative = [0];
+	for (let index = 1; index < points.length; index += 1) {
+		cumulative.push(
+			cumulative[index - 1] +
+				Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y)
+		);
+	}
+	const length = cumulative.at(-1) ?? 0;
+	return length > 0 ? { points, cumulative, length } : null;
+}
+
+/** Map monotonic lap progress onto the canonical circuit without using noisy live X/Y. */
+export function positionAtTrackProgress(path: TrackPath, progress: number): TrackPoint {
+	const bounded = Math.max(0, Math.min(1, Number.isFinite(progress) ? progress : 0));
+	const target = bounded * path.length;
+	let lo = 1;
+	let hi = path.cumulative.length - 1;
+	while (lo < hi) {
+		const mid = (lo + hi) >> 1;
+		if (path.cumulative[mid] < target) lo = mid + 1;
+		else hi = mid;
+	}
+	const previousDistance = path.cumulative[lo - 1];
+	const nextDistance = path.cumulative[lo];
+	const fraction = (target - previousDistance) / (nextDistance - previousDistance || 1);
+	return {
+		x: path.points[lo - 1].x + (path.points[lo].x - path.points[lo - 1].x) * fraction,
+		y: path.points[lo - 1].y + (path.points[lo].y - path.points[lo - 1].y) * fraction
 	};
 }
 

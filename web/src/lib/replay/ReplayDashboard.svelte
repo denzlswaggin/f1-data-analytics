@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { buildDrivers, buildEvents, filterEvents, sampleAt, timingAt } from './model';
+	import {
+		buildDrivers,
+		buildEvents,
+		buildTrackPath,
+		filterEvents,
+		positionAtTrackProgress,
+		sampleAt,
+		timingAt
+	} from './model';
 	import { loadManifest, loadRace } from './data';
 	import type {
 		LoadedRace,
@@ -10,6 +18,7 @@
 		ReplayEvent,
 		ReplayManifest,
 		RaceSummary,
+		TrackPath,
 		TimingRow
 	} from './types';
 
@@ -50,6 +59,7 @@
 		bounds: Bounds | null = null;
 	let trackPoints: { x: number; y: number }[] = [],
 		screenCars: ScreenCar[] = [];
+	let trackPath: TrackPath | null = null;
 	let dragStart: [number, number] = [0, 0],
 		dragMoved = false;
 	type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
@@ -191,34 +201,29 @@
 		if (next) void selectRace(next);
 	}
 	function buildTrack() {
-		if (!drivers.length) {
+		trackPath = buildTrackPath(drivers);
+		if (!trackPath) {
 			bounds = null;
 			trackPoints = [];
 			return;
 		}
+		trackPoints = trackPath.points;
 		let minX = Infinity,
 			maxX = -Infinity,
 			minY = Infinity,
 			maxY = -Infinity;
-		for (const driver of drivers)
-			for (const s of driver.samples) {
-				minX = Math.min(minX, s.x);
-				maxX = Math.max(maxX, s.x);
-				minY = Math.min(minY, s.y);
-				maxY = Math.max(maxY, s.y);
-			}
-		bounds = { minX, maxX, minY, maxY };
-		const ref = [...drivers].sort((a, b) => b.samples.length - a.samples.length)[0];
-		const diagonal = Math.hypot(maxX - minX, maxY - minY) || 1;
-		const start = ref.samples[0];
-		let left = false;
-		trackPoints = [];
-		for (const s of ref.samples) {
-			trackPoints.push(s);
-			const distance = Math.hypot(s.x - start.x, s.y - start.y);
-			if (distance > diagonal * 0.15) left = true;
-			if (left && distance < diagonal * 0.02) break;
+		for (const point of trackPoints) {
+			minX = Math.min(minX, point.x);
+			maxX = Math.max(maxX, point.x);
+			minY = Math.min(minY, point.y);
+			maxY = Math.max(maxY, point.y);
 		}
+		bounds = { minX, maxX, minY, maxY };
+	}
+	function displaySample(driver: ReplayDriver, time: number) {
+		const sample = sampleAt(driver, time);
+		if (!sample || !trackPath || sample.lapProgress == null) return sample;
+		return { ...sample, ...positionAtTrackProgress(trackPath, sample.lapProgress) };
 	}
 	function resizeCanvas() {
 		const rect = canvas.getBoundingClientRect(),
@@ -258,7 +263,7 @@
 	function centerFollowed() {
 		if (!selectedCode || view.zoom <= 1 || !bounds) return;
 		const driver = drivers.find((d) => d.code === selectedCode),
-			sample = driver ? sampleAt(driver, replayTime) : null;
+			sample = driver ? displaySample(driver, replayTime) : null;
 		if (!sample) return;
 		const scale = baseScale() * view.zoom;
 		view.ox = canvasWidth / 2 - (sample.x - bounds.minX) * scale;
@@ -282,7 +287,7 @@
 		context.stroke();
 		const cars: ScreenCar[] = [];
 		for (const driver of drivers) {
-			const sample = sampleAt(driver, replayTime);
+			const sample = displaySample(driver, replayTime);
 			if (!sample) continue;
 			const x = screenX(sample.x),
 				y = screenY(sample.y),

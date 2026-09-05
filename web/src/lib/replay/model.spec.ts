@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildDrivers,
 	buildEvents,
+	buildTrackPath,
 	filterEvents,
+	positionAtTrackProgress,
 	sampleAt,
 	smoothPositionHolds,
 	timingAt
@@ -110,6 +112,56 @@ describe('replay model', () => {
 
 		expect(sampleAt(driver, 2)).toBeNull();
 		expect(sampleAt(driver, 4)?.x).toBe(40);
+	});
+
+	it('interpolates lap progress continuously between animation frames', () => {
+		const driver = buildDrivers(positions, metadata, laps)[0];
+
+		expect(sampleAt(driver, 0.5)?.lapProgress).toBeCloseTo(0.00625);
+	});
+
+	it('uses a stable complete lap as the canonical circuit', () => {
+		const base = buildDrivers(positions, metadata, laps)[0];
+		const cleanLap = Array.from({ length: 21 }, (_, index) => {
+			const angle = (index / 20) * Math.PI * 2;
+			return {
+				...base.samples[0],
+				t: index,
+				x: Math.cos(angle) * 100,
+				y: Math.sin(angle) * 100,
+				lap: 1,
+				lapProgress: index / 20
+			};
+		});
+		const corruptLap = cleanLap.map((sample, index) => ({
+			...sample,
+			t: sample.t + 30,
+			x: index % 2 ? 1000 : -1000,
+			lap: 2
+		}));
+		const path = buildTrackPath([{ ...base, samples: [...cleanLap, ...corruptLap] }]);
+
+		expect(path).not.toBeNull();
+		expect(Math.max(...path!.points.map((point) => Math.abs(point.x)))).toBeLessThan(101);
+		expect(path!.points.at(-1)).toEqual(path!.points[0]);
+	});
+
+	it('places cars on the canonical path by forward lap progress', () => {
+		const path = {
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 10, y: 0 },
+				{ x: 10, y: 10 },
+				{ x: 0, y: 10 },
+				{ x: 0, y: 0 }
+			],
+			cumulative: [0, 10, 20, 30, 40],
+			length: 40
+		};
+
+		expect(positionAtTrackProgress(path, 0.125)).toEqual({ x: 5, y: 0 });
+		expect(positionAtTrackProgress(path, 0.375)).toEqual({ x: 10, y: 5 });
+		expect(positionAtTrackProgress(path, 0.625)).toEqual({ x: 5, y: 10 });
 	});
 
 	it('leaves long stationary periods intact', () => {

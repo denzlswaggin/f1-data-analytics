@@ -128,6 +128,14 @@ export type ReplayDriver = {
 	samples: ReplaySample[];
 };
 
+export type TrackPoint = { x: number; y: number };
+
+export type TrackPath = {
+	points: TrackPoint[];
+	cumulative: number[];
+	length: number;
+};
+
 export type TimingRow = {
 	code: string;
 	name: string;

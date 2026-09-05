@@ -21,7 +21,11 @@ repeat the previous coordinate. This is source-feed quantisation, not normal veh
    - Preserve the original samples for retirement detection; a parked car must still disappear.
    - Do not interpolate across a source outage. Missing intervals remain absent from the replay.
 2. Make browser interpolation geometry-safe.
-   - Use linear interpolation between validated replay samples. A line segment stays inside its
+   - Score complete laps by coverage, step stability, and start/finish closure, then use the
+     cleanest lap as the canonical closed circuit path.
+   - Drive every car forward along that path using its continuously interpolated lap progress.
+     Raw X/Y remains a fallback when timing context is unavailable, not the animation authority.
+   - Use linear interpolation between validated fallback samples. A line segment stays inside its
      endpoints' convex hull and cannot produce Catmull-Rom corner overshoot.
    - Do not draw a car while the replay clock is inside a discontinuity reported by the backend.
 3. Add regression and quality coverage.
@@ -37,6 +41,8 @@ repeat the previous coordinate. This is source-feed quantisation, not normal veh
 ## Acceptance criteria
 
 - Cars never follow a spline outside the segment defined by adjacent replay samples.
+- A car with monotonic lap progress cannot reverse direction because of corrupted live X/Y.
+- Animated cars remain on the same canonical path that the canvas draws as the circuit.
 - A source outage is not represented as an on-track straight-line shortcut.
 - Quantised coordinate runs produce steady motion instead of a stop-and-jump pattern.
 - Retired cars still disappear according to the configured retirement grace period.
