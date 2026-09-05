@@ -17,6 +17,53 @@ const numberOrNull = (value: unknown): number | null => {
 	return Number.isFinite(converted) ? converted : null;
 };
 
+const POSITION_EPSILON = 0.5;
+const MAX_HOLD_INTERPOLATION_S = 10;
+const MAX_REPLAY_SAMPLE_GAP_S = 1.5;
+
+/**
+ * Redistribute short sample-and-hold coordinate runs without changing timing data.
+ *
+ * Published bundles may predate the equivalent pipeline clean-up, so this is also
+ * a backwards-compatible guard for already deployed Arrow files. Long stationary
+ * runs are left alone because they can be a red flag or a genuinely stopped car.
+ */
+export function smoothPositionHolds(samples: ReplaySample[]) {
+	if (samples.length < 3) return samples;
+	const starts = [0];
+	for (let index = 1; index < samples.length; index += 1) {
+		if (
+			Math.hypot(samples[index].x - samples[index - 1].x, samples[index].y - samples[index - 1].y) >
+			POSITION_EPSILON
+		) {
+			starts.push(index);
+		}
+	}
+	if (starts.length < 2) return samples;
+
+	const anchors = starts.map((start, index) => {
+		const end = (starts[index + 1] ?? samples.length) - 1;
+		return {
+			t: index === starts.length - 1 ? samples[start].t : (samples[start].t + samples[end].t) / 2,
+			x: samples[start].x,
+			y: samples[start].y
+		};
+	});
+	let right = 1;
+	for (const sample of samples) {
+		while (right < anchors.length && anchors[right].t < sample.t) right += 1;
+		if (right >= anchors.length) break;
+		const previous = anchors[right - 1];
+		const next = anchors[right];
+		const gap = next.t - previous.t;
+		if (sample.t < previous.t || gap <= 0 || gap > MAX_HOLD_INTERPOLATION_S) continue;
+		const fraction = Math.max(0, Math.min(1, (sample.t - previous.t) / gap));
+		sample.x = previous.x + (next.x - previous.x) * fraction;
+		sample.y = previous.y + (next.y - previous.y) * fraction;
+	}
+	return samples;
+}
+
 export function buildDrivers(
 	positions: PositionRow[],
 	metadata: DriverMeta[],
@@ -64,6 +111,7 @@ export function buildDrivers(
 
 	return [...groups.entries()].map(([code, samples]) => {
 		samples.sort((a, b) => a.t - b.t);
+		smoothPositionHolds(samples);
 		const info = meta.get(code);
 		return {
 			code,
@@ -81,18 +129,6 @@ export function buildDrivers(
 	});
 }
 
-function catmull(q0: number, q1: number, q2: number, q3: number, fraction: number) {
-	const squared = fraction * fraction;
-	const cubed = squared * fraction;
-	return (
-		0.5 *
-		(2 * q1 +
-			(-q0 + q2) * fraction +
-			(2 * q0 - 5 * q1 + 4 * q2 - q3) * squared +
-			(-q0 + 3 * q1 - 3 * q2 + q3) * cubed)
-	);
-}
-
 export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | null {
 	if (time < driver.tmin || time > driver.tmax || !driver.samples.length) return null;
 	const samples = driver.samples;
@@ -107,19 +143,12 @@ export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | nul
 	const previous = samples[lo - 1];
 	const next = samples[lo];
 	if (time === next.t) return next;
+	if (next.t - previous.t > MAX_REPLAY_SAMPLE_GAP_S) return null;
 	const fraction = (time - previous.t) / (next.t - previous.t || 1);
-	const before = samples[lo - 2] || previous;
-	const after = samples[lo + 1] || next;
-	const smooth =
-		next.t - previous.t <= 1.5 && previous.t - before.t <= 1.5 && after.t - next.t <= 1.5;
 	return {
 		...previous,
-		x: smooth
-			? catmull(before.x, previous.x, next.x, after.x, fraction)
-			: previous.x + (next.x - previous.x) * fraction,
-		y: smooth
-			? catmull(before.y, previous.y, next.y, after.y, fraction)
-			: previous.y + (next.y - previous.y) * fraction
+		x: previous.x + (next.x - previous.x) * fraction,
+		y: previous.y + (next.y - previous.y) * fraction
 	};
 }
 
