@@ -355,7 +355,12 @@ def _build_one_replay(
     laps = read_query(_replay_laps_query(season, rnd), settings)
     validate_replay_sources(positions, laps)
     replay = resample_race(
-        positions, laps, tick_s=tick_s, retire_buffer_s=retire_buffer_s, max_linger_s=max_linger_s
+        positions,
+        laps,
+        tick_s=tick_s,
+        retire_buffer_s=retire_buffer_s,
+        max_linger_s=max_linger_s,
+        max_position_gap_s=settings.replay_max_position_gap_s,
     )
     replay.insert(0, "season", season)
     replay.insert(1, "round", rnd)

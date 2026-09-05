@@ -165,6 +165,59 @@ def test_resample_race_keeps_original_lap_input_contract() -> None:
     assert out[["stint", "compound", "tyre_life"]].isna().all().all()
 
 
+def test_resample_race_smooths_sample_and_hold_positions() -> None:
+    positions, laps = _synthetic_race()
+    positions = positions[positions["driver_code"] == "A"].iloc[:0].copy()
+    positions = pd.DataFrame(
+        {
+            "driver_code": "A",
+            "session_time_sec": [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "x": [10.0, 10.0, 10.0, 40.0, 40.0, 40.0, 70.0],
+            "y": 50.0,
+        }
+    )
+    laps = laps[laps["driver_code"] == "A"]
+
+    out = resample_race(positions, laps, tick_s=1.0).set_index("t_s")
+
+    # The held coordinate runs are represented by their temporal midpoints (t=1
+    # and t=4), distributing the movement instead of preserving a stop then jump.
+    assert out.loc[2.0, "x"] == pytest.approx(20.0)
+    assert out.loc[3.0, "x"] == pytest.approx(30.0)
+    assert out.loc[4.0, "x"] == pytest.approx(40.0)
+
+
+def test_resample_race_does_not_bridge_position_outages() -> None:
+    positions, laps = _synthetic_race()
+    positions = positions[positions["driver_code"] == "A"].copy()
+    positions.loc[positions["session_time_sec"] == 10.0, "session_time_sec"] = 30.0
+    positions.loc[positions["session_time_sec"] == 15.0, "session_time_sec"] = 35.0
+    positions.loc[positions["session_time_sec"] == 20.0, "session_time_sec"] = 40.0
+    laps = laps[laps["driver_code"] == "A"].copy()
+    laps.loc[laps["lap_number"] == 2, "lap_start_sec"] = 30.0
+    laps.loc[laps["lap_number"] == 2, "lap_time_sec"] = 10.0
+
+    out = resample_race(positions, laps, tick_s=1.0, max_position_gap_s=5.0)
+
+    assert not out["t_s"].between(6.0, 29.0).any()
+    assert {5.0, 30.0}.issubset(set(out["t_s"]))
+
+
+def test_resample_race_drops_non_finite_position_samples() -> None:
+    positions, laps = _synthetic_race()
+    dirty = pd.concat(
+        [
+            positions,
+            pd.DataFrame([{"driver_code": "A", "session_time_sec": 7.0, "x": np.inf, "y": 50.0}]),
+        ],
+        ignore_index=True,
+    )
+
+    out = resample_race(dirty, laps, tick_s=1.0)
+
+    assert np.isfinite(out[["t_s", "x", "y"]].to_numpy(dtype="float64")).all()
+
+
 def _retiree_race() -> tuple[pd.DataFrame, pd.DataFrame]:
     """Leader L runs 3 laps (~120 s); retiree R does 1 lap (finishes 40 s) then parks
     at a fixed point to the end — the frozen-ghost case cleaning must retire."""
