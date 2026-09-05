@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildDrivers, buildEvents, filterEvents, sampleAt, timingAt } from './model';
+import {
+	buildDrivers,
+	buildEvents,
+	buildTrackPath,
+	filterEvents,
+	positionAtTrackProgress,
+	sampleAt,
+	smoothPositionHolds,
+	timingAt
+} from './model';
 import type { DriverMeta, LapRow, PositionRow } from './types';
 
 const metadata: DriverMeta[] = [
@@ -56,6 +65,126 @@ describe('replay model', () => {
 			compound: 'MEDIUM',
 			positionChange: 1
 		});
+	});
+
+	it('smooths short sample-and-hold coordinate runs', () => {
+		const samples = buildDrivers(
+			[0, 1, 2, 3, 4, 5, 6].map((t, index) => ({
+				...positions[0],
+				t_s: t,
+				x: index < 3 ? 10 : index < 6 ? 40 : 70,
+				y: 5
+			})),
+			metadata,
+			laps
+		)[0].samples;
+
+		expect(samples[2].x).toBeCloseTo(20);
+		expect(samples[3].x).toBeCloseTo(30);
+		expect(samples[4].x).toBeCloseTo(40);
+	});
+
+	it('keeps interpolation inside a sharp-corner segment', () => {
+		const driver = buildDrivers(
+			[
+				{ ...positions[0], t_s: 0, x: -100, y: 100 },
+				{ ...positions[0], t_s: 1, x: 0, y: 0 },
+				{ ...positions[0], t_s: 2, x: 10, y: 0 },
+				{ ...positions[0], t_s: 3, x: 110, y: 100 }
+			],
+			metadata,
+			laps
+		)[0];
+
+		expect(sampleAt(driver, 1.5)).toMatchObject({ x: 5, y: 0 });
+	});
+
+	it('does not bridge a missing replay interval', () => {
+		const driver = buildDrivers(
+			[
+				{ ...positions[0], t_s: 0, x: 10, y: 10 },
+				{ ...positions[0], t_s: 1, x: 20, y: 10 },
+				{ ...positions[0], t_s: 4, x: 40, y: 20 }
+			],
+			metadata,
+			laps
+		)[0];
+
+		expect(sampleAt(driver, 2)).toBeNull();
+		expect(sampleAt(driver, 4)?.x).toBe(40);
+	});
+
+	it('interpolates lap progress continuously between animation frames', () => {
+		const driver = buildDrivers(positions, metadata, laps)[0];
+
+		expect(sampleAt(driver, 0.5)?.lapProgress).toBeCloseTo(0.00625);
+	});
+
+	it('uses a stable complete lap as the canonical circuit', () => {
+		const base = buildDrivers(positions, metadata, laps)[0];
+		const cleanLap = Array.from({ length: 21 }, (_, index) => {
+			const angle = (index / 20) * Math.PI * 2;
+			return {
+				...base.samples[0],
+				t: index,
+				x: Math.cos(angle) * 100,
+				y: Math.sin(angle) * 100,
+				lap: 1,
+				lapProgress: index / 20
+			};
+		});
+		const corruptLap = cleanLap.map((sample, index) => ({
+			...sample,
+			t: sample.t + 30,
+			x: index % 2 ? 1000 : -1000,
+			lap: 2
+		}));
+		const path = buildTrackPath([{ ...base, samples: [...cleanLap, ...corruptLap] }]);
+
+		expect(path).not.toBeNull();
+		expect(Math.max(...path!.points.map((point) => Math.abs(point.x)))).toBeLessThan(101);
+		expect(path!.points.at(-1)).toEqual(path!.points[0]);
+	});
+
+	it('places cars on the canonical path by forward lap progress', () => {
+		const path = {
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 10, y: 0 },
+				{ x: 10, y: 10 },
+				{ x: 0, y: 10 },
+				{ x: 0, y: 0 }
+			],
+			cumulative: [0, 10, 20, 30, 40],
+			length: 40
+		};
+
+		expect(positionAtTrackProgress(path, 0.125)).toEqual({ x: 5, y: 0 });
+		expect(positionAtTrackProgress(path, 0.375)).toEqual({ x: 10, y: 5 });
+		expect(positionAtTrackProgress(path, 0.625)).toEqual({ x: 5, y: 10 });
+	});
+
+	it('leaves long stationary periods intact', () => {
+		const samples = [
+			{ t: 0, x: 0, y: 1 },
+			{ t: 1, x: 0, y: 1 },
+			{ t: 20, x: 0, y: 1 },
+			{ t: 21, x: 50, y: 1 }
+		].map((sample) => ({
+			...sample,
+			order: 1,
+			gap: 0,
+			ahead: 0,
+			lap: 1,
+			lapProgress: 0,
+			stint: 1,
+			compound: 'MEDIUM',
+			tyreLife: 1
+		}));
+
+		smoothPositionHolds(samples);
+
+		expect(samples[2].x).toBe(0);
 	});
 
 	it('limits a driver selection to their radio and overtakes', () => {

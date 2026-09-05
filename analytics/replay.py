@@ -37,10 +37,69 @@ _RETIRE_MAX_LINGER_S = 120.0
 # the lap-timing race window. A small tail is tolerated because the two FastF1
 # feeds do not always stop on exactly the same timestamp.
 _MIN_POSITION_COVERAGE = 0.90
+# Maximum separation between genuine coordinate updates that may be interpolated.
+# FastF1 normally updates several times per second, but some feeds hold one coordinate
+# for a few seconds. Wider gaps are outages (or garage/recovery moves), not a route the
+# replay should invent as a straight line.
+_MAX_POSITION_GAP_S = 10.0
 
 
 class IncompleteReplayError(ValueError):
     """Raised when a position feed covers too little of its race window."""
+
+
+def _position_interpolation_points(
+    samples: pd.DataFrame,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return finite, strictly timed X/Y points with sample-and-hold runs collapsed.
+
+    Some FastF1 position feeds repeat a coordinate for several packets and then jump
+    to the next measured point. Treating every repeated packet as a real stationary
+    observation creates stop-and-sprint motion. A coordinate run instead represents
+    one quantised observation over a time interval, so anchor it at that interval's
+    midpoint and interpolate between the genuine updates.
+
+    The caller keeps the uncollapsed samples for retirement detection: a car that is
+    actually parked still needs to disappear after the configured grace period.
+    """
+    finite = samples[["session_time_sec", "x", "y"]].apply(pd.to_numeric, errors="coerce")
+    finite = finite[np.isfinite(finite).all(axis=1)]
+    finite = finite[~((finite["x"] == 0) & (finite["y"] == 0))]
+    finite = (
+        finite.sort_values("session_time_sec")
+        .drop_duplicates(subset=["session_time_sec"], keep="last")
+        .reset_index(drop=True)
+    )
+    if finite.empty:
+        empty = np.asarray([], dtype="float64")
+        return empty, empty, empty
+
+    pt = finite["session_time_sec"].to_numpy(dtype="float64")
+    px = finite["x"].to_numpy(dtype="float64")
+    py = finite["y"].to_numpy(dtype="float64")
+    changed = np.concatenate(([True], np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS))
+    starts = np.flatnonzero(changed)
+    ends = np.concatenate((starts[1:] - 1, [len(pt) - 1]))
+    midpoint_t = (pt[starts] + pt[ends]) / 2.0
+    # The final coordinate has no later update with which to bound a quantisation
+    # interval. Anchor it when it first arrived; otherwise a genuinely parked car's
+    # long final run would move its stopping point far into the future.
+    midpoint_t[-1] = pt[starts[-1]]
+    return midpoint_t, px[starts], py[starts]
+
+
+def _interpolation_support(grid: np.ndarray, sample_t: np.ndarray, max_gap_s: float) -> np.ndarray:
+    """Mark grid points that do not require bridging a source-position outage."""
+    if sample_t.size < 2:
+        return np.ones(grid.shape, dtype=bool)
+    right = np.searchsorted(sample_t, grid, side="right")
+    between = (right > 0) & (right < sample_t.size)
+    supported = ~between
+    supported[between] = sample_t[right[between]] - sample_t[right[between] - 1] <= max_gap_s
+    left = right - 1
+    exact = (left >= 0) & np.isclose(grid, sample_t[np.clip(left, 0, sample_t.size - 1)])
+    supported[exact] = True
+    return supported
 
 
 def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
@@ -188,6 +247,7 @@ def resample_race(
     tick_s: float = 1.0,
     retire_buffer_s: float = _RETIRE_BUFFER_S,
     max_linger_s: float = _RETIRE_MAX_LINGER_S,
+    max_position_gap_s: float = _MAX_POSITION_GAP_S,
 ) -> pd.DataFrame:
     """Resample a race onto a shared time grid with running order and gaps.
 
@@ -212,8 +272,14 @@ def resample_race(
         if missing:
             raise ValueError(f"{name} is missing columns: {sorted(missing)}")
 
-    # Defensive clean: drop any (0,0) sentinels that slipped through (raw is cleaned
-    # at ingest, but keep the pure function robust on dirty input).
+    if max_position_gap_s <= 0:
+        raise ValueError("max_position_gap_s must be greater than zero")
+
+    # Defensive clean: raw ingestion already filters these, but replay snapshots can
+    # be rebuilt from older or externally loaded position partitions.
+    numeric = positions[["session_time_sec", "x", "y"]].apply(pd.to_numeric, errors="coerce")
+    positions = positions[np.isfinite(numeric).all(axis=1)].copy()
+    positions[["session_time_sec", "x", "y"]] = numeric[np.isfinite(numeric).all(axis=1)]
     positions = positions[~((positions["x"] == 0) & (positions["y"] == 0))]
     laps = laps.dropna(subset=["lap_start_sec"])
     if positions.empty or laps.empty:
@@ -243,11 +309,14 @@ def resample_race(
 
     for i, d in enumerate(drivers):
         p = positions[positions["driver_code"] == d].sort_values("session_time_sec")
-        pt = p["session_time_sec"].to_numpy(dtype="float64")
-        if len(pt) < 2:
+        raw_t = p["session_time_sec"].to_numpy(dtype="float64")
+        raw_x = p["x"].to_numpy(dtype="float64")
+        raw_y = p["y"].to_numpy(dtype="float64")
+        if len(raw_t) < 2:
             continue
-        px = p["x"].to_numpy(dtype="float64")
-        py = p["y"].to_numpy(dtype="float64")
+        pt, px, py = _position_interpolation_points(p)
+        if not len(pt):
+            continue
         X[i] = np.interp(grid, pt, px)
         Y[i] = np.interp(grid, pt, py)
         dl = laps[laps["driver_code"] == d].sort_values("lap_number")
@@ -266,18 +335,21 @@ def resample_race(
         # Retire the car when it *last actually moves* (a parked feed repeats its spot),
         # plus the grace buffer. Finishers keep moving to the flag, so their run ends at
         # the grid bound (t1); retirees vanish where they stop, not frozen to the end.
-        moved = np.where(np.hypot(np.diff(px), np.diff(py)) > _MOVE_EPS_UNITS)[0]
-        stop_t = float(pt[moved[-1] + 1]) if moved.size else float(pt[0])
+        moved = np.where(np.hypot(np.diff(raw_x), np.diff(raw_y)) > _MOVE_EPS_UNITS)[0]
+        stop_t = float(raw_t[moved[-1] + 1]) if moved.size else float(raw_t[0])
         cap = stop_t + retire_buffer_s
         # Safety cap: don't show a retiree more than max_linger_s past its last lap
         # (a recovered car's sensor can keep "moving" long after it's out).
         if np.isfinite(t_finish[i]):
             cap = min(cap, t_finish[i] + max_linger_s)
-        active[i] = (grid >= pt.min()) & (grid <= min(float(pt.max()), cap))
+        support = _interpolation_support(grid, pt, max_position_gap_s)
+        active[i] = (grid >= raw_t.min()) & (grid <= min(float(raw_t.max()), cap)) & support
 
     # Leader progress = leading edge across the field; monotonic by construction.
-    leader_prog = np.nanmax(np.where(active, P, np.nan), axis=0)
-    leader_prog = np.where(np.isfinite(leader_prog), leader_prog, 0.0)
+    active_progress = np.where(active, P, np.nan)
+    has_progress = np.isfinite(active_progress).any(axis=0)
+    leader_prog = np.zeros(n_ticks)
+    leader_prog[has_progress] = np.nanmax(active_progress[:, has_progress], axis=0)
     leader_prog = np.maximum.accumulate(leader_prog)
     # Invert with the FIRST time each progress level was reached; the leader curve
     # plateaus at the winner's lap count to the end of the grid, and a plain interp

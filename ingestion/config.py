@@ -94,6 +94,10 @@ class Settings(BaseSettings):
     # lap, even if its position keeps "moving" (a recovery crane/truck follows the car
     # sensor). Bounds the stop-detection above; ~one lap of margin by default.
     replay_retire_max_linger_s: float = Field(default=120.0, gt=0)
+    # Never invent a straight-line route across a longer position-feed outage.
+    # Ordinary FastF1 updates are sub-second; quantised feeds can hold coordinates
+    # for several seconds, so ten seconds preserves them while excluding real gaps.
+    replay_max_position_gap_s: float = Field(default=10.0, gt=0)
     # Overtake detection (analytics.overtakes, over marts.race_replay).
     # Secondary time gate: the interval between the two cars just after a pass must be
     # under this (s) for it to count as a wheel-to-wheel overtake.
