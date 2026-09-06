@@ -156,12 +156,18 @@
 		try {
 			const race = await loadRace(summary, controller.signal);
 			loaded = race;
-			drivers = buildDrivers(race.positions, race.bundle.drivers, race.bundle.laps);
+			drivers = buildDrivers(
+				race.positions,
+				race.bundle.drivers,
+				race.bundle.laps,
+				race.bundle.race.circuit_name
+			);
 			allEvents = buildEvents(
 				race.bundle.race_control,
 				race.bundle.overtakes,
 				race.bundle.radio,
-				race.bundle.laps
+				race.bundle.laps,
+				race.bundle.race.circuit_name
 			);
 			duration = Math.max(summary.duration_s, ...drivers.map((d) => d.tmax));
 			replayTime = 0;
@@ -217,7 +223,7 @@
 			return;
 		}
 		trackPoints = trackPath.points;
-		pitLane = buildPitLanePath(trackPath);
+		pitLane = buildPitLanePath(trackPath, loaded?.bundle.race.circuit_name);
 		let minX = Infinity,
 			maxX = -Infinity,
 			minY = Infinity,

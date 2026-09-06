@@ -3,6 +3,8 @@ import type {
 	LapRow,
 	OvertakeRow,
 	PitLanePath,
+	PitLaneProfile,
+	PitWindow,
 	PositionRow,
 	RaceControlRow,
 	RadioRow,
@@ -13,6 +15,7 @@ import type {
 	TrackPoint,
 	TimingRow
 } from './types';
+import { pitLaneProfileFor } from './pit-lanes';
 
 const numberOrNull = (value: unknown): number | null => {
 	if (value == null || value === '') return null;
@@ -23,9 +26,67 @@ const numberOrNull = (value: unknown): number | null => {
 const POSITION_EPSILON = 0.5;
 const MAX_HOLD_INTERPOLATION_S = 10;
 const MAX_REPLAY_SAMPLE_GAP_S = 1.5;
-const PIT_WINDOW_LEAD_S = 12;
-const PIT_WINDOW_LAG_S = 12;
 const PIT_STOP_HOLD_S = 3;
+const PIT_PATH_JOIN_S = 1.5;
+
+const smoothstep = (value: number) => {
+	const bounded = Math.max(0, Math.min(1, value));
+	return bounded * bounded * (3 - 2 * bounded);
+};
+
+function pitWindowForTransition(previous: LapRow, lap: LapRow, profile: PitLaneProfile): PitWindow {
+	const start = lap.lap_start_t_s - profile.entryLeadSeconds;
+	const end = lap.lap_start_t_s + profile.exitLagSeconds;
+	return { start, stop: (start + end) / 2, end };
+}
+
+function alignPitLapProgress(
+	samples: ReplaySample[],
+	transitions: { previous: LapRow; lap: LapRow; window: PitWindow }[],
+	profile: PitLaneProfile
+) {
+	for (const { previous, lap, window } of transitions) {
+		const entryTimingProgress =
+			previous.lap_time_sec && previous.lap_time_sec > 0
+				? (window.start - previous.lap_start_t_s) / previous.lap_time_sec
+				: null;
+		const exitTimingProgress =
+			lap.lap_time_sec && lap.lap_time_sec > 0
+				? (window.end - lap.lap_start_t_s) / lap.lap_time_sec
+				: null;
+		for (const sample of samples) {
+			if (
+				sample.lapProgress != null &&
+				sample.lap === previous.lap_number &&
+				entryTimingProgress != null &&
+				entryTimingProgress > 0
+			) {
+				sample.lapProgress =
+					sample.t <= window.start
+						? Math.min(
+								profile.entryProgress,
+								(sample.lapProgress / entryTimingProgress) * profile.entryProgress
+							)
+						: profile.entryProgress;
+			} else if (
+				sample.lapProgress != null &&
+				sample.lap === lap.lap_number &&
+				exitTimingProgress != null &&
+				exitTimingProgress < 1
+			) {
+				sample.lapProgress =
+					sample.t >= window.end
+						? Math.max(
+								profile.exitProgress,
+								profile.exitProgress +
+									((sample.lapProgress - exitTimingProgress) / (1 - exitTimingProgress)) *
+										(1 - profile.exitProgress)
+							)
+						: profile.exitProgress;
+			}
+		}
+	}
+}
 
 /**
  * Redistribute short sample-and-hold coordinate runs without changing timing data.
@@ -73,8 +134,10 @@ export function smoothPositionHolds(samples: ReplaySample[]) {
 export function buildDrivers(
 	positions: PositionRow[],
 	metadata: DriverMeta[],
-	laps: LapRow[]
+	laps: LapRow[],
+	circuitName = ''
 ): ReplayDriver[] {
+	const pitProfile = pitLaneProfileFor(circuitName);
 	const meta = new Map(metadata.map((driver) => [driver.driver_code, driver]));
 	const lapGroups = new Map<string, LapRow[]>();
 	for (const lap of laps) {
@@ -119,6 +182,7 @@ export function buildDrivers(
 		samples.sort((a, b) => a.t - b.t);
 		smoothPositionHolds(samples);
 		const pitWindows: ReplayDriver['pitWindows'] = [];
+		const pitTransitions: { previous: LapRow; lap: LapRow; window: PitWindow }[] = [];
 		const driverLaps = lapGroups.get(code) ?? [];
 		for (let index = 1; index < driverLaps.length; index += 1) {
 			const previous = driverLaps[index - 1];
@@ -129,13 +193,16 @@ export function buildDrivers(
 				lap.stint > previous.stint &&
 				Number.isFinite(lap.lap_start_t_s)
 			) {
+				const window = pitWindowForTransition(previous, lap, pitProfile);
 				pitWindows.push({
-					start: Math.max(samples[0].t, lap.lap_start_t_s - PIT_WINDOW_LEAD_S),
-					stop: lap.lap_start_t_s,
-					end: Math.min(samples.at(-1)!.t, lap.lap_start_t_s + PIT_WINDOW_LAG_S)
+					start: Math.max(samples[0].t, window.start),
+					stop: window.stop,
+					end: Math.min(samples.at(-1)!.t, window.end)
 				});
+				pitTransitions.push({ previous, lap, window });
 			}
 		}
+		alignPitLapProgress(samples, pitTransitions, pitProfile);
 		const info = meta.get(code);
 		return {
 			code,
@@ -168,7 +235,11 @@ export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | nul
 	const previous = samples[lo - 1];
 	const next = samples[lo];
 	if (time === next.t) return next;
-	if (next.t - previous.t > MAX_REPLAY_SAMPLE_GAP_S) return null;
+	if (
+		next.t - previous.t > MAX_REPLAY_SAMPLE_GAP_S &&
+		!driver.pitWindows.some(({ start, end }) => time >= start && time <= end)
+	)
+		return null;
 	const fraction = (time - previous.t) / (next.t - previous.t || 1);
 	let lap = previous.lap;
 	let lapProgress = previous.lapProgress;
@@ -287,8 +358,9 @@ export function positionAtTrackProgress(path: TrackPath, progress: number): Trac
 }
 
 /** Build a compact, parallel pit lane around the start/finish straight. */
-export function buildPitLanePath(track: TrackPath): PitLanePath | null {
+export function buildPitLanePath(track: TrackPath, circuitName = ''): PitLanePath | null {
 	if (track.points.length < 3 || track.length <= 0) return null;
+	const profile = pitLaneProfileFor(circuitName);
 	const minX = Math.min(...track.points.map((point) => point.x));
 	const maxX = Math.max(...track.points.map((point) => point.x));
 	const minY = Math.min(...track.points.map((point) => point.y));
@@ -298,20 +370,26 @@ export function buildPitLanePath(track: TrackPath): PitLanePath | null {
 		y: track.points.reduce((sum, point) => sum + point.y, 0) / track.points.length
 	};
 	const offset = Math.hypot(maxX - minX, maxY - minY) * 0.025;
-	const startProgress = 0.91;
-	const progressSpan = 0.18;
+	const startProgress = profile.entryProgress;
+	const progressSpan = 1 - profile.entryProgress + profile.exitProgress;
 	const pointCount = 33;
-	const line = positionAtTrackProgress(track, 0);
-	const beforeLine = positionAtTrackProgress(track, 0.995);
-	const afterLine = positionAtTrackProgress(track, 0.005);
-	const tangent = { x: afterLine.x - beforeLine.x, y: afterLine.y - beforeLine.y };
-	const tangentLength = Math.hypot(tangent.x, tangent.y) || 1;
-	const normal = { x: -tangent.y / tangentLength, y: tangent.x / tangentLength };
-	const side = normal.x * (center.x - line.x) + normal.y * (center.y - line.y) >= 0 ? 1 : -1;
+	const localNormal = (progress: number) => {
+		const before = positionAtTrackProgress(track, (progress + 0.9975) % 1);
+		const after = positionAtTrackProgress(track, (progress + 0.0025) % 1);
+		const tangent = { x: after.x - before.x, y: after.y - before.y };
+		const tangentLength = Math.hypot(tangent.x, tangent.y) || 1;
+		return { x: -tangent.y / tangentLength, y: tangent.x / tangentLength };
+	};
+	const middleProgress = (startProgress + progressSpan / 2) % 1;
+	const middle = positionAtTrackProgress(track, middleProgress);
+	const middleNormal = localNormal(middleProgress);
+	const side =
+		middleNormal.x * (center.x - middle.x) + middleNormal.y * (center.y - middle.y) >= 0 ? 1 : -1;
 	const points = Array.from({ length: pointCount }, (_, index) => {
 		const fraction = index / (pointCount - 1);
 		const progress = (startProgress + progressSpan * fraction) % 1;
 		const base = positionAtTrackProgress(track, progress);
+		const normal = localNormal(progress);
 		const lateralOffset = Math.sin(Math.PI * fraction) * offset * side;
 		return {
 			x: base.x + normal.x * lateralOffset,
@@ -331,7 +409,9 @@ export function buildPitLanePath(track: TrackPath): PitLanePath | null {
 				points,
 				cumulative,
 				length,
-				box: positionAtTrackProgress({ points, cumulative, length }, 0.5)
+				box: positionAtTrackProgress({ points, cumulative, length }, 0.5),
+				entryProgress: profile.entryProgress,
+				exitProgress: profile.exitProgress
 			}
 		: null;
 }
@@ -356,8 +436,7 @@ function pitLaneBlendAt(driver: ReplayDriver, time: number) {
 	let blend = 1;
 	if (time < holdStart) blend = (time - window.start) / (holdStart - window.start || 1);
 	else if (time > holdEnd) blend = (window.end - time) / (window.end - holdEnd || 1);
-	const bounded = Math.max(0, Math.min(1, blend));
-	return bounded * bounded * (3 - 2 * bounded);
+	return smoothstep(blend);
 }
 
 /** Project a car continuously between the racing line and pit lane without endpoint jumps. */
@@ -369,9 +448,36 @@ export function projectedSampleAt(
 ): ReplaySample | null {
 	const sample = sampleAt(driver, time);
 	if (!sample || sample.lapProgress == null) return sample;
-	const circuitPosition = positionAtTrackProgress(track, sample.lapProgress);
 	const pitProgress = pitLane ? pitLaneProgressAt(driver, time) : null;
-	if (!pitLane || pitProgress == null) return { ...sample, ...circuitPosition };
+	const trackProgress =
+		pitLane && pitProgress != null
+			? (pitLane.entryProgress + (1 - pitLane.entryProgress + pitLane.exitProgress) * pitProgress) %
+				1
+			: sample.lapProgress;
+	const circuitPosition = positionAtTrackProgress(track, trackProgress);
+	if (!pitLane) return { ...sample, ...circuitPosition };
+	if (pitProgress == null) {
+		const entering = driver.pitWindows.find(
+			({ start }) => time < start && time >= start - PIT_PATH_JOIN_S
+		);
+		const exiting = driver.pitWindows.find(
+			({ end }) => time > end && time <= end + PIT_PATH_JOIN_S
+		);
+		const endpoint = entering
+			? positionAtTrackProgress(track, pitLane.entryProgress)
+			: exiting
+				? positionAtTrackProgress(track, pitLane.exitProgress)
+				: null;
+		if (!endpoint) return { ...sample, ...circuitPosition };
+		const endpointBlend = entering
+			? smoothstep((time - (entering.start - PIT_PATH_JOIN_S)) / PIT_PATH_JOIN_S)
+			: smoothstep(1 - (time - exiting!.end) / PIT_PATH_JOIN_S);
+		return {
+			...sample,
+			x: circuitPosition.x + (endpoint.x - circuitPosition.x) * endpointBlend,
+			y: circuitPosition.y + (endpoint.y - circuitPosition.y) * endpointBlend
+		};
+	}
 	const pitPosition = positionAtTrackProgress(pitLane, pitProgress);
 	const blend = pitLaneBlendAt(driver, time);
 	return {
@@ -434,8 +540,10 @@ export function buildEvents(
 	messages: RaceControlRow[],
 	overtakes: OvertakeRow[],
 	radio: RadioRow[],
-	laps: LapRow[] = []
+	laps: LapRow[] = [],
+	circuitName = ''
 ): ReplayEvent[] {
+	const pitProfile = pitLaneProfileFor(circuitName);
 	const events: ReplayEvent[] = [];
 	messages.forEach((row, index) => {
 		if (!Number.isFinite(row.t_s)) return;
@@ -494,9 +602,10 @@ export function buildEvents(
 		)
 			continue;
 		const stopNumber = Math.max(1, Math.round(row.stint) - 1);
+		const window = pitWindowForTransition(previous, row, pitProfile);
 		events.push({
-			id: `pit|${row.driver_code}|${row.lap_start_t_s}|${stopNumber}`,
-			time: row.lap_start_t_s,
+			id: `pit|${row.driver_code}|${window.stop}|${stopNumber}`,
+			time: window.stop,
 			type: 'pit',
 			subtype: 'pit',
 			label: `${row.driver_code} pit stop`,
