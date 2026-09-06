@@ -5,7 +5,7 @@ import {
 	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
-	isInPitWindow,
+	pitLaneProgressAt,
 	positionAtTrackProgress,
 	sampleAt,
 	smoothPositionHolds,
@@ -263,7 +263,7 @@ describe('replay model', () => {
 		]);
 	});
 
-	it('preserves raw car positions around every pit stop', () => {
+	it('creates a timed pit window around every stint transition', () => {
 		const pitLaps: LapRow[] = [
 			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
 			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
@@ -276,23 +276,16 @@ describe('replay model', () => {
 		}));
 		const driver = buildDrivers(pitPositions, metadata, pitLaps)[0];
 
-		expect(driver.pitWindows).toEqual([{ start: 5, end: 55 }]);
-		expect(isInPitWindow(driver, 20)).toBe(true);
-		expect(isInPitWindow(driver, 56)).toBe(false);
-		expect(sampleAt(driver, 20)).toMatchObject({ x: 500, y: 0 });
+		expect(driver.pitWindows).toEqual([{ start: 8, stop: 20, end: 32 }]);
+		expect(pitLaneProgressAt(driver, 8)).toBe(0);
+		expect(pitLaneProgressAt(driver, 20)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 21)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 32)).toBe(1);
+		expect(pitLaneProgressAt(driver, 33)).toBeNull();
 	});
 
-	it('recovers the pit-lane branch and box from a stopped car', () => {
-		const driver = buildDrivers(positions, metadata, laps)[0];
-		const sample = driver.samples[0];
-		driver.pitWindows = [{ start: 10, end: 40 }];
-		driver.samples = [
-			{ ...sample, t: 10, x: 0, y: 0 },
-			{ ...sample, t: 20, x: 5, y: 20 },
-			{ ...sample, t: 30, x: 5, y: 20 },
-			{ ...sample, t: 40, x: 10, y: 10 }
-		];
-		const path = buildPitLanePath([driver], {
+	it('builds a compact pit lane around the start and finish line', () => {
+		const track = {
 			points: [
 				{ x: 0, y: 0 },
 				{ x: 10, y: 0 },
@@ -302,15 +295,14 @@ describe('replay model', () => {
 			],
 			cumulative: [0, 10, 20, 30, 40],
 			length: 40
-		});
+		};
+		const path = buildPitLanePath(track);
 
-		expect(path).toEqual({
-			points: [
-				{ x: 0, y: 0 },
-				{ x: 5, y: 20 },
-				{ x: 10, y: 10 }
-			],
-			box: { x: 5, y: 20 }
-		});
+		expect(path?.points).toHaveLength(33);
+		expect(path?.points[0]).toEqual(positionAtTrackProgress(track, 0.91));
+		expect(path?.points.at(-1)?.x).toBeCloseTo(positionAtTrackProgress(track, 0.09).x);
+		expect(path?.points.at(-1)?.y).toBeCloseTo(positionAtTrackProgress(track, 0.09).y);
+		expect(path?.length).toBeLessThan(track.length / 2);
+		expect(path?.box).not.toEqual(positionAtTrackProgress(track, 0));
 	});
 });

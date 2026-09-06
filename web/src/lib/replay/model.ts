@@ -23,8 +23,9 @@ const numberOrNull = (value: unknown): number | null => {
 const POSITION_EPSILON = 0.5;
 const MAX_HOLD_INTERPOLATION_S = 10;
 const MAX_REPLAY_SAMPLE_GAP_S = 1.5;
-const PIT_WINDOW_LEAD_S = 15;
-const PIT_WINDOW_LAG_S = 35;
+const PIT_WINDOW_LEAD_S = 12;
+const PIT_WINDOW_LAG_S = 12;
+const PIT_STOP_HOLD_S = 3;
 
 /**
  * Redistribute short sample-and-hold coordinate runs without changing timing data.
@@ -123,6 +124,7 @@ export function buildDrivers(
 			if (previousStint != null && sample.stint != null && sample.stint > previousStint) {
 				pitWindows.push({
 					start: Math.max(samples[0].t, sample.t - PIT_WINDOW_LEAD_S),
+					stop: sample.t,
 					end: Math.min(samples.at(-1)!.t, sample.t + PIT_WINDOW_LAG_S)
 				});
 			}
@@ -144,10 +146,6 @@ export function buildDrivers(
 			pitWindows
 		};
 	});
-}
-
-export function isInPitWindow(driver: ReplayDriver, time: number) {
-	return driver.pitWindows.some((window) => time >= window.start && time <= window.end);
 }
 
 export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | null {
@@ -282,82 +280,66 @@ export function positionAtTrackProgress(path: TrackPath, progress: number): Trac
 	};
 }
 
-function distanceToSegment(point: TrackPoint, start: TrackPoint, end: TrackPoint) {
-	const dx = end.x - start.x;
-	const dy = end.y - start.y;
-	const fraction = Math.max(
-		0,
-		Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy || 1))
-	);
-	return Math.hypot(point.x - (start.x + fraction * dx), point.y - (start.y + fraction * dy));
-}
-
-function distanceToTrack(point: TrackPoint, track: TrackPath) {
-	let distance = Infinity;
-	for (let index = 1; index < track.points.length; index += 1) {
-		distance = Math.min(
-			distance,
-			distanceToSegment(point, track.points[index - 1], track.points[index])
+/** Build a compact, parallel pit lane around the start/finish straight. */
+export function buildPitLanePath(track: TrackPath): PitLanePath | null {
+	if (track.points.length < 3 || track.length <= 0) return null;
+	const minX = Math.min(...track.points.map((point) => point.x));
+	const maxX = Math.max(...track.points.map((point) => point.x));
+	const minY = Math.min(...track.points.map((point) => point.y));
+	const maxY = Math.max(...track.points.map((point) => point.y));
+	const center = {
+		x: track.points.reduce((sum, point) => sum + point.x, 0) / track.points.length,
+		y: track.points.reduce((sum, point) => sum + point.y, 0) / track.points.length
+	};
+	const offset = Math.hypot(maxX - minX, maxY - minY) * 0.025;
+	const startProgress = 0.91;
+	const progressSpan = 0.18;
+	const pointCount = 33;
+	const line = positionAtTrackProgress(track, 0);
+	const beforeLine = positionAtTrackProgress(track, 0.995);
+	const afterLine = positionAtTrackProgress(track, 0.005);
+	const tangent = { x: afterLine.x - beforeLine.x, y: afterLine.y - beforeLine.y };
+	const tangentLength = Math.hypot(tangent.x, tangent.y) || 1;
+	const normal = { x: -tangent.y / tangentLength, y: tangent.x / tangentLength };
+	const side = normal.x * (center.x - line.x) + normal.y * (center.y - line.y) >= 0 ? 1 : -1;
+	const points = Array.from({ length: pointCount }, (_, index) => {
+		const fraction = index / (pointCount - 1);
+		const progress = (startProgress + progressSpan * fraction) % 1;
+		const base = positionAtTrackProgress(track, progress);
+		const lateralOffset = Math.sin(Math.PI * fraction) * offset * side;
+		return {
+			x: base.x + normal.x * lateralOffset,
+			y: base.y + normal.y * lateralOffset
+		};
+	});
+	const cumulative = [0];
+	for (let index = 1; index < points.length; index += 1) {
+		cumulative.push(
+			cumulative[index - 1] +
+				Math.hypot(points[index].x - points[index - 1].x, points[index].y - points[index - 1].y)
 		);
 	}
-	return distance;
+	const length = cumulative.at(-1) ?? 0;
+	return length > 0
+		? {
+				points,
+				cumulative,
+				length,
+				box: positionAtTrackProgress({ points, cumulative, length }, 0.5)
+			}
+		: null;
 }
 
-/** Recover a representative pit-lane branch from the raw position feed. */
-export function buildPitLanePath(drivers: ReplayDriver[], track: TrackPath): PitLanePath | null {
-	const offTrackThreshold = Math.max(5, track.length * 0.005);
-	const candidates: { path: PitLanePath; stationaryFor: number; deviation: number }[] = [];
-	for (const driver of drivers) {
-		for (const window of driver.pitWindows) {
-			const samples = driver.samples.filter(
-				(sample) => sample.t >= window.start && sample.t <= window.end
-			);
-			if (samples.length < 3) continue;
-
-			let holdStart = samples[0].t;
-			let stationaryFor = 0;
-			let box = { x: samples[0].x, y: samples[0].y };
-			for (let index = 1; index < samples.length; index += 1) {
-				const previous = samples[index - 1];
-				const sample = samples[index];
-				if (Math.hypot(sample.x - previous.x, sample.y - previous.y) <= POSITION_EPSILON) {
-					const duration = sample.t - holdStart;
-					if (duration > stationaryFor) {
-						stationaryFor = duration;
-						box = { x: sample.x, y: sample.y };
-					}
-				} else holdStart = sample.t;
-			}
-
-			const distances = samples.map((sample) => distanceToTrack(sample, track));
-			const offTrack = distances
-				.map((distance, index) => (distance > offTrackThreshold ? index : -1))
-				.filter((index) => index >= 0);
-			if (!offTrack.length) continue;
-			const start = Math.max(0, offTrack[0] - 1);
-			const end = Math.min(samples.length, offTrack.at(-1)! + 2);
-			const points: TrackPoint[] = [];
-			for (const sample of samples.slice(start, end)) {
-				const previous = points.at(-1);
-				if (
-					!previous ||
-					Math.hypot(sample.x - previous.x, sample.y - previous.y) > POSITION_EPSILON
-				)
-					points.push({ x: sample.x, y: sample.y });
-			}
-			if (points.length >= 3) {
-				candidates.push({
-					path: { points, box },
-					stationaryFor,
-					deviation: Math.max(...distances)
-				});
-			}
-		}
-	}
-	return (
-		candidates.sort((a, b) => b.stationaryFor - a.stationaryFor || b.deviation - a.deviation)[0]
-			?.path ?? null
-	);
+/** Return progress through the synthetic pit lane, holding at the box around the event time. */
+export function pitLaneProgressAt(driver: ReplayDriver, time: number): number | null {
+	const window = driver.pitWindows.find(({ start, end }) => time >= start && time <= end);
+	if (!window) return null;
+	const holdStart = window.stop - PIT_STOP_HOLD_S / 2;
+	const holdEnd = window.stop + PIT_STOP_HOLD_S / 2;
+	if (time < holdStart)
+		return 0.5 * Math.max(0, Math.min(1, (time - window.start) / (holdStart - window.start || 1)));
+	if (time <= holdEnd) return 0.5;
+	return 0.5 + 0.5 * Math.max(0, Math.min(1, (time - holdEnd) / (window.end - holdEnd || 1)));
 }
 
 export function timingAt(drivers: ReplayDriver[], time: number): TimingRow[] {

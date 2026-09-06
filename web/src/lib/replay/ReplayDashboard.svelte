@@ -7,7 +7,7 @@
 		buildPitLanePath,
 		buildTrackPath,
 		filterEvents,
-		isInPitWindow,
+		pitLaneProgressAt,
 		positionAtTrackProgress,
 		sampleAt,
 		timingAt
@@ -218,7 +218,7 @@
 			return;
 		}
 		trackPoints = trackPath.points;
-		pitLane = buildPitLanePath(drivers, trackPath);
+		pitLane = buildPitLanePath(trackPath);
 		let minX = Infinity,
 			maxX = -Infinity,
 			minY = Infinity,
@@ -233,8 +233,10 @@
 	}
 	function displaySample(driver: ReplayDriver, time: number) {
 		const sample = sampleAt(driver, time);
-		if (!sample || !trackPath || sample.lapProgress == null || isInPitWindow(driver, time))
-			return sample;
+		if (!sample || !trackPath || sample.lapProgress == null) return sample;
+		const pitProgress = pitLane ? pitLaneProgressAt(driver, time) : null;
+		if (pitLane && pitProgress != null)
+			return { ...sample, ...positionAtTrackProgress(pitLane, pitProgress) };
 		return { ...sample, ...positionAtTrackProgress(trackPath, sample.lapProgress) };
 	}
 	function resizeCanvas() {
