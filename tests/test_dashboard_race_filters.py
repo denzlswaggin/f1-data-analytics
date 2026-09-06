@@ -47,9 +47,7 @@ def test_race_replay_redirects_to_the_dedicated_app() -> None:
 
 def test_replay_is_published_beside_the_evidence_dashboard() -> None:
     vite_config = (ROOT / "web" / "vite.config.ts").read_text(encoding="utf-8")
-    workflow = (ROOT / ".github" / "workflows" / "deploy-dashboard.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = (ROOT / ".github" / "workflows" / "deploy-dashboard.yml").read_text(encoding="utf-8")
 
     assert "'/f1-data-analytics/replay'" in vite_config
     assert "npm --prefix web run build:with-data" in workflow

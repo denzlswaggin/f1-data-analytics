@@ -4,9 +4,10 @@
 	import {
 		buildDrivers,
 		buildEvents,
+		buildPitLanePath,
 		buildTrackPath,
 		filterEvents,
-		positionAtTrackProgress,
+		projectedSampleAt,
 		sampleAt,
 		timingAt
 	} from './model';
@@ -18,6 +19,7 @@
 		ReplayEvent,
 		ReplayManifest,
 		RaceSummary,
+		PitLanePath,
 		TrackPath,
 		TimingRow
 	} from './types';
@@ -60,6 +62,7 @@
 	let trackPoints: { x: number; y: number }[] = [],
 		screenCars: ScreenCar[] = [];
 	let trackPath: TrackPath | null = null;
+	let pitLane: PitLanePath | null = null;
 	let dragStart: [number, number] = [0, 0],
 		dragMoved = false;
 	type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
@@ -153,8 +156,19 @@
 		try {
 			const race = await loadRace(summary, controller.signal);
 			loaded = race;
-			drivers = buildDrivers(race.positions, race.bundle.drivers, race.bundle.laps);
-			allEvents = buildEvents(race.bundle.race_control, race.bundle.overtakes, race.bundle.radio);
+			drivers = buildDrivers(
+				race.positions,
+				race.bundle.drivers,
+				race.bundle.laps,
+				race.bundle.race.circuit_name
+			);
+			allEvents = buildEvents(
+				race.bundle.race_control,
+				race.bundle.overtakes,
+				race.bundle.radio,
+				race.bundle.laps,
+				race.bundle.race.circuit_name
+			);
 			duration = Math.max(summary.duration_s, ...drivers.map((d) => d.tmax));
 			replayTime = 0;
 			currentTime = 0;
@@ -205,14 +219,16 @@
 		if (!trackPath) {
 			bounds = null;
 			trackPoints = [];
+			pitLane = null;
 			return;
 		}
 		trackPoints = trackPath.points;
+		pitLane = buildPitLanePath(trackPath, loaded?.bundle.race.circuit_name);
 		let minX = Infinity,
 			maxX = -Infinity,
 			minY = Infinity,
 			maxY = -Infinity;
-		for (const point of trackPoints) {
+		for (const point of [...trackPoints, ...(pitLane?.points ?? [])]) {
 			minX = Math.min(minX, point.x);
 			maxX = Math.max(maxX, point.x);
 			minY = Math.min(minY, point.y);
@@ -221,9 +237,7 @@
 		bounds = { minX, maxX, minY, maxY };
 	}
 	function displaySample(driver: ReplayDriver, time: number) {
-		const sample = sampleAt(driver, time);
-		if (!sample || !trackPath || sample.lapProgress == null) return sample;
-		return { ...sample, ...positionAtTrackProgress(trackPath, sample.lapProgress) };
+		return trackPath ? projectedSampleAt(driver, time, trackPath, pitLane) : sampleAt(driver, time);
 	}
 	function resizeCanvas() {
 		const rect = canvas.getBoundingClientRect(),
@@ -285,6 +299,26 @@
 		context.lineWidth = Math.min(20, Math.max(7, baseScale() * view.zoom * 155));
 		context.strokeStyle = '#535d6d';
 		context.stroke();
+		if (pitLane) {
+			context.beginPath();
+			pitLane.points.forEach((point, index) =>
+				index
+					? context?.lineTo(screenX(point.x), screenY(point.y))
+					: context?.moveTo(screenX(point.x), screenY(point.y))
+			);
+			context.lineWidth = Math.min(14, Math.max(7, baseScale() * view.zoom * 90));
+			context.strokeStyle = 'rgba(0, 0, 0, .8)';
+			context.stroke();
+			context.lineWidth = Math.min(8, Math.max(4, baseScale() * view.zoom * 50));
+			context.strokeStyle = '#8791a0';
+			context.stroke();
+			const boxX = screenX(pitLane.box.x);
+			const boxY = screenY(pitLane.box.y);
+			context.fillStyle = '#dce2ea';
+			context.fillRect(boxX - 3, boxY - 3, 6, 6);
+			context.font = '700 8px system-ui';
+			context.fillText('PIT LANE', boxX + 8, boxY - 7);
+		}
 		const cars: ScreenCar[] = [];
 		for (const driver of drivers) {
 			const sample = displaySample(driver, replayTime);
@@ -766,14 +800,14 @@
 						<h2>Event timeline</h2>
 					</div>
 					{#if selectedCode}<p>
-							Showing radio & overtakes for <strong>{selectedCode}</strong><button
+							Showing pit stops, radio & overtakes for <strong>{selectedCode}</strong><button
 								type="button"
 								onclick={() => toggleDriver(selectedCode)}>Clear</button
 							>
 						</p>{/if}
 				</div>
 				<div class="filters" aria-label="Filter race events">
-					{#each ['all', 'control', 'overtake', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
+					{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
 								type="button"
 								class:active={eventFilter === filter}
 								onclick={() => (eventFilter = filter)}
@@ -783,7 +817,9 @@
 										? 'Race control'
 										: filter === 'overtake'
 											? 'Overtakes'
-											: 'Radio'}<span>{filterEvents(allEvents, selectedCode, filter).length}</span
+											: filter === 'pit'
+												? 'Pit stops'
+												: 'Radio'}<span>{filterEvents(allEvents, selectedCode, filter).length}</span
 								></button
 							>{/if}{/each}
 				</div>
@@ -1005,7 +1041,7 @@
 	.track-meta span,
 	.selected-head span,
 	.metric-grid span,
-	.stint-card span,
+	.stint-card > div > span,
 	.timeline-head span,
 	.radio-player span {
 		display: block;
@@ -1182,10 +1218,13 @@
 	.tyre-visual {
 		display: grid;
 		place-items: center;
+		flex: 0 0 auto;
 		color: #fff;
 		border: 2px solid #fff;
 		border-radius: 50%;
 		font-weight: 800;
+		letter-spacing: 0;
+		line-height: 1;
 	}
 	.tyre {
 		width: 18px;
@@ -1672,6 +1711,10 @@
 		border-color: var(--blue);
 		border-radius: 50%;
 	}
+	.markers .pit {
+		border-color: var(--accent);
+		transform: translate(-50%, -50%) rotate(45deg);
+	}
 	.markers .radio {
 		height: 17px;
 		border-color: var(--purple);
@@ -1710,6 +1753,9 @@
 	}
 	.event.overtake > i {
 		background: var(--blue);
+	}
+	.event.pit > i {
+		background: var(--accent);
 	}
 	.event.radio > i {
 		background: var(--purple);

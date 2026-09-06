@@ -2,14 +2,18 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildDrivers,
 	buildEvents,
+	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
+	pitLaneProgressAt,
 	positionAtTrackProgress,
+	projectedSampleAt,
 	sampleAt,
 	smoothPositionHolds,
 	timingAt
 } from './model';
 import type { DriverMeta, LapRow, PositionRow } from './types';
+import { pitLaneProfileFor, supportedPitLaneCircuits } from './pit-lanes';
 
 const metadata: DriverMeta[] = [
 	{
@@ -223,5 +227,161 @@ describe('replay model', () => {
 		expect(filterEvents(events, 'NOR').map((event) => event.type)).toEqual(['overtake', 'radio']);
 		expect(filterEvents(events, 'VER').map((event) => event.type)).toEqual(['overtake']);
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
+	});
+
+	it('adds every driver stint transition to the event timeline as a pit stop', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], driver_code: 'NOR', lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{
+				...laps[0],
+				driver_code: 'NOR',
+				lap_number: 2,
+				lap_start_t_s: 80,
+				stint: 2,
+				compound: 'HARD'
+			},
+			{ ...laps[0], driver_code: 'VER', lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{
+				...laps[0],
+				driver_code: 'VER',
+				lap_number: 2,
+				lap_start_t_s: 81,
+				stint: 2,
+				compound: 'MEDIUM'
+			}
+		];
+
+		const events = buildEvents([], [], [], pitLaps, 'Hungaroring');
+
+		expect(events.map((event) => event.label)).toEqual(['NOR pit stop', 'VER pit stop']);
+		expect(events[0]).toMatchObject({
+			type: 'pit',
+			meta: 'Lap 1 · Stop 1 · Onto hard tyres',
+			participants: ['NOR']
+		});
+		expect(events[0].time).toBeCloseTo(89.23);
+		expect(filterEvents(events, 'VER', 'pit').map((event) => event.label)).toEqual([
+			'VER pit stop'
+		]);
+	});
+
+	it('creates a timed pit window around every stint transition', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
+		];
+		const pitPositions: PositionRow[] = Array.from({ length: 61 }, (_, t) => ({
+			...positions[0],
+			t_s: t,
+			x: t >= 15 && t <= 40 ? 500 : t * 10,
+			y: 0
+		}));
+		const driver = buildDrivers(pitPositions, metadata, pitLaps, 'Hungaroring')[0];
+
+		expect(driver.pitWindows[0].start).toBeCloseTo(18.32);
+		expect(driver.pitWindows[0].stop).toBeCloseTo(29.23);
+		expect(driver.pitWindows[0].end).toBeCloseTo(40.14);
+		expect(pitLaneProgressAt(driver, 18.32)).toBeCloseTo(0);
+		expect(pitLaneProgressAt(driver, 29.23)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 30)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 40.14)).toBe(1);
+		expect(pitLaneProgressAt(driver, 41)).toBeNull();
+	});
+
+	it('keeps a car renderable through a position-feed gap while it is in pit lane', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
+		];
+		const sparsePositions: PositionRow[] = [0, 18, 22, 40, 42].map((t) => ({
+			...positions[0],
+			t_s: t,
+			x: t,
+			y: 0
+		}));
+		const driver = buildDrivers(sparsePositions, metadata, pitLaps, 'Hungaroring')[0];
+
+		expect(sampleAt(driver, 10)).toBeNull();
+		expect(sampleAt(driver, driver.pitWindows[0].stop)).not.toBeNull();
+	});
+
+	it('has measured entry and exit profiles for every published circuit', () => {
+		expect(supportedPitLaneCircuits).toHaveLength(24);
+		expect(pitLaneProfileFor('Hungaroring')).toEqual({
+			entryProgress: 0.96,
+			exitProgress: 0.08,
+			entryLeadSeconds: 1.68,
+			exitLagSeconds: 20.14
+		});
+		expect(pitLaneProfileFor('Autódromo José Carlos Pace')).toEqual({
+			entryProgress: 0.9778,
+			exitProgress: 0.0721,
+			entryLeadSeconds: 2.83,
+			exitLagSeconds: 21.12
+		});
+	});
+
+	it('builds a compact pit lane around the start and finish line', () => {
+		const track = {
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 10, y: 0 },
+				{ x: 10, y: 10 },
+				{ x: 0, y: 10 },
+				{ x: 0, y: 0 }
+			],
+			cumulative: [0, 10, 20, 30, 40],
+			length: 40
+		};
+		const path = buildPitLanePath(track, 'Hungaroring');
+
+		expect(path?.points).toHaveLength(33);
+		expect(path?.points[0]).toEqual(positionAtTrackProgress(track, 0.96));
+		expect(path?.points.at(-1)?.x).toBeCloseTo(positionAtTrackProgress(track, 0.08).x);
+		expect(path?.points.at(-1)?.y).toBeCloseTo(positionAtTrackProgress(track, 0.08).y);
+		expect(path?.length).toBeLessThan(track.length / 2);
+		expect(path?.box).not.toEqual(positionAtTrackProgress(track, 0));
+	});
+
+	it('blends into and out of the pit lane without teleporting', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
+		];
+		const pitPositions: PositionRow[] = Array.from({ length: 61 }, (_, t) => ({
+			...positions[0],
+			t_s: t,
+			x: t,
+			y: 0
+		}));
+		const driver = buildDrivers(pitPositions, metadata, pitLaps, 'Hungaroring')[0];
+		const track = {
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 10, y: 0 },
+				{ x: 10, y: 10 },
+				{ x: 0, y: 10 },
+				{ x: 0, y: 0 }
+			],
+			cumulative: [0, 10, 20, 30, 40],
+			length: 40
+		};
+		const pitLane = buildPitLanePath(track, 'Hungaroring')!;
+		const window = driver.pitWindows[0];
+		const distance = (left: { x: number; y: number }, right: { x: number; y: number }) =>
+			Math.hypot(left.x - right.x, left.y - right.y);
+		const beforeEntry = projectedSampleAt(driver, window.start - 0.001, track, pitLane)!;
+		const entry = projectedSampleAt(driver, window.start, track, pitLane)!;
+		const exit = projectedSampleAt(driver, window.end, track, pitLane)!;
+		const afterExit = projectedSampleAt(driver, window.end + 0.001, track, pitLane)!;
+		const stopped = projectedSampleAt(driver, window.stop, track, pitLane)!;
+
+		expect(distance(beforeEntry, entry)).toBeLessThan(0.01);
+		expect(distance(exit, afterExit)).toBeLessThan(0.01);
+		expect(stopped.x).toBeCloseTo(pitLane.box.x);
+		expect(stopped.y).toBeCloseTo(pitLane.box.y);
+		const held = projectedSampleAt(driver, window.stop + 1, track, pitLane)!;
+		expect(held.x).toBeCloseTo(pitLane.box.x);
+		expect(held.y).toBeCloseTo(pitLane.box.y);
 	});
 });

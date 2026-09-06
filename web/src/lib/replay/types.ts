@@ -126,6 +126,16 @@ export type ReplayDriver = {
 	tmin: number;
 	tmax: number;
 	samples: ReplaySample[];
+	pitWindows: PitWindow[];
+};
+
+export type PitWindow = { start: number; stop: number; end: number };
+
+export type PitLaneProfile = {
+	entryProgress: number;
+	exitProgress: number;
+	entryLeadSeconds: number;
+	exitLagSeconds: number;
 };
 
 export type TrackPoint = { x: number; y: number };
@@ -134,6 +144,12 @@ export type TrackPath = {
 	points: TrackPoint[];
 	cumulative: number[];
 	length: number;
+};
+
+export type PitLanePath = TrackPath & {
+	box: TrackPoint;
+	entryProgress: number;
+	exitProgress: number;
 };
 
 export type TimingRow = {
@@ -157,12 +173,12 @@ export type TimingRow = {
 export type ReplayEvent = {
 	id: string;
 	time: number;
-	type: 'control' | 'overtake' | 'radio';
+	type: 'control' | 'overtake' | 'pit' | 'radio';
 	subtype: string;
 	label: string;
 	meta: string;
 	participants: string[];
-	raw: RaceControlRow | RadioRow | OvertakeRow;
+	raw: RaceControlRow | RadioRow | OvertakeRow | LapRow;
 };
 
 export type LoadedRace = {
