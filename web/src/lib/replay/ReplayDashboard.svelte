@@ -154,7 +154,12 @@
 			const race = await loadRace(summary, controller.signal);
 			loaded = race;
 			drivers = buildDrivers(race.positions, race.bundle.drivers, race.bundle.laps);
-			allEvents = buildEvents(race.bundle.race_control, race.bundle.overtakes, race.bundle.radio);
+			allEvents = buildEvents(
+				race.bundle.race_control,
+				race.bundle.overtakes,
+				race.bundle.radio,
+				race.bundle.laps
+			);
 			duration = Math.max(summary.duration_s, ...drivers.map((d) => d.tmax));
 			replayTime = 0;
 			currentTime = 0;
@@ -766,14 +771,14 @@
 						<h2>Event timeline</h2>
 					</div>
 					{#if selectedCode}<p>
-							Showing radio & overtakes for <strong>{selectedCode}</strong><button
+							Showing pit stops, radio & overtakes for <strong>{selectedCode}</strong><button
 								type="button"
 								onclick={() => toggleDriver(selectedCode)}>Clear</button
 							>
 						</p>{/if}
 				</div>
 				<div class="filters" aria-label="Filter race events">
-					{#each ['all', 'control', 'overtake', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
+					{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
 								type="button"
 								class:active={eventFilter === filter}
 								onclick={() => (eventFilter = filter)}
@@ -783,7 +788,9 @@
 										? 'Race control'
 										: filter === 'overtake'
 											? 'Overtakes'
-											: 'Radio'}<span>{filterEvents(allEvents, selectedCode, filter).length}</span
+											: filter === 'pit'
+												? 'Pit stops'
+												: 'Radio'}<span>{filterEvents(allEvents, selectedCode, filter).length}</span
 								></button
 							>{/if}{/each}
 				</div>
@@ -1675,6 +1682,10 @@
 		border-color: var(--blue);
 		border-radius: 50%;
 	}
+	.markers .pit {
+		border-color: var(--accent);
+		transform: translate(-50%, -50%) rotate(45deg);
+	}
 	.markers .radio {
 		height: 17px;
 		border-color: var(--purple);
@@ -1713,6 +1724,9 @@
 	}
 	.event.overtake > i {
 		background: var(--blue);
+	}
+	.event.pit > i {
+		background: var(--accent);
 	}
 	.event.radio > i {
 		background: var(--purple);

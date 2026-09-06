@@ -157,12 +157,12 @@ export type TimingRow = {
 export type ReplayEvent = {
 	id: string;
 	time: number;
-	type: 'control' | 'overtake' | 'radio';
+	type: 'control' | 'overtake' | 'pit' | 'radio';
 	subtype: string;
 	label: string;
 	meta: string;
 	participants: string[];
-	raw: RaceControlRow | RadioRow | OvertakeRow;
+	raw: RaceControlRow | RadioRow | OvertakeRow | LapRow;
 };
 
 export type LoadedRace = {

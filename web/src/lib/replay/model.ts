@@ -315,7 +315,8 @@ function messageSubtype(row: RaceControlRow) {
 export function buildEvents(
 	messages: RaceControlRow[],
 	overtakes: OvertakeRow[],
-	radio: RadioRow[]
+	radio: RadioRow[],
+	laps: LapRow[] = []
 ): ReplayEvent[] {
 	const events: ReplayEvent[] = [];
 	messages.forEach((row, index) => {
@@ -357,6 +358,41 @@ export function buildEvents(
 			raw: row
 		});
 	});
+	const previousLapByDriver = new Map<string, LapRow>();
+	for (const row of [...laps].sort(
+		(a, b) =>
+			a.driver_code.localeCompare(b.driver_code) ||
+			a.lap_number - b.lap_number ||
+			a.lap_start_t_s - b.lap_start_t_s
+	)) {
+		const previous = previousLapByDriver.get(row.driver_code);
+		previousLapByDriver.set(row.driver_code, row);
+		if (
+			!previous ||
+			!Number.isFinite(row.lap_start_t_s) ||
+			previous.stint == null ||
+			row.stint == null ||
+			row.stint <= previous.stint
+		)
+			continue;
+		const stopNumber = Math.max(1, Math.round(row.stint) - 1);
+		events.push({
+			id: `pit|${row.driver_code}|${row.lap_start_t_s}|${stopNumber}`,
+			time: row.lap_start_t_s,
+			type: 'pit',
+			subtype: 'pit',
+			label: `${row.driver_code} pit stop`,
+			meta: [
+				`Lap ${previous.lap_number}`,
+				`Stop ${stopNumber}`,
+				row.compound ? `Onto ${row.compound.toLowerCase()} tyres` : null
+			]
+				.filter(Boolean)
+				.join(' · '),
+			participants: [row.driver_code],
+			raw: row
+		});
+	}
 	return events.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
 }
 

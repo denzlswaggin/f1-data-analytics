@@ -224,4 +224,40 @@ describe('replay model', () => {
 		expect(filterEvents(events, 'VER').map((event) => event.type)).toEqual(['overtake']);
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
 	});
+
+	it('adds every driver stint transition to the event timeline as a pit stop', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], driver_code: 'NOR', lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{
+				...laps[0],
+				driver_code: 'NOR',
+				lap_number: 2,
+				lap_start_t_s: 80,
+				stint: 2,
+				compound: 'HARD'
+			},
+			{ ...laps[0], driver_code: 'VER', lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{
+				...laps[0],
+				driver_code: 'VER',
+				lap_number: 2,
+				lap_start_t_s: 81,
+				stint: 2,
+				compound: 'MEDIUM'
+			}
+		];
+
+		const events = buildEvents([], [], [], pitLaps);
+
+		expect(events.map((event) => event.label)).toEqual(['NOR pit stop', 'VER pit stop']);
+		expect(events[0]).toMatchObject({
+			time: 80,
+			type: 'pit',
+			meta: 'Lap 1 · Stop 1 · Onto hard tyres',
+			participants: ['NOR']
+		});
+		expect(filterEvents(events, 'VER', 'pit').map((event) => event.label)).toEqual([
+			'VER pit stop'
+		]);
+	});
 });
