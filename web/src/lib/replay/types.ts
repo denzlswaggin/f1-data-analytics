@@ -126,6 +126,7 @@ export type ReplayDriver = {
 	tmin: number;
 	tmax: number;
 	samples: ReplaySample[];
+	pitWindows: { start: number; end: number }[];
 };
 
 export type TrackPoint = { x: number; y: number };

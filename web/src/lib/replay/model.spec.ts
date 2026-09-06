@@ -4,6 +4,7 @@ import {
 	buildEvents,
 	buildTrackPath,
 	filterEvents,
+	isInPitWindow,
 	positionAtTrackProgress,
 	sampleAt,
 	smoothPositionHolds,
@@ -259,5 +260,24 @@ describe('replay model', () => {
 		expect(filterEvents(events, 'VER', 'pit').map((event) => event.label)).toEqual([
 			'VER pit stop'
 		]);
+	});
+
+	it('preserves raw car positions around every pit stop', () => {
+		const pitLaps: LapRow[] = [
+			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
+			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
+		];
+		const pitPositions: PositionRow[] = Array.from({ length: 61 }, (_, t) => ({
+			...positions[0],
+			t_s: t,
+			x: t >= 15 && t <= 40 ? 500 : t * 10,
+			y: 0
+		}));
+		const driver = buildDrivers(pitPositions, metadata, pitLaps)[0];
+
+		expect(driver.pitWindows).toEqual([{ start: 5, end: 55 }]);
+		expect(isInPitWindow(driver, 20)).toBe(true);
+		expect(isInPitWindow(driver, 56)).toBe(false);
+		expect(sampleAt(driver, 20)).toMatchObject({ x: 500, y: 0 });
 	});
 });

@@ -22,6 +22,8 @@ const numberOrNull = (value: unknown): number | null => {
 const POSITION_EPSILON = 0.5;
 const MAX_HOLD_INTERPOLATION_S = 10;
 const MAX_REPLAY_SAMPLE_GAP_S = 1.5;
+const PIT_WINDOW_LEAD_S = 15;
+const PIT_WINDOW_LAG_S = 35;
 
 /**
  * Redistribute short sample-and-hold coordinate runs without changing timing data.
@@ -114,6 +116,17 @@ export function buildDrivers(
 	return [...groups.entries()].map(([code, samples]) => {
 		samples.sort((a, b) => a.t - b.t);
 		smoothPositionHolds(samples);
+		const pitWindows: ReplayDriver['pitWindows'] = [];
+		let previousStint: number | null = null;
+		for (const sample of samples) {
+			if (previousStint != null && sample.stint != null && sample.stint > previousStint) {
+				pitWindows.push({
+					start: Math.max(samples[0].t, sample.t - PIT_WINDOW_LEAD_S),
+					end: Math.min(samples.at(-1)!.t, sample.t + PIT_WINDOW_LAG_S)
+				});
+			}
+			if (sample.stint != null) previousStint = sample.stint;
+		}
 		const info = meta.get(code);
 		return {
 			code,
@@ -126,9 +139,14 @@ export function buildDrivers(
 			resultStatus: info?.status ?? null,
 			tmin: samples[0]?.t ?? 0,
 			tmax: samples.at(-1)?.t ?? 0,
-			samples
+			samples,
+			pitWindows
 		};
 	});
+}
+
+export function isInPitWindow(driver: ReplayDriver, time: number) {
+	return driver.pitWindows.some((window) => time >= window.start && time <= window.end);
 }
 
 export function sampleAt(driver: ReplayDriver, time: number): ReplaySample | null {

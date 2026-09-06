@@ -6,6 +6,7 @@
 		buildEvents,
 		buildTrackPath,
 		filterEvents,
+		isInPitWindow,
 		positionAtTrackProgress,
 		sampleAt,
 		timingAt
@@ -227,7 +228,8 @@
 	}
 	function displaySample(driver: ReplayDriver, time: number) {
 		const sample = sampleAt(driver, time);
-		if (!sample || !trackPath || sample.lapProgress == null) return sample;
+		if (!sample || !trackPath || sample.lapProgress == null || isInPitWindow(driver, time))
+			return sample;
 		return { ...sample, ...positionAtTrackProgress(trackPath, sample.lapProgress) };
 	}
 	function resizeCanvas() {
