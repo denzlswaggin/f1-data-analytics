@@ -280,6 +280,7 @@ describe('replay model', () => {
 		expect(pitLaneProgressAt(driver, 8)).toBe(0);
 		expect(pitLaneProgressAt(driver, 20)).toBe(0.5);
 		expect(pitLaneProgressAt(driver, 21)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 19.4)).toBe(0.5);
 		expect(pitLaneProgressAt(driver, 32)).toBe(1);
 		expect(pitLaneProgressAt(driver, 33)).toBeNull();
 	});

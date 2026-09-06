@@ -119,16 +119,22 @@ export function buildDrivers(
 		samples.sort((a, b) => a.t - b.t);
 		smoothPositionHolds(samples);
 		const pitWindows: ReplayDriver['pitWindows'] = [];
-		let previousStint: number | null = null;
-		for (const sample of samples) {
-			if (previousStint != null && sample.stint != null && sample.stint > previousStint) {
+		const driverLaps = lapGroups.get(code) ?? [];
+		for (let index = 1; index < driverLaps.length; index += 1) {
+			const previous = driverLaps[index - 1];
+			const lap = driverLaps[index];
+			if (
+				previous.stint != null &&
+				lap.stint != null &&
+				lap.stint > previous.stint &&
+				Number.isFinite(lap.lap_start_t_s)
+			) {
 				pitWindows.push({
-					start: Math.max(samples[0].t, sample.t - PIT_WINDOW_LEAD_S),
-					stop: sample.t,
-					end: Math.min(samples.at(-1)!.t, sample.t + PIT_WINDOW_LAG_S)
+					start: Math.max(samples[0].t, lap.lap_start_t_s - PIT_WINDOW_LEAD_S),
+					stop: lap.lap_start_t_s,
+					end: Math.min(samples.at(-1)!.t, lap.lap_start_t_s + PIT_WINDOW_LAG_S)
 				});
 			}
-			if (sample.stint != null) previousStint = sample.stint;
 		}
 		const info = meta.get(code);
 		return {
