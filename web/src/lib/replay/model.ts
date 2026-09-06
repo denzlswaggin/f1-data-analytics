@@ -2,6 +2,7 @@ import type {
 	DriverMeta,
 	LapRow,
 	OvertakeRow,
+	PitLanePath,
 	PositionRow,
 	RaceControlRow,
 	RadioRow,
@@ -279,6 +280,84 @@ export function positionAtTrackProgress(path: TrackPath, progress: number): Trac
 		x: path.points[lo - 1].x + (path.points[lo].x - path.points[lo - 1].x) * fraction,
 		y: path.points[lo - 1].y + (path.points[lo].y - path.points[lo - 1].y) * fraction
 	};
+}
+
+function distanceToSegment(point: TrackPoint, start: TrackPoint, end: TrackPoint) {
+	const dx = end.x - start.x;
+	const dy = end.y - start.y;
+	const fraction = Math.max(
+		0,
+		Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / (dx * dx + dy * dy || 1))
+	);
+	return Math.hypot(point.x - (start.x + fraction * dx), point.y - (start.y + fraction * dy));
+}
+
+function distanceToTrack(point: TrackPoint, track: TrackPath) {
+	let distance = Infinity;
+	for (let index = 1; index < track.points.length; index += 1) {
+		distance = Math.min(
+			distance,
+			distanceToSegment(point, track.points[index - 1], track.points[index])
+		);
+	}
+	return distance;
+}
+
+/** Recover a representative pit-lane branch from the raw position feed. */
+export function buildPitLanePath(drivers: ReplayDriver[], track: TrackPath): PitLanePath | null {
+	const offTrackThreshold = Math.max(5, track.length * 0.005);
+	const candidates: { path: PitLanePath; stationaryFor: number; deviation: number }[] = [];
+	for (const driver of drivers) {
+		for (const window of driver.pitWindows) {
+			const samples = driver.samples.filter(
+				(sample) => sample.t >= window.start && sample.t <= window.end
+			);
+			if (samples.length < 3) continue;
+
+			let holdStart = samples[0].t;
+			let stationaryFor = 0;
+			let box = { x: samples[0].x, y: samples[0].y };
+			for (let index = 1; index < samples.length; index += 1) {
+				const previous = samples[index - 1];
+				const sample = samples[index];
+				if (Math.hypot(sample.x - previous.x, sample.y - previous.y) <= POSITION_EPSILON) {
+					const duration = sample.t - holdStart;
+					if (duration > stationaryFor) {
+						stationaryFor = duration;
+						box = { x: sample.x, y: sample.y };
+					}
+				} else holdStart = sample.t;
+			}
+
+			const distances = samples.map((sample) => distanceToTrack(sample, track));
+			const offTrack = distances
+				.map((distance, index) => (distance > offTrackThreshold ? index : -1))
+				.filter((index) => index >= 0);
+			if (!offTrack.length) continue;
+			const start = Math.max(0, offTrack[0] - 1);
+			const end = Math.min(samples.length, offTrack.at(-1)! + 2);
+			const points: TrackPoint[] = [];
+			for (const sample of samples.slice(start, end)) {
+				const previous = points.at(-1);
+				if (
+					!previous ||
+					Math.hypot(sample.x - previous.x, sample.y - previous.y) > POSITION_EPSILON
+				)
+					points.push({ x: sample.x, y: sample.y });
+			}
+			if (points.length >= 3) {
+				candidates.push({
+					path: { points, box },
+					stationaryFor,
+					deviation: Math.max(...distances)
+				});
+			}
+		}
+	}
+	return (
+		candidates.sort((a, b) => b.stationaryFor - a.stationaryFor || b.deviation - a.deviation)[0]
+			?.path ?? null
+	);
 }
 
 export function timingAt(drivers: ReplayDriver[], time: number): TimingRow[] {

@@ -4,6 +4,7 @@
 	import {
 		buildDrivers,
 		buildEvents,
+		buildPitLanePath,
 		buildTrackPath,
 		filterEvents,
 		isInPitWindow,
@@ -19,6 +20,7 @@
 		ReplayEvent,
 		ReplayManifest,
 		RaceSummary,
+		PitLanePath,
 		TrackPath,
 		TimingRow
 	} from './types';
@@ -61,6 +63,7 @@
 	let trackPoints: { x: number; y: number }[] = [],
 		screenCars: ScreenCar[] = [];
 	let trackPath: TrackPath | null = null;
+	let pitLane: PitLanePath | null = null;
 	let dragStart: [number, number] = [0, 0],
 		dragMoved = false;
 	type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
@@ -211,14 +214,16 @@
 		if (!trackPath) {
 			bounds = null;
 			trackPoints = [];
+			pitLane = null;
 			return;
 		}
 		trackPoints = trackPath.points;
+		pitLane = buildPitLanePath(drivers, trackPath);
 		let minX = Infinity,
 			maxX = -Infinity,
 			minY = Infinity,
 			maxY = -Infinity;
-		for (const point of trackPoints) {
+		for (const point of [...trackPoints, ...(pitLane?.points ?? [])]) {
 			minX = Math.min(minX, point.x);
 			maxX = Math.max(maxX, point.x);
 			minY = Math.min(minY, point.y);
@@ -292,6 +297,26 @@
 		context.lineWidth = Math.min(20, Math.max(7, baseScale() * view.zoom * 155));
 		context.strokeStyle = '#535d6d';
 		context.stroke();
+		if (pitLane) {
+			context.beginPath();
+			pitLane.points.forEach((point, index) =>
+				index
+					? context?.lineTo(screenX(point.x), screenY(point.y))
+					: context?.moveTo(screenX(point.x), screenY(point.y))
+			);
+			context.lineWidth = Math.min(14, Math.max(7, baseScale() * view.zoom * 90));
+			context.strokeStyle = 'rgba(0, 0, 0, .8)';
+			context.stroke();
+			context.lineWidth = Math.min(8, Math.max(4, baseScale() * view.zoom * 50));
+			context.strokeStyle = '#8791a0';
+			context.stroke();
+			const boxX = screenX(pitLane.box.x);
+			const boxY = screenY(pitLane.box.y);
+			context.fillStyle = '#dce2ea';
+			context.fillRect(boxX - 3, boxY - 3, 6, 6);
+			context.font = '700 8px system-ui';
+			context.fillText('PIT LANE', boxX + 8, boxY - 7);
+		}
 		const cars: ScreenCar[] = [];
 		for (const driver of drivers) {
 			const sample = displaySample(driver, replayTime);

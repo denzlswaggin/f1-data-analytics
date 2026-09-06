@@ -137,6 +137,11 @@ export type TrackPath = {
 	length: number;
 };
 
+export type PitLanePath = {
+	points: TrackPoint[];
+	box: TrackPoint;
+};
+
 export type TimingRow = {
 	code: string;
 	name: string;

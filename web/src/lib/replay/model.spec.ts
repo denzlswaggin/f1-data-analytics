@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildDrivers,
 	buildEvents,
+	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
 	isInPitWindow,
@@ -279,5 +280,37 @@ describe('replay model', () => {
 		expect(isInPitWindow(driver, 20)).toBe(true);
 		expect(isInPitWindow(driver, 56)).toBe(false);
 		expect(sampleAt(driver, 20)).toMatchObject({ x: 500, y: 0 });
+	});
+
+	it('recovers the pit-lane branch and box from a stopped car', () => {
+		const driver = buildDrivers(positions, metadata, laps)[0];
+		const sample = driver.samples[0];
+		driver.pitWindows = [{ start: 10, end: 40 }];
+		driver.samples = [
+			{ ...sample, t: 10, x: 0, y: 0 },
+			{ ...sample, t: 20, x: 5, y: 20 },
+			{ ...sample, t: 30, x: 5, y: 20 },
+			{ ...sample, t: 40, x: 10, y: 10 }
+		];
+		const path = buildPitLanePath([driver], {
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 10, y: 0 },
+				{ x: 10, y: 10 },
+				{ x: 0, y: 10 },
+				{ x: 0, y: 0 }
+			],
+			cumulative: [0, 10, 20, 30, 40],
+			length: 40
+		});
+
+		expect(path).toEqual({
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 5, y: 20 },
+				{ x: 10, y: 10 }
+			],
+			box: { x: 5, y: 20 }
+		});
 	});
 });
