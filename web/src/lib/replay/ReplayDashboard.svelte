@@ -1005,7 +1005,7 @@
 	.track-meta span,
 	.selected-head span,
 	.metric-grid span,
-	.stint-card span,
+	.stint-card > div > span,
 	.timeline-head span,
 	.radio-player span {
 		display: block;
@@ -1182,10 +1182,13 @@
 	.tyre-visual {
 		display: grid;
 		place-items: center;
+		flex: 0 0 auto;
 		color: #fff;
 		border: 2px solid #fff;
 		border-radius: 50%;
 		font-weight: 800;
+		letter-spacing: 0;
+		line-height: 1;
 	}
 	.tyre {
 		width: 18px;
