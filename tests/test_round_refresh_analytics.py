@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from ingestion.config import Settings
 from orchestration import round_refresh
-from orchestration.assets import PACE_PROFILE_FROM_SEASON
+from orchestration.constants import PACE_PROFILE_FROM_SEASON
 
 
 def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
