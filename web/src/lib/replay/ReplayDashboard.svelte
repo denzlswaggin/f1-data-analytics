@@ -7,8 +7,7 @@
 		buildPitLanePath,
 		buildTrackPath,
 		filterEvents,
-		pitLaneProgressAt,
-		positionAtTrackProgress,
+		projectedSampleAt,
 		sampleAt,
 		timingAt
 	} from './model';
@@ -232,12 +231,7 @@
 		bounds = { minX, maxX, minY, maxY };
 	}
 	function displaySample(driver: ReplayDriver, time: number) {
-		const sample = sampleAt(driver, time);
-		if (!sample || !trackPath || sample.lapProgress == null) return sample;
-		const pitProgress = pitLane ? pitLaneProgressAt(driver, time) : null;
-		if (pitLane && pitProgress != null)
-			return { ...sample, ...positionAtTrackProgress(pitLane, pitProgress) };
-		return { ...sample, ...positionAtTrackProgress(trackPath, sample.lapProgress) };
+		return trackPath ? projectedSampleAt(driver, time, trackPath, pitLane) : sampleAt(driver, time);
 	}
 	function resizeCanvas() {
 		const rect = canvas.getBoundingClientRect(),

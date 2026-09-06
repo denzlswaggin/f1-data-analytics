@@ -348,6 +348,39 @@ export function pitLaneProgressAt(driver: ReplayDriver, time: number): number | 
 	return 0.5 + 0.5 * Math.max(0, Math.min(1, (time - holdEnd) / (window.end - holdEnd || 1)));
 }
 
+function pitLaneBlendAt(driver: ReplayDriver, time: number) {
+	const window = driver.pitWindows.find(({ start, end }) => time >= start && time <= end);
+	if (!window) return 0;
+	const holdStart = window.stop - PIT_STOP_HOLD_S / 2;
+	const holdEnd = window.stop + PIT_STOP_HOLD_S / 2;
+	let blend = 1;
+	if (time < holdStart) blend = (time - window.start) / (holdStart - window.start || 1);
+	else if (time > holdEnd) blend = (window.end - time) / (window.end - holdEnd || 1);
+	const bounded = Math.max(0, Math.min(1, blend));
+	return bounded * bounded * (3 - 2 * bounded);
+}
+
+/** Project a car continuously between the racing line and pit lane without endpoint jumps. */
+export function projectedSampleAt(
+	driver: ReplayDriver,
+	time: number,
+	track: TrackPath,
+	pitLane: PitLanePath | null
+): ReplaySample | null {
+	const sample = sampleAt(driver, time);
+	if (!sample || sample.lapProgress == null) return sample;
+	const circuitPosition = positionAtTrackProgress(track, sample.lapProgress);
+	const pitProgress = pitLane ? pitLaneProgressAt(driver, time) : null;
+	if (!pitLane || pitProgress == null) return { ...sample, ...circuitPosition };
+	const pitPosition = positionAtTrackProgress(pitLane, pitProgress);
+	const blend = pitLaneBlendAt(driver, time);
+	return {
+		...sample,
+		x: circuitPosition.x + (pitPosition.x - circuitPosition.x) * blend,
+		y: circuitPosition.y + (pitPosition.y - circuitPosition.y) * blend
+	};
+}
+
 export function timingAt(drivers: ReplayDriver[], time: number): TimingRow[] {
 	const rows: TimingRow[] = [];
 	for (const driver of drivers) {
