@@ -35,7 +35,6 @@ from dagster_dbt import (
     DbtProject,
     dbt_assets,
 )
-from ingestion.config import get_settings
 from ingestion.health import evaluate_pipeline_health
 from ingestion.loaders.warehouse import read_query
 from ingestion.pipeline import (
@@ -51,19 +50,8 @@ from ingestion.pipeline import (
     season_rounds,
 )
 
-# Season the scheduled pipeline refreshes (mirrors the `incremental` CLI).
-# Defaults to the calendar year and can be pinned with F1_CURRENT_SEASON.
-CURRENT_SEASON = get_settings().current_season
+from orchestration.constants import CURRENT_SEASON, FIRST_SEASON, PACE_PROFILE_FROM_SEASON
 
-# Race pace is only comparable inside one set of technical regulations — the
-# ground-effect cars arrived in 2022 — so the Saturday-vs-Sunday profile is
-# bounded rather than pooled over everything FastF1 happens to cover.
-PACE_PROFILE_FROM_SEASON = 2022
-
-# Ingestion is partitioned by season, so any season can be (re)materialised
-# independently — that's what makes the 2006-onwards history backfillable from
-# the Dagster UI. The weekly schedule targets the current-season partition.
-FIRST_SEASON = 2006
 SEASON_PARTITIONS = StaticPartitionsDefinition(
     [str(year) for year in range(FIRST_SEASON, CURRENT_SEASON + 1)]
 )
