@@ -971,6 +971,7 @@
 					<div class="filters" aria-label="Filter race events">
 						{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
 									type="button"
+									class="filter-{filter}"
 									class:active={eventFilter === filter}
 									onclick={() => (eventFilter = filter)}
 									>{filter === 'all'
@@ -2073,6 +2074,9 @@
 		min-height: 72px;
 		margin-top: 0;
 		padding: 10px 14px;
+		background:
+			linear-gradient(90deg, rgba(255, 77, 87, 0.055), transparent 34%),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.playback,
 	.lap-controls {
@@ -2093,8 +2097,9 @@
 	}
 	.playback .play {
 		color: #fff;
-		background: var(--accent);
+		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-color: var(--accent);
+		box-shadow: 0 6px 18px rgba(255, 77, 87, 0.28);
 	}
 	.playback strong {
 		min-width: 64px;
@@ -2131,6 +2136,9 @@
 		position: relative;
 		margin-top: 12px;
 		padding: 14px 16px;
+		background:
+			radial-gradient(circle at 100% 0%, rgba(194, 139, 255, 0.08), transparent 28rem),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.timeline-head {
 		display: flex;
@@ -2178,8 +2186,21 @@
 	}
 	.timeline-phases button.active {
 		color: #fff;
-		background: rgba(194, 139, 255, 0.09);
-		border-color: rgba(194, 139, 255, 0.42);
+	}
+	.timeline-phases button:nth-child(1).active {
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.46);
+		box-shadow: inset 3px 0 var(--purple);
+	}
+	.timeline-phases button:nth-child(2).active {
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.42);
+		box-shadow: inset 3px 0 var(--accent);
+	}
+	.timeline-phases button:nth-child(3).active {
+		background: var(--cyan-soft);
+		border-color: rgba(77, 217, 231, 0.42);
+		box-shadow: inset 3px 0 var(--cyan);
 	}
 	.timeline-phases span {
 		grid-column: 1;
@@ -2197,6 +2218,12 @@
 		align-self: center;
 		color: var(--purple);
 		font: var(--text-body) Consolas;
+	}
+	.timeline-phases button:nth-child(2) b {
+		color: var(--accent);
+	}
+	.timeline-phases button:nth-child(3) b {
+		color: var(--cyan);
 	}
 	.phase-summary {
 		display: flex;
@@ -2232,10 +2259,27 @@
 	}
 	.filters button.active {
 		color: #fff;
-		background: #293142;
+		background: color-mix(in srgb, var(--filter-color, var(--blue)) 16%, transparent);
+		border-color: color-mix(in srgb, var(--filter-color, var(--blue)) 48%, transparent);
+	}
+	.filters .filter-all {
+		--filter-color: var(--muted-strong);
+	}
+	.filters .filter-control {
+		--filter-color: var(--event-control);
+	}
+	.filters .filter-overtake {
+		--filter-color: var(--event-overtake);
+	}
+	.filters .filter-pit {
+		--filter-color: var(--event-pit);
+	}
+	.filters .filter-radio {
+		--filter-color: var(--event-radio);
 	}
 	.filters span {
 		margin-left: 5px;
+		color: var(--filter-color, inherit);
 	}
 	.event-rail {
 		position: relative;
@@ -2253,7 +2297,7 @@
 	.elapsed {
 		position: absolute;
 		inset: 0 auto 0 0;
-		background: #677691;
+		background: linear-gradient(90deg, var(--accent), var(--purple));
 		border-radius: inherit;
 	}
 	.playhead {
@@ -2276,22 +2320,26 @@
 		height: 14px;
 		padding: 0;
 		background: #11151c;
-		border: 2px solid var(--yellow);
+		border: 2px solid var(--event-control);
 		border-radius: 3px;
+		color: var(--event-control);
 		pointer-events: auto;
 		transform: translate(-50%, -50%);
 	}
 	.markers .overtake {
-		border-color: var(--blue);
+		border-color: var(--event-overtake);
+		color: var(--event-overtake);
 		border-radius: 50%;
 	}
 	.markers .pit {
-		border-color: var(--accent);
+		border-color: var(--event-pit);
+		color: var(--event-pit);
 		transform: translate(-50%, -50%) rotate(45deg);
 	}
 	.markers .radio {
 		height: 17px;
-		border-color: var(--purple);
+		border-color: var(--event-radio);
+		color: var(--event-radio);
 		border-radius: 5px;
 	}
 	.markers .past {
@@ -2304,6 +2352,7 @@
 		margin-top: 16px;
 	}
 	.event {
+		--event-color: var(--event-control);
 		display: grid;
 		grid-template-columns: 8px 64px minmax(0, 1fr) auto;
 		align-items: center;
@@ -2311,29 +2360,36 @@
 		min-height: 52px;
 		padding: 9px;
 		color: inherit;
-		background: rgba(255, 255, 255, 0.025);
+		background: color-mix(in srgb, var(--event-color) 4%, transparent);
 		border: 1px solid var(--line);
+		border-left: 3px solid var(--event-color);
 		border-radius: 7px;
 		text-align: left;
 	}
 	.event:hover,
 	.event.current {
-		background: rgba(255, 255, 255, 0.065);
+		background: color-mix(in srgb, var(--event-color) 12%, transparent);
+		border-color: color-mix(in srgb, var(--event-color) 40%, transparent);
+		border-left-color: var(--event-color);
+	}
+	.event.current {
+		box-shadow: 0 0 20px color-mix(in srgb, var(--event-color) 13%, transparent);
 	}
 	.event > i {
 		width: 6px;
 		height: 6px;
-		background: var(--yellow);
+		background: var(--event-color);
 		border-radius: 50%;
+		box-shadow: 0 0 8px var(--event-color);
 	}
-	.event.overtake > i {
-		background: var(--blue);
+	.event.overtake {
+		--event-color: var(--event-overtake);
 	}
-	.event.pit > i {
-		background: var(--accent);
+	.event.pit {
+		--event-color: var(--event-pit);
 	}
-	.event.radio > i {
-		background: var(--purple);
+	.event.radio {
+		--event-color: var(--event-radio);
 	}
 	.event time {
 		color: var(--muted);
@@ -2360,7 +2416,7 @@
 		white-space: normal;
 	}
 	.event b {
-		color: var(--purple);
+		color: var(--event-color);
 		font-size: var(--text-caption);
 	}
 	.empty-state {
@@ -2376,8 +2432,9 @@
 		gap: 12px;
 		margin-top: 12px;
 		padding: 8px 10px;
-		background: rgba(194, 139, 255, 0.08);
-		border: 1px solid rgba(194, 139, 255, 0.22);
+		background: linear-gradient(90deg, rgba(194, 139, 255, 0.17), rgba(97, 70, 128, 0.08)), #10141b;
+		border: 1px solid rgba(194, 139, 255, 0.36);
+		border-left: 3px solid var(--purple);
 		border-radius: 8px;
 	}
 	.radio-player.visible {
