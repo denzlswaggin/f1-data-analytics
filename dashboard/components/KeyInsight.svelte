@@ -11,10 +11,11 @@
 <style>
     .insight {
         margin: 1rem 0 1.35rem;
-        padding: 0.9rem 1rem;
-        border-left: 4px solid var(--color-info, #0284c7);
-        border-radius: 0 0.55rem 0.55rem 0;
-        background: color-mix(in srgb, var(--color-info, #0284c7) 8%, transparent);
+        padding: 1rem 1.1rem;
+        border: 1px solid rgba(50, 211, 244, 0.2);
+        border-left: 4px solid var(--color-info, #32d3f4);
+        border-radius: 0.75rem;
+        background: linear-gradient(105deg, rgba(50, 211, 244, 0.09), rgba(255,255,255,.018));
     }
     .insight.positive {
         border-left-color: var(--color-positive, #16a34a);
@@ -26,13 +27,13 @@
     }
     .label {
         margin-bottom: 0.25rem;
-        font-size: 0.7rem;
+        color: #7edff3;
+        font-size: 0.72rem;
         font-weight: 750;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        opacity: 0.65;
     }
-    .content { font-size: 0.93rem; line-height: 1.5; }
+    .content { color: #dbe4ef; font-size: 0.96rem; line-height: 1.55; }
     :global(.content > :first-child) { margin-top: 0; }
     :global(.content > :last-child) { margin-bottom: 0; }
 </style>

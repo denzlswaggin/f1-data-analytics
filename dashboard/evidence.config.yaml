@@ -1,6 +1,6 @@
 appearance:
-  default: system
-  switcher: true
+  default: dark
+  switcher: false
 
 # Served from a GitHub Pages project site at /<repo>. All internal links and
 # asset URLs are rewritten under this base path at build time.
@@ -42,17 +42,17 @@ theme:
         - "#00008B"
   colors:
     primary:
-      light: "#2563eb"
-      dark: "#3b82f6"
+      light: "#d7192d"
+      dark: "#ff4050"
     accent:
-      light: "#c2410c"
-      dark: "#fdba74"
+      light: "#007f9e"
+      dark: "#32d3f4"
     base:
       light: "#ffffff"
       dark: "#09090b"
     info:
-      light: "#0284c7"
-      dark: "#38bdf8"
+      light: "#007f9e"
+      dark: "#32d3f4"
     positive:
       light: "#16a34a"
       dark: "#4ade80"

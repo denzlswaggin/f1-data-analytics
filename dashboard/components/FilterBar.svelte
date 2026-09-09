@@ -17,11 +17,11 @@
         align-items: flex-end;
         justify-content: space-between;
         gap: 1rem;
-        margin: 1rem 0 1.25rem;
-        padding: 0.85rem 1rem;
-        border: 1px solid var(--color-base-300, #d7dce1);
-        border-radius: 0.65rem;
-        background: color-mix(in srgb, var(--color-base-100, #fff) 94%, var(--color-primary, #2563eb));
+        margin: 1.1rem 0 1.4rem;
+        padding: 1rem 1.05rem;
+        border: 1px solid rgba(160, 174, 201, 0.2);
+        border-radius: 0.85rem;
+        background: linear-gradient(115deg, rgba(50, 211, 244, 0.075), rgba(255, 255, 255, 0.025));
     }
     .filter-heading {
         display: flex;
@@ -29,8 +29,8 @@
         gap: 0.15rem;
         min-width: 8rem;
     }
-    .filter-heading strong { font-size: 0.88rem; }
-    .filter-heading span { font-size: 0.76rem; line-height: 1.35; opacity: 0.65; }
+    .filter-heading strong { color: #f3f6fa; font-size: 0.92rem; }
+    .filter-heading span { max-width: 28rem; color: #9ba7ba; font-size: 0.81rem; line-height: 1.4; }
     .filter-controls {
         display: flex;
         align-items: flex-end;

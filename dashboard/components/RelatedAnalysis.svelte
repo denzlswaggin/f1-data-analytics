@@ -46,19 +46,23 @@
 
 <style>
     .related {
-        margin-top: 2rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--color-base-300, #d7dce1);
+        margin-top: 3.5rem;
+        padding: 1.2rem;
+        border: 1px solid rgba(160,174,201,.18);
+        border-radius: .9rem;
+        background: linear-gradient(115deg, rgba(255,64,80,.06), rgba(255,255,255,.018));
     }
-    .related > strong { display: block; margin-bottom: 0.6rem; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.055em; opacity: 0.62; }
+    .related > strong { display: block; margin-bottom: 0.7rem; color: #aeb8c7; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; }
     .related div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     a {
         padding: 0.42rem 0.65rem;
-        border: 1px solid var(--color-base-300, #d7dce1);
+        border: 1px solid rgba(160,174,201,.2);
         border-radius: 999px;
         color: inherit;
-        font-size: 0.82rem;
+        background: rgba(255,255,255,.025);
+        color: #dbe3ee;
+        font-size: 0.85rem;
         text-decoration: none;
     }
-    a:hover, a:focus-visible { border-color: var(--color-primary, #2563eb); color: var(--color-primary, #2563eb); outline: none; }
+    a:hover, a:focus-visible { border-color: #ff4050; color: #ff7180; outline: none; }
 </style>
