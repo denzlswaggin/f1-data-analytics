@@ -14,6 +14,9 @@ export type RaceSummary = {
 	race_control_count: number;
 	overtake_count: number;
 	radio_count: number;
+	pre_race_radio_count: number;
+	race_radio_count: number;
+	post_race_radio_count: number;
 	bundle_url: string;
 	positions_url: string;
 };
@@ -60,6 +63,7 @@ export type RadioRow = {
 	driver_code: string;
 	recording_url: string;
 	transcript: string | null;
+	phase: 'pre-race' | 'race' | 'post-race';
 };
 
 export type OvertakeRow = {

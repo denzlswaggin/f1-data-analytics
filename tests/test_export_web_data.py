@@ -65,7 +65,9 @@ def _snapshot(path: Path) -> None:
             insert into staging.stg_race_control values
                 (2026, 1, 'R', 101, 'Flag', 'GREEN', 'Track', 'Green flag', null);
             insert into staging.stg_team_radio values
-                (2026, 1, 'R', 101, 'NOR', 'https://example.com/radio.mp3', null);
+                (2026, 1, 'R', 95, 'NOR', 'https://example.com/pre-race.mp3', 'Radio check'),
+                (2026, 1, 'R', 101, 'NOR', 'https://example.com/race.mp3', null),
+                (2026, 1, 'R', 190, 'NOR', 'https://example.com/post-race.mp3', 'Great job');
             insert into staging.stg_driver_codes values (2026, 'NOR', 'Lando Norris');
             insert into staging.constructor_colors values ('McLaren', '#ff8700');
             """
@@ -88,9 +90,14 @@ def test_exports_deterministic_per_race_bundle(tmp_path: Path) -> None:
 
     assert result["default_race"] == "2026-01"
     assert result["races"][0]["position_rows"] == 2
+    assert result["races"][0]["radio_count"] == 3
+    assert result["races"][0]["pre_race_radio_count"] == 1
+    assert result["races"][0]["race_radio_count"] == 1
+    assert result["races"][0]["post_race_radio_count"] == 1
     bundle = json.loads((tmp_path / "web-data/races/2026-01/bundle.json").read_text())
     assert bundle["drivers"][0]["driver_name"] == "Lando Norris"
-    assert bundle["radio"][0]["recording_url"].endswith("radio.mp3")
+    assert [row["phase"] for row in bundle["radio"]] == ["pre-race", "race", "post-race"]
+    assert bundle["radio"][0]["recording_url"].endswith("pre-race.mp3")
     with ipc.open_file(tmp_path / "web-data/races/2026-01/positions.arrow") as reader:
         table = reader.read_all()
     assert table.num_rows == 2

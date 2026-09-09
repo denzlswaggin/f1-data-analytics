@@ -283,10 +283,14 @@ def _race_bundle(
         )
         select
             round(session_time_sec - race_start_sec, 1) as t_s,
-            driver_code, recording_url, transcript
+            driver_code, recording_url, transcript,
+            case
+                when session_time_sec < race_start_sec then 'pre-race'
+                when session_time_sec > race_end_sec then 'post-race'
+                else 'race'
+            end as phase
         from staging.stg_team_radio, race_window
         where season = ? and round = ? and session = 'R'
-            and session_time_sec between race_start_sec and race_end_sec
             and recording_url is not null
         order by t_s
         """,
@@ -370,6 +374,13 @@ def export_web_data(
             race["race_control_count"] = len(bundle["race_control"])
             race["overtake_count"] = len(bundle["overtakes"])
             race["radio_count"] = len(bundle["radio"])
+            race["pre_race_radio_count"] = sum(
+                row["phase"] == "pre-race" for row in bundle["radio"]
+            )
+            race["race_radio_count"] = sum(row["phase"] == "race" for row in bundle["radio"])
+            race["post_race_radio_count"] = sum(
+                row["phase"] == "post-race" for row in bundle["radio"]
+            )
             race["key"] = f"{season}-{round_number:02d}"
             race["bundle_url"] = f"races/{race['key']}/bundle.json"
             race["positions_url"] = f"races/{race['key']}/positions.arrow"
