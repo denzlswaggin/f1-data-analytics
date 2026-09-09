@@ -1774,46 +1774,30 @@
 	.metric-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 		padding: 16px;
 	}
 	.metric-grid div {
 		position: relative;
 		min-height: 74px;
-		padding: 10px 12px;
+		padding: 13px 12px 10px;
+		background: rgba(255, 255, 255, 0.025);
 		border: 1px solid var(--line);
+		border-radius: 8px;
 	}
 	.metric-grid div:before {
 		position: absolute;
-		inset: 0 auto 0 0;
-		width: 2px;
-		background: var(--metric-accent);
+		inset: 0 auto auto 12px;
+		width: 26px;
+		height: 2px;
+		background: color-mix(in srgb, var(--team) 65%, #fff);
+		border-radius: 0 0 2px 2px;
 		content: '';
-	}
-	.metric-grid .interval-metric {
-		--metric-accent: var(--blue);
-		background: var(--blue-soft);
-	}
-	.metric-grid .gap-metric {
-		--metric-accent: var(--purple);
-		background: var(--purple-soft);
-	}
-	.metric-grid .position-metric {
-		--metric-accent: var(--green);
-		background: var(--green-soft);
-	}
-	.metric-grid .lap-metric {
-		--metric-accent: var(--cyan);
-		background: var(--cyan-soft);
-	}
-	.metric-grid div:nth-child(even) {
-		border-left: 0;
-	}
-	.metric-grid div:nth-child(n + 3) {
-		border-top: 0;
 	}
 	.metric-grid strong {
 		display: block;
-		margin-top: 8px;
+		margin-top: 9px;
+		color: var(--text);
 		font: var(--text-title) Consolas;
 	}
 	.metric-grid .gain {
