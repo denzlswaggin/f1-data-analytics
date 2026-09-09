@@ -187,14 +187,15 @@
 				race.bundle.laps,
 				race.bundle.race.circuit_name
 			);
+			duration = Math.max(summary.duration_s, ...drivers.map((d) => d.tmax));
 			allEvents = buildEvents(
 				race.bundle.race_control,
 				race.bundle.overtakes,
 				race.bundle.radio,
 				race.bundle.laps,
-				race.bundle.race.circuit_name
+				race.bundle.race.circuit_name,
+				duration
 			);
-			duration = Math.max(summary.duration_s, ...drivers.map((d) => d.tmax));
 			replayTime = 0;
 			currentTime = 0;
 			selectedCode = '';
@@ -605,6 +606,9 @@
 		return hours
 			? `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 			: `${minutes}:${String(secs).padStart(2, '0')}`;
+	}
+	function timelinePosition(time: number) {
+		return duration ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0;
 	}
 	function formatPhaseClock(event: ReplayEvent, phase: RadioPhase) {
 		if (phase === 'pre-race') return `T-${formatClock(Math.abs(event.time))}`;
@@ -1037,12 +1041,9 @@
 								const r = event.currentTarget.getBoundingClientRect();
 								seek(((event.clientX - r.left) / r.width) * duration);
 							}}
-							><span
-								class="elapsed"
-								style={`width:${duration ? (currentTime / duration) * 100 : 0}%`}
-							></span><i
+							><span class="elapsed" style={`width:${timelinePosition(currentTime)}%`}></span><i
 								class="playhead"
-								style={`left:${duration ? (currentTime / duration) * 100 : 0}%`}
+								style={`left:${timelinePosition(currentTime)}%`}
 							></i></button
 						>
 						<div class="markers">
@@ -1050,7 +1051,7 @@
 									type="button"
 									class={event.type}
 									class:past={event.time <= currentTime}
-									style={`left:${duration ? (event.time / duration) * 100 : 0}%`}
+									style={`left:${timelinePosition(event.time)}%`}
 									title={`${formatClock(event.time)} · ${event.label}`}
 									onclick={() => activateEvent(event)}
 								></button>{/each}
@@ -2406,6 +2407,8 @@
 	.markers {
 		position: absolute;
 		inset: 0;
+		overflow: hidden;
+		border-radius: 4px;
 		pointer-events: none;
 	}
 	.markers button {

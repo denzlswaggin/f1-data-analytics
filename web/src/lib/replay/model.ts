@@ -598,7 +598,8 @@ export function buildEvents(
 	overtakes: OvertakeRow[],
 	radio: RadioRow[],
 	laps: LapRow[] = [],
-	circuitName = ''
+	circuitName = '',
+	duration = Number.POSITIVE_INFINITY
 ): ReplayEvent[] {
 	const pitProfile = pitLaneProfileFor(circuitName);
 	const events: ReplayEvent[] = [];
@@ -665,7 +666,9 @@ export function buildEvents(
 			raw: row
 		});
 	}
-	return events.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+	return events
+		.filter((event) => event.time >= 0 && event.time <= duration)
+		.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
 }
 
 export function filterEvents(events: ReplayEvent[], selectedCode: string, filter = 'all') {
