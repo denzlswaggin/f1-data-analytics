@@ -42,7 +42,7 @@ from ingestion.pipeline import (
     latest_completed_round,
 )
 
-from orchestration.assets import CURRENT_SEASON, FIRST_SEASON, PACE_PROFILE_FROM_SEASON
+from orchestration.constants import CURRENT_SEASON, FIRST_SEASON, PACE_PROFILE_FROM_SEASON
 
 ROUND_PARTITIONS = MultiPartitionsDefinition(
     {
