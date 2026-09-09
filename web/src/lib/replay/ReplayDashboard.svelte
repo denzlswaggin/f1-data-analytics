@@ -792,7 +792,12 @@
 						>
 					</section>
 				</div>
-				<aside id="strategy" class="driver-panel panel" aria-label="Selected driver detail">
+				<aside
+					id="strategy"
+					class="driver-panel panel"
+					style={`--team:${selectedDriver?.color ?? '#64748b'}`}
+					aria-label="Selected driver detail"
+				>
 					{#if selectedDriver}<div
 							class="driver-accent"
 							style={`--team:${selectedDriver.color}`}
@@ -811,29 +816,31 @@
 							>
 						</div>
 						<div class="metric-grid">
-							<div>
+							<div class="interval-metric">
 								<span>INTERVAL</span><strong>{formatGap(selectedDriver.ahead, true)}</strong><small
 									>to car ahead</small
 								>
 							</div>
-							<div>
+							<div class="gap-metric">
 								<span>LEADER GAP</span><strong>{formatGap(selectedDriver.gap)}</strong><small
 									>race time</small
 								>
 							</div>
-							<div>
-								<span>POSITIONS</span><strong class:gain={(selectedDriver.positionChange ?? 0) > 0}
+							<div class="position-metric">
+								<span>POSITIONS</span><strong
+									class:gain={(selectedDriver.positionChange ?? 0) > 0}
+									class:loss={(selectedDriver.positionChange ?? 0) < 0}
 									>{selectedDriver.positionChange == null
 										? '—'
 										: `${selectedDriver.positionChange > 0 ? '+' : ''}${selectedDriver.positionChange}`}</strong
 								><small>from the grid</small>
 							</div>
-							<div>
+							<div class="lap-metric">
 								<span>LAP TIME</span><strong>{formatLapTime(currentLapTime(selectedDriver))}</strong
 								><small>current recorded lap</small>
 							</div>
 						</div>
-						<div class="stint-card">
+						<div class="stint-card {compoundCode(selectedDriver.compound).toLowerCase()}">
 							<span class="tyre-visual {compoundCode(selectedDriver.compound).toLowerCase()}"
 								>{compoundCode(selectedDriver.compound)}</span
 							>
@@ -1702,10 +1709,19 @@
 	.driver-panel {
 		grid-area: driver;
 		position: relative;
+		--team: #64748b;
+		background:
+			radial-gradient(
+				circle at 100% 0%,
+				color-mix(in srgb, var(--team) 16%, transparent),
+				transparent 17rem
+			),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.driver-accent {
-		height: 3px;
+		height: 4px;
 		background: var(--team);
+		box-shadow: 0 0 16px color-mix(in srgb, var(--team) 65%, transparent);
 	}
 	.selected-head {
 		display: flex;
@@ -1726,8 +1742,8 @@
 		place-items: center;
 		width: 45px;
 		height: 45px;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--team) 14%, rgba(255, 255, 255, 0.04));
+		border: 1px solid color-mix(in srgb, var(--team) 38%, var(--line));
 		border-radius: 9px;
 		font-size: 17px;
 	}
@@ -1750,9 +1766,33 @@
 		padding: 16px;
 	}
 	.metric-grid div {
+		position: relative;
 		min-height: 74px;
 		padding: 10px 12px;
 		border: 1px solid var(--line);
+	}
+	.metric-grid div:before {
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: 2px;
+		background: var(--metric-accent);
+		content: '';
+	}
+	.metric-grid .interval-metric {
+		--metric-accent: var(--blue);
+		background: var(--blue-soft);
+	}
+	.metric-grid .gap-metric {
+		--metric-accent: var(--purple);
+		background: var(--purple-soft);
+	}
+	.metric-grid .position-metric {
+		--metric-accent: var(--green);
+		background: var(--green-soft);
+	}
+	.metric-grid .lap-metric {
+		--metric-accent: var(--cyan);
+		background: var(--cyan-soft);
 	}
 	.metric-grid div:nth-child(even) {
 		border-left: 0;
@@ -1767,6 +1807,9 @@
 	}
 	.metric-grid .gain {
 		color: var(--green);
+	}
+	.metric-grid .loss {
+		color: var(--accent);
 	}
 	.metric-grid small {
 		display: block;
@@ -1783,6 +1826,26 @@
 		background: rgba(255, 255, 255, 0.035);
 		border: 1px solid var(--line);
 		border-radius: 9px;
+	}
+	.stint-card.s {
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.24);
+	}
+	.stint-card.m {
+		background: var(--yellow-soft);
+		border-color: rgba(244, 201, 79, 0.24);
+	}
+	.stint-card.h {
+		background: rgba(255, 255, 255, 0.055);
+		border-color: rgba(255, 255, 255, 0.16);
+	}
+	.stint-card.i {
+		background: var(--green-soft);
+		border-color: rgba(70, 212, 154, 0.24);
+	}
+	.stint-card.w {
+		background: var(--blue-soft);
+		border-color: rgba(85, 170, 255, 0.24);
 	}
 	.tyre-visual {
 		width: 34px;
