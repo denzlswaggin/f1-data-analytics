@@ -2244,6 +2244,15 @@
 		outline-offset: 2px;
 	}
 	@media (max-width: 1120px) {
+		.session-bar {
+			grid-template-columns: minmax(240px, 1fr) auto;
+			gap: 10px 20px;
+			padding-block: 10px;
+		}
+		.session-facts {
+			grid-column: 1 / -1;
+			justify-content: flex-start;
+		}
 		.replay-grid {
 			grid-template-columns: 240px minmax(0, 1fr);
 		}
@@ -2303,6 +2312,7 @@
 		}
 		.center-stage {
 			order: 1;
+			grid-template-rows: auto auto;
 		}
 		.timing-panel {
 			order: 3;
