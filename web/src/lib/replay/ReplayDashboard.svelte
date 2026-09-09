@@ -615,8 +615,11 @@
 				<div><span>LAP</span><strong>{currentLap || '—'}<em>/ {totalLaps || '—'}</em></strong></div>
 				<div><span>TIME</span><strong>{formatClock(currentTime)}</strong></div>
 				<div>
-					<span>STATUS</span><strong class:green={racePhase !== 'Red flag'}
-						><i></i>{racePhase}</strong
+					<span>STATUS</span><strong
+						class="status-badge"
+						class:critical={racePhase === 'Red flag'}
+						class:warning={racePhase === 'Safety car'}
+						class:complete={racePhase === 'Finished'}><i></i>{racePhase}</strong
 					>
 				</div>
 			</div>
@@ -1077,7 +1080,8 @@
 		gap: 42px;
 		height: 58px;
 		padding: 0 24px;
-		background: rgba(8, 10, 14, 0.9);
+		background:
+			linear-gradient(90deg, rgba(255, 77, 87, 0.055), transparent 28%), rgba(8, 10, 14, 0.92);
 		border-bottom: 1px solid var(--line);
 		backdrop-filter: blur(14px);
 	}
@@ -1160,6 +1164,7 @@
 		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
 	}
 	.session-bar {
+		position: relative;
 		display: grid;
 		grid-template-columns: minmax(280px, 1fr) auto auto;
 		align-items: center;
@@ -1167,6 +1172,10 @@
 		min-height: 68px;
 		margin-bottom: 12px;
 		padding: 7px 16px;
+		overflow: hidden;
+		background:
+			radial-gradient(circle at 8% 0%, rgba(255, 77, 87, 0.14), transparent 18rem),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.event-title {
 		display: flex;
@@ -1180,8 +1189,9 @@
 		width: 38px;
 		height: 38px;
 		color: #fff;
-		background: var(--accent);
+		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-radius: 8px;
+		box-shadow: 0 7px 20px rgba(255, 77, 87, 0.3);
 		font-size: 11px;
 		font-weight: 800;
 	}
@@ -1231,8 +1241,30 @@
 		font-size: var(--text-meta);
 		font-style: normal;
 	}
-	.session-facts .green {
-		color: var(--green);
+	.status-badge {
+		display: inline-flex !important;
+		align-items: center;
+		min-height: 27px;
+		padding: 4px 8px;
+		color: var(--status-live);
+		background: var(--green-soft);
+		border: 1px solid rgba(70, 212, 154, 0.25);
+		border-radius: 999px;
+	}
+	.status-badge.warning {
+		color: var(--status-warning);
+		background: var(--yellow-soft);
+		border-color: rgba(244, 201, 79, 0.28);
+	}
+	.status-badge.critical {
+		color: var(--status-critical);
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.3);
+	}
+	.status-badge.complete {
+		color: var(--purple);
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.28);
 	}
 	.session-facts i,
 	.status-row i {
@@ -1762,6 +1794,11 @@
 		grid-area: weather;
 		margin-top: 0;
 		padding: 14px 16px 10px;
+		overflow: hidden;
+		background:
+			radial-gradient(circle at 92% -40%, rgba(77, 217, 231, 0.2), transparent 24rem),
+			linear-gradient(145deg, rgba(15, 27, 36, 0.98), rgba(10, 15, 22, 0.98));
+		border-color: rgba(77, 217, 231, 0.18);
 	}
 	.weather-heading {
 		display: flex;
@@ -1770,6 +1807,7 @@
 	}
 	.weather-heading h2 {
 		margin: 4px 0 0;
+		color: #e9fcff;
 		font-size: var(--text-title);
 	}
 	.weather-heading > strong {
@@ -1807,9 +1845,38 @@
 		border-radius: 8px;
 	}
 	.weather-metrics > div {
+		position: relative;
 		min-width: 0;
 		padding: 11px 13px;
 		border-left: 1px solid var(--line);
+	}
+	.weather-metrics > div:before {
+		position: absolute;
+		top: 0;
+		left: 13px;
+		width: 22px;
+		height: 2px;
+		background: currentColor;
+		border-radius: 2px;
+		content: '';
+	}
+	.weather-metrics > div:nth-child(1) {
+		color: var(--orange);
+	}
+	.weather-metrics > div:nth-child(2) {
+		color: var(--accent);
+	}
+	.weather-metrics > div:nth-child(3) {
+		color: var(--blue);
+	}
+	.weather-metrics > div:nth-child(4) {
+		color: var(--purple);
+	}
+	.weather-metrics > div:nth-child(5) {
+		color: var(--cyan);
+	}
+	.weather-metrics > div:nth-child(6) {
+		color: var(--green);
 	}
 	.weather-metrics > div:first-child {
 		border-left: 0;
@@ -1820,13 +1887,14 @@
 		display: block;
 	}
 	.weather-metrics span {
-		color: var(--muted);
+		color: currentColor;
 		font-size: var(--text-caption);
 		font-weight: 700;
 		letter-spacing: 0.1em;
 	}
 	.weather-metrics strong {
 		margin-top: 5px;
+		color: var(--text);
 		font: var(--text-title) Consolas;
 	}
 	.weather-metrics > div:nth-child(-n + 2) {
@@ -1838,7 +1906,7 @@
 	.weather-metrics small {
 		margin-top: 3px;
 		overflow: hidden;
-		color: #646e7e;
+		color: var(--muted);
 		font-size: var(--text-meta);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -1850,7 +1918,7 @@
 	}
 	.wind-metric strong i {
 		display: inline-block;
-		color: var(--blue);
+		color: var(--cyan);
 		font: 15px sans-serif;
 		transform-origin: center;
 	}
