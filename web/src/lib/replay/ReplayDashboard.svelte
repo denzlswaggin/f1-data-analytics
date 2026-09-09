@@ -1273,6 +1273,16 @@
 		border: 1px solid rgba(70, 212, 154, 0.25);
 		border-radius: 999px;
 	}
+	.status-badge i {
+		box-shadow: 0 0 8px currentColor;
+		animation: status-pulse 2s ease-in-out infinite;
+	}
+	@keyframes status-pulse {
+		50% {
+			opacity: 0.48;
+			box-shadow: 0 0 3px currentColor;
+		}
+	}
 	.status-badge.warning {
 		color: var(--status-warning);
 		background: var(--yellow-soft);
@@ -1643,7 +1653,7 @@
 		position: absolute;
 		right: 12px;
 		bottom: 9px;
-		color: #5c6575;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.race-control {
@@ -1815,7 +1825,7 @@
 	.metric-grid small {
 		display: block;
 		margin-top: 4px;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-meta);
 	}
 	.stint-card {
@@ -2041,7 +2051,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 9px 2px 0;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.weather-source span:first-child {
@@ -2095,6 +2105,12 @@
 		font-size: var(--text-small);
 		cursor: pointer;
 	}
+	.playback button:not(.play):hover,
+	.lap-controls button:hover {
+		color: #fff;
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.32);
+	}
 	.playback .play {
 		color: #fff;
 		background: linear-gradient(145deg, #ff6972, #d91f35);
@@ -2113,7 +2129,7 @@
 	.ticks {
 		display: flex;
 		justify-content: space-between;
-		color: #555f70;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.speed-control {
@@ -2183,6 +2199,10 @@
 		border: 1px solid var(--line);
 		border-radius: 7px;
 		text-align: left;
+	}
+	.timeline-phases button:hover {
+		color: #fff;
+		border-color: var(--line-strong);
 	}
 	.timeline-phases button.active {
 		color: #fff;
@@ -2256,6 +2276,10 @@
 		border: 1px solid var(--line);
 		border-radius: 6px;
 		font-size: var(--text-meta);
+	}
+	.filters button:hover {
+		color: #fff;
+		border-color: color-mix(in srgb, var(--filter-color, var(--blue)) 34%, transparent);
 	}
 	.filters button.active {
 		color: #fff;
@@ -2468,7 +2492,7 @@
 		display: flex;
 		justify-content: space-between;
 		padding: 11px 2px 0;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	footer p {
@@ -2480,6 +2504,11 @@
 	}
 	button {
 		cursor: pointer;
+		transition:
+			color 0.16s ease,
+			background 0.16s ease,
+			border-color 0.16s ease,
+			box-shadow 0.16s ease;
 	}
 	button:focus-visible,
 	a:focus-visible,
