@@ -14,7 +14,8 @@ import type {
 	ReplaySample,
 	TrackPath,
 	TrackPoint,
-	TimingRow
+	TimingRow,
+	WeatherRow
 } from './types';
 import { pitLaneProfileFor } from './pit-lanes';
 
@@ -34,6 +35,18 @@ const smoothstep = (value: number) => {
 	const bounded = Math.max(0, Math.min(1, value));
 	return bounded * bounded * (3 - 2 * bounded);
 };
+
+export function weatherAtTime(samples: WeatherRow[], time: number): WeatherRow | null {
+	if (!samples.length) return null;
+	let low = 0;
+	let high = samples.length;
+	while (low < high) {
+		const middle = (low + high) >> 1;
+		if (samples[middle].t_s <= time) low = middle + 1;
+		else high = middle;
+	}
+	return samples[Math.max(0, low - 1)] ?? null;
+}
 
 function pitWindowForTransition(previous: LapRow, lap: LapRow, profile: PitLaneProfile): PitWindow {
 	const start = lap.lap_start_t_s - profile.entryLeadSeconds;

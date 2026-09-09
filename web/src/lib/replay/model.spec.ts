@@ -11,9 +11,10 @@ import {
 	projectedSampleAt,
 	sampleAt,
 	smoothPositionHolds,
-	timingAt
+	timingAt,
+	weatherAtTime
 } from './model';
-import type { DriverMeta, LapRow, PositionRow, RadioRow } from './types';
+import type { DriverMeta, LapRow, PositionRow, RadioRow, WeatherRow } from './types';
 import { pitLaneProfileFor, supportedPitLaneCircuits } from './pit-lanes';
 
 const metadata: DriverMeta[] = [
@@ -61,6 +62,37 @@ const positions: PositionRow[] = [
 ];
 
 describe('replay model', () => {
+	it('uses the latest available weather sample at replay time', () => {
+		const weather: WeatherRow[] = [
+			{
+				t_s: 0,
+				air_temperature: 20,
+				track_temperature: 30,
+				humidity: 50,
+				pressure: 1012,
+				rainfall: false,
+				wind_direction: 180,
+				wind_speed: 2
+			},
+			{
+				t_s: 60,
+				air_temperature: 19,
+				track_temperature: 27,
+				humidity: 68,
+				pressure: 1011,
+				rainfall: true,
+				wind_direction: 210,
+				wind_speed: 4
+			}
+		];
+
+		expect(weatherAtTime([], 10)).toBeNull();
+		expect(weatherAtTime(weather, -10)).toBe(weather[0]);
+		expect(weatherAtTime(weather, 59)).toBe(weather[0]);
+		expect(weatherAtTime(weather, 60)).toBe(weather[1]);
+		expect(weatherAtTime(weather, 500)).toBe(weather[1]);
+	});
+
 	it('interpolates positions and builds live timing context', () => {
 		const drivers = buildDrivers(positions, metadata, laps);
 		expect(sampleAt(drivers[0], 0.5)?.x).toBeCloseTo(5);

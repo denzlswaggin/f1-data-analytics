@@ -10,7 +10,8 @@
 		projectedSampleAt,
 		radioEventsForPhase,
 		sampleAt,
-		timingAt
+		timingAt,
+		weatherAtTime
 	} from './model';
 	import { loadManifest, loadRace } from './data';
 	import type {
@@ -109,6 +110,7 @@
 	let postRaceRadioCount = $derived(
 		radioEventsForPhase(loaded?.bundle.radio ?? [], 'post-race').length
 	);
+	let currentWeather = $derived(weatherAtTime(loaded?.bundle.weather ?? [], currentTime));
 	let recentMessages = $derived(
 		allEvents
 			.filter((event) => event.type === 'control' && event.time <= currentTime)
@@ -575,6 +577,14 @@
 			year: 'numeric'
 		}).format(new Date(value));
 	}
+	function formatWeather(value: number | null, unit: string, digits = 1) {
+		return value == null ? '—' : `${value.toFixed(digits)}${unit}`;
+	}
+	function compassDirection(value: number | null) {
+		if (value == null) return '—';
+		const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+		return directions[Math.round((((value % 360) + 360) % 360) / 45) % directions.length];
+	}
 </script>
 
 <div class="app-shell" bind:this={root}>
@@ -778,6 +788,69 @@
 							<p>Choose a car to inspect its live race state and filter radio and overtakes.</p>
 						</div>{/if}
 				</aside>
+			</section>
+			<section class="weather-panel panel" aria-label="Track weather">
+				<div class="weather-heading">
+					<div>
+						<span>TRACK CONDITIONS</span>
+						<h2>Weather</h2>
+					</div>
+					{#if currentWeather}<strong class:wet={currentWeather.rainfall}
+							><i></i>{currentWeather.rainfall ? 'Rainfall' : 'Dry track'}</strong
+						>{/if}
+				</div>
+				{#if currentWeather}
+					<div class="weather-metrics">
+						<div>
+							<span>AIR</span><strong>{formatWeather(currentWeather.air_temperature, '°C')}</strong
+							><small>Ambient temperature</small>
+						</div>
+						<div>
+							<span>TRACK</span><strong
+								>{formatWeather(currentWeather.track_temperature, '°C')}</strong
+							><small>Surface temperature</small>
+						</div>
+						<div>
+							<span>HUMIDITY</span><strong>{formatWeather(currentWeather.humidity, '%', 0)}</strong
+							><small>Relative humidity</small>
+						</div>
+						<div>
+							<span>PRESSURE</span><strong
+								>{formatWeather(currentWeather.pressure, ' mbar', 0)}</strong
+							><small>Air pressure</small>
+						</div>
+						<div class="wind-metric">
+							<span>WIND</span><strong
+								><i
+									style={`transform:rotate(${currentWeather.wind_direction ?? 0}deg)`}
+									aria-hidden="true">↑</i
+								>{formatWeather(currentWeather.wind_speed, ' m/s')}</strong
+							><small
+								>{compassDirection(currentWeather.wind_direction)} · {formatWeather(
+									currentWeather.wind_direction,
+									'°',
+									0
+								)}</small
+							>
+						</div>
+						<div>
+							<span>SAMPLE</span><strong>{formatClock(currentWeather.t_s)}</strong><small
+								>{formatDate(loaded.bundle.race.race_date)} · Race session</small
+							>
+						</div>
+					</div>
+					<footer class="weather-source">
+						<span><i></i>FastF1 weather feed</span><span
+							>{loaded.bundle.weather.length} samples · updated approximately every minute</span
+						>
+					</footer>
+				{:else}
+					<div class="weather-empty">
+						<strong>Weather feed unavailable</strong><span
+							>This race has no time-aligned conditions in the current snapshot.</span
+						>
+					</div>
+				{/if}
 			</section>
 			<section class="control-deck panel" aria-label="Replay controls">
 				<div class="playback">
@@ -1625,6 +1698,125 @@
 		font-size: 10px;
 		line-height: 1.55;
 	}
+	.weather-panel {
+		margin-top: 12px;
+		padding: 14px 16px 10px;
+	}
+	.weather-heading {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.weather-heading h2 {
+		margin: 4px 0 0;
+		font-size: 13px;
+	}
+	.weather-heading > strong {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 9px;
+		color: var(--green);
+		background: rgba(70, 212, 154, 0.08);
+		border: 1px solid rgba(70, 212, 154, 0.24);
+		border-radius: 999px;
+		font-size: 8px;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+	.weather-heading > strong.wet {
+		color: var(--blue);
+		background: rgba(85, 170, 255, 0.08);
+		border-color: rgba(85, 170, 255, 0.3);
+	}
+	.weather-heading > strong i,
+	.weather-source i {
+		width: 6px;
+		height: 6px;
+		background: currentColor;
+		border-radius: 50%;
+		box-shadow: 0 0 8px currentColor;
+	}
+	.weather-metrics {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		margin-top: 13px;
+		background: rgba(255, 255, 255, 0.018);
+		border: 1px solid var(--line);
+		border-radius: 8px;
+	}
+	.weather-metrics > div {
+		min-width: 0;
+		padding: 11px 13px;
+		border-left: 1px solid var(--line);
+	}
+	.weather-metrics > div:first-child {
+		border-left: 0;
+	}
+	.weather-metrics span,
+	.weather-metrics strong,
+	.weather-metrics small {
+		display: block;
+	}
+	.weather-metrics span {
+		color: var(--muted);
+		font-size: 7px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+	}
+	.weather-metrics strong {
+		margin-top: 5px;
+		font: 14px Consolas;
+	}
+	.weather-metrics small {
+		margin-top: 3px;
+		overflow: hidden;
+		color: #646e7e;
+		font-size: 7px;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.wind-metric strong {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+	.wind-metric strong i {
+		display: inline-block;
+		color: var(--blue);
+		font: 15px sans-serif;
+		transform-origin: center;
+	}
+	footer.weather-source {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 9px 2px 0;
+		color: #596273;
+		font-size: 7px;
+	}
+	.weather-source span:first-child {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		color: var(--muted);
+	}
+	.weather-empty {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		margin-top: 13px;
+		padding: 13px;
+		color: var(--muted);
+		background: rgba(255, 255, 255, 0.018);
+		border: 1px dashed var(--line);
+		border-radius: 8px;
+		font-size: 8px;
+	}
+	.weather-empty strong {
+		color: var(--muted-strong);
+		font-size: 9px;
+	}
 	.control-deck {
 		display: grid;
 		grid-template-columns: auto 1fr auto auto;
@@ -1993,6 +2185,17 @@
 		.session-facts div:nth-child(3) {
 			display: none;
 		}
+		.weather-metrics {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+		.weather-metrics > div:nth-child(4) {
+			border-left: 0;
+			border-top: 1px solid var(--line);
+		}
+		.weather-metrics > div:nth-child(5),
+		.weather-metrics > div:nth-child(6) {
+			border-top: 1px solid var(--line);
+		}
 	}
 	@media (max-width: 800px) {
 		.topbar {
@@ -2096,6 +2299,20 @@
 		}
 		.map-help {
 			display: none;
+		}
+		.weather-metrics {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.weather-metrics > div:nth-child(odd) {
+			border-left: 0;
+		}
+		.weather-metrics > div:nth-child(n + 3) {
+			border-top: 1px solid var(--line);
+		}
+		footer.weather-source {
+			align-items: flex-start;
+			flex-direction: column;
+			gap: 5px;
 		}
 		.control-deck {
 			grid-template-columns: 1fr auto;
