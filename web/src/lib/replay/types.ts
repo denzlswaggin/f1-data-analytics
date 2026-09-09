@@ -17,6 +17,7 @@ export type RaceSummary = {
 	pre_race_radio_count: number;
 	race_radio_count: number;
 	post_race_radio_count: number;
+	weather_sample_count: number;
 	bundle_url: string;
 	positions_url: string;
 };
@@ -68,6 +69,17 @@ export type RadioRow = {
 	phase: RadioPhase;
 };
 
+export type WeatherRow = {
+	t_s: number;
+	air_temperature: NullableNumber;
+	track_temperature: NullableNumber;
+	humidity: NullableNumber;
+	pressure: NullableNumber;
+	rainfall: boolean | null;
+	wind_direction: NullableNumber;
+	wind_speed: NullableNumber;
+};
+
 export type OvertakeRow = {
 	t_s: number;
 	for_position: NullableNumber;
@@ -93,6 +105,7 @@ export type RaceBundle = {
 	laps: LapRow[];
 	race_control: RaceControlRow[];
 	radio: RadioRow[];
+	weather: WeatherRow[];
 	overtakes: OvertakeRow[];
 };
 

@@ -89,6 +89,19 @@ REQUIRED_COLUMNS = {
         "recording_url",
         "transcript",
     },
+    "staging.stg_weather": {
+        "season",
+        "round",
+        "session",
+        "time_sec",
+        "air_temp",
+        "track_temp",
+        "humidity",
+        "pressure",
+        "wind_speed",
+        "wind_direction",
+        "is_raining",
+    },
     "staging.stg_driver_codes": {"season", "driver_code", "driver_name"},
     "staging.constructor_colors": {"team", "team_color"},
 }
@@ -296,6 +309,31 @@ def _race_bundle(
         """,
         [season, round_number, season, round_number],
     )
+    weather = _rows(
+        connection,
+        """
+        with race_window as (
+            select min(lap_start_sec) as race_start_sec,
+                   max(lap_start_sec + coalesce(lap_time_sec, 0)) as race_end_sec
+            from staging.stg_laps
+            where season = ? and round = ? and session = 'R'
+        )
+        select
+            round(time_sec - race_start_sec, 1) as t_s,
+            air_temp as air_temperature,
+            track_temp as track_temperature,
+            humidity,
+            pressure,
+            cast(is_raining as boolean) as rainfall,
+            wind_direction,
+            wind_speed
+        from staging.stg_weather, race_window
+        where season = ? and round = ? and session = 'R'
+            and time_sec between race_start_sec and race_end_sec
+        order by t_s
+        """,
+        [season, round_number, season, round_number],
+    )
     overtakes = _rows(
         connection,
         """
@@ -313,6 +351,7 @@ def _race_bundle(
         "laps": laps,
         "race_control": messages,
         "radio": radio,
+        "weather": weather,
         "overtakes": overtakes,
     }
 
@@ -381,6 +420,7 @@ def export_web_data(
             race["post_race_radio_count"] = sum(
                 row["phase"] == "post-race" for row in bundle["radio"]
             )
+            race["weather_sample_count"] = len(bundle["weather"])
             race["key"] = f"{season}-{round_number:02d}"
             race["bundle_url"] = f"races/{race['key']}/bundle.json"
             race["positions_url"] = f"races/{race['key']}/positions.arrow"
