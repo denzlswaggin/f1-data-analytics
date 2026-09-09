@@ -48,6 +48,11 @@
 		timelinePhase = $state<RadioPhase>('race'),
 		nowPlaying = $state<ReplayEvent | null>(null),
 		audioError = $state('');
+	let radioPlaying = $state(false),
+		radioLoading = $state(false),
+		radioMuted = $state(false),
+		radioCurrentTime = $state(0),
+		radioDuration = $state(0);
 	let hovered = $state<ScreenCar | null>(null),
 		dragging = $state(false);
 	let view = $state({ zoom: 1, ox: 0, oy: 0 });
@@ -349,6 +354,18 @@
 				selected = selectedCode === driver.code,
 				dimmed = Boolean(selectedCode && !selected);
 			context.globalAlpha = dimmed ? 0.2 : 1;
+			if (selected) {
+				context.save();
+				context.globalAlpha = 0.38;
+				context.beginPath();
+				context.arc(x, y, 14, 0, Math.PI * 2);
+				context.strokeStyle = driver.color;
+				context.lineWidth = 3;
+				context.shadowColor = driver.color;
+				context.shadowBlur = 10;
+				context.stroke();
+				context.restore();
+			}
 			context.beginPath();
 			context.arc(x, y, selected ? 8 : 6, 0, Math.PI * 2);
 			context.fillStyle = driver.color;
@@ -519,6 +536,10 @@
 		}
 		nowPlaying = event;
 		audioError = '';
+		radioPlaying = false;
+		radioLoading = true;
+		radioCurrentTime = 0;
+		radioDuration = 0;
 		await tick();
 		audio.pause();
 		audio.src = clip.recording_url;
@@ -527,8 +548,37 @@
 			await audio.play();
 			if (phase === 'race') playing = true;
 		} catch {
-			audioError = 'Playback was blocked. Press play in the audio controls to retry.';
+			radioLoading = false;
+			audioError = 'Playback was blocked. Press play to retry.';
 		}
+	}
+	async function toggleRadioPlayback() {
+		if (!audio?.src) return;
+		if (!audio.paused) {
+			audio.pause();
+			return;
+		}
+		audioError = '';
+		try {
+			await audio.play();
+		} catch {
+			radioLoading = false;
+			audioError = 'This browser could not play the selected radio clip.';
+		}
+	}
+	function seekRadio(value: number) {
+		if (!audio?.src || !Number.isFinite(value)) return;
+		audio.currentTime = Math.max(0, Math.min(radioDuration, value));
+		radioCurrentTime = audio.currentTime;
+	}
+	function toggleRadioMute() {
+		if (!audio) return;
+		audio.muted = !audio.muted;
+		radioMuted = audio.muted;
+	}
+	function setRadioDuration() {
+		radioDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+		radioLoading = false;
 	}
 	function activateEvent(event: ReplayEvent) {
 		if (event.type === 'radio') void playRadio(event);
@@ -542,6 +592,10 @@
 		}
 		nowPlaying = null;
 		audioError = '';
+		radioPlaying = false;
+		radioLoading = false;
+		radioCurrentTime = 0;
+		radioDuration = 0;
 	}
 	function formatClock(seconds: number) {
 		const value = Math.max(0, Math.floor(seconds || 0)),
@@ -615,8 +669,11 @@
 				<div><span>LAP</span><strong>{currentLap || '—'}<em>/ {totalLaps || '—'}</em></strong></div>
 				<div><span>TIME</span><strong>{formatClock(currentTime)}</strong></div>
 				<div>
-					<span>STATUS</span><strong class:green={racePhase !== 'Red flag'}
-						><i></i>{racePhase}</strong
+					<span>STATUS</span><strong
+						class="status-badge"
+						class:critical={racePhase === 'Red flag'}
+						class:warning={racePhase === 'Safety car'}
+						class:complete={racePhase === 'Finished'}><i></i>{racePhase}</strong
 					>
 				</div>
 			</div>
@@ -670,16 +727,18 @@
 						{#each leaderboard as driver (driver.code)}<li
 								class:selected={selectedCode === driver.code}
 								class:dimmed={Boolean(selectedCode && selectedCode !== driver.code)}
+								style={`--team:${driver.color}`}
 							>
 								<button
 									type="button"
 									onclick={() => toggleDriver(driver.code)}
 									aria-pressed={selectedCode === driver.code}
-									><span class="position">{driver.order}</span><span
-										class="team-line"
-										style={`--team:${driver.color}`}
-									></span><span class="driver"
-										><strong>{driver.code}</strong><small>{driver.team}</small></span
+									><span
+										class="position"
+										class:gain={(driver.positionChange ?? 0) > 0}
+										class:loss={(driver.positionChange ?? 0) < 0}>{driver.order}</span
+									><span class="team-line" style={`--team:${driver.color}`}></span><span
+										class="driver"><strong>{driver.code}</strong><small>{driver.team}</small></span
 									><span class="tyre {compoundCode(driver.compound).toLowerCase()}"
 										>{compoundCode(driver.compound)}</span
 									><span class="gap">{formatGap(driver.gap, true)}</span></button
@@ -775,7 +834,12 @@
 						>
 					</section>
 				</div>
-				<aside id="strategy" class="driver-panel panel" aria-label="Selected driver detail">
+				<aside
+					id="strategy"
+					class="driver-panel panel"
+					style={`--team:${selectedDriver?.color ?? '#64748b'}`}
+					aria-label="Selected driver detail"
+				>
 					{#if selectedDriver}<div
 							class="driver-accent"
 							style={`--team:${selectedDriver.color}`}
@@ -794,29 +858,31 @@
 							>
 						</div>
 						<div class="metric-grid">
-							<div>
+							<div class="interval-metric">
 								<span>INTERVAL</span><strong>{formatGap(selectedDriver.ahead, true)}</strong><small
 									>to car ahead</small
 								>
 							</div>
-							<div>
+							<div class="gap-metric">
 								<span>LEADER GAP</span><strong>{formatGap(selectedDriver.gap)}</strong><small
 									>race time</small
 								>
 							</div>
-							<div>
-								<span>POSITIONS</span><strong class:gain={(selectedDriver.positionChange ?? 0) > 0}
+							<div class="position-metric">
+								<span>POSITIONS</span><strong
+									class:gain={(selectedDriver.positionChange ?? 0) > 0}
+									class:loss={(selectedDriver.positionChange ?? 0) < 0}
 									>{selectedDriver.positionChange == null
 										? '—'
 										: `${selectedDriver.positionChange > 0 ? '+' : ''}${selectedDriver.positionChange}`}</strong
 								><small>from the grid</small>
 							</div>
-							<div>
+							<div class="lap-metric">
 								<span>LAP TIME</span><strong>{formatLapTime(currentLapTime(selectedDriver))}</strong
 								><small>current recorded lap</small>
 							</div>
 						</div>
-						<div class="stint-card">
+						<div class="stint-card {compoundCode(selectedDriver.compound).toLowerCase()}">
 							<span class="tyre-visual {compoundCode(selectedDriver.compound).toLowerCase()}"
 								>{compoundCode(selectedDriver.compound)}</span
 							>
@@ -947,6 +1013,7 @@
 					<div class="filters" aria-label="Filter race events">
 						{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
 									type="button"
+									class="filter-{filter}"
 									class:active={eventFilter === filter}
 									onclick={() => (eventFilter = filter)}
 									>{filter === 'all'
@@ -1028,18 +1095,63 @@
 					</div>
 				{/if}
 				<div class="radio-player" class:visible={Boolean(nowPlaying)}>
-					<div>
+					<div class="radio-copy">
 						<span>TEAM RADIO</span><strong>{nowPlaying?.meta ?? 'Select a radio event'}</strong
 						>{#if audioError}<small role="alert">{audioError}</small>{/if}
 					</div>
+					<div class="custom-audio-controls">
+						<button
+							class="radio-play"
+							type="button"
+							disabled={!nowPlaying}
+							aria-label={radioPlaying ? 'Pause team radio' : 'Play team radio'}
+							onclick={() => void toggleRadioPlayback()}
+							>{radioLoading ? '…' : radioPlaying ? 'Ⅱ' : '▶'}</button
+						>
+						<time>{formatClock(radioCurrentTime)} / {formatClock(radioDuration)}</time>
+						<input
+							class="radio-progress"
+							type="range"
+							min="0"
+							max={radioDuration || 0}
+							step="0.01"
+							value={radioCurrentTime}
+							disabled={!radioDuration}
+							aria-label="Team radio playback position"
+							oninput={(event) => seekRadio(Number(event.currentTarget.value))}
+						/>
+						<button
+							class="radio-volume"
+							type="button"
+							aria-label={radioMuted ? 'Unmute team radio' : 'Mute team radio'}
+							onclick={toggleRadioMute}>{radioMuted ? 'MUTED' : 'VOLUME'}</button
+						>
+					</div>
 					<audio
+						class="radio-engine"
 						bind:this={audio}
-						controls
 						preload="none"
-						onerror={() =>
-							nowPlaying && (audioError = 'The source could not load this radio clip.')}
-					></audio><button type="button" aria-label="Close radio player" onclick={stopRadio}
-						>×</button
+						onloadedmetadata={setRadioDuration}
+						ondurationchange={setRadioDuration}
+						oncanplay={() => (radioLoading = false)}
+						onwaiting={() => (radioLoading = true)}
+						onplaying={() => {
+							radioPlaying = true;
+							radioLoading = false;
+						}}
+						onpause={() => (radioPlaying = false)}
+						onended={() => (radioPlaying = false)}
+						ontimeupdate={() => (radioCurrentTime = audio.currentTime)}
+						onerror={() => {
+							radioLoading = false;
+							radioPlaying = false;
+							if (nowPlaying) audioError = 'The source could not load this radio clip.';
+						}}
+					></audio><button
+						class="radio-close"
+						type="button"
+						aria-label="Close radio player"
+						onclick={stopRadio}>×</button
 					>
 				</div>
 			</section>
@@ -1077,7 +1189,8 @@
 		gap: 42px;
 		height: 58px;
 		padding: 0 24px;
-		background: rgba(8, 10, 14, 0.9);
+		background:
+			linear-gradient(90deg, rgba(255, 77, 87, 0.035), transparent 28%), rgba(8, 10, 14, 0.92);
 		border-bottom: 1px solid var(--line);
 		backdrop-filter: blur(14px);
 	}
@@ -1160,6 +1273,7 @@
 		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
 	}
 	.session-bar {
+		position: relative;
 		display: grid;
 		grid-template-columns: minmax(280px, 1fr) auto auto;
 		align-items: center;
@@ -1167,6 +1281,10 @@
 		min-height: 68px;
 		margin-bottom: 12px;
 		padding: 7px 16px;
+		overflow: hidden;
+		background:
+			radial-gradient(circle at 8% 0%, rgba(255, 77, 87, 0.09), transparent 18rem),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.event-title {
 		display: flex;
@@ -1180,8 +1298,9 @@
 		width: 38px;
 		height: 38px;
 		color: #fff;
-		background: var(--accent);
+		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-radius: 8px;
+		box-shadow: 0 5px 14px rgba(255, 77, 87, 0.2);
 		font-size: 11px;
 		font-weight: 800;
 	}
@@ -1231,8 +1350,40 @@
 		font-size: var(--text-meta);
 		font-style: normal;
 	}
-	.session-facts .green {
-		color: var(--green);
+	.status-badge {
+		display: inline-flex !important;
+		align-items: center;
+		min-height: 27px;
+		padding: 4px 8px;
+		color: var(--status-live);
+		background: var(--green-soft);
+		border: 1px solid rgba(70, 212, 154, 0.25);
+		border-radius: 999px;
+	}
+	.status-badge i {
+		box-shadow: 0 0 5px currentColor;
+		animation: status-pulse 2s ease-in-out infinite;
+	}
+	@keyframes status-pulse {
+		50% {
+			opacity: 0.48;
+			box-shadow: 0 0 2px currentColor;
+		}
+	}
+	.status-badge.warning {
+		color: var(--status-warning);
+		background: var(--yellow-soft);
+		border-color: rgba(244, 201, 79, 0.28);
+	}
+	.status-badge.critical {
+		color: var(--status-critical);
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.3);
+	}
+	.status-badge.complete {
+		color: var(--purple);
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.28);
 	}
 	.session-facts i,
 	.status-row i {
@@ -1320,6 +1471,9 @@
 		grid-area: timing;
 		display: flex;
 		flex-direction: column;
+		background:
+			linear-gradient(180deg, rgba(85, 170, 255, 0.035), transparent 35%),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.panel-head {
 		display: flex;
@@ -1368,10 +1522,15 @@
 			background 0.16s;
 	}
 	.timing-panel li.selected {
-		background: rgba(255, 255, 255, 0.075);
+		background: linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--team) 20%, transparent),
+			transparent 88%
+		);
+		box-shadow: inset 3px 0 var(--team);
 	}
 	.timing-panel li.dimmed {
-		opacity: 0.3;
+		opacity: 0.42;
 	}
 	.timing-panel li button {
 		display: grid;
@@ -1388,18 +1547,29 @@
 		text-align: left;
 	}
 	.timing-panel li button:hover {
-		background: rgba(255, 255, 255, 0.045);
+		background: linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--team) 11%, transparent),
+			transparent
+		);
 	}
 	.position {
 		color: var(--muted);
 		font-size: var(--text-small);
 		font-weight: 750;
 	}
+	.position.gain {
+		color: var(--green);
+	}
+	.position.loss {
+		color: var(--accent);
+	}
 	.team-line {
 		width: 3px;
 		height: 24px;
 		background: var(--team);
 		border-radius: 3px;
+		box-shadow: 0 0 6px color-mix(in srgb, var(--team) 35%, transparent);
 	}
 	.driver {
 		min-width: 0;
@@ -1472,6 +1642,7 @@
 		position: relative;
 		min-width: 0;
 		overflow: hidden;
+		border-color: rgba(85, 170, 255, 0.17);
 	}
 	.track-meta {
 		position: absolute;
@@ -1502,11 +1673,20 @@
 	.track-actions button:disabled {
 		opacity: 0.4;
 	}
+	.track-actions button:not(:disabled):hover,
+	.clear-driver:hover {
+		color: #fff;
+		background: var(--blue-soft);
+		border-color: rgba(85, 170, 255, 0.35);
+	}
 	.circuit {
 		position: relative;
 		height: 100%;
 		min-height: 540px;
-		background: radial-gradient(circle at 48% 48%, rgba(52, 65, 89, 0.15), transparent 55%);
+		background:
+			radial-gradient(circle at 48% 48%, rgba(85, 170, 255, 0.08), transparent 47%),
+			radial-gradient(circle at 78% 18%, rgba(194, 139, 255, 0.05), transparent 34%),
+			linear-gradient(160deg, rgba(12, 19, 30, 0.96), rgba(9, 12, 18, 0.98));
 	}
 	.circuit:before {
 		position: absolute;
@@ -1560,7 +1740,7 @@
 		position: absolute;
 		right: 12px;
 		bottom: 9px;
-		color: #5c6575;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.race-control {
@@ -1570,8 +1750,8 @@
 		left: 12px;
 		width: min(230px, 40%);
 		padding: 9px;
-		background: rgba(8, 10, 14, 0.78);
-		border: 1px solid var(--line);
+		background: linear-gradient(145deg, rgba(16, 20, 28, 0.93), rgba(8, 10, 14, 0.9));
+		border: 1px solid rgba(244, 201, 79, 0.18);
 		border-radius: 8px;
 	}
 	.race-control > span {
@@ -1592,6 +1772,9 @@
 		cursor: pointer;
 		text-align: left;
 	}
+	.race-control button:hover {
+		background: var(--yellow-soft);
+	}
 	.race-control time {
 		color: var(--muted);
 		font: var(--text-caption) Consolas;
@@ -1601,15 +1784,19 @@
 		height: 5px;
 		background: var(--yellow);
 		border-radius: 50%;
+		box-shadow: 0 0 5px var(--yellow);
 	}
 	.race-control i.red {
 		background: var(--accent);
+		box-shadow: 0 0 5px var(--accent);
 	}
 	.race-control i.green {
 		background: var(--green);
+		box-shadow: 0 0 5px var(--green);
 	}
 	.race-control i.safety {
 		background: #f6a13c;
+		box-shadow: 0 0 5px var(--orange);
 	}
 	.race-control strong {
 		overflow: hidden;
@@ -1620,10 +1807,19 @@
 	.driver-panel {
 		grid-area: driver;
 		position: relative;
+		--team: #64748b;
+		background:
+			radial-gradient(
+				circle at 100% 0%,
+				color-mix(in srgb, var(--team) 16%, transparent),
+				transparent 17rem
+			),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.driver-accent {
-		height: 3px;
+		height: 4px;
 		background: var(--team);
+		box-shadow: 0 0 10px color-mix(in srgb, var(--team) 40%, transparent);
 	}
 	.selected-head {
 		display: flex;
@@ -1644,8 +1840,8 @@
 		place-items: center;
 		width: 45px;
 		height: 45px;
-		background: rgba(255, 255, 255, 0.06);
-		border: 1px solid var(--line);
+		background: color-mix(in srgb, var(--team) 14%, rgba(255, 255, 255, 0.04));
+		border: 1px solid color-mix(in srgb, var(--team) 38%, var(--line));
 		border-radius: 9px;
 		font-size: 17px;
 	}
@@ -1665,31 +1861,42 @@
 	.metric-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 		padding: 16px;
 	}
 	.metric-grid div {
+		position: relative;
 		min-height: 74px;
-		padding: 10px 12px;
+		padding: 13px 12px 10px;
+		background: rgba(255, 255, 255, 0.025);
 		border: 1px solid var(--line);
+		border-radius: 8px;
 	}
-	.metric-grid div:nth-child(even) {
-		border-left: 0;
-	}
-	.metric-grid div:nth-child(n + 3) {
-		border-top: 0;
+	.metric-grid div:before {
+		position: absolute;
+		inset: 0 auto auto 12px;
+		width: 26px;
+		height: 2px;
+		background: color-mix(in srgb, var(--team) 65%, #fff);
+		border-radius: 0 0 2px 2px;
+		content: '';
 	}
 	.metric-grid strong {
 		display: block;
-		margin-top: 8px;
+		margin-top: 9px;
+		color: var(--text);
 		font: var(--text-title) Consolas;
 	}
 	.metric-grid .gain {
 		color: var(--green);
 	}
+	.metric-grid .loss {
+		color: var(--accent);
+	}
 	.metric-grid small {
 		display: block;
 		margin-top: 4px;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-meta);
 	}
 	.stint-card {
@@ -1701,6 +1908,26 @@
 		background: rgba(255, 255, 255, 0.035);
 		border: 1px solid var(--line);
 		border-radius: 9px;
+	}
+	.stint-card.s {
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.24);
+	}
+	.stint-card.m {
+		background: var(--yellow-soft);
+		border-color: rgba(244, 201, 79, 0.24);
+	}
+	.stint-card.h {
+		background: rgba(255, 255, 255, 0.055);
+		border-color: rgba(255, 255, 255, 0.16);
+	}
+	.stint-card.i {
+		background: var(--green-soft);
+		border-color: rgba(70, 212, 154, 0.24);
+	}
+	.stint-card.w {
+		background: var(--blue-soft);
+		border-color: rgba(85, 170, 255, 0.24);
 	}
 	.tyre-visual {
 		width: 34px;
@@ -1762,6 +1989,11 @@
 		grid-area: weather;
 		margin-top: 0;
 		padding: 14px 16px 10px;
+		overflow: hidden;
+		background:
+			radial-gradient(circle at 92% -40%, rgba(77, 217, 231, 0.12), transparent 24rem),
+			linear-gradient(145deg, rgba(15, 27, 36, 0.98), rgba(10, 15, 22, 0.98));
+		border-color: rgba(77, 217, 231, 0.18);
 	}
 	.weather-heading {
 		display: flex;
@@ -1770,6 +2002,7 @@
 	}
 	.weather-heading h2 {
 		margin: 4px 0 0;
+		color: #e9fcff;
 		font-size: var(--text-title);
 	}
 	.weather-heading > strong {
@@ -1796,7 +2029,7 @@
 		height: 6px;
 		background: currentColor;
 		border-radius: 50%;
-		box-shadow: 0 0 8px currentColor;
+		box-shadow: 0 0 5px currentColor;
 	}
 	.weather-metrics {
 		display: grid;
@@ -1807,9 +2040,38 @@
 		border-radius: 8px;
 	}
 	.weather-metrics > div {
+		position: relative;
 		min-width: 0;
 		padding: 11px 13px;
 		border-left: 1px solid var(--line);
+	}
+	.weather-metrics > div:before {
+		position: absolute;
+		top: 0;
+		left: 13px;
+		width: 22px;
+		height: 2px;
+		background: currentColor;
+		border-radius: 2px;
+		content: '';
+	}
+	.weather-metrics > div:nth-child(1) {
+		color: var(--orange);
+	}
+	.weather-metrics > div:nth-child(2) {
+		color: var(--accent);
+	}
+	.weather-metrics > div:nth-child(3) {
+		color: var(--blue);
+	}
+	.weather-metrics > div:nth-child(4) {
+		color: var(--purple);
+	}
+	.weather-metrics > div:nth-child(5) {
+		color: var(--cyan);
+	}
+	.weather-metrics > div:nth-child(6) {
+		color: var(--green);
 	}
 	.weather-metrics > div:first-child {
 		border-left: 0;
@@ -1820,13 +2082,14 @@
 		display: block;
 	}
 	.weather-metrics span {
-		color: var(--muted);
+		color: currentColor;
 		font-size: var(--text-caption);
 		font-weight: 700;
 		letter-spacing: 0.1em;
 	}
 	.weather-metrics strong {
 		margin-top: 5px;
+		color: var(--text);
 		font: var(--text-title) Consolas;
 	}
 	.weather-metrics > div:nth-child(-n + 2) {
@@ -1838,7 +2101,7 @@
 	.weather-metrics small {
 		margin-top: 3px;
 		overflow: hidden;
-		color: #646e7e;
+		color: var(--muted);
 		font-size: var(--text-meta);
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -1850,7 +2113,7 @@
 	}
 	.wind-metric strong i {
 		display: inline-block;
-		color: var(--blue);
+		color: var(--cyan);
 		font: 15px sans-serif;
 		transform-origin: center;
 	}
@@ -1859,7 +2122,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 9px 2px 0;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.weather-source span:first-child {
@@ -1892,6 +2155,9 @@
 		min-height: 72px;
 		margin-top: 0;
 		padding: 10px 14px;
+		background:
+			linear-gradient(90deg, rgba(255, 77, 87, 0.035), transparent 34%),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.playback,
 	.lap-controls {
@@ -1910,10 +2176,17 @@
 		font-size: var(--text-small);
 		cursor: pointer;
 	}
+	.playback button:not(.play):hover,
+	.lap-controls button:hover {
+		color: #fff;
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.32);
+	}
 	.playback .play {
 		color: #fff;
-		background: var(--accent);
+		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-color: var(--accent);
+		box-shadow: 0 4px 12px rgba(255, 77, 87, 0.18);
 	}
 	.playback strong {
 		min-width: 64px;
@@ -1927,7 +2200,7 @@
 	.ticks {
 		display: flex;
 		justify-content: space-between;
-		color: #555f70;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	.speed-control {
@@ -1950,6 +2223,9 @@
 		position: relative;
 		margin-top: 12px;
 		padding: 14px 16px;
+		background:
+			radial-gradient(circle at 100% 0%, rgba(194, 139, 255, 0.05), transparent 28rem),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.timeline-head {
 		display: flex;
@@ -1995,10 +2271,27 @@
 		border-radius: 7px;
 		text-align: left;
 	}
+	.timeline-phases button:hover {
+		color: #fff;
+		border-color: var(--line-strong);
+	}
 	.timeline-phases button.active {
 		color: #fff;
-		background: rgba(194, 139, 255, 0.09);
-		border-color: rgba(194, 139, 255, 0.42);
+	}
+	.timeline-phases button:nth-child(1).active {
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.46);
+		box-shadow: inset 3px 0 var(--purple);
+	}
+	.timeline-phases button:nth-child(2).active {
+		background: var(--red-soft);
+		border-color: rgba(255, 77, 87, 0.42);
+		box-shadow: inset 3px 0 var(--accent);
+	}
+	.timeline-phases button:nth-child(3).active {
+		background: var(--cyan-soft);
+		border-color: rgba(77, 217, 231, 0.42);
+		box-shadow: inset 3px 0 var(--cyan);
 	}
 	.timeline-phases span {
 		grid-column: 1;
@@ -2016,6 +2309,12 @@
 		align-self: center;
 		color: var(--purple);
 		font: var(--text-body) Consolas;
+	}
+	.timeline-phases button:nth-child(2) b {
+		color: var(--accent);
+	}
+	.timeline-phases button:nth-child(3) b {
+		color: var(--cyan);
 	}
 	.phase-summary {
 		display: flex;
@@ -2049,12 +2348,33 @@
 		border-radius: 6px;
 		font-size: var(--text-meta);
 	}
+	.filters button:hover {
+		color: #fff;
+		border-color: color-mix(in srgb, var(--filter-color, var(--blue)) 34%, transparent);
+	}
 	.filters button.active {
 		color: #fff;
-		background: #293142;
+		background: color-mix(in srgb, var(--filter-color, var(--blue)) 16%, transparent);
+		border-color: color-mix(in srgb, var(--filter-color, var(--blue)) 48%, transparent);
+	}
+	.filters .filter-all {
+		--filter-color: var(--muted-strong);
+	}
+	.filters .filter-control {
+		--filter-color: var(--event-control);
+	}
+	.filters .filter-overtake {
+		--filter-color: var(--event-overtake);
+	}
+	.filters .filter-pit {
+		--filter-color: var(--event-pit);
+	}
+	.filters .filter-radio {
+		--filter-color: var(--event-radio);
 	}
 	.filters span {
 		margin-left: 5px;
+		color: var(--filter-color, inherit);
 	}
 	.event-rail {
 		position: relative;
@@ -2072,7 +2392,7 @@
 	.elapsed {
 		position: absolute;
 		inset: 0 auto 0 0;
-		background: #677691;
+		background: linear-gradient(90deg, var(--accent), var(--purple));
 		border-radius: inherit;
 	}
 	.playhead {
@@ -2095,22 +2415,26 @@
 		height: 14px;
 		padding: 0;
 		background: #11151c;
-		border: 2px solid var(--yellow);
+		border: 2px solid var(--event-control);
 		border-radius: 3px;
+		color: var(--event-control);
 		pointer-events: auto;
 		transform: translate(-50%, -50%);
 	}
 	.markers .overtake {
-		border-color: var(--blue);
+		border-color: var(--event-overtake);
+		color: var(--event-overtake);
 		border-radius: 50%;
 	}
 	.markers .pit {
-		border-color: var(--accent);
+		border-color: var(--event-pit);
+		color: var(--event-pit);
 		transform: translate(-50%, -50%) rotate(45deg);
 	}
 	.markers .radio {
 		height: 17px;
-		border-color: var(--purple);
+		border-color: var(--event-radio);
+		color: var(--event-radio);
 		border-radius: 5px;
 	}
 	.markers .past {
@@ -2123,6 +2447,7 @@
 		margin-top: 16px;
 	}
 	.event {
+		--event-color: var(--event-control);
 		display: grid;
 		grid-template-columns: 8px 64px minmax(0, 1fr) auto;
 		align-items: center;
@@ -2130,29 +2455,36 @@
 		min-height: 52px;
 		padding: 9px;
 		color: inherit;
-		background: rgba(255, 255, 255, 0.025);
+		background: color-mix(in srgb, var(--event-color) 4%, transparent);
 		border: 1px solid var(--line);
+		border-left: 3px solid var(--event-color);
 		border-radius: 7px;
 		text-align: left;
 	}
 	.event:hover,
 	.event.current {
-		background: rgba(255, 255, 255, 0.065);
+		background: color-mix(in srgb, var(--event-color) 12%, transparent);
+		border-color: color-mix(in srgb, var(--event-color) 40%, transparent);
+		border-left-color: var(--event-color);
+	}
+	.event.current {
+		box-shadow: 0 0 12px color-mix(in srgb, var(--event-color) 8%, transparent);
 	}
 	.event > i {
 		width: 6px;
 		height: 6px;
-		background: var(--yellow);
+		background: var(--event-color);
 		border-radius: 50%;
+		box-shadow: 0 0 5px var(--event-color);
 	}
-	.event.overtake > i {
-		background: var(--blue);
+	.event.overtake {
+		--event-color: var(--event-overtake);
 	}
-	.event.pit > i {
-		background: var(--accent);
+	.event.pit {
+		--event-color: var(--event-pit);
 	}
-	.event.radio > i {
-		background: var(--purple);
+	.event.radio {
+		--event-color: var(--event-radio);
 	}
 	.event time {
 		color: var(--muted);
@@ -2179,7 +2511,7 @@
 		white-space: normal;
 	}
 	.event b {
-		color: var(--purple);
+		color: var(--event-color);
 		font-size: var(--text-caption);
 	}
 	.empty-state {
@@ -2190,13 +2522,14 @@
 	}
 	.radio-player {
 		display: none;
-		grid-template-columns: auto minmax(200px, 1fr) auto;
+		grid-template-columns: minmax(170px, 0.7fr) minmax(360px, 1.3fr) auto;
 		align-items: center;
 		gap: 12px;
 		margin-top: 12px;
 		padding: 8px 10px;
-		background: rgba(194, 139, 255, 0.08);
-		border: 1px solid rgba(194, 139, 255, 0.22);
+		background: linear-gradient(90deg, rgba(194, 139, 255, 0.12), rgba(97, 70, 128, 0.05)), #10141b;
+		border: 1px solid rgba(194, 139, 255, 0.28);
+		border-left: 3px solid var(--purple);
 		border-radius: 8px;
 	}
 	.radio-player.visible {
@@ -2216,21 +2549,90 @@
 		color: #ff8b9b;
 		font-size: var(--text-meta);
 	}
-	.radio-player audio {
-		width: 100%;
-		height: 30px;
+	.radio-copy {
+		min-width: 0;
 	}
-	.radio-player > button {
+	.radio-copy strong {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.custom-audio-controls {
+		display: grid;
+		grid-template-columns: 38px auto minmax(120px, 1fr) auto;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		padding: 5px 7px;
+		background: rgba(5, 7, 11, 0.46);
+		border: 1px solid rgba(194, 139, 255, 0.18);
+		border-radius: 8px;
+	}
+	.custom-audio-controls button {
+		min-height: 34px;
+		color: var(--muted-strong);
+		background: rgba(255, 255, 255, 0.045);
+		border: 1px solid var(--line);
+		border-radius: 6px;
+	}
+	.custom-audio-controls button:hover {
+		color: #fff;
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.32);
+	}
+	.custom-audio-controls .radio-play {
+		width: 38px;
+		padding: 0;
+		color: #fff;
+		background: var(--purple);
+		border-color: var(--purple);
+		font-size: var(--text-small);
+	}
+	.custom-audio-controls time {
+		min-width: 72px;
+		color: var(--muted-strong);
+		font:
+			var(--text-meta) Consolas,
+			monospace;
+		white-space: nowrap;
+	}
+	.radio-progress {
+		width: 100%;
+		min-width: 0;
+		accent-color: var(--purple);
+		cursor: pointer;
+	}
+	.radio-progress:disabled {
+		cursor: wait;
+		opacity: 0.5;
+	}
+	.custom-audio-controls .radio-volume {
+		padding: 0 9px;
+		font-size: var(--text-caption);
+		font-weight: 750;
+		letter-spacing: 0.06em;
+	}
+	.radio-engine {
+		display: none;
+	}
+	.radio-close {
+		width: 36px;
+		height: 36px;
 		color: var(--muted);
 		background: none;
 		border: 0;
+		border-radius: 6px;
 		font-size: 18px;
+	}
+	.radio-close:hover {
+		color: #fff;
+		background: rgba(255, 255, 255, 0.06);
 	}
 	footer {
 		display: flex;
 		justify-content: space-between;
 		padding: 11px 2px 0;
-		color: #596273;
+		color: var(--muted);
 		font-size: var(--text-caption);
 	}
 	footer p {
@@ -2242,6 +2644,11 @@
 	}
 	button {
 		cursor: pointer;
+		transition:
+			color 0.16s ease,
+			background 0.16s ease,
+			border-color 0.16s ease,
+			box-shadow 0.16s ease;
 	}
 	button:focus-visible,
 	a:focus-visible,
@@ -2373,7 +2780,7 @@
 		.radio-player {
 			grid-template-columns: 1fr auto;
 		}
-		.radio-player audio {
+		.custom-audio-controls {
 			grid-column: 1/-1;
 			grid-row: 2;
 		}
@@ -2450,6 +2857,13 @@
 		}
 		.event-list {
 			grid-template-columns: 1fr;
+		}
+		.custom-audio-controls {
+			grid-template-columns: 38px 1fr auto;
+		}
+		.radio-progress {
+			grid-column: 1 / -1;
+			grid-row: 2;
 		}
 		.filters {
 			overflow: auto;
