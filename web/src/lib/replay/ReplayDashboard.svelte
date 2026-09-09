@@ -1298,7 +1298,7 @@
 	.replay-grid {
 		display: grid;
 		grid-template-areas:
-			'timing weather driver'
+			'weather weather weather'
 			'timing center driver';
 		grid-template-columns: minmax(260px, 280px) minmax(520px, 1fr) minmax(300px, 320px);
 		grid-template-rows: auto 1fr;
@@ -2250,19 +2250,6 @@
 		outline: 2px solid #80aaff;
 		outline-offset: 2px;
 	}
-	@media (max-width: 1400px) {
-		.weather-metrics {
-			grid-template-columns: repeat(3, minmax(0, 1fr));
-		}
-		.weather-metrics > div:nth-child(4) {
-			border-left: 0;
-			border-top: 1px solid var(--line);
-		}
-		.weather-metrics > div:nth-child(5),
-		.weather-metrics > div:nth-child(6) {
-			border-top: 1px solid var(--line);
-		}
-	}
 	@media (max-width: 1120px) {
 		.session-bar {
 			grid-template-columns: minmax(240px, 1fr) auto;
@@ -2275,7 +2262,7 @@
 		}
 		.replay-grid {
 			grid-template-areas:
-				'timing weather'
+				'weather weather'
 				'timing center'
 				'driver driver';
 			grid-template-columns: 240px minmax(0, 1fr);
@@ -2336,6 +2323,17 @@
 		}
 		.weather-panel {
 			order: 1;
+		}
+		.weather-metrics {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+		.weather-metrics > div:nth-child(4) {
+			border-left: 0;
+			border-top: 1px solid var(--line);
+		}
+		.weather-metrics > div:nth-child(5),
+		.weather-metrics > div:nth-child(6) {
+			border-top: 1px solid var(--line);
 		}
 		.circuit {
 			min-height: 430px;
