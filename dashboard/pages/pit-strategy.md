@@ -26,7 +26,7 @@ order by season desc
 select distinct
     round,
     race_name,
-    'R' || cast(round as varchar) || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.pit_strategy
 where season = ${inputs.season.value}
 order by round
