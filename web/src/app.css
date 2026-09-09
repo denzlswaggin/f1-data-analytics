@@ -25,6 +25,12 @@
 	--yellow: #f4c94f;
 	--blue: #55aaff;
 	--purple: #c28bff;
+	--text-caption: 10px;
+	--text-meta: 11px;
+	--text-small: 12px;
+	--text-body: 14px;
+	--text-title: 16px;
+	--text-display: 22px;
 	--radius-sm: 7px;
 	--radius: 12px;
 	--radius-lg: 18px;

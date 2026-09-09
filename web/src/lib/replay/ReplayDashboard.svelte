@@ -1063,7 +1063,7 @@
 		align-items: center;
 		gap: 10px;
 		color: var(--text);
-		font-size: 12px;
+		font-size: var(--text-body);
 		font-weight: 760;
 		letter-spacing: 0.16em;
 		text-decoration: none;
@@ -1098,7 +1098,7 @@
 		place-items: center;
 		height: 100%;
 		color: var(--text);
-		font-size: 11px;
+		font-size: var(--text-small);
 		font-weight: 650;
 		text-decoration: none;
 	}
@@ -1115,7 +1115,7 @@
 		gap: 8px;
 		margin-left: auto;
 		color: var(--muted);
-		font-size: 10px;
+		font-size: var(--text-meta);
 	}
 	.snapshot > span {
 		width: 7px;
@@ -1166,13 +1166,13 @@
 	}
 	.event-title p {
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-caption);
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
 	.event-title h1 {
 		margin-top: 3px;
-		font-size: 18px;
+		font-size: var(--text-display);
 	}
 	.session-facts {
 		display: flex;
@@ -1192,18 +1192,18 @@
 	.radio-player span {
 		display: block;
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-caption);
 		font-weight: 750;
 		letter-spacing: 0.12em;
 	}
 	.session-facts strong {
 		display: block;
 		margin-top: 5px;
-		font-size: 11px;
+		font-size: var(--text-body);
 	}
 	.session-facts em {
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-meta);
 		font-style: normal;
 	}
 	.session-facts .green {
@@ -1225,18 +1225,19 @@
 	}
 	.race-picker label {
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.race-picker select {
 		display: block;
 		max-width: 180px;
+		min-height: 38px;
 		margin-top: 3px;
 		padding: 6px;
 		color: #fff;
 		background: #151a22;
 		border: 1px solid var(--line);
 		border-radius: 6px;
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.state-card {
 		display: grid;
@@ -1247,7 +1248,7 @@
 	}
 	.state-card p {
 		color: var(--muted);
-		font-size: 11px;
+		font-size: var(--text-body);
 	}
 	.state-card button {
 		padding: 8px 14px;
@@ -1291,11 +1292,11 @@
 	.track-meta strong {
 		display: block;
 		margin-top: 5px;
-		font-size: 13px;
+		font-size: var(--text-title);
 	}
 	.panel-head b {
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-caption);
 	}
 	.timing-panel ol {
 		max-height: 470px;
@@ -1320,7 +1321,7 @@
 		grid-template-columns: 22px 3px 1fr 24px 56px;
 		align-items: center;
 		width: 100%;
-		min-height: 43px;
+		min-height: 48px;
 		padding: 0 11px;
 		color: inherit;
 		background: transparent;
@@ -1334,7 +1335,7 @@
 	}
 	.position {
 		color: var(--muted);
-		font-size: 11px;
+		font-size: var(--text-small);
 		font-weight: 750;
 	}
 	.team-line {
@@ -1349,14 +1350,14 @@
 	}
 	.driver strong {
 		display: block;
-		font-size: 12px;
+		font-size: var(--text-body);
 	}
 	.driver small {
 		display: block;
 		overflow: hidden;
 		margin-top: 3px;
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-meta);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -1375,7 +1376,7 @@
 	.tyre {
 		width: 18px;
 		height: 18px;
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.tyre.m,
 	.tyre-visual.m {
@@ -1400,7 +1401,7 @@
 	.gap {
 		text-align: right;
 		font:
-			9px Consolas,
+			var(--text-small) Consolas,
 			monospace;
 	}
 	.tower-footer {
@@ -1408,7 +1409,7 @@
 		justify-content: space-between;
 		padding: 10px 12px;
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-caption);
 	}
 	.track-panel {
 		position: relative;
@@ -1432,12 +1433,13 @@
 	}
 	.track-actions button,
 	.clear-driver {
+		min-height: 36px;
 		padding: 6px 9px;
 		color: var(--muted-strong);
 		background: rgba(20, 25, 34, 0.85);
 		border: 1px solid var(--line);
 		border-radius: 6px;
-		font-size: 8px;
+		font-size: var(--text-meta);
 		cursor: pointer;
 	}
 	.track-actions button:disabled {
@@ -1483,12 +1485,12 @@
 		border: 1px solid var(--line-strong);
 		border-radius: 7px;
 		box-shadow: 0 8px 25px #000;
-		font-size: 8px;
+		font-size: var(--text-meta);
 		pointer-events: none;
 	}
 	.tooltip strong {
 		color: #fff;
-		font-size: 10px;
+		font-size: var(--text-small);
 	}
 	.tooltip i {
 		display: inline-block;
@@ -1502,7 +1504,7 @@
 		right: 12px;
 		bottom: 9px;
 		color: #5c6575;
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.race-control {
 		position: absolute;
@@ -1517,7 +1519,7 @@
 	}
 	.race-control > span {
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-caption);
 		font-weight: 800;
 	}
 	.race-control button {
@@ -1535,7 +1537,7 @@
 	}
 	.race-control time {
 		color: var(--muted);
-		font: 7px Consolas;
+		font: var(--text-caption) Consolas;
 	}
 	.race-control i {
 		width: 5px;
@@ -1554,7 +1556,7 @@
 	}
 	.race-control strong {
 		overflow: hidden;
-		font-size: 7px;
+		font-size: var(--text-meta);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -1577,7 +1579,7 @@
 	.selected-head p {
 		margin: 4px 0 0;
 		color: var(--muted);
-		font-size: 9px;
+		font-size: var(--text-meta);
 	}
 	.selected-head > strong {
 		display: grid;
@@ -1596,7 +1598,7 @@
 		color: var(--muted-strong);
 		background: rgba(255, 255, 255, 0.025);
 		border-block: 1px solid var(--line);
-		font-size: 8px;
+		font-size: var(--text-meta);
 		text-transform: uppercase;
 	}
 	.status-row strong {
@@ -1621,7 +1623,7 @@
 	.metric-grid strong {
 		display: block;
 		margin-top: 8px;
-		font: 14px Consolas;
+		font: var(--text-title) Consolas;
 	}
 	.metric-grid .gain {
 		color: var(--green);
@@ -1630,7 +1632,7 @@
 		display: block;
 		margin-top: 4px;
 		color: #596273;
-		font-size: 7px;
+		font-size: var(--text-meta);
 	}
 	.stint-card {
 		display: flex;
@@ -1651,13 +1653,13 @@
 	.stint-card strong {
 		display: block;
 		margin-top: 4px;
-		font-size: 11px;
+		font-size: var(--text-small);
 	}
 	.stint-card small {
 		display: block;
 		margin-top: 3px;
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-meta);
 	}
 	.stops {
 		margin-left: auto;
@@ -1695,7 +1697,7 @@
 	.driver-empty p {
 		max-width: 220px;
 		color: var(--muted);
-		font-size: 10px;
+		font-size: var(--text-small);
 		line-height: 1.55;
 	}
 	.weather-panel {
@@ -1709,7 +1711,7 @@
 	}
 	.weather-heading h2 {
 		margin: 4px 0 0;
-		font-size: 13px;
+		font-size: var(--text-title);
 	}
 	.weather-heading > strong {
 		display: flex;
@@ -1720,7 +1722,7 @@
 		background: rgba(70, 212, 154, 0.08);
 		border: 1px solid rgba(70, 212, 154, 0.24);
 		border-radius: 999px;
-		font-size: 8px;
+		font-size: var(--text-caption);
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 	}
@@ -1760,19 +1762,19 @@
 	}
 	.weather-metrics span {
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-caption);
 		font-weight: 700;
 		letter-spacing: 0.1em;
 	}
 	.weather-metrics strong {
 		margin-top: 5px;
-		font: 14px Consolas;
+		font: var(--text-title) Consolas;
 	}
 	.weather-metrics small {
 		margin-top: 3px;
 		overflow: hidden;
 		color: #646e7e;
-		font-size: 7px;
+		font-size: var(--text-meta);
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
@@ -1793,7 +1795,7 @@
 		justify-content: space-between;
 		padding: 9px 2px 0;
 		color: #596273;
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.weather-source span:first-child {
 		display: flex;
@@ -1811,11 +1813,11 @@
 		background: rgba(255, 255, 255, 0.018);
 		border: 1px dashed var(--line);
 		border-radius: 8px;
-		font-size: 8px;
+		font-size: var(--text-meta);
 	}
 	.weather-empty strong {
 		color: var(--muted-strong);
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.control-deck {
 		display: grid;
@@ -1834,13 +1836,13 @@
 	}
 	.playback button,
 	.lap-controls button {
-		min-width: 34px;
-		height: 32px;
+		min-width: 40px;
+		height: 40px;
 		color: var(--muted-strong);
 		background: #171c25;
 		border: 1px solid var(--line);
 		border-radius: 7px;
-		font-size: 9px;
+		font-size: var(--text-small);
 		cursor: pointer;
 	}
 	.playback .play {
@@ -1851,7 +1853,7 @@
 	.playback strong {
 		min-width: 64px;
 		margin-left: 7px;
-		font: 12px Consolas;
+		font: var(--text-body) Consolas;
 	}
 	.scrubber input {
 		width: 100%;
@@ -1861,22 +1863,23 @@
 		display: flex;
 		justify-content: space-between;
 		color: #555f70;
-		font-size: 6px;
+		font-size: var(--text-caption);
 	}
 	.speed-control {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.speed-control select {
+		min-height: 40px;
 		padding: 7px;
 		color: #fff;
 		background: #171c25;
 		border: 1px solid var(--line);
 		border-radius: 7px;
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.timeline {
 		position: relative;
@@ -1890,23 +1893,24 @@
 	}
 	.timeline-head h2 {
 		margin: 4px 0 0;
-		font-size: 13px;
+		font-size: var(--text-title);
 	}
 	.timeline-head p {
 		margin: 0;
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-meta);
 	}
 	.timeline-head p strong {
 		color: #fff;
 	}
 	.timeline-head p button {
+		min-height: 32px;
 		margin-left: 7px;
 		color: var(--muted-strong);
 		background: rgba(255, 255, 255, 0.04);
 		border: 1px solid var(--line);
 		border-radius: 4px;
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.timeline-phases {
 		display: grid;
@@ -1918,6 +1922,7 @@
 		display: grid;
 		grid-template-columns: 1fr auto;
 		gap: 3px 10px;
+		min-height: 52px;
 		padding: 9px 11px;
 		color: var(--muted);
 		background: rgba(255, 255, 255, 0.025);
@@ -1932,20 +1937,20 @@
 	}
 	.timeline-phases span {
 		grid-column: 1;
-		font-size: 7px;
+		font-size: var(--text-caption);
 		font-weight: 700;
 		letter-spacing: 0.12em;
 	}
 	.timeline-phases strong {
 		grid-column: 1;
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.timeline-phases b {
 		grid-column: 2;
 		grid-row: 1 / span 2;
 		align-self: center;
 		color: var(--purple);
-		font: 12px Consolas;
+		font: var(--text-body) Consolas;
 	}
 	.phase-summary {
 		display: flex;
@@ -1953,11 +1958,11 @@
 		gap: 9px;
 		margin-top: 14px;
 		color: var(--muted);
-		font-size: 8px;
+		font-size: var(--text-meta);
 	}
 	.phase-summary strong {
 		color: #fff;
-		font-size: 10px;
+		font-size: var(--text-small);
 	}
 	.phase-event-list {
 		max-height: 430px;
@@ -1971,12 +1976,13 @@
 		margin-top: 12px;
 	}
 	.filters button {
+		min-height: 36px;
 		padding: 6px 8px;
 		color: var(--muted);
 		background: rgba(255, 255, 255, 0.03);
 		border: 1px solid var(--line);
 		border-radius: 6px;
-		font-size: 8px;
+		font-size: var(--text-meta);
 	}
 	.filters button.active {
 		color: #fff;
@@ -2056,6 +2062,7 @@
 		grid-template-columns: 7px 48px 1fr auto;
 		align-items: center;
 		min-width: 0;
+		min-height: 52px;
 		padding: 9px;
 		color: inherit;
 		background: rgba(255, 255, 255, 0.025);
@@ -2084,7 +2091,7 @@
 	}
 	.event time {
 		color: var(--muted);
-		font: 8px Consolas;
+		font: var(--text-meta) Consolas;
 	}
 	.event > span {
 		min-width: 0;
@@ -2097,21 +2104,21 @@
 		white-space: nowrap;
 	}
 	.event strong {
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.event small {
 		margin-top: 3px;
 		color: var(--muted);
-		font-size: 7px;
+		font-size: var(--text-meta);
 	}
 	.event b {
 		color: var(--purple);
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	.empty-state {
 		grid-column: 1/-1;
 		color: var(--muted);
-		font-size: 9px;
+		font-size: var(--text-small);
 		text-align: center;
 	}
 	.radio-player {
@@ -2131,12 +2138,12 @@
 	.radio-player strong {
 		display: block;
 		margin-top: 3px;
-		font-size: 9px;
+		font-size: var(--text-small);
 	}
 	.radio-player small {
 		display: block;
 		color: #ff8b9b;
-		font-size: 8px;
+		font-size: var(--text-meta);
 	}
 	.radio-player audio {
 		width: 100%;
@@ -2153,7 +2160,7 @@
 		justify-content: space-between;
 		padding: 11px 2px 0;
 		color: #596273;
-		font-size: 7px;
+		font-size: var(--text-caption);
 	}
 	footer p {
 		margin: 0;
@@ -2202,7 +2209,7 @@
 			padding: 0 14px;
 		}
 		.snapshot {
-			font-size: 8px;
+			font-size: var(--text-caption);
 		}
 		main {
 			padding: 10px;
@@ -2277,7 +2284,7 @@
 			display: none;
 		}
 		.event-title h1 {
-			font-size: 15px;
+			font-size: 20px;
 		}
 		.race-picker {
 			width: 100%;
