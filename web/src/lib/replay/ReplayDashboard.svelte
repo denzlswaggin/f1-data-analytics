@@ -829,69 +829,71 @@
 							<p>Choose a car to inspect its live race state and filter radio and overtakes.</p>
 						</div>{/if}
 				</aside>
-			</section>
-			<section class="weather-panel panel" aria-label="Track weather">
-				<div class="weather-heading">
-					<div>
-						<span>TRACK CONDITIONS</span>
-						<h2>Weather</h2>
+				<section class="weather-panel panel" aria-label="Track weather">
+					<div class="weather-heading">
+						<div>
+							<span>TRACK CONDITIONS</span>
+							<h2>Weather</h2>
+						</div>
+						{#if currentWeather}<strong class:wet={currentWeather.rainfall}
+								><i></i>{currentWeather.rainfall ? 'Rainfall' : 'Dry track'}</strong
+							>{/if}
 					</div>
-					{#if currentWeather}<strong class:wet={currentWeather.rainfall}
-							><i></i>{currentWeather.rainfall ? 'Rainfall' : 'Dry track'}</strong
-						>{/if}
-				</div>
-				{#if currentWeather}
-					<div class="weather-metrics">
-						<div>
-							<span>AIR</span><strong>{formatWeather(currentWeather.air_temperature, '°C')}</strong
-							><small>Ambient temperature</small>
+					{#if currentWeather}
+						<div class="weather-metrics">
+							<div>
+								<span>AIR</span><strong
+									>{formatWeather(currentWeather.air_temperature, '°C')}</strong
+								><small>Ambient temperature</small>
+							</div>
+							<div>
+								<span>TRACK</span><strong
+									>{formatWeather(currentWeather.track_temperature, '°C')}</strong
+								><small>Surface temperature</small>
+							</div>
+							<div>
+								<span>HUMIDITY</span><strong
+									>{formatWeather(currentWeather.humidity, '%', 0)}</strong
+								><small>Relative humidity</small>
+							</div>
+							<div>
+								<span>PRESSURE</span><strong
+									>{formatWeather(currentWeather.pressure, ' mbar', 0)}</strong
+								><small>Air pressure</small>
+							</div>
+							<div class="wind-metric">
+								<span>WIND</span><strong
+									><i
+										style={`transform:rotate(${currentWeather.wind_direction ?? 0}deg)`}
+										aria-hidden="true">↑</i
+									>{formatWeather(currentWeather.wind_speed, ' m/s')}</strong
+								><small
+									>{compassDirection(currentWeather.wind_direction)} · {formatWeather(
+										currentWeather.wind_direction,
+										'°',
+										0
+									)}</small
+								>
+							</div>
+							<div>
+								<span>SAMPLE</span><strong>{formatClock(currentWeather.t_s)}</strong><small
+									>{formatDate(loaded.bundle.race.race_date)} · Race session</small
+								>
+							</div>
 						</div>
-						<div>
-							<span>TRACK</span><strong
-								>{formatWeather(currentWeather.track_temperature, '°C')}</strong
-							><small>Surface temperature</small>
-						</div>
-						<div>
-							<span>HUMIDITY</span><strong>{formatWeather(currentWeather.humidity, '%', 0)}</strong
-							><small>Relative humidity</small>
-						</div>
-						<div>
-							<span>PRESSURE</span><strong
-								>{formatWeather(currentWeather.pressure, ' mbar', 0)}</strong
-							><small>Air pressure</small>
-						</div>
-						<div class="wind-metric">
-							<span>WIND</span><strong
-								><i
-									style={`transform:rotate(${currentWeather.wind_direction ?? 0}deg)`}
-									aria-hidden="true">↑</i
-								>{formatWeather(currentWeather.wind_speed, ' m/s')}</strong
-							><small
-								>{compassDirection(currentWeather.wind_direction)} · {formatWeather(
-									currentWeather.wind_direction,
-									'°',
-									0
-								)}</small
+						<footer class="weather-source">
+							<span><i></i>FastF1 weather feed</span><span
+								>{loaded.bundle.weather.length} samples · updated approximately every minute</span
+							>
+						</footer>
+					{:else}
+						<div class="weather-empty">
+							<strong>Weather feed unavailable</strong><span
+								>This race has no time-aligned conditions in the current snapshot.</span
 							>
 						</div>
-						<div>
-							<span>SAMPLE</span><strong>{formatClock(currentWeather.t_s)}</strong><small
-								>{formatDate(loaded.bundle.race.race_date)} · Race session</small
-							>
-						</div>
-					</div>
-					<footer class="weather-source">
-						<span><i></i>FastF1 weather feed</span><span
-							>{loaded.bundle.weather.length} samples · updated approximately every minute</span
-						>
-					</footer>
-				{:else}
-					<div class="weather-empty">
-						<strong>Weather feed unavailable</strong><span
-							>This race has no time-aligned conditions in the current snapshot.</span
-						>
-					</div>
-				{/if}
+					{/if}
+				</section>
 			</section>
 			<section class="timeline panel" aria-label="Race intelligence timeline">
 				<div class="timeline-head">
@@ -972,6 +974,11 @@
 									onclick={() => activateEvent(event)}
 								></button>{/each}
 						</div>
+					</div>
+					<div class="phase-summary">
+						<strong>Near the current replay time</strong><span
+							>The eight closest matching events, ordered chronologically.</span
+						>
 					</div>
 					<div class="event-list">
 						{#if nearbyEvents.length}{#each nearbyEvents as event (event.id)}<button
@@ -1714,7 +1721,8 @@
 		line-height: 1.55;
 	}
 	.weather-panel {
-		margin-top: 12px;
+		grid-column: 1 / -1;
+		margin-top: 0;
 		padding: 14px 16px 10px;
 	}
 	.weather-heading {
@@ -1754,7 +1762,7 @@
 	}
 	.weather-metrics {
 		display: grid;
-		grid-template-columns: repeat(6, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(150px, 1.15fr)) repeat(4, minmax(120px, 1fr));
 		margin-top: 13px;
 		background: rgba(255, 255, 255, 0.018);
 		border: 1px solid var(--line);
@@ -1782,6 +1790,12 @@
 	.weather-metrics strong {
 		margin-top: 5px;
 		font: var(--text-title) Consolas;
+	}
+	.weather-metrics > div:nth-child(-n + 2) {
+		background: rgba(255, 255, 255, 0.025);
+	}
+	.weather-metrics > div:nth-child(-n + 2) strong {
+		font-size: 18px;
 	}
 	.weather-metrics small {
 		margin-top: 3px;
@@ -1978,7 +1992,7 @@
 		font-size: var(--text-small);
 	}
 	.phase-event-list {
-		max-height: 430px;
+		max-height: 520px;
 		padding-right: 4px;
 		overflow-y: auto;
 		scrollbar-color: #3b4352 transparent;
@@ -2066,13 +2080,13 @@
 	}
 	.event-list {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+		grid-template-columns: 1fr;
 		gap: 7px;
 		margin-top: 16px;
 	}
 	.event {
 		display: grid;
-		grid-template-columns: 7px 48px 1fr auto;
+		grid-template-columns: 8px 64px minmax(0, 1fr) auto;
 		align-items: center;
 		min-width: 0;
 		min-height: 52px;
@@ -2123,6 +2137,8 @@
 		margin-top: 3px;
 		color: var(--muted);
 		font-size: var(--text-meta);
+		line-height: 1.45;
+		white-space: normal;
 	}
 	.event b {
 		color: var(--purple);
@@ -2147,6 +2163,10 @@
 	}
 	.radio-player.visible {
 		display: grid;
+		position: sticky;
+		z-index: 10;
+		bottom: 12px;
+		box-shadow: 0 14px 36px rgba(0, 0, 0, 0.42);
 	}
 	.radio-player strong {
 		display: block;
@@ -2252,10 +2272,13 @@
 			order: 1;
 		}
 		.timing-panel {
-			order: 2;
+			order: 3;
 		}
 		.driver-panel {
-			order: 3;
+			order: 4;
+		}
+		.weather-panel {
+			order: 2;
 		}
 		.circuit {
 			min-height: 430px;
