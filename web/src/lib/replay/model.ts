@@ -7,13 +7,15 @@ import type {
 	PitWindow,
 	PositionRow,
 	RaceControlRow,
+	RadioPhase,
 	RadioRow,
 	ReplayDriver,
 	ReplayEvent,
 	ReplaySample,
 	TrackPath,
 	TrackPoint,
-	TimingRow
+	TimingRow,
+	WeatherRow
 } from './types';
 import { pitLaneProfileFor } from './pit-lanes';
 
@@ -33,6 +35,26 @@ const smoothstep = (value: number) => {
 	const bounded = Math.max(0, Math.min(1, value));
 	return bounded * bounded * (3 - 2 * bounded);
 };
+
+export function formatLapTime(seconds: number | null | undefined): string {
+	if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '—';
+	const totalMilliseconds = Math.round(seconds * 1000);
+	const minutes = Math.floor(totalMilliseconds / 60_000);
+	const remainingSeconds = (totalMilliseconds % 60_000) / 1000;
+	return `${minutes}:${remainingSeconds.toFixed(3).padStart(6, '0')}`;
+}
+
+export function weatherAtTime(samples: WeatherRow[], time: number): WeatherRow | null {
+	if (!samples.length) return null;
+	let low = 0;
+	let high = samples.length;
+	while (low < high) {
+		const middle = (low + high) >> 1;
+		if (samples[middle].t_s <= time) low = middle + 1;
+		else high = middle;
+	}
+	return samples[Math.max(0, low - 1)] ?? null;
+}
 
 function pitWindowForTransition(previous: LapRow, lap: LapRow, profile: PitLaneProfile): PitWindow {
 	const start = lap.lap_start_t_s - profile.entryLeadSeconds;
@@ -536,6 +558,41 @@ function messageSubtype(row: RaceControlRow) {
 	return 'control';
 }
 
+function radioPhase(row: RadioRow): RadioPhase {
+	// Bundles generated before radio phases were introduced only contain in-race clips.
+	return row.phase ?? 'race';
+}
+
+export function radioEventsForPhase(
+	radio: RadioRow[],
+	phase: RadioPhase,
+	selectedCode = ''
+): ReplayEvent[] {
+	return radio
+		.flatMap((row, index): ReplayEvent[] => {
+			if (
+				radioPhase(row) !== phase ||
+				!Number.isFinite(row.t_s) ||
+				!row.recording_url ||
+				(selectedCode && row.driver_code !== selectedCode)
+			)
+				return [];
+			return [
+				{
+					id: `radio|${phase}|${row.t_s}|${index}`,
+					time: row.t_s,
+					type: 'radio',
+					subtype: 'radio',
+					label: row.transcript || `${row.driver_code} team radio`,
+					meta: `${row.driver_code} team radio`,
+					participants: [row.driver_code],
+					raw: row
+				}
+			];
+		})
+		.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+}
+
 export function buildEvents(
 	messages: RaceControlRow[],
 	overtakes: OvertakeRow[],
@@ -571,19 +628,7 @@ export function buildEvents(
 			raw: row
 		});
 	});
-	radio.forEach((row, index) => {
-		if (!Number.isFinite(row.t_s) || !row.recording_url) return;
-		events.push({
-			id: `radio|${row.t_s}|${index}`,
-			time: row.t_s,
-			type: 'radio',
-			subtype: 'radio',
-			label: row.transcript || `${row.driver_code} team radio`,
-			meta: `${row.driver_code} team radio`,
-			participants: [row.driver_code],
-			raw: row
-		});
-	});
+	events.push(...radioEventsForPhase(radio, 'race'));
 	const previousLapByDriver = new Map<string, LapRow>();
 	for (const row of [...laps].sort(
 		(a, b) =>

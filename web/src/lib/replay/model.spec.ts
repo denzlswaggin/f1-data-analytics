@@ -5,14 +5,17 @@ import {
 	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
+	formatLapTime,
+	radioEventsForPhase,
 	pitLaneProgressAt,
 	positionAtTrackProgress,
 	projectedSampleAt,
 	sampleAt,
 	smoothPositionHolds,
-	timingAt
+	timingAt,
+	weatherAtTime
 } from './model';
-import type { DriverMeta, LapRow, PositionRow } from './types';
+import type { DriverMeta, LapRow, PositionRow, RadioRow, WeatherRow } from './types';
 import { pitLaneProfileFor, supportedPitLaneCircuits } from './pit-lanes';
 
 const metadata: DriverMeta[] = [
@@ -60,6 +63,43 @@ const positions: PositionRow[] = [
 ];
 
 describe('replay model', () => {
+	it('formats lap durations as minutes and seconds', () => {
+		expect(formatLapTime(79.842)).toBe('1:19.842');
+		expect(formatLapTime(60)).toBe('1:00.000');
+		expect(formatLapTime(null)).toBe('—');
+	});
+
+	it('uses the latest available weather sample at replay time', () => {
+		const weather: WeatherRow[] = [
+			{
+				t_s: 0,
+				air_temperature: 20,
+				track_temperature: 30,
+				humidity: 50,
+				pressure: 1012,
+				rainfall: false,
+				wind_direction: 180,
+				wind_speed: 2
+			},
+			{
+				t_s: 60,
+				air_temperature: 19,
+				track_temperature: 27,
+				humidity: 68,
+				pressure: 1011,
+				rainfall: true,
+				wind_direction: 210,
+				wind_speed: 4
+			}
+		];
+
+		expect(weatherAtTime([], 10)).toBeNull();
+		expect(weatherAtTime(weather, -10)).toBe(weather[0]);
+		expect(weatherAtTime(weather, 59)).toBe(weather[0]);
+		expect(weatherAtTime(weather, 60)).toBe(weather[1]);
+		expect(weatherAtTime(weather, 500)).toBe(weather[1]);
+	});
+
 	it('interpolates positions and builds live timing context', () => {
 		const drivers = buildDrivers(positions, metadata, laps);
 		expect(sampleAt(drivers[0], 0.5)?.x).toBeCloseTo(5);
@@ -220,13 +260,47 @@ describe('replay model', () => {
 					t_s: 3,
 					driver_code: 'NOR',
 					recording_url: 'https://example.com/radio.mp3',
-					transcript: null
+					transcript: null,
+					phase: 'race'
 				}
 			]
 		);
 		expect(filterEvents(events, 'NOR').map((event) => event.type)).toEqual(['overtake', 'radio']);
 		expect(filterEvents(events, 'VER').map((event) => event.type)).toEqual(['overtake']);
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
+	});
+
+	it('keeps pre-race and post-race radio out of the live race timeline', () => {
+		const radio: RadioRow[] = [
+			{
+				t_s: -40,
+				driver_code: 'NOR',
+				recording_url: 'https://example.com/pre.mp3',
+				transcript: 'Radio check',
+				phase: 'pre-race'
+			},
+			{
+				t_s: 12,
+				driver_code: 'NOR',
+				recording_url: 'https://example.com/race.mp3',
+				transcript: 'Box this lap',
+				phase: 'race'
+			},
+			{
+				t_s: 105,
+				driver_code: 'VER',
+				recording_url: 'https://example.com/post.mp3',
+				transcript: 'Well done',
+				phase: 'post-race'
+			}
+		];
+
+		expect(buildEvents([], [], radio).map((event) => event.label)).toEqual(['Box this lap']);
+		expect(radioEventsForPhase(radio, 'pre-race').map((event) => event.label)).toEqual([
+			'Radio check'
+		]);
+		expect(radioEventsForPhase(radio, 'post-race', 'NOR')).toEqual([]);
+		expect(radioEventsForPhase(radio, 'post-race', 'VER')[0].time).toBe(105);
 	});
 
 	it('adds every driver stint transition to the event timeline as a pit stop', () => {
