@@ -5,9 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Compare two drivers on the same season scale. Ratings are relative to the
-connected teammate graph, not absolute lap-time predictions. Overlapping 90%
-intervals are evidence that the ordering is uncertain.
+<PageHeader
+    eyebrow="Driver intelligence"
+    title="Compare drivers honestly."
+    description="Place two careers on the same season scale and keep the 90% uncertainty interval in view before calling a winner."
+    accent="drivers"
+/>
 
 <KeyInsight label="How to read the comparison">
 Compare the gap and its uncertainty in seasons both drivers share. This is relative form, not a predicted head-to-head lap time.
@@ -80,7 +83,9 @@ select * from ${comparison_probability} order by season desc limit 1
 
 ## Latest shared-season evidence
 
+<div class="metric-grid">
 <BigValue data={latest_probability} value=probability_a_faster title="Approx. probability Driver A is faster" fmt="0.0%" />
+</div>
 
 The probability uses a logistic approximation to a normal distribution, derived
 from each 90% bootstrap interval. It is an interpretation aid, not a new fitted model: shared smoothing

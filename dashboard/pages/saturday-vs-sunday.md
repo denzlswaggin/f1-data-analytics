@@ -5,14 +5,15 @@ max_width: 1600
 
 <AppNav />
 
-The headline [driver rating](driver-ratings) is built from **qualifying** teammate gaps: one clean
-lap, no traffic, no fuel, no tyre management. It says who is fastest on Saturday and
-nothing about Sunday.
+<PageHeader
+    eyebrow="Driver intelligence"
+    title="Who gains on Sunday?"
+    description="Compare teammate-normalised qualifying and controlled race pace over the same seasons to reveal racers and Saturday specialists."
+    accent="drivers"
+/>
 
-This page adds the race-pace counterpart. Teammates are compared on the **same lap
-number** — identical fuel load — over green-flag laps on the **same compound** at a
-similar tyre age, and those gaps are chained into a second rating with the same
-least-squares solver. Setting the two side by side gives one number per driver:
+Teammates are compared on the **same lap number**, compound and similar tyre age.
+Those gaps are chained into a second rating with the same solver used for qualifying:
 
 <div class="text-center text-lg my-4">
 
@@ -20,11 +21,7 @@ least-squares solver. Setting the two side by side gives one number per driver:
 
 </div>
 
-Positive means a driver gains ground on the field once the race starts. Negative means
-they flatter to deceive on Saturday. Both ratings are fitted over the **same seasons**,
-so the comparison is like-for-like — and both are relative to the field, so a delta of
-zero means "improves on Sunday exactly as much as the average driver does", not "no
-improvement".
+Both ratings are fitted over the **same seasons**, so the comparison is like-for-like.
 
 <KeyInsight label="How to read delta">
 Positive means stronger relative race pace; negative means stronger relative qualifying pace. Zero is the field average, not “no improvement”.
