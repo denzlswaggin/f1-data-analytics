@@ -33,7 +33,7 @@ order by round
 
 <FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql pace_coverage

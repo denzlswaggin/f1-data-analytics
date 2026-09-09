@@ -34,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Fastest-lap telemetry coverage varies by season.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={tel_races} name=race value=round label=race_label title="Race" />
+    <Dropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql telemetry_coverage
