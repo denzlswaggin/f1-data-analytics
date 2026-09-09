@@ -675,50 +675,91 @@
 						<span>{leaderboard.length} drivers</span><span>{racePhase}</span>
 					</div>
 				</aside>
-				<section class="track-panel panel" aria-label="Circuit map">
-					<div class="track-meta">
-						<div><span>CIRCUIT VIEW</span><strong>{loaded.bundle.race.circuit_name}</strong></div>
-						<div class="track-actions">
-							<button type="button" onclick={followDriver} disabled={!selectedCode}
-								>{view.zoom > 1 ? 'Release camera' : 'Follow driver'}</button
-							><button type="button" onclick={resetView}>Reset view</button><button
+				<div class="center-stage">
+					<section class="track-panel panel" aria-label="Circuit map">
+						<div class="track-meta">
+							<div><span>CIRCUIT VIEW</span><strong>{loaded.bundle.race.circuit_name}</strong></div>
+							<div class="track-actions">
+								<button type="button" onclick={followDriver} disabled={!selectedCode}
+									>{view.zoom > 1 ? 'Release camera' : 'Follow driver'}</button
+								><button type="button" onclick={resetView}>Reset view</button><button
+									type="button"
+									onclick={toggleFullscreen}>Fullscreen</button
+								>
+							</div>
+						</div>
+						<div class="circuit">
+							<canvas
+								aria-label="Animated circuit map. Select cars from the timing tower or directly on the circuit."
+								onpointerdown={onPointerDown}
+								onpointermove={onPointerMove}
+								onpointerup={onPointerUp}
+								onpointerleave={() => {
+									dragging = false;
+									hovered = null;
+								}}
+								class:dragging
+								bind:this={canvas}
+							></canvas>{#if hovered}<div
+									class="tooltip"
+									style={`left:${Math.min(canvasWidth - 155, hovered.x + 14)}px;top:${Math.max(55, hovered.y - 45)}px`}
+								>
+									<strong><i style={`background:${hovered.color}`}></i>{hovered.name}</strong><span
+										>P{hovered.order ?? '—'} · {hovered.team}</span
+									><span>{formatGap(hovered.ahead, true)} interval</span>
+								</div>{/if}
+							<div class="map-help">Scroll to zoom · drag to pan · click a car to follow</div>
+						</div>
+						{#if recentMessages.length}<div class="race-control">
+								<span>RACE CONTROL</span>{#each recentMessages as event (event.id)}<button
+										type="button"
+										onclick={() => seek(event.time)}
+										><time>{formatClock(event.time)}</time><i class={event.subtype}></i><strong
+											>{event.label}</strong
+										></button
+									>{/each}
+							</div>{/if}
+					</section>
+					<section class="control-deck panel" aria-label="Replay controls">
+						<div class="playback">
+							<button
+								class="play"
 								type="button"
-								onclick={toggleFullscreen}>Fullscreen</button
+								onclick={togglePlayback}
+								aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Ⅱ' : '▶'}</button
+							><button type="button" onclick={() => seek(replayTime - 5)}>−5s</button><button
+								type="button"
+								onclick={() => seek(replayTime + 5)}>+5s</button
+							><strong>{formatClock(currentTime)}</strong>
+						</div>
+						<div class="scrubber">
+							<input
+								aria-label="Replay time"
+								type="range"
+								min="0"
+								max={duration}
+								step="0.5"
+								value={currentTime}
+								oninput={(event) => seek(Number(event.currentTarget.value))}
+							/>
+							<div class="ticks">
+								<span>START</span><span>{formatClock(duration / 2)}</span><span>FINISH</span>
+							</div>
+						</div>
+						<div class="lap-controls">
+							<button type="button" onclick={() => jumpLap(-1)}>← Lap</button><button
+								type="button"
+								onclick={() => jumpLap(1)}>Lap →</button
 							>
 						</div>
-					</div>
-					<div class="circuit">
-						<canvas
-							aria-label="Animated circuit map. Select cars from the timing tower or directly on the circuit."
-							onpointerdown={onPointerDown}
-							onpointermove={onPointerMove}
-							onpointerup={onPointerUp}
-							onpointerleave={() => {
-								dragging = false;
-								hovered = null;
-							}}
-							class:dragging
-							bind:this={canvas}
-						></canvas>{#if hovered}<div
-								class="tooltip"
-								style={`left:${Math.min(canvasWidth - 155, hovered.x + 14)}px;top:${Math.max(55, hovered.y - 45)}px`}
-							>
-								<strong><i style={`background:${hovered.color}`}></i>{hovered.name}</strong><span
-									>P{hovered.order ?? '—'} · {hovered.team}</span
-								><span>{formatGap(hovered.ahead, true)} interval</span>
-							</div>{/if}
-						<div class="map-help">Scroll to zoom · drag to pan · click a car to follow</div>
-					</div>
-					{#if recentMessages.length}<div class="race-control">
-							<span>RACE CONTROL</span>{#each recentMessages as event (event.id)}<button
-									type="button"
-									onclick={() => seek(event.time)}
-									><time>{formatClock(event.time)}</time><i class={event.subtype}></i><strong
-										>{event.label}</strong
-									></button
-								>{/each}
-						</div>{/if}
-				</section>
+						<label class="speed-control"
+							>SPEED<select bind:value={speed}
+								>{#each SPEEDS as option (option)}<option value={option}>{option}×</option
+									>{/each}</select
+							></label
+						>
+					</section>
+				</div>
 				<aside id="strategy" class="driver-panel panel" aria-label="Selected driver detail">
 					{#if selectedDriver}<div
 							class="driver-accent"
@@ -851,45 +892,6 @@
 						>
 					</div>
 				{/if}
-			</section>
-			<section class="control-deck panel" aria-label="Replay controls">
-				<div class="playback">
-					<button
-						class="play"
-						type="button"
-						onclick={togglePlayback}
-						aria-label={playing ? 'Pause replay' : 'Play replay'}>{playing ? 'Ⅱ' : '▶'}</button
-					><button type="button" onclick={() => seek(replayTime - 5)}>−5s</button><button
-						type="button"
-						onclick={() => seek(replayTime + 5)}>+5s</button
-					><strong>{formatClock(currentTime)}</strong>
-				</div>
-				<div class="scrubber">
-					<input
-						aria-label="Replay time"
-						type="range"
-						min="0"
-						max={duration}
-						step="0.5"
-						value={currentTime}
-						oninput={(event) => seek(Number(event.currentTarget.value))}
-					/>
-					<div class="ticks">
-						<span>START</span><span>{formatClock(duration / 2)}</span><span>FINISH</span>
-					</div>
-				</div>
-				<div class="lap-controls">
-					<button type="button" onclick={() => jumpLap(-1)}>← Lap</button><button
-						type="button"
-						onclick={() => jumpLap(1)}>Lap →</button
-					>
-				</div>
-				<label class="speed-control"
-					>SPEED<select bind:value={speed}
-						>{#each SPEEDS as option (option)}<option value={option}>{option}×</option
-							>{/each}</select
-					></label
-				>
 			</section>
 			<section class="timeline panel" aria-label="Race intelligence timeline">
 				<div class="timeline-head">
@@ -1272,13 +1274,23 @@
 	}
 	.replay-grid {
 		display: grid;
-		grid-template-columns: 238px minmax(460px, 1fr) 276px;
+		grid-template-columns: minmax(260px, 280px) minmax(520px, 1fr) minmax(300px, 320px);
 		gap: 12px;
-		min-height: 540px;
+		align-items: stretch;
+	}
+	.center-stage {
+		display: grid;
+		grid-template-rows: minmax(540px, 1fr) auto;
+		gap: 12px;
+		min-width: 0;
 	}
 	.timing-panel,
 	.driver-panel {
 		overflow: hidden;
+	}
+	.timing-panel {
+		display: flex;
+		flex-direction: column;
 	}
 	.panel-head {
 		display: flex;
@@ -1299,7 +1311,8 @@
 		font-size: var(--text-caption);
 	}
 	.timing-panel ol {
-		max-height: 470px;
+		flex: 1;
+		max-height: 536px;
 		margin: 0;
 		padding: 5px 0;
 		overflow: auto;
@@ -1825,7 +1838,7 @@
 		align-items: center;
 		gap: 16px;
 		min-height: 72px;
-		margin-top: 12px;
+		margin-top: 0;
 		padding: 10px 14px;
 	}
 	.playback,
@@ -2181,7 +2194,7 @@
 	}
 	@media (max-width: 1120px) {
 		.replay-grid {
-			grid-template-columns: 220px 1fr;
+			grid-template-columns: 240px minmax(0, 1fr);
 		}
 		.driver-panel {
 			grid-column: 1/-1;
@@ -2235,7 +2248,7 @@
 			display: flex;
 			flex-direction: column;
 		}
-		.track-panel {
+		.center-stage {
 			order: 1;
 		}
 		.timing-panel {
