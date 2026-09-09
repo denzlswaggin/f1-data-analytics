@@ -2,7 +2,7 @@
     export let data = [];
     export let title = 'Season-by-season form with 90% intervals';
 
-    const COLORS = ['#2563eb', '#c2410c', '#16a34a', '#9333ea'];
+    const COLORS = ['#32d3f4', '#ff4050', '#46d39a', '#a78bfa'];
     const num = (value) => value == null ? null : Number(value);
     let clientWidth = 840;
 
@@ -89,14 +89,14 @@
 </div>
 
 <style>
-    .rating-chart { width: 100%; margin: 0.75rem 0 1.25rem; font-family: inherit; }
-    .title { font-weight: 600; margin-bottom: 0.35rem; }
-    .legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 12px; margin-bottom: 0.25rem; }
+    .rating-chart { width: 100%; margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid rgba(160,174,201,.18); border-radius: .95rem; background: rgba(255,255,255,.025); font-family: inherit; }
+    .title { color: #f4f7fb; font-size: 1rem; font-weight: 700; margin-bottom: 0.45rem; }
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; color: #aeb8c7; font-size: 13px; margin-bottom: 0.35rem; }
     .legend span { display: inline-flex; align-items: center; gap: 5px; }
     .legend i { width: 12px; height: 3px; border-radius: 2px; }
     .grid { stroke: currentColor; stroke-opacity: 0.11; }
     .zero { stroke: currentColor; stroke-opacity: 0.35; stroke-dasharray: 4 4; }
-    .axis { fill: currentColor; opacity: 0.62; font-size: 11px; }
+    .axis { fill: currentColor; opacity: 0.7; font-size: 12px; }
     .interval { stroke-width: 1.5; stroke-opacity: 0.55; }
     .cap { stroke-width: 1.5; stroke-opacity: 0.75; }
     .empty { padding: 2rem 0; opacity: 0.6; }

@@ -11,20 +11,24 @@
 <style>
     .expandable {
         margin: 1rem 0 1.5rem;
-        border-top: 1px solid var(--color-base-300, #d7dce1);
-        border-bottom: 1px solid var(--color-base-300, #d7dce1);
+        overflow: hidden;
+        border: 1px solid rgba(160, 174, 201, 0.18);
+        border-radius: 0.75rem;
+        background: rgba(255,255,255,.018);
     }
     summary {
-        padding: 0.75rem 0;
+        padding: 0.85rem 1rem;
         cursor: pointer;
-        font-size: 0.86rem;
+        color: #ff7180;
+        font-size: 0.89rem;
         font-weight: 650;
-        color: var(--color-primary, #2563eb);
     }
     summary:focus-visible {
         border-radius: 0.25rem;
         outline: 2px solid var(--color-primary, #2563eb);
         outline-offset: 2px;
     }
-    .body { padding: 0 0 0.75rem; }
+    summary::after { float: right; color: #9ba7ba; content: '+'; font-size: 1.1rem; }
+    details[open] summary::after { content: '−'; }
+    .body { padding: 0.2rem 1rem 1rem; }
 </style>

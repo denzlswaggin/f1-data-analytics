@@ -38,9 +38,9 @@
     const padL = 54; // left gutter for the driver code
     const padR = 14;
     const padT = 6;
-    const rowH = 22;
-    const barH = 14;
-    const axisH = 22;
+    const rowH = 25;
+    const barH = 16;
+    const axisH = 25;
 
     $: rows = buildRows(data);
     $: maxLap = Math.max(1, ...rows.flatMap((r) => r.stints.map((s) => s.end_lap)));
@@ -213,6 +213,11 @@
 <style>
     .stintchart {
         width: 100%;
+        margin: 1rem 0 1.5rem;
+        padding: 1rem;
+        border: 1px solid rgba(160,174,201,.18);
+        border-radius: .95rem;
+        background: rgba(255,255,255,.025);
         font-family: inherit;
     }
     .sc-title {
@@ -224,7 +229,8 @@
         flex-wrap: wrap;
         gap: 12px;
         align-items: center;
-        font-size: 12px;
+        color: #aeb8c7;
+        font-size: 13px;
         margin-bottom: 6px;
         opacity: 0.85;
     }
@@ -255,21 +261,21 @@
     .sc-axis {
         fill: currentColor;
         opacity: 0.6;
-        font-size: 11px;
+        font-size: 12px;
     }
     .sc-axis-title {
         fill: currentColor;
         opacity: 0.5;
-        font-size: 11px;
+        font-size: 12px;
         font-style: italic;
     }
     .sc-driver {
         fill: currentColor;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
     }
     .sc-letter {
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 700;
         pointer-events: none;
     }

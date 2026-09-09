@@ -5,8 +5,16 @@ max_width: 1600
 
 <AppNav />
 
-Results tell you **what happened**. This dashboard uses teammate-normalised pace,
-controlled race laps, strategy, telemetry and replay data to help explain **why**.
+<PageHeader
+    eyebrow="Performance analytics"
+    title="See beyond the result."
+    description="Race pace, strategy, telemetry and teammate-normalised ratings — one evidence-led view of why a Grand Prix unfolded the way it did."
+>
+    <div slot="actions">
+        <a href="/f1-data-analytics/latest-race/">Latest race</a>
+        <a href="/f1-data-analytics/race-replay/">Open replay</a>
+    </div>
+</PageHeader>
 
 ```sql snapshot
 select * from f1.snapshot_metadata
@@ -33,9 +41,11 @@ limit 1
 
 ### {latest_race[0].race_label}
 
+<div class="metric-grid">
 <BigValue data={latest_race} value=fastest_driver title="Fastest lap" />
 <BigValue data={pace_leader} value=driver_name title="Strongest controlled pace" />
 <BigValue data={latest_race} value=overtakes title="Detected passes" />
+</div>
 
 [Open the complete race story](latest-race) or [watch the replay](race-replay).
 

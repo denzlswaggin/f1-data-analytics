@@ -5,13 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Who ran which compound, for how long, and when they pitted — the classic F1
-**strategy chart**. Each row is a driver (ordered by finish), each coloured block a
-tyre stint on the true race-lap axis; a vertical tick marks every pit stop, and each
-stint **darkens toward its end in proportion to its observed within-stint pace
-slope** (s/lap). The slope is descriptive and not adjusted for fuel, traffic or
-track evolution. Built from FastF1 per-lap compound + stint data. _Hover a stint
-for its lap range, tyre age, and observed slope._
+<PageHeader
+    eyebrow="Strategy analysis"
+    title="Which tyres faded?"
+    description="See every compound choice and pit window on a true lap axis, then separate raw fall-off from fuel- and track-adjusted degradation."
+    accent="strategy"
+/>
 
 <KeyInsight label="How to read the strategy chart">
 Blocks show compound and stint length. Darkening indicates observed fall-off, while the adjusted chart below removes much of the shared fuel and track trend.
@@ -24,7 +23,10 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.stint_strategy
 where season = ${inputs.season.value}
 order by round
@@ -32,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Compare stint timing, compound choice and fall-off.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql tyre_coverage

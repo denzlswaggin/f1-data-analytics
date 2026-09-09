@@ -13,16 +13,23 @@ select * from f1.snapshot_metadata
 select * from f1.latest_race
 ```
 
-# {race[0].race_label}
+<PageHeader
+    eyebrow="Latest race report"
+    title={race[0].race_label}
+    description="Result, controlled pace, execution and on-track passing distilled into one race story."
+>
+    <div slot="actions">
+        <a href="/f1-data-analytics/race-replay/">Watch replay</a>
+        <a href="/f1-data-analytics/race-pace/">Open pace analysis</a>
+    </div>
+</PageHeader>
 
-This is the newest fully transformed race in the published snapshot. Data was
-exported at <Value data={snapshot} column=generated_at fmt="yyyy-mm-dd HH:MM" />;
-the newest represented event is <Value data={snapshot} column=latest_event_date />.
-
+<div class="metric-grid">
 <BigValue data={race} value=drivers title="Drivers" />
 <BigValue data={race} value=fastest_driver title="Fastest lap" />
-<BigValue data={race} value=fastest_lap_sec title="Lap time" fmt="0.000" />
+<BigValue data={race} value=fastest_lap_time title="Lap time" />
 <BigValue data={race} value=overtakes title="Detected passes" />
+</div>
 
 ```sql story_coverage
 select * from f1.data_coverage
@@ -67,9 +74,11 @@ limit 1
 
 ## The race story
 
+<div class="metric-grid">
 <BigValue data={pace_leader} value=driver_name title="Strongest controlled pace" />
 <BigValue data={execution_gain} value=driver_name title="Biggest execution gain" />
 <BigValue data={pass_leader} value=driver_name title="Most on-track passes" />
+</div>
 
 <KeyInsight label="Race in one sentence">
 The winner, <Value data={winner} column=driver_name />, ranked

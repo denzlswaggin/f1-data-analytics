@@ -1,6 +1,6 @@
 appearance:
-  default: system
-  switcher: true
+  default: dark
+  switcher: false
 
 # Served from a GitHub Pages project site at /<repo>. All internal links and
 # asset URLs are rewritten under this base path at build time.
@@ -11,48 +11,48 @@ theme:
   colorPalettes:
     default:
       light:
-        - "#236aa4"
-        - "#45a1bf"
-        - "#a5cdee"
-        - "#8dacbf"
-        - "#85c7c6"
-        - "#d2c6ac"
-        - "#f4b548"
-        - "#8f3d56"
-        - "#71b9f4"
-        - "#46a485"
+        - "#d7192d"
+        - "#007f9e"
+        - "#7558c9"
+        - "#c78d00"
+        - "#16825a"
+        - "#cf5b2f"
+        - "#3976ca"
+        - "#c44a87"
+        - "#68758a"
+        - "#668a1e"
       dark:
-        - "#236aa4"
-        - "#45a1bf"
-        - "#a5cdee"
-        - "#8dacbf"
-        - "#85c7c6"
-        - "#d2c6ac"
-        - "#f4b548"
-        - "#8f3d56"
-        - "#71b9f4"
-        - "#46a485"
+        - "#ff4050"
+        - "#32d3f4"
+        - "#a78bfa"
+        - "#f7c948"
+        - "#46d39a"
+        - "#ff8c5a"
+        - "#6ea8fe"
+        - "#f472b6"
+        - "#94a3b8"
+        - "#c4f169"
   colorScales:
     default:
       light:
-        - "#ADD8E6"
-        - "#00008B"
+        - "#e6f7fa"
+        - "#007f9e"
       dark:
-        - "#ADD8E6"
-        - "#00008B"
+        - "#153740"
+        - "#32d3f4"
   colors:
     primary:
-      light: "#2563eb"
-      dark: "#3b82f6"
+      light: "#d7192d"
+      dark: "#ff4050"
     accent:
-      light: "#c2410c"
-      dark: "#fdba74"
+      light: "#007f9e"
+      dark: "#32d3f4"
     base:
       light: "#ffffff"
       dark: "#09090b"
     info:
-      light: "#0284c7"
-      dark: "#38bdf8"
+      light: "#007f9e"
+      dark: "#32d3f4"
     positive:
       light: "#16a34a"
       dark: "#4ade80"

@@ -5,12 +5,17 @@ max_width: 1600
 
 <AppNav />
 
-Teammate qualifying gaps reduce much of the shared car-performance effect, though
-upgrades, setup, reliability and changing driver form remain possible confounders.
-The pairwise gaps are chained into a cross-era leaderboard via a regularised
-least-squares fit on the teammate graph. Higher rating = faster relative to
-teammates. The interval is a 90% comparison-bootstrap interval, not a guaranteed
-rank range.
+<PageHeader
+    eyebrow="Driver intelligence"
+    title="Who is fastest beyond the car?"
+    description="A teammate-normalised view of career pace and current form, with uncertainty kept visible instead of hidden behind a ranking."
+    accent="drivers"
+>
+    <div slot="actions">
+        <a href="/f1-data-analytics/driver-comparison/">Compare drivers</a>
+        <a href="/f1-data-analytics/saturday-vs-sunday/">Saturday vs Sunday</a>
+    </div>
+</PageHeader>
 
 <KeyInsight label="How to read the rating">
 Higher is faster relative to teammates. Treat overlapping 90% intervals as an uncertain ordering, not a definitive rank.

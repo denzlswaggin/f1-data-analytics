@@ -5,10 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
-Compare who carried more speed where, then see a single driver's racing line
-coloured by gear. _FastF1 coverage varies by season; the panel below states the
-exact races and latest event present in the published snapshot._
+<PageHeader
+    eyebrow="Telemetry lab"
+    title="Where does each driver gain time?"
+    description="Overlay fastest-race-lap speed, cumulative delta and pedal inputs, then map the selected gear around the circuit."
+    accent="drivers"
+/>
 
 <KeyInsight label="How to compare laps">
 Use the cumulative delta to find where time was gained; use speed and pedal traces to explain how it was gained.
@@ -21,7 +23,10 @@ order by season desc
 ```
 
 ```sql tel_races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.telemetry_fastest_lap
 where season = ${inputs.season.value}
 order by round
@@ -29,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Fastest-lap telemetry coverage varies by season.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={tel_races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql telemetry_coverage

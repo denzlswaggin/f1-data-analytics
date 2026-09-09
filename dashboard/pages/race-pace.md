@@ -5,9 +5,11 @@ max_width: 1600
 
 <AppNav />
 
-Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
-yellow laps filtered out). Pick a race to see how pace evolved and where tyre
-stints fall. The coverage panel below states the races actually available.
+<PageHeader
+    eyebrow="Race analysis"
+    title="Where was the race won?"
+    description="Compare readable two-driver traces, controlled pace and stint phases using green-flag FastF1 timing."
+/>
 
 <KeyInsight label="How to read race pace">
 Negative controlled deltas are faster. Compare two drivers on the same lap and compound instead of reading raw lap time alone.
@@ -20,7 +22,10 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.lap_times
 where season = ${inputs.season.value}
 order by round
@@ -28,7 +33,7 @@ order by round
 
 <FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql pace_coverage

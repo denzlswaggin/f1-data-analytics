@@ -5,9 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
-you: who carries the most speed down the longest straight, and how the observed
-lap-time slope changes with track conditions.
+<PageHeader
+    eyebrow="Conditions lab"
+    title="How did conditions shape performance?"
+    description="Put straight-line speed and observed tyre fall-off into the temperature and weather context of the race."
+    accent="strategy"
+/>
 
 <KeyInsight label="Keep the comparison honest">
 Straight-line speed is descriptive, not a pure power-unit ranking. Weather slopes also include fuel, traffic and track evolution.
@@ -20,7 +23,10 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.speed_trap
 where season = ${inputs.season.value}
 order by round
@@ -28,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Compare straight-line speed in the selected event.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql speed_coverage

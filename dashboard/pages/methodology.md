@@ -5,6 +5,13 @@ max_width: 1600
 
 <AppNav />
 
+<PageHeader
+    eyebrow="Data & methodology"
+    title="Can I trust this result?"
+    description="See exactly what each metric measures, how much evidence supports it and where interpretation must stop."
+    accent="trust"
+/>
+
 <KeyInsight label="Short answer" tone="positive">
 The dashboard publishes immutable, checksum-verified snapshots and exposes sample coverage. Results still describe the available data rather than proving causality.
 </KeyInsight>

@@ -5,12 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-This page describes a driver's track position the lap **before** each stop versus
-**two laps after**, alongside the stop's stationary time. Positive means places
-were gained across that window. It is not a counterfactual undercut/overcut
-estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
-observed position. Pit-stop timing comes from Jolpica; position context comes from
-the FastF1 race laps loaded elsewhere in this dashboard.
+<PageHeader
+    eyebrow="Strategy analysis"
+    title="Which pit cycles changed the race?"
+    description="Connect stationary time with the position swing around every stop and quickly find the pit cycles worth investigating."
+    accent="strategy"
+/>
 
 <KeyInsight label="What this can tell you">
 Use the page to spot pit cycles worth investigating. Position swing is observed context, not proof of an undercut or strategic causality.
@@ -23,7 +23,10 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.pit_strategy
 where season = ${inputs.season.value}
 order by round
@@ -31,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Inspect every pit cycle in the selected Grand Prix.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
 </FilterBar>
 
 ```sql pit_coverage
