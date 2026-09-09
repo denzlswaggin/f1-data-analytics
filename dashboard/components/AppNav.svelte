@@ -87,7 +87,7 @@
         z-index: 30;
         top: 1rem;
         bottom: 1rem;
-        left: max(1rem, calc(50vw - 780px));
+        left: max(0.75rem, calc(50vw - 900px));
         display: flex;
         align-items: stretch;
         flex-direction: column;

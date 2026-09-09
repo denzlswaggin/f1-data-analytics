@@ -54,7 +54,7 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 #evidence-main-article {
 	width: min(100%, 1360px);
 	margin: 0 auto;
-	padding: 0 0 4rem 15.5rem;
+	padding: 1.25rem 0 4rem 15.5rem;
 	font-size: 1rem;
 	line-height: 1.65;
 }
@@ -192,7 +192,7 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 }
 
 @media (max-width: 1240px) {
-	#evidence-main-article { padding-left: 0; }
+	#evidence-main-article { padding: 0.5rem 0 4rem; }
 }
 
 @media (max-width: 640px) {
