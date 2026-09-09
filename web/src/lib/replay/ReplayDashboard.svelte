@@ -48,6 +48,11 @@
 		timelinePhase = $state<RadioPhase>('race'),
 		nowPlaying = $state<ReplayEvent | null>(null),
 		audioError = $state('');
+	let radioPlaying = $state(false),
+		radioLoading = $state(false),
+		radioMuted = $state(false),
+		radioCurrentTime = $state(0),
+		radioDuration = $state(0);
 	let hovered = $state<ScreenCar | null>(null),
 		dragging = $state(false);
 	let view = $state({ zoom: 1, ox: 0, oy: 0 });
@@ -531,6 +536,10 @@
 		}
 		nowPlaying = event;
 		audioError = '';
+		radioPlaying = false;
+		radioLoading = true;
+		radioCurrentTime = 0;
+		radioDuration = 0;
 		await tick();
 		audio.pause();
 		audio.src = clip.recording_url;
@@ -539,8 +548,37 @@
 			await audio.play();
 			if (phase === 'race') playing = true;
 		} catch {
-			audioError = 'Playback was blocked. Press play in the audio controls to retry.';
+			radioLoading = false;
+			audioError = 'Playback was blocked. Press play to retry.';
 		}
+	}
+	async function toggleRadioPlayback() {
+		if (!audio?.src) return;
+		if (!audio.paused) {
+			audio.pause();
+			return;
+		}
+		audioError = '';
+		try {
+			await audio.play();
+		} catch {
+			radioLoading = false;
+			audioError = 'This browser could not play the selected radio clip.';
+		}
+	}
+	function seekRadio(value: number) {
+		if (!audio?.src || !Number.isFinite(value)) return;
+		audio.currentTime = Math.max(0, Math.min(radioDuration, value));
+		radioCurrentTime = audio.currentTime;
+	}
+	function toggleRadioMute() {
+		if (!audio) return;
+		audio.muted = !audio.muted;
+		radioMuted = audio.muted;
+	}
+	function setRadioDuration() {
+		radioDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+		radioLoading = false;
 	}
 	function activateEvent(event: ReplayEvent) {
 		if (event.type === 'radio') void playRadio(event);
@@ -554,6 +592,10 @@
 		}
 		nowPlaying = null;
 		audioError = '';
+		radioPlaying = false;
+		radioLoading = false;
+		radioCurrentTime = 0;
+		radioDuration = 0;
 	}
 	function formatClock(seconds: number) {
 		const value = Math.max(0, Math.floor(seconds || 0)),
@@ -1053,18 +1095,63 @@
 					</div>
 				{/if}
 				<div class="radio-player" class:visible={Boolean(nowPlaying)}>
-					<div>
+					<div class="radio-copy">
 						<span>TEAM RADIO</span><strong>{nowPlaying?.meta ?? 'Select a radio event'}</strong
 						>{#if audioError}<small role="alert">{audioError}</small>{/if}
 					</div>
+					<div class="custom-audio-controls">
+						<button
+							class="radio-play"
+							type="button"
+							disabled={!nowPlaying}
+							aria-label={radioPlaying ? 'Pause team radio' : 'Play team radio'}
+							onclick={() => void toggleRadioPlayback()}
+							>{radioLoading ? '…' : radioPlaying ? 'Ⅱ' : '▶'}</button
+						>
+						<time>{formatClock(radioCurrentTime)} / {formatClock(radioDuration)}</time>
+						<input
+							class="radio-progress"
+							type="range"
+							min="0"
+							max={radioDuration || 0}
+							step="0.01"
+							value={radioCurrentTime}
+							disabled={!radioDuration}
+							aria-label="Team radio playback position"
+							oninput={(event) => seekRadio(Number(event.currentTarget.value))}
+						/>
+						<button
+							class="radio-volume"
+							type="button"
+							aria-label={radioMuted ? 'Unmute team radio' : 'Mute team radio'}
+							onclick={toggleRadioMute}>{radioMuted ? 'MUTED' : 'VOLUME'}</button
+						>
+					</div>
 					<audio
+						class="radio-engine"
 						bind:this={audio}
-						controls
 						preload="none"
-						onerror={() =>
-							nowPlaying && (audioError = 'The source could not load this radio clip.')}
-					></audio><button type="button" aria-label="Close radio player" onclick={stopRadio}
-						>×</button
+						onloadedmetadata={setRadioDuration}
+						ondurationchange={setRadioDuration}
+						oncanplay={() => (radioLoading = false)}
+						onwaiting={() => (radioLoading = true)}
+						onplaying={() => {
+							radioPlaying = true;
+							radioLoading = false;
+						}}
+						onpause={() => (radioPlaying = false)}
+						onended={() => (radioPlaying = false)}
+						ontimeupdate={() => (radioCurrentTime = audio.currentTime)}
+						onerror={() => {
+							radioLoading = false;
+							radioPlaying = false;
+							if (nowPlaying) audioError = 'The source could not load this radio clip.';
+						}}
+					></audio><button
+						class="radio-close"
+						type="button"
+						aria-label="Close radio player"
+						onclick={stopRadio}>×</button
 					>
 				</div>
 			</section>
@@ -2435,7 +2522,7 @@
 	}
 	.radio-player {
 		display: none;
-		grid-template-columns: auto minmax(200px, 1fr) auto;
+		grid-template-columns: minmax(170px, 0.7fr) minmax(360px, 1.3fr) auto;
 		align-items: center;
 		gap: 12px;
 		margin-top: 12px;
@@ -2462,15 +2549,84 @@
 		color: #ff8b9b;
 		font-size: var(--text-meta);
 	}
-	.radio-player audio {
-		width: 100%;
-		height: 30px;
+	.radio-copy {
+		min-width: 0;
 	}
-	.radio-player > button {
+	.radio-copy strong {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.custom-audio-controls {
+		display: grid;
+		grid-template-columns: 38px auto minmax(120px, 1fr) auto;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		padding: 5px 7px;
+		background: rgba(5, 7, 11, 0.46);
+		border: 1px solid rgba(194, 139, 255, 0.18);
+		border-radius: 8px;
+	}
+	.custom-audio-controls button {
+		min-height: 34px;
+		color: var(--muted-strong);
+		background: rgba(255, 255, 255, 0.045);
+		border: 1px solid var(--line);
+		border-radius: 6px;
+	}
+	.custom-audio-controls button:hover {
+		color: #fff;
+		background: var(--purple-soft);
+		border-color: rgba(194, 139, 255, 0.32);
+	}
+	.custom-audio-controls .radio-play {
+		width: 38px;
+		padding: 0;
+		color: #fff;
+		background: var(--purple);
+		border-color: var(--purple);
+		font-size: var(--text-small);
+	}
+	.custom-audio-controls time {
+		min-width: 72px;
+		color: var(--muted-strong);
+		font:
+			var(--text-meta) Consolas,
+			monospace;
+		white-space: nowrap;
+	}
+	.radio-progress {
+		width: 100%;
+		min-width: 0;
+		accent-color: var(--purple);
+		cursor: pointer;
+	}
+	.radio-progress:disabled {
+		cursor: wait;
+		opacity: 0.5;
+	}
+	.custom-audio-controls .radio-volume {
+		padding: 0 9px;
+		font-size: var(--text-caption);
+		font-weight: 750;
+		letter-spacing: 0.06em;
+	}
+	.radio-engine {
+		display: none;
+	}
+	.radio-close {
+		width: 36px;
+		height: 36px;
 		color: var(--muted);
 		background: none;
 		border: 0;
+		border-radius: 6px;
 		font-size: 18px;
+	}
+	.radio-close:hover {
+		color: #fff;
+		background: rgba(255, 255, 255, 0.06);
 	}
 	footer {
 		display: flex;
@@ -2624,7 +2780,7 @@
 		.radio-player {
 			grid-template-columns: 1fr auto;
 		}
-		.radio-player audio {
+		.custom-audio-controls {
 			grid-column: 1/-1;
 			grid-row: 2;
 		}
@@ -2701,6 +2857,13 @@
 		}
 		.event-list {
 			grid-template-columns: 1fr;
+		}
+		.custom-audio-controls {
+			grid-template-columns: 38px 1fr auto;
+		}
+		.radio-progress {
+			grid-column: 1 / -1;
+			grid-row: 2;
 		}
 		.filters {
 			overflow: auto;
