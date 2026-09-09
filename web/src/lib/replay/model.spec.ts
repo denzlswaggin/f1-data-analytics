@@ -5,6 +5,7 @@ import {
 	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
+	formatLapTime,
 	radioEventsForPhase,
 	pitLaneProgressAt,
 	positionAtTrackProgress,
@@ -62,6 +63,12 @@ const positions: PositionRow[] = [
 ];
 
 describe('replay model', () => {
+	it('formats lap durations as minutes and seconds', () => {
+		expect(formatLapTime(79.842)).toBe('1:19.842');
+		expect(formatLapTime(60)).toBe('1:00.000');
+		expect(formatLapTime(null)).toBe('—');
+	});
+
 	it('uses the latest available weather sample at replay time', () => {
 		const weather: WeatherRow[] = [
 			{

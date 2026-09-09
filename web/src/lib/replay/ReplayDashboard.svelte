@@ -7,6 +7,7 @@
 		buildPitLanePath,
 		buildTrackPath,
 		filterEvents,
+		formatLapTime,
 		projectedSampleAt,
 		radioEventsForPhase,
 		sampleAt,
@@ -811,8 +812,7 @@
 								><small>from the grid</small>
 							</div>
 							<div>
-								<span>LAP TIME</span><strong
-									>{currentLapTime(selectedDriver)?.toFixed(3) ?? '—'}</strong
+								<span>LAP TIME</span><strong>{formatLapTime(currentLapTime(selectedDriver))}</strong
 								><small>current recorded lap</small>
 							</div>
 						</div>

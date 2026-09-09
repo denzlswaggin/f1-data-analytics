@@ -36,6 +36,14 @@ const smoothstep = (value: number) => {
 	return bounded * bounded * (3 - 2 * bounded);
 };
 
+export function formatLapTime(seconds: number | null | undefined): string {
+	if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return '—';
+	const totalMilliseconds = Math.round(seconds * 1000);
+	const minutes = Math.floor(totalMilliseconds / 60_000);
+	const remainingSeconds = (totalMilliseconds % 60_000) / 1000;
+	return `${minutes}:${remainingSeconds.toFixed(3).padStart(6, '0')}`;
+}
+
 export function weatherAtTime(samples: WeatherRow[], time: number): WeatherRow | null {
 	if (!samples.length) return null;
 	let low = 0;
