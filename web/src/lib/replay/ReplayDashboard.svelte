@@ -351,13 +351,13 @@
 			context.globalAlpha = dimmed ? 0.2 : 1;
 			if (selected) {
 				context.save();
-				context.globalAlpha = 0.55;
+				context.globalAlpha = 0.38;
 				context.beginPath();
 				context.arc(x, y, 14, 0, Math.PI * 2);
 				context.strokeStyle = driver.color;
 				context.lineWidth = 3;
 				context.shadowColor = driver.color;
-				context.shadowBlur = 16;
+				context.shadowBlur = 10;
 				context.stroke();
 				context.restore();
 			}
@@ -1103,7 +1103,7 @@
 		height: 58px;
 		padding: 0 24px;
 		background:
-			linear-gradient(90deg, rgba(255, 77, 87, 0.055), transparent 28%), rgba(8, 10, 14, 0.92);
+			linear-gradient(90deg, rgba(255, 77, 87, 0.035), transparent 28%), rgba(8, 10, 14, 0.92);
 		border-bottom: 1px solid var(--line);
 		backdrop-filter: blur(14px);
 	}
@@ -1196,7 +1196,7 @@
 		padding: 7px 16px;
 		overflow: hidden;
 		background:
-			radial-gradient(circle at 8% 0%, rgba(255, 77, 87, 0.14), transparent 18rem),
+			radial-gradient(circle at 8% 0%, rgba(255, 77, 87, 0.09), transparent 18rem),
 			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.event-title {
@@ -1213,7 +1213,7 @@
 		color: #fff;
 		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-radius: 8px;
-		box-shadow: 0 7px 20px rgba(255, 77, 87, 0.3);
+		box-shadow: 0 5px 14px rgba(255, 77, 87, 0.2);
 		font-size: 11px;
 		font-weight: 800;
 	}
@@ -1274,13 +1274,13 @@
 		border-radius: 999px;
 	}
 	.status-badge i {
-		box-shadow: 0 0 8px currentColor;
+		box-shadow: 0 0 5px currentColor;
 		animation: status-pulse 2s ease-in-out infinite;
 	}
 	@keyframes status-pulse {
 		50% {
 			opacity: 0.48;
-			box-shadow: 0 0 3px currentColor;
+			box-shadow: 0 0 2px currentColor;
 		}
 	}
 	.status-badge.warning {
@@ -1482,7 +1482,7 @@
 		height: 24px;
 		background: var(--team);
 		border-radius: 3px;
-		box-shadow: 0 0 10px color-mix(in srgb, var(--team) 55%, transparent);
+		box-shadow: 0 0 6px color-mix(in srgb, var(--team) 35%, transparent);
 	}
 	.driver {
 		min-width: 0;
@@ -1597,8 +1597,8 @@
 		height: 100%;
 		min-height: 540px;
 		background:
-			radial-gradient(circle at 48% 48%, rgba(85, 170, 255, 0.12), transparent 47%),
-			radial-gradient(circle at 78% 18%, rgba(194, 139, 255, 0.08), transparent 34%),
+			radial-gradient(circle at 48% 48%, rgba(85, 170, 255, 0.08), transparent 47%),
+			radial-gradient(circle at 78% 18%, rgba(194, 139, 255, 0.05), transparent 34%),
 			linear-gradient(160deg, rgba(12, 19, 30, 0.96), rgba(9, 12, 18, 0.98));
 	}
 	.circuit:before {
@@ -1697,19 +1697,19 @@
 		height: 5px;
 		background: var(--yellow);
 		border-radius: 50%;
-		box-shadow: 0 0 8px var(--yellow);
+		box-shadow: 0 0 5px var(--yellow);
 	}
 	.race-control i.red {
 		background: var(--accent);
-		box-shadow: 0 0 8px var(--accent);
+		box-shadow: 0 0 5px var(--accent);
 	}
 	.race-control i.green {
 		background: var(--green);
-		box-shadow: 0 0 8px var(--green);
+		box-shadow: 0 0 5px var(--green);
 	}
 	.race-control i.safety {
 		background: #f6a13c;
-		box-shadow: 0 0 8px var(--orange);
+		box-shadow: 0 0 5px var(--orange);
 	}
 	.race-control strong {
 		overflow: hidden;
@@ -1732,7 +1732,7 @@
 	.driver-accent {
 		height: 4px;
 		background: var(--team);
-		box-shadow: 0 0 16px color-mix(in srgb, var(--team) 65%, transparent);
+		box-shadow: 0 0 10px color-mix(in srgb, var(--team) 40%, transparent);
 	}
 	.selected-head {
 		display: flex;
@@ -1920,7 +1920,7 @@
 		padding: 14px 16px 10px;
 		overflow: hidden;
 		background:
-			radial-gradient(circle at 92% -40%, rgba(77, 217, 231, 0.2), transparent 24rem),
+			radial-gradient(circle at 92% -40%, rgba(77, 217, 231, 0.12), transparent 24rem),
 			linear-gradient(145deg, rgba(15, 27, 36, 0.98), rgba(10, 15, 22, 0.98));
 		border-color: rgba(77, 217, 231, 0.18);
 	}
@@ -1958,7 +1958,7 @@
 		height: 6px;
 		background: currentColor;
 		border-radius: 50%;
-		box-shadow: 0 0 8px currentColor;
+		box-shadow: 0 0 5px currentColor;
 	}
 	.weather-metrics {
 		display: grid;
@@ -2085,7 +2085,7 @@
 		margin-top: 0;
 		padding: 10px 14px;
 		background:
-			linear-gradient(90deg, rgba(255, 77, 87, 0.055), transparent 34%),
+			linear-gradient(90deg, rgba(255, 77, 87, 0.035), transparent 34%),
 			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.playback,
@@ -2115,7 +2115,7 @@
 		color: #fff;
 		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-color: var(--accent);
-		box-shadow: 0 6px 18px rgba(255, 77, 87, 0.28);
+		box-shadow: 0 4px 12px rgba(255, 77, 87, 0.18);
 	}
 	.playback strong {
 		min-width: 64px;
@@ -2153,7 +2153,7 @@
 		margin-top: 12px;
 		padding: 14px 16px;
 		background:
-			radial-gradient(circle at 100% 0%, rgba(194, 139, 255, 0.08), transparent 28rem),
+			radial-gradient(circle at 100% 0%, rgba(194, 139, 255, 0.05), transparent 28rem),
 			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.timeline-head {
@@ -2397,14 +2397,14 @@
 		border-left-color: var(--event-color);
 	}
 	.event.current {
-		box-shadow: 0 0 20px color-mix(in srgb, var(--event-color) 13%, transparent);
+		box-shadow: 0 0 12px color-mix(in srgb, var(--event-color) 8%, transparent);
 	}
 	.event > i {
 		width: 6px;
 		height: 6px;
 		background: var(--event-color);
 		border-radius: 50%;
-		box-shadow: 0 0 8px var(--event-color);
+		box-shadow: 0 0 5px var(--event-color);
 	}
 	.event.overtake {
 		--event-color: var(--event-overtake);
@@ -2456,8 +2456,8 @@
 		gap: 12px;
 		margin-top: 12px;
 		padding: 8px 10px;
-		background: linear-gradient(90deg, rgba(194, 139, 255, 0.17), rgba(97, 70, 128, 0.08)), #10141b;
-		border: 1px solid rgba(194, 139, 255, 0.36);
+		background: linear-gradient(90deg, rgba(194, 139, 255, 0.12), rgba(97, 70, 128, 0.05)), #10141b;
+		border: 1px solid rgba(194, 139, 255, 0.28);
 		border-left: 3px solid var(--purple);
 		border-radius: 8px;
 	}
