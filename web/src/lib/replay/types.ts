@@ -58,12 +58,14 @@ export type RaceControlRow = {
 	driver_code: string | null;
 };
 
+export type RadioPhase = 'pre-race' | 'race' | 'post-race';
+
 export type RadioRow = {
 	t_s: number;
 	driver_code: string;
 	recording_url: string;
 	transcript: string | null;
-	phase: 'pre-race' | 'race' | 'post-race';
+	phase: RadioPhase;
 };
 
 export type OvertakeRow = {

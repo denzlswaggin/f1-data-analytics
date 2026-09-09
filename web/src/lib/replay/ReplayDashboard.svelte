@@ -8,12 +8,14 @@
 		buildTrackPath,
 		filterEvents,
 		projectedSampleAt,
+		radioEventsForPhase,
 		sampleAt,
 		timingAt
 	} from './model';
 	import { loadManifest, loadRace } from './data';
 	import type {
 		LoadedRace,
+		RadioPhase,
 		RadioRow,
 		ReplayDriver,
 		ReplayEvent,
@@ -40,6 +42,7 @@
 	let drivers = $state<ReplayDriver[]>([]),
 		allEvents = $state<ReplayEvent[]>([]);
 	let eventFilter = $state('all'),
+		timelinePhase = $state<RadioPhase>('race'),
 		nowPlaying = $state<ReplayEvent | null>(null),
 		audioError = $state('');
 	let hovered = $state<ScreenCar | null>(null),
@@ -92,6 +95,19 @@
 			.sort((a, b) => Math.abs(a.time - currentTime) - Math.abs(b.time - currentTime))
 			.slice(0, 8)
 			.sort((a, b) => a.time - b.time)
+	);
+	let preRaceRadioEvents = $derived(
+		radioEventsForPhase(loaded?.bundle.radio ?? [], 'pre-race', selectedCode)
+	);
+	let postRaceRadioEvents = $derived(
+		radioEventsForPhase(loaded?.bundle.radio ?? [], 'post-race', selectedCode)
+	);
+	let preRaceRadioCount = $derived(
+		radioEventsForPhase(loaded?.bundle.radio ?? [], 'pre-race').length
+	);
+	let raceRadioCount = $derived(filterEvents(allEvents, '', 'radio').length);
+	let postRaceRadioCount = $derived(
+		radioEventsForPhase(loaded?.bundle.radio ?? [], 'post-race').length
 	);
 	let recentMessages = $derived(
 		allEvents
@@ -174,6 +190,7 @@
 			currentTime = 0;
 			selectedCode = '';
 			eventFilter = 'all';
+			timelinePhase = 'race';
 			leaderboard = timingAt(drivers, 0);
 			buildTrack();
 			resetView();
@@ -491,8 +508,11 @@
 	async function playRadio(event: ReplayEvent) {
 		if (event.type !== 'radio') return;
 		const clip = event.raw as RadioRow;
-		seek(event.time);
-		speed = 1;
+		const phase = clip.phase ?? 'race';
+		if (phase === 'race') {
+			seek(event.time);
+			speed = 1;
+		}
 		nowPlaying = event;
 		audioError = '';
 		await tick();
@@ -501,7 +521,7 @@
 		audio.load();
 		try {
 			await audio.play();
-			playing = true;
+			if (phase === 'race') playing = true;
 		} catch {
 			audioError = 'Playback was blocked. Press play in the audio controls to retry.';
 		}
@@ -527,6 +547,11 @@
 		return hours
 			? `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 			: `${minutes}:${String(secs).padStart(2, '0')}`;
+	}
+	function formatPhaseClock(event: ReplayEvent, phase: RadioPhase) {
+		if (phase === 'pre-race') return `T-${formatClock(Math.abs(event.time))}`;
+		if (phase === 'post-race') return `T+${formatClock(Math.max(0, event.time - duration))}`;
+		return formatClock(event.time);
 	}
 	function formatGap(value: number | null, leader = false) {
 		if (value == null) return '—';
@@ -800,67 +825,112 @@
 						<h2>Event timeline</h2>
 					</div>
 					{#if selectedCode}<p>
-							Showing pit stops, radio & overtakes for <strong>{selectedCode}</strong><button
+							Showing {timelinePhase === 'race' ? 'race events' : 'radio'} for
+							<strong>{selectedCode}</strong><button
 								type="button"
 								onclick={() => toggleDriver(selectedCode)}>Clear</button
 							>
 						</p>{/if}
 				</div>
-				<div class="filters" aria-label="Filter race events">
-					{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
-								type="button"
-								class:active={eventFilter === filter}
-								onclick={() => (eventFilter = filter)}
-								>{filter === 'all'
-									? 'All events'
-									: filter === 'control'
-										? 'Race control'
-										: filter === 'overtake'
-											? 'Overtakes'
-											: filter === 'pit'
-												? 'Pit stops'
-												: 'Radio'}<span>{filterEvents(allEvents, selectedCode, filter).length}</span
-								></button
-							>{/if}{/each}
-				</div>
-				<div class="event-rail">
+				<div class="timeline-phases" aria-label="Select event timeline phase">
 					<button
 						type="button"
-						aria-label="Seek on event timeline"
-						onclick={(event) => {
-							const r = event.currentTarget.getBoundingClientRect();
-							seek(((event.clientX - r.left) / r.width) * duration);
-						}}
-						><span class="elapsed" style={`width:${duration ? (currentTime / duration) * 100 : 0}%`}
-						></span><i
-							class="playhead"
-							style={`left:${duration ? (currentTime / duration) * 100 : 0}%`}
-						></i></button
+						class:active={timelinePhase === 'pre-race'}
+						onclick={() => (timelinePhase = 'pre-race')}
+						><span>PRE-RACE</span><strong>Team radio</strong><b>{preRaceRadioCount}</b></button
+					><button
+						type="button"
+						class:active={timelinePhase === 'race'}
+						onclick={() => (timelinePhase = 'race')}
+						><span>RACE</span><strong>Live timeline</strong><b
+							>{filterEvents(allEvents, selectedCode).length}</b
+						></button
+					><button
+						type="button"
+						class:active={timelinePhase === 'post-race'}
+						onclick={() => (timelinePhase = 'post-race')}
+						><span>POST-RACE</span><strong>Team radio</strong><b>{postRaceRadioCount}</b></button
 					>
-					<div class="markers">
-						{#each filteredEvents as event (event.id)}<button
-								type="button"
-								class={event.type}
-								class:past={event.time <= currentTime}
-								style={`left:${duration ? (event.time / duration) * 100 : 0}%`}
-								title={`${formatClock(event.time)} · ${event.label}`}
-								onclick={() => activateEvent(event)}
-							></button>{/each}
+				</div>
+				{#if timelinePhase === 'race'}
+					<div class="filters" aria-label="Filter race events">
+						{#each ['all', 'control', 'overtake', 'pit', 'radio'] as filter (filter)}{#if !selectedCode || filter !== 'control'}<button
+									type="button"
+									class:active={eventFilter === filter}
+									onclick={() => (eventFilter = filter)}
+									>{filter === 'all'
+										? 'All events'
+										: filter === 'control'
+											? 'Race control'
+											: filter === 'overtake'
+												? 'Overtakes'
+												: filter === 'pit'
+													? 'Pit stops'
+													: 'Radio'}<span
+										>{filterEvents(allEvents, selectedCode, filter).length}</span
+									></button
+								>{/if}{/each}
 					</div>
-				</div>
-				<div class="event-list">
-					{#if nearbyEvents.length}{#each nearbyEvents as event (event.id)}<button
-								class="event {event.type}"
-								class:current={Math.abs(event.time - currentTime) < 4}
-								type="button"
-								onclick={() => activateEvent(event)}
-								><i></i><time>{formatClock(event.time)}</time><span
-									><strong>{event.label}</strong><small>{event.meta}</small></span
-								>{#if event.type === 'radio'}<b>LISTEN</b>{/if}</button
-							>{/each}{:else}<p class="empty-state">
-							No events are available for this selection.
-						</p>{/if}
-				</div>
+					<div class="event-rail">
+						<button
+							type="button"
+							aria-label="Seek on event timeline"
+							onclick={(event) => {
+								const r = event.currentTarget.getBoundingClientRect();
+								seek(((event.clientX - r.left) / r.width) * duration);
+							}}
+							><span
+								class="elapsed"
+								style={`width:${duration ? (currentTime / duration) * 100 : 0}%`}
+							></span><i
+								class="playhead"
+								style={`left:${duration ? (currentTime / duration) * 100 : 0}%`}
+							></i></button
+						>
+						<div class="markers">
+							{#each filteredEvents as event (event.id)}<button
+									type="button"
+									class={event.type}
+									class:past={event.time <= currentTime}
+									style={`left:${duration ? (event.time / duration) * 100 : 0}%`}
+									title={`${formatClock(event.time)} · ${event.label}`}
+									onclick={() => activateEvent(event)}
+								></button>{/each}
+						</div>
+					</div>
+					<div class="event-list">
+						{#if nearbyEvents.length}{#each nearbyEvents as event (event.id)}<button
+									class="event {event.type}"
+									class:current={Math.abs(event.time - currentTime) < 4}
+									type="button"
+									onclick={() => activateEvent(event)}
+									><i></i><time>{formatClock(event.time)}</time><span
+										><strong>{event.label}</strong><small>{event.meta}</small></span
+									>{#if event.type === 'radio'}<b>LISTEN</b>{/if}</button
+								>{/each}{:else}<p class="empty-state">
+								No events are available for this selection.
+							</p>{/if}
+					</div>
+				{:else}
+					{@const phaseRadioEvents =
+						timelinePhase === 'pre-race' ? preRaceRadioEvents : postRaceRadioEvents}
+					<div class="phase-summary">
+						<strong>{timelinePhase === 'pre-race' ? 'Before lights out' : 'After the flag'}</strong
+						><span>Every available team-radio clip from this phase is shown below.</span>
+					</div>
+					<div class="event-list phase-event-list">
+						{#if phaseRadioEvents.length}{#each phaseRadioEvents as event (event.id)}<button
+									class="event radio"
+									type="button"
+									onclick={() => playRadio(event)}
+									><i></i><time>{formatPhaseClock(event, timelinePhase)}</time><span
+										><strong>{event.label}</strong><small>{event.meta}</small></span
+									><b>LISTEN</b></button
+								>{/each}{:else}<p class="empty-state">
+								No radio is available for this phase{selectedCode ? ` and ${selectedCode}` : ''}.
+							</p>{/if}
+					</div>
+				{/if}
 				<div class="radio-player" class:visible={Boolean(nowPlaying)}>
 					<div>
 						<span>TEAM RADIO</span><strong>{nowPlaying?.meta ?? 'Select a radio event'}</strong
@@ -884,7 +954,10 @@
 				<div>
 					<span>{loaded.summary.driver_count} drivers</span><span
 						>{loaded.bundle.overtakes.length} passes</span
-					><span>{loaded.bundle.radio.length} radio clips</span>
+					><span
+						>{loaded.bundle.radio.length} radio clips · {preRaceRadioCount} pre · {raceRadioCount}
+						race · {postRaceRadioCount} post</span
+					>
 				</div>
 			</footer>
 		{/if}
@@ -1642,6 +1715,63 @@
 		border: 1px solid var(--line);
 		border-radius: 4px;
 		font-size: 7px;
+	}
+	.timeline-phases {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 7px;
+		margin-top: 14px;
+	}
+	.timeline-phases button {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 3px 10px;
+		padding: 9px 11px;
+		color: var(--muted);
+		background: rgba(255, 255, 255, 0.025);
+		border: 1px solid var(--line);
+		border-radius: 7px;
+		text-align: left;
+	}
+	.timeline-phases button.active {
+		color: #fff;
+		background: rgba(194, 139, 255, 0.09);
+		border-color: rgba(194, 139, 255, 0.42);
+	}
+	.timeline-phases span {
+		grid-column: 1;
+		font-size: 7px;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+	}
+	.timeline-phases strong {
+		grid-column: 1;
+		font-size: 9px;
+	}
+	.timeline-phases b {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+		align-self: center;
+		color: var(--purple);
+		font: 12px Consolas;
+	}
+	.phase-summary {
+		display: flex;
+		align-items: baseline;
+		gap: 9px;
+		margin-top: 14px;
+		color: var(--muted);
+		font-size: 8px;
+	}
+	.phase-summary strong {
+		color: #fff;
+		font-size: 10px;
+	}
+	.phase-event-list {
+		max-height: 430px;
+		padding-right: 4px;
+		overflow-y: auto;
+		scrollbar-color: #3b4352 transparent;
 	}
 	.filters {
 		display: flex;

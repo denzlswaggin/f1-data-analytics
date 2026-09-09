@@ -5,6 +5,7 @@ import {
 	buildPitLanePath,
 	buildTrackPath,
 	filterEvents,
+	radioEventsForPhase,
 	pitLaneProgressAt,
 	positionAtTrackProgress,
 	projectedSampleAt,
@@ -12,7 +13,7 @@ import {
 	smoothPositionHolds,
 	timingAt
 } from './model';
-import type { DriverMeta, LapRow, PositionRow } from './types';
+import type { DriverMeta, LapRow, PositionRow, RadioRow } from './types';
 import { pitLaneProfileFor, supportedPitLaneCircuits } from './pit-lanes';
 
 const metadata: DriverMeta[] = [
@@ -220,13 +221,47 @@ describe('replay model', () => {
 					t_s: 3,
 					driver_code: 'NOR',
 					recording_url: 'https://example.com/radio.mp3',
-					transcript: null
+					transcript: null,
+					phase: 'race'
 				}
 			]
 		);
 		expect(filterEvents(events, 'NOR').map((event) => event.type)).toEqual(['overtake', 'radio']);
 		expect(filterEvents(events, 'VER').map((event) => event.type)).toEqual(['overtake']);
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
+	});
+
+	it('keeps pre-race and post-race radio out of the live race timeline', () => {
+		const radio: RadioRow[] = [
+			{
+				t_s: -40,
+				driver_code: 'NOR',
+				recording_url: 'https://example.com/pre.mp3',
+				transcript: 'Radio check',
+				phase: 'pre-race'
+			},
+			{
+				t_s: 12,
+				driver_code: 'NOR',
+				recording_url: 'https://example.com/race.mp3',
+				transcript: 'Box this lap',
+				phase: 'race'
+			},
+			{
+				t_s: 105,
+				driver_code: 'VER',
+				recording_url: 'https://example.com/post.mp3',
+				transcript: 'Well done',
+				phase: 'post-race'
+			}
+		];
+
+		expect(buildEvents([], [], radio).map((event) => event.label)).toEqual(['Box this lap']);
+		expect(radioEventsForPhase(radio, 'pre-race').map((event) => event.label)).toEqual([
+			'Radio check'
+		]);
+		expect(radioEventsForPhase(radio, 'post-race', 'NOR')).toEqual([]);
+		expect(radioEventsForPhase(radio, 'post-race', 'VER')[0].time).toBe(105);
 	});
 
 	it('adds every driver stint transition to the event timeline as a pit stop', () => {
