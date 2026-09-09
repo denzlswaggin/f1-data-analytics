@@ -13,7 +13,12 @@ laps as (
         count(*) as lap_rows,
         count(distinct driver_code) as drivers,
         min_by(driver_code, lap_time_sec) as fastest_driver,
-        min(lap_time_sec) as fastest_lap_sec
+        min(lap_time_sec) as fastest_lap_sec,
+        printf(
+            '%d:%06.3f',
+            cast(floor(min(lap_time_sec) / 60) as integer),
+            min(lap_time_sec) - 60 * floor(min(lap_time_sec) / 60)
+        ) as fastest_lap_time
     from marts.mart_lap_times
     group by season, round
 ),
@@ -55,6 +60,7 @@ select
     laps.drivers,
     laps.fastest_driver,
     laps.fastest_lap_sec,
+    laps.fastest_lap_time,
     coalesce(stints.stints, 0) as stints,
     coalesce(stints.compounds, 0) as compounds,
     coalesce(replay.replay_ticks, 0) as replay_ticks,

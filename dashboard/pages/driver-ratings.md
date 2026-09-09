@@ -11,8 +11,10 @@ max_width: 1600
     description="A teammate-normalised view of career pace and current form, with uncertainty kept visible instead of hidden behind a ranking."
     accent="drivers"
 >
-    <a slot="actions" href="driver-comparison">Compare drivers</a>
-    <a slot="actions" href="saturday-vs-sunday">Saturday vs Sunday</a>
+    <div slot="actions">
+        <a href="/f1-data-analytics/driver-comparison/">Compare drivers</a>
+        <a href="/f1-data-analytics/saturday-vs-sunday/">Saturday vs Sunday</a>
+    </div>
 </PageHeader>
 
 <KeyInsight label="How to read the rating">

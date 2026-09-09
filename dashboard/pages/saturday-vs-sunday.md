@@ -69,7 +69,7 @@ the diagonal *is* the delta.
     x=quali_rating
     y=race_rating
     series=profile
-    seriesColors={{'Racer': '#4a97d6', 'Qualifying specialist': '#cf7a33'}}
+    seriesColors={{'Racer': '#32d3f4', 'Qualifying specialist': '#f7c948'}}
     pointSize=30
     xAxisTitle="Qualifying rating (higher = faster)"
     yAxisTitle="Race rating (higher = faster)"
@@ -109,7 +109,7 @@ line is the field average, not "no change".
     x=driver_name
     y=delta
     series=profile
-    seriesColors={{'Racer': '#4a97d6', 'Qualifying specialist': '#cf7a33'}}
+    seriesColors={{'Racer': '#32d3f4', 'Qualifying specialist': '#f7c948'}}
     swapXY=true
     sort=false
     xAxisTitle="delta (race rating − qualifying rating)"
@@ -123,7 +123,7 @@ line is the field average, not "no change".
 <DataTable data={pace} rows=20 search=true>
     <Column id=delta_rank title="#" />
     <Column id=driver_name title="Driver" />
-    <Column id=delta title="Delta" fmt='+0.000' contentType=colorscale colorScale={['#cf7a33', '#f5f5f5', '#4a97d6']} />
+    <Column id=delta title="Delta" fmt='+0.000' contentType=colorscale colorScale={['#f7c948', '#26303d', '#32d3f4']} />
     <Column id=quali_rating title="Quali" fmt='0.000' />
     <Column id=race_rating title="Race" fmt='0.000' />
     <Column id=quali_rank title="Quali #" />

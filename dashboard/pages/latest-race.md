@@ -18,14 +18,16 @@ select * from f1.latest_race
     title={race[0].race_label}
     description="Result, controlled pace, execution and on-track passing distilled into one race story."
 >
-    <a slot="actions" href="race-replay">Watch replay</a>
-    <a slot="actions" href="race-pace">Open pace analysis</a>
+    <div slot="actions">
+        <a href="/f1-data-analytics/race-replay/">Watch replay</a>
+        <a href="/f1-data-analytics/race-pace/">Open pace analysis</a>
+    </div>
 </PageHeader>
 
 <div class="metric-grid">
 <BigValue data={race} value=drivers title="Drivers" />
 <BigValue data={race} value=fastest_driver title="Fastest lap" />
-<BigValue data={race} value=fastest_lap_sec title="Lap time" fmt="0.000" />
+<BigValue data={race} value=fastest_lap_time title="Lap time" />
 <BigValue data={race} value=overtakes title="Detected passes" />
 </div>
 

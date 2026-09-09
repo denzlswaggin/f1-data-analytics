@@ -106,6 +106,7 @@
         gap: 0.6rem;
         flex-wrap: wrap;
     }
+    :global(.actions > div) { display: flex; gap: .6rem; flex-wrap: wrap; }
     :global(.actions a) {
         display: inline-flex;
         align-items: center;
@@ -124,6 +125,7 @@
     @media (max-width: 760px) {
         .page-header { align-items: flex-start; flex-direction: column; min-height: 0; }
         .actions { width: 100%; }
+        :global(.actions > div) { width: 100%; }
         :global(.actions a) { flex: 1; }
     }
 </style>

@@ -10,8 +10,10 @@ max_width: 1600
     title="See beyond the result."
     description="Race pace, strategy, telemetry and teammate-normalised ratings — one evidence-led view of why a Grand Prix unfolded the way it did."
 >
-    <a slot="actions" href="latest-race">Latest race</a>
-    <a slot="actions" href="race-replay">Open replay</a>
+    <div slot="actions">
+        <a href="/f1-data-analytics/latest-race/">Latest race</a>
+        <a href="/f1-data-analytics/race-replay/">Open replay</a>
+    </div>
 </PageHeader>
 
 ```sql snapshot
