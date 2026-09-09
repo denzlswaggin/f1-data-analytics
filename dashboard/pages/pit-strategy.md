@@ -23,7 +23,10 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name
+select distinct
+    round,
+    race_name,
+    'R' || cast(round as varchar) || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.pit_strategy
 where season = ${inputs.season.value}
 order by round
@@ -31,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Inspect every pit cycle in the selected Grand Prix.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_name title="Race" />
+    <Dropdown data={races} name=race value=round label=race_label title="Race" />
 </FilterBar>
 
 ```sql pit_coverage
