@@ -40,6 +40,7 @@
 		speed = $state(6);
 	let selectedCode = $state(''),
 		leaderboard = $state<TimingRow[]>([]);
+	let timingExpanded = $state(false);
 	let drivers = $state<ReplayDriver[]>([]),
 		allEvents = $state<ReplayEvent[]>([]);
 	let eventFilter = $state('all'),
@@ -646,10 +647,23 @@
 			</section>
 		{:else if loaded}
 			<section class="replay-grid">
-				<aside id="drivers" class="timing-panel panel" aria-label="Live timing">
+				<aside
+					id="drivers"
+					class="timing-panel panel"
+					class:expanded={timingExpanded}
+					aria-label="Live timing"
+				>
 					<div class="panel-head">
 						<div><span>LIVE TIMING</span><strong>Race order</strong></div>
-						<b>GAP</b>
+						<div class="panel-head-actions">
+							<b>GAP</b><button
+								type="button"
+								class="timing-toggle"
+								aria-expanded={timingExpanded}
+								onclick={() => (timingExpanded = !timingExpanded)}
+								>{timingExpanded ? 'Hide order' : 'Show all drivers'}</button
+							>
+						</div>
 					</div>
 					<ol>
 						{#each leaderboard as driver (driver.code)}<li
@@ -1146,8 +1160,10 @@
 		box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
 	}
 	.session-bar {
-		display: flex;
+		display: grid;
+		grid-template-columns: minmax(280px, 1fr) auto auto;
 		align-items: center;
+		gap: 24px;
 		min-height: 68px;
 		margin-bottom: 12px;
 		padding: 7px 16px;
@@ -1156,7 +1172,7 @@
 		display: flex;
 		align-items: center;
 		gap: 13px;
-		min-width: 330px;
+		min-width: 0;
 	}
 	.round {
 		display: grid;
@@ -1185,8 +1201,8 @@
 	}
 	.session-facts {
 		display: flex;
-		gap: 24px;
-		margin-left: auto;
+		gap: 18px;
+		margin-left: 0;
 	}
 	.session-facts div {
 		min-width: 60px;
@@ -1230,7 +1246,7 @@
 	.race-picker {
 		display: flex;
 		gap: 6px;
-		margin-left: 24px;
+		margin-left: 0;
 	}
 	.race-picker label {
 		color: var(--muted);
@@ -1315,6 +1331,21 @@
 	}
 	.panel-head b {
 		color: var(--muted);
+		font-size: var(--text-caption);
+	}
+	.panel-head-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.timing-toggle {
+		display: none;
+		min-height: 36px;
+		padding: 0 10px;
+		color: var(--muted-strong);
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid var(--line);
+		border-radius: 6px;
 		font-size: var(--text-caption);
 	}
 	.timing-panel ol {
@@ -2248,21 +2279,23 @@
 			padding: 10px;
 		}
 		.session-bar {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) auto;
 			align-items: flex-start;
-			flex-wrap: wrap;
 			gap: 10px;
 		}
 		.event-title {
 			min-width: 0;
 		}
 		.session-facts {
-			order: 3;
+			grid-column: 1 / -1;
+			grid-row: 2;
 			width: 100%;
 			margin: 0;
 			justify-content: space-between;
 		}
 		.race-picker {
-			margin-left: auto;
+			margin-left: 0;
 		}
 		.replay-grid {
 			display: flex;
@@ -2284,9 +2317,21 @@
 			min-height: 430px;
 		}
 		.timing-panel ol {
-			display: grid;
+			display: none;
 			grid-template-columns: 1fr 1fr;
 			max-height: none;
+		}
+		.timing-panel.expanded ol {
+			display: grid;
+		}
+		.timing-panel:not(.expanded) .tower-footer {
+			display: none;
+		}
+		.timing-toggle {
+			display: block;
+		}
+		.panel-head-actions > b {
+			display: none;
 		}
 		.control-deck {
 			grid-template-columns: 1fr auto auto;
@@ -2323,8 +2368,13 @@
 			font-size: 20px;
 		}
 		.race-picker {
+			grid-column: 1 / -1;
+			grid-row: 2;
 			width: 100%;
 			margin: 0;
+		}
+		.session-facts {
+			grid-row: 3;
 		}
 		.race-picker label,
 		.race-picker select {
@@ -2361,8 +2411,17 @@
 			grid-template-columns: 1fr auto;
 			padding: 9px;
 		}
+		.playback {
+			grid-column: 1 / -1;
+		}
+		.scrubber {
+			grid-row: auto;
+		}
 		.lap-controls {
-			grid-column: 1/-1;
+			grid-column: 1;
+		}
+		.speed-control {
+			grid-column: 2;
 		}
 		.event-list {
 			grid-template-columns: 1fr;
