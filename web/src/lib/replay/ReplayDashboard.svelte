@@ -349,6 +349,18 @@
 				selected = selectedCode === driver.code,
 				dimmed = Boolean(selectedCode && !selected);
 			context.globalAlpha = dimmed ? 0.2 : 1;
+			if (selected) {
+				context.save();
+				context.globalAlpha = 0.55;
+				context.beginPath();
+				context.arc(x, y, 14, 0, Math.PI * 2);
+				context.strokeStyle = driver.color;
+				context.lineWidth = 3;
+				context.shadowColor = driver.color;
+				context.shadowBlur = 16;
+				context.stroke();
+				context.restore();
+			}
 			context.beginPath();
 			context.arc(x, y, selected ? 8 : 6, 0, Math.PI * 2);
 			context.fillStyle = driver.color;
@@ -673,16 +685,18 @@
 						{#each leaderboard as driver (driver.code)}<li
 								class:selected={selectedCode === driver.code}
 								class:dimmed={Boolean(selectedCode && selectedCode !== driver.code)}
+								style={`--team:${driver.color}`}
 							>
 								<button
 									type="button"
 									onclick={() => toggleDriver(driver.code)}
 									aria-pressed={selectedCode === driver.code}
-									><span class="position">{driver.order}</span><span
-										class="team-line"
-										style={`--team:${driver.color}`}
-									></span><span class="driver"
-										><strong>{driver.code}</strong><small>{driver.team}</small></span
+									><span
+										class="position"
+										class:gain={(driver.positionChange ?? 0) > 0}
+										class:loss={(driver.positionChange ?? 0) < 0}>{driver.order}</span
+									><span class="team-line" style={`--team:${driver.color}`}></span><span
+										class="driver"><strong>{driver.code}</strong><small>{driver.team}</small></span
 									><span class="tyre {compoundCode(driver.compound).toLowerCase()}"
 										>{compoundCode(driver.compound)}</span
 									><span class="gap">{formatGap(driver.gap, true)}</span></button
@@ -1352,6 +1366,9 @@
 		grid-area: timing;
 		display: flex;
 		flex-direction: column;
+		background:
+			linear-gradient(180deg, rgba(85, 170, 255, 0.035), transparent 35%),
+			linear-gradient(145deg, rgba(20, 25, 34, 0.98), rgba(11, 14, 20, 0.98));
 	}
 	.panel-head {
 		display: flex;
@@ -1400,10 +1417,15 @@
 			background 0.16s;
 	}
 	.timing-panel li.selected {
-		background: rgba(255, 255, 255, 0.075);
+		background: linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--team) 20%, transparent),
+			transparent 88%
+		);
+		box-shadow: inset 3px 0 var(--team);
 	}
 	.timing-panel li.dimmed {
-		opacity: 0.3;
+		opacity: 0.42;
 	}
 	.timing-panel li button {
 		display: grid;
@@ -1420,18 +1442,29 @@
 		text-align: left;
 	}
 	.timing-panel li button:hover {
-		background: rgba(255, 255, 255, 0.045);
+		background: linear-gradient(
+			90deg,
+			color-mix(in srgb, var(--team) 11%, transparent),
+			transparent
+		);
 	}
 	.position {
 		color: var(--muted);
 		font-size: var(--text-small);
 		font-weight: 750;
 	}
+	.position.gain {
+		color: var(--green);
+	}
+	.position.loss {
+		color: var(--accent);
+	}
 	.team-line {
 		width: 3px;
 		height: 24px;
 		background: var(--team);
 		border-radius: 3px;
+		box-shadow: 0 0 10px color-mix(in srgb, var(--team) 55%, transparent);
 	}
 	.driver {
 		min-width: 0;
@@ -1504,6 +1537,7 @@
 		position: relative;
 		min-width: 0;
 		overflow: hidden;
+		border-color: rgba(85, 170, 255, 0.17);
 	}
 	.track-meta {
 		position: absolute;
@@ -1534,11 +1568,20 @@
 	.track-actions button:disabled {
 		opacity: 0.4;
 	}
+	.track-actions button:not(:disabled):hover,
+	.clear-driver:hover {
+		color: #fff;
+		background: var(--blue-soft);
+		border-color: rgba(85, 170, 255, 0.35);
+	}
 	.circuit {
 		position: relative;
 		height: 100%;
 		min-height: 540px;
-		background: radial-gradient(circle at 48% 48%, rgba(52, 65, 89, 0.15), transparent 55%);
+		background:
+			radial-gradient(circle at 48% 48%, rgba(85, 170, 255, 0.12), transparent 47%),
+			radial-gradient(circle at 78% 18%, rgba(194, 139, 255, 0.08), transparent 34%),
+			linear-gradient(160deg, rgba(12, 19, 30, 0.96), rgba(9, 12, 18, 0.98));
 	}
 	.circuit:before {
 		position: absolute;
@@ -1602,8 +1645,8 @@
 		left: 12px;
 		width: min(230px, 40%);
 		padding: 9px;
-		background: rgba(8, 10, 14, 0.78);
-		border: 1px solid var(--line);
+		background: linear-gradient(145deg, rgba(16, 20, 28, 0.93), rgba(8, 10, 14, 0.9));
+		border: 1px solid rgba(244, 201, 79, 0.18);
 		border-radius: 8px;
 	}
 	.race-control > span {
@@ -1624,6 +1667,9 @@
 		cursor: pointer;
 		text-align: left;
 	}
+	.race-control button:hover {
+		background: var(--yellow-soft);
+	}
 	.race-control time {
 		color: var(--muted);
 		font: var(--text-caption) Consolas;
@@ -1633,15 +1679,19 @@
 		height: 5px;
 		background: var(--yellow);
 		border-radius: 50%;
+		box-shadow: 0 0 8px var(--yellow);
 	}
 	.race-control i.red {
 		background: var(--accent);
+		box-shadow: 0 0 8px var(--accent);
 	}
 	.race-control i.green {
 		background: var(--green);
+		box-shadow: 0 0 8px var(--green);
 	}
 	.race-control i.safety {
 		background: #f6a13c;
+		box-shadow: 0 0 8px var(--orange);
 	}
 	.race-control strong {
 		overflow: hidden;
