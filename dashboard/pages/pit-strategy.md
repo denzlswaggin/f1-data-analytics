@@ -5,12 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-This page describes a driver's track position the lap **before** each stop versus
-**two laps after**, alongside the stop's stationary time. Positive means places
-were gained across that window. It is not a counterfactual undercut/overcut
-estimate: rival stops, SC/VSC periods, retirements and lapped cars can all move the
-observed position. Pit-stop timing comes from Jolpica; position context comes from
-the FastF1 race laps loaded elsewhere in this dashboard.
+<PageHeader
+    eyebrow="Strategy analysis"
+    title="Which pit cycles changed the race?"
+    description="Connect stationary time with the position swing around every stop and quickly find the pit cycles worth investigating."
+    accent="strategy"
+/>
 
 <KeyInsight label="What this can tell you">
 Use the page to spot pit cycles worth investigating. Position swing is observed context, not proof of an undercut or strategic causality.

@@ -5,9 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Two race-day readouts pulled from FastF1 timing that the Ergast feed can't give
-you: who carries the most speed down the longest straight, and how the observed
-lap-time slope changes with track conditions.
+<PageHeader
+    eyebrow="Conditions lab"
+    title="How did conditions shape performance?"
+    description="Put straight-line speed and observed tyre fall-off into the temperature and weather context of the race."
+    accent="strategy"
+/>
 
 <KeyInsight label="Keep the comparison honest">
 Straight-line speed is descriptive, not a pure power-unit ranking. Weather slopes also include fuel, traffic and track evolution.

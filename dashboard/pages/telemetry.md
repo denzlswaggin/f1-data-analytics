@@ -5,10 +5,12 @@ max_width: 1600
 
 <AppNav />
 
-Distance-resampled FastF1 car telemetry for each driver's **fastest race lap**.
-Compare who carried more speed where, then see a single driver's racing line
-coloured by gear. _FastF1 coverage varies by season; the panel below states the
-exact races and latest event present in the published snapshot._
+<PageHeader
+    eyebrow="Telemetry lab"
+    title="Where does each driver gain time?"
+    description="Overlay fastest-race-lap speed, cumulative delta and pedal inputs, then map the selected gear around the circuit."
+    accent="drivers"
+/>
 
 <KeyInsight label="How to compare laps">
 Use the cumulative delta to find where time was gained; use speed and pedal traces to explain how it was gained.

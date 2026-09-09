@@ -5,9 +5,11 @@ max_width: 1600
 
 <AppNav />
 
-Per-lap race pace from FastF1 timing data — green-flag laps only (safety-car and
-yellow laps filtered out). Pick a race to see how pace evolved and where tyre
-stints fall. The coverage panel below states the races actually available.
+<PageHeader
+    eyebrow="Race analysis"
+    title="Where was the race won?"
+    description="Compare readable two-driver traces, controlled pace and stint phases using green-flag FastF1 timing."
+/>
 
 <KeyInsight label="How to read race pace">
 Negative controlled deltas are faster. Compare two drivers on the same lap and compound instead of reading raw lap time alone.
