@@ -270,6 +270,29 @@ describe('replay model', () => {
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
 	});
 
+	it('keeps live timeline events inside the replay duration', () => {
+		const messages = [
+			{
+				t_s: 99,
+				category: 'Flag',
+				flag: 'CHEQUERED',
+				scope: 'Track',
+				message: 'Chequered flag',
+				driver_code: null
+			},
+			{
+				t_s: 108,
+				category: 'Other',
+				flag: null,
+				scope: 'Track',
+				message: 'Post-race investigation',
+				driver_code: null
+			}
+		];
+
+		expect(buildEvents(messages, [], [], [], '', 100).map((event) => event.time)).toEqual([99]);
+	});
+
 	it('keeps pre-race and post-race radio out of the live race timeline', () => {
 		const radio: RadioRow[] = [
 			{
