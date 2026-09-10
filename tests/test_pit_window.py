@@ -12,9 +12,20 @@ from analytics.pipeline import (
     build_pit_window_effectiveness,
     build_pit_window_effectiveness_incremental,
 )
-from analytics.pit_window import PIT_WINDOW_COLUMNS, analyse_pit_windows
+from analytics.pit_window import PIT_WINDOW_COLUMNS, _prepare_laps, analyse_pit_windows
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
+
+
+@pytest.mark.parametrize("missing_time", [None, 0.0, -1.0])
+def test_missing_pit_timing_does_not_shift_inferred_boundary(missing_time: float | None) -> None:
+    laps = _race_laps()
+    laps.loc[laps["driver_code"].eq("A") & laps["lap_number"].eq(3), "lap_time_sec"] = missing_time
+    prepared = _prepare_laps(laps)
+    driver = prepared.loc[prepared["driver_code"].eq("A")].set_index("lap_number")
+    assert 3 not in driver.index
+    assert not bool(driver.loc[2, "is_pit_in_lap"])
+    assert bool(driver.loc[4, "is_pit_out_lap"])
 
 
 def test_additional_actual_pit_without_stint_change_is_retained_as_excluded() -> None:
