@@ -3,7 +3,12 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 import pytest
-from analytics.traffic import _SUMMARY_COLUMNS
+from analytics.traffic import (
+    _LAP_REQUIRED,
+    _REPLAY_REQUIRED,
+    _SUMMARY_COLUMNS,
+    analyse_traffic_adjusted_pace,
+)
 
 ROOT = Path(__file__).parents[1]
 PAGE = ROOT / "dashboard" / "pages" / "traffic-adjusted-pace.md"
@@ -94,3 +99,30 @@ def test_traffic_source_preserves_metric_evidence_and_sentinel_types(populated: 
     )
     assert str(result["clean_air_eligible"].dtype) == "bool"
     assert str(result["traffic_association_eligible"].dtype) == "bool"
+
+
+def test_actual_empty_traffic_summary_materializes_boolean_eligibility() -> None:
+    summary = analyse_traffic_adjusted_pace(
+        pd.DataFrame(columns=sorted(_LAP_REQUIRED)),
+        pd.DataFrame(columns=sorted(_REPLAY_REQUIRED)),
+    ).summary
+    assert summary.empty
+    with duckdb.connect() as connection:
+        connection.execute("create schema marts")
+        connection.register("empty_summary", summary)
+        connection.execute(
+            "create table marts.traffic_adjusted_pace as select * from empty_summary"
+        )
+        types = dict(
+            connection.execute(
+                "select column_name, data_type from information_schema.columns "
+                "where table_schema = 'marts' and table_name = 'traffic_adjusted_pace'"
+            ).fetchall()
+        )
+        result = connection.execute(PACE_SOURCE.read_text(encoding="utf-8")).df()
+    for field in ("clean_air_eligible", "traffic_association_eligible"):
+        assert str(summary[field].dtype) == "bool"
+        assert types[field] == "BOOLEAN"
+        assert str(result[field].dtype) == "bool"
+        assert not result.iloc[0][field]
+    assert result["season"].tolist() == [0]

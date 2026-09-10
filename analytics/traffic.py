@@ -113,9 +113,42 @@ def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None
 
 
 def _empty_result() -> TrafficPaceResult:
+    text_columns = {
+        "race_name",
+        "driver_code",
+        "team",
+        "confidence",
+        "clean_air_confidence",
+        "traffic_association_confidence",
+        "methodology_version",
+    }
+    integer_columns = {
+        "season",
+        "round",
+        "eligible_laps",
+        "clean_air_laps",
+        "traffic_laps",
+        "mixed_laps",
+        "matched_traffic_laps",
+    }
+    boolean_columns = {"clean_air_eligible", "traffic_association_eligible"}
+    summary = pd.DataFrame(
+        {
+            column: pd.Series(
+                dtype="string"
+                if column in text_columns
+                else "int64"
+                if column in integer_columns
+                else "bool"
+                if column in boolean_columns
+                else "float64"
+            )
+            for column in _SUMMARY_COLUMNS
+        }
+    )
     return TrafficPaceResult(
         evidence=pd.DataFrame(columns=_EVIDENCE_COLUMNS),
-        summary=pd.DataFrame(columns=_SUMMARY_COLUMNS),
+        summary=summary,
     )
 
 

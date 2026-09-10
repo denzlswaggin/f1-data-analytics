@@ -162,13 +162,13 @@ on both axes are omitted.
     <Column id=attacking_opportunities title="Attack n" />
     <Column id=converted_opportunities title="Converted" />
     <Column id=attack_conversion_pct title="Attack (%)" fmt="0.0" />
-    <Column id=attack_conversion_p05_pct title="Attack P05" fmt="0.0" />
-    <Column id=attack_conversion_p95_pct title="Attack P95" fmt="0.0" />
+    <Column id=attack_conversion_p05_pct title="Attack 90% lower" fmt="0.0" />
+    <Column id=attack_conversion_p95_pct title="Attack 90% upper" fmt="0.0" />
     <Column id=defensive_opportunities title="Defence n" />
     <Column id=defences_held title="Held" />
     <Column id=defence_hold_pct title="Defence (%)" fmt="0.0" />
-    <Column id=defence_hold_p05_pct title="Defence P05" fmt="0.0" />
-    <Column id=defence_hold_p95_pct title="Defence P95" fmt="0.0" />
+    <Column id=defence_hold_p05_pct title="Defence 90% lower" fmt="0.0" />
+    <Column id=defence_hold_p95_pct title="Defence 90% upper" fmt="0.0" />
     <Column id=quick_reversals_made title="Re-passes made" />
     <Column id=quick_reversals_conceded title="Re-passes conceded" />
     <Column id=offense_confidence title="Attack evidence" />

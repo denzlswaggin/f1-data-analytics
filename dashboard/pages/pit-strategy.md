@@ -107,8 +107,9 @@ order by net_positions desc
 
 This separates two facts that the previous net-position number mixed together:
 how long the full pit-lane visit was relative to the race median, and what happened
-to track position across the cycle. Stops within two laps of a safety car, VSC or
-red flag are labelled separately.
+to track position across the cycle. Stops within two lap numbers of a race-control
+message mentioning a safety car, VSC or red flag are labelled separately. Message
+proximity does not establish that an intervention affected that stop.
 
 Jolpica duration includes pit entry and exit and can include red-flag time. It
 does not isolate stationary service time or mechanic performance.

@@ -46,7 +46,7 @@ select
     stops.positions_gained,
     coalesce(event_context.intervention_nearby, 0) = 1 as intervention_nearby,
     case
-        when coalesce(event_context.intervention_nearby, 0) = 1 then 'Race-control affected'
+        when coalesce(event_context.intervention_nearby, 0) = 1 then 'Race-control message nearby'
         when stops.positions_gained is null then 'Insufficient window'
         when stops.positions_gained > 0 then 'Positive cycle'
         when stops.positions_gained < 0 then 'Negative cycle'

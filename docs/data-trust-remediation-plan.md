@@ -23,9 +23,10 @@ validation of the analytical claims.
 3. **Racecraft** — `fix/racecraft-continuous-battles`; fix reversal ownership and require continuous release and
    pressure intervals. Add synthetic boundary cases and real-data regressions.
    Implementation and before/after evidence: [racecraft v3 validation](racecraft-v3-validation.md).
-4. **Metric semantics and evidence** — label pit-lane duration correctly; separate
+4. **Metric semantics and evidence** — `fix/metric-evidence-semantics`; label pit-lane duration correctly; separate
    confidence for individual traffic metrics; represent incomplete/censored tyre
    settling honestly; show racecraft denominators and interrupted outcomes.
+   Implementation and before/after evidence: [metric evidence validation](metric-evidence-validation.md).
 
 ## Stage 2: methodological robustness
 
