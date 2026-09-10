@@ -2,13 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import duckdb
 import pandas as pd
 import pytest
+from analytics.pipeline import build_tyre_warmup, build_tyre_warmup_incremental
 from analytics.tyre_warmup import (
     TYRE_WARMUP_COLUMNS,
     TYRE_WARMUP_LAP_COLUMNS,
     analyse_tyre_warmup,
 )
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 
 def _laps(
@@ -147,3 +153,62 @@ def test_validates_contracts_and_threshold() -> None:
         analyse_tyre_warmup(_laps(), _traffic().drop(columns="air_state"))
     with pytest.raises(ValueError, match="stable_band_sec"):
         analyse_tyre_warmup(_laps(), _traffic(), stable_band_sec=0)
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    settings = Settings(warehouse="duckdb", duckdb_path=path)
+    laps = _laps().assign(session="R")
+    races = laps.loc[:, ["season", "round", "race_name"]].drop_duplicates()
+    codes = laps.loc[:, ["season", "driver_code", "driver_name"]].drop_duplicates()
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema staging")
+        connection.execute("create schema marts")
+        for schema, name, frame in (
+            ("staging", "stg_laps", laps),
+            ("staging", "stg_races", races),
+            ("staging", "stg_driver_codes", codes),
+            ("marts", "traffic_adjusted_laps", _traffic()),
+        ):
+            connection.register("incoming", frame)
+            connection.execute(f"create table {schema}.{name} as select * from incoming")
+            connection.unregister("incoming")
+    finally:
+        connection.close()
+    return settings
+
+
+def test_builder_materialises_both_tyre_warmup_marts(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "tyre-warmup.duckdb")
+
+    result = build_tyre_warmup(2026, 1, settings=settings)
+
+    summary = read_query("select * from marts.tyre_warmup", settings)
+    evidence = read_query("select * from marts.tyre_warmup_laps", settings)
+    assert len(summary) == len(result.summary) == 1
+    assert len(evidence) == len(result.laps) == 5
+    assert bool(summary["eligible"].iloc[0])
+
+
+def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "tyre-warmup-incremental.duckdb")
+    result = build_tyre_warmup(2026, 1, settings=settings)
+    summary_copy = result.summary.assign(round=2)
+    evidence_copy = result.laps.assign(round=2)
+    connection = duckdb.connect(str(settings.duckdb_path))
+    try:
+        connection.register("summary_copy", summary_copy)
+        connection.register("evidence_copy", evidence_copy)
+        connection.execute("insert into marts.tyre_warmup by name select * from summary_copy")
+        connection.execute("insert into marts.tyre_warmup_laps by name select * from evidence_copy")
+    finally:
+        connection.close()
+
+    build_tyre_warmup_incremental(2026, 1, settings=settings)
+
+    rounds = read_query(
+        "select round, count(*) as rows from marts.tyre_warmup group by round order by round",
+        settings,
+    )
+    assert rounds["round"].tolist() == [1, 2]
+    assert rounds["rows"].tolist() == [1, 1]

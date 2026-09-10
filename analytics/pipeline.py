@@ -16,6 +16,7 @@ from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dyna
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
 from analytics.replay import IncompleteReplayError, resample_race, validate_replay_sources
 from analytics.traffic import TrafficPaceResult, analyse_traffic_adjusted_pace
+from analytics.tyre_warmup import TyreWarmupResult, analyse_tyre_warmup
 from analytics.validation import bootstrap_ratings
 
 log = get_logger(__name__)
@@ -630,6 +631,116 @@ def build_all_traffic_adjusted_pace(
         races=races,
         evidence_laps=len(result.evidence),
         drivers=len(result.summary),
+    )
+    return result
+
+
+def _tyre_warmup_laps_query(season: int | None, rnd: int | None) -> str:
+    scope = _pit_window_scope_clause(season, rnd)
+    return f"""
+        select
+            laps.season,
+            laps.round,
+            races.race_name,
+            laps.driver_code,
+            coalesce(codes.driver_name, laps.driver_code) as driver_name,
+            laps.team,
+            laps.lap_number,
+            laps.stint,
+            laps.compound,
+            laps.tyre_life,
+            laps.is_fresh_tyre,
+            laps.lap_time_sec,
+            laps.track_status
+        from staging.stg_laps as laps
+        left join staging.stg_races as races
+            on races.season = laps.season and races.round = laps.round
+        left join staging.stg_driver_codes as codes
+            on codes.season = laps.season and codes.driver_code = laps.driver_code
+        where laps.session = 'R'{scope}
+    """
+
+
+def _build_tyre_warmup_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> TyreWarmupResult:
+    laps = read_query(_tyre_warmup_laps_query(season, rnd), settings)
+    traffic_laps = read_query(_traffic_scope_query("traffic_adjusted_laps", season, rnd), settings)
+    return analyse_tyre_warmup(laps, traffic_laps)
+
+
+def _replace_tyre_warmup_tables(result: TyreWarmupResult, settings: Settings) -> None:
+    replace_table(result.summary, schema="marts", table="tyre_warmup", settings=settings)
+    replace_table(result.laps, schema="marts", table="tyre_warmup_laps", settings=settings)
+
+
+def build_tyre_warmup(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> TyreWarmupResult:
+    """Build one race's tyre warm-up marts, replacing their full contents."""
+    settings = settings or get_settings()
+    result = _build_tyre_warmup_scope(season, rnd, settings)
+    _replace_tyre_warmup_tables(result, settings)
+    log.info(
+        "tyre_warmup.materialised",
+        season=season,
+        round=rnd,
+        stints=len(result.summary),
+        evidence_laps=len(result.laps),
+    )
+    return result
+
+
+def build_tyre_warmup_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> TyreWarmupResult:
+    """Recalculate one race while preserving every other warm-up partition."""
+    settings = settings or get_settings()
+    result = _build_tyre_warmup_scope(season, rnd, settings)
+    partition: dict[str, object] = {"season": season, "round": rnd}
+    replace_table_partition(
+        result.summary,
+        schema="marts",
+        table="tyre_warmup",
+        partition=partition,
+        settings=settings,
+    )
+    replace_table_partition(
+        result.laps,
+        schema="marts",
+        table="tyre_warmup_laps",
+        partition=partition,
+        settings=settings,
+    )
+    log.info(
+        "tyre_warmup.materialised_partition",
+        season=season,
+        round=rnd,
+        stints=len(result.summary),
+        evidence_laps=len(result.laps),
+    )
+    return result
+
+
+def build_all_tyre_warmup(
+    settings: Settings | None = None,
+) -> TyreWarmupResult:
+    """Build tyre warm-up marts for every race with traffic evidence."""
+    settings = settings or get_settings()
+    result = _build_tyre_warmup_scope(None, None, settings)
+    _replace_tyre_warmup_tables(result, settings)
+    races = result.summary[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "tyre_warmup.materialised_all",
+        races=races,
+        stints=len(result.summary),
+        evidence_laps=len(result.laps),
     )
     return result
 
