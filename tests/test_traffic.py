@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from analytics.traffic import analyse_traffic_adjusted_pace
 import numpy as np
 import pandas as pd
 import pytest
-from analytics.traffic import analyse_traffic_adjusted_pace
 
 
 TRAFFIC_LAPS = {3, 5, 7, 9, 11}
