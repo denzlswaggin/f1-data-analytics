@@ -405,6 +405,17 @@ def test_stale_leader_at_end_signal_does_not_define_recovery() -> None:
     assert result.events.iloc[0]["exclusion_reason"] == "Two-lap recovery unavailable"
 
 
+def test_sampled_crossing_cannot_hide_reference_lap_starting_before_end_signal() -> None:
+    replay = _replay()
+    replay.loc[replay.t_s.eq(200), "t_s"] = 151.0
+    laps = _laps().astype({"lap_start_t_s": "float64"})
+    laps.loc[laps.driver_code.eq("BBB") & laps.lap_number.eq(6), "lap_start_t_s"] = 149.5
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)], replay=replay, laps=laps
+    )
+    assert not result.events.iloc[0]["recovery_clean"]
+
+
 def test_straddling_previous_sc_lap_does_not_poison_green_leader_laps() -> None:
     # BBB leads two fully green laps [200, 260]. AAA's SC lap ends at 205;
     # its aggregate flag does not establish any yellow within [200, 205].

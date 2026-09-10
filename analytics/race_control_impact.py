@@ -414,7 +414,8 @@ def _recovery_clean(
         return False
     # Replay samples the crossings; staged lap times provide the true interval.
     if not (
-        0 <= start - starts[0] <= MAX_CAPTURE_OFFSET_S
+        starts[0] >= event.end_t_s
+        and 0 <= start - starts[0] <= MAX_CAPTURE_OFFSET_S
         and 0 <= end - ends[1] <= MAX_CAPTURE_OFFSET_S
         and abs(ends[0] - starts[1]) <= 0.001
     ):
