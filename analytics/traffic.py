@@ -262,6 +262,68 @@ def _match_clean_air_laps(laps: pd.DataFrame, tyre_age_window: float) -> pd.Data
     return out
 
 
+def classify_representative_lap_air(
+    laps: pd.DataFrame,
+    replay: pd.DataFrame,
+    *,
+    traffic_gap_s: float = TRAFFIC_GAP_S,
+    clean_air_gap_s: float = CLEAN_AIR_GAP_S,
+    traffic_lap_share: float = TRAFFIC_LAP_SHARE,
+    clean_air_lap_share: float = CLEAN_AIR_LAP_SHARE,
+    max_clean_lap_traffic_share: float = MAX_CLEAN_LAP_TRAFFIC_SHARE,
+    min_replay_coverage: float = MIN_REPLAY_COVERAGE,
+) -> pd.DataFrame:
+    """Attach replay air state before any same-compound peer filtering.
+
+    This public intermediate is useful when another analysis needs the same
+    representative-lap and replay-coverage rules but must retain all compounds.
+    """
+    _require_columns(laps, _LAP_REQUIRED, "laps")
+    _require_columns(replay, _REPLAY_REQUIRED, "replay")
+    if traffic_gap_s <= 0 or clean_air_gap_s <= traffic_gap_s:
+        raise ValueError("clean_air_gap_s must be greater than traffic_gap_s > 0")
+    shares = (traffic_lap_share, clean_air_lap_share, max_clean_lap_traffic_share)
+    if any(value < 0 or value > 1 for value in shares):
+        raise ValueError("lap-share thresholds must be between 0 and 1")
+    if min_replay_coverage <= 0 or min_replay_coverage > 1:
+        raise ValueError("min_replay_coverage must be in (0, 1]")
+    if laps.empty or replay.empty:
+        return pd.DataFrame()
+
+    pace = laps.copy()
+    for column in ("lap_number", "stint", "tyre_life", "lap_time_sec"):
+        pace[column] = pd.to_numeric(pace[column], errors="coerce")
+    pace = pace.dropna(
+        subset=["lap_number", "stint", "tyre_life", "lap_time_sec", "driver_code", "compound"]
+    )
+    pace = pace.loc[pace["lap_time_sec"].gt(0)]
+    pace = _exclude_non_representative_laps(pace, replay)
+
+    lap_durations = pace.loc[:, [*_LAP_KEYS, "lap_time_sec"]].drop_duplicates(_LAP_KEYS)
+    context = _lap_context(
+        replay,
+        lap_durations,
+        traffic_gap_s=traffic_gap_s,
+        clean_air_gap_s=clean_air_gap_s,
+    )
+    pace = pace.merge(context, on=_LAP_KEYS, how="inner", validate="one_to_one")
+    if pace.empty:
+        return pace
+
+    enough_coverage = pace["replay_coverage_pct"].ge(100 * min_replay_coverage)
+    pace["air_state"] = np.select(
+        [
+            enough_coverage & pace["traffic_share"].ge(traffic_lap_share),
+            enough_coverage
+            & pace["clean_air_share"].ge(clean_air_lap_share)
+            & pace["traffic_share"].le(max_clean_lap_traffic_share),
+        ],
+        ["traffic", "clean_air"],
+        default="mixed",
+    )
+    return pace
+
+
 def _summarise(
     laps: pd.DataFrame,
     *,
@@ -366,51 +428,20 @@ def analyse_traffic_adjusted_pace(
     Laps below the configured replay coverage are classified as mixed. Headline
     metrics remain null until their published sample threshold is met.
     """
-    _require_columns(laps, _LAP_REQUIRED, "laps")
-    _require_columns(replay, _REPLAY_REQUIRED, "replay")
-    if traffic_gap_s <= 0 or clean_air_gap_s <= traffic_gap_s:
-        raise ValueError("clean_air_gap_s must be greater than traffic_gap_s > 0")
-    shares = (traffic_lap_share, clean_air_lap_share, max_clean_lap_traffic_share)
-    if any(value < 0 or value > 1 for value in shares):
-        raise ValueError("lap-share thresholds must be between 0 and 1")
-    if min_replay_coverage <= 0 or min_replay_coverage > 1:
-        raise ValueError("min_replay_coverage must be in (0, 1]")
     if tyre_age_window < 0 or min_publish_laps < 1:
         raise ValueError("matching thresholds must be non-negative")
-    if laps.empty or replay.empty:
-        return _empty_result()
-
-    pace = laps.copy()
-    for column in ("lap_number", "stint", "tyre_life", "lap_time_sec"):
-        pace[column] = pd.to_numeric(pace[column], errors="coerce")
-    pace = pace.dropna(
-        subset=["lap_number", "stint", "tyre_life", "lap_time_sec", "driver_code", "compound"]
-    )
-    pace = pace.loc[pace["lap_time_sec"].gt(0)]
-    pace = _exclude_non_representative_laps(pace, replay)
-
-    lap_durations = pace.loc[:, [*_LAP_KEYS, "lap_time_sec"]].drop_duplicates(_LAP_KEYS)
-    context = _lap_context(
+    pace = classify_representative_lap_air(
+        laps,
         replay,
-        lap_durations,
         traffic_gap_s=traffic_gap_s,
         clean_air_gap_s=clean_air_gap_s,
+        traffic_lap_share=traffic_lap_share,
+        clean_air_lap_share=clean_air_lap_share,
+        max_clean_lap_traffic_share=max_clean_lap_traffic_share,
+        min_replay_coverage=min_replay_coverage,
     )
-    pace = pace.merge(context, on=_LAP_KEYS, how="inner", validate="one_to_one")
     if pace.empty:
         return _empty_result()
-
-    enough_coverage = pace["replay_coverage_pct"].ge(100 * min_replay_coverage)
-    pace["air_state"] = np.select(
-        [
-            enough_coverage & pace["traffic_share"].ge(traffic_lap_share),
-            enough_coverage
-            & pace["clean_air_share"].ge(clean_air_lap_share)
-            & pace["traffic_share"].le(max_clean_lap_traffic_share),
-        ],
-        ["traffic", "clean_air"],
-        default="mixed",
-    )
     pace = _add_controlled_delta(pace)
     if pace.empty:
         return _empty_result()
