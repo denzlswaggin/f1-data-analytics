@@ -10,6 +10,7 @@ from ingestion.logging import get_logger
 from analytics.overtakes import detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
+from analytics.pit_timing import PitTimingSensitivityResult, analyse_pit_timing_sensitivity
 from analytics.pit_window import analyse_pit_windows
 from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
 from analytics.ratings import compute_ratings
@@ -975,6 +976,101 @@ def build_all_pit_window_effectiveness(
     )
     races = result[["season", "round"]].drop_duplicates().shape[0]
     log.info("pit_window.materialised_all", races=races, matchups=len(result))
+    return result
+
+
+def _build_pit_timing_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> PitTimingSensitivityResult:
+    laps = read_query(_tyre_warmup_laps_query(season, rnd), settings)
+    replay = read_query(_traffic_scope_query("race_replay", season, rnd), settings)
+    stops = read_query(_pit_window_stops_query(season, rnd), settings)
+    return analyse_pit_timing_sensitivity(laps, replay, stops)
+
+
+def _replace_pit_timing_tables(result: PitTimingSensitivityResult, settings: Settings) -> None:
+    replace_table(
+        result.summary,
+        schema="marts",
+        table="pit_timing_sensitivity",
+        settings=settings,
+    )
+    replace_table(
+        result.scenarios,
+        schema="marts",
+        table="pit_timing_scenarios",
+        settings=settings,
+    )
+
+
+def build_pit_timing_sensitivity(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> PitTimingSensitivityResult:
+    """Build one race's pit-timing marts, replacing their full contents."""
+    settings = settings or get_settings()
+    result = _build_pit_timing_scope(season, rnd, settings)
+    _replace_pit_timing_tables(result, settings)
+    log.info(
+        "pit_timing.materialised",
+        season=season,
+        round=rnd,
+        stops=len(result.summary),
+        scenarios=len(result.scenarios),
+    )
+    return result
+
+
+def build_pit_timing_sensitivity_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> PitTimingSensitivityResult:
+    """Recalculate one race while preserving every other pit-timing partition."""
+    settings = settings or get_settings()
+    result = _build_pit_timing_scope(season, rnd, settings)
+    partition: dict[str, object] = {"season": season, "round": rnd}
+    replace_table_partition(
+        result.summary,
+        schema="marts",
+        table="pit_timing_sensitivity",
+        partition=partition,
+        settings=settings,
+    )
+    replace_table_partition(
+        result.scenarios,
+        schema="marts",
+        table="pit_timing_scenarios",
+        partition=partition,
+        settings=settings,
+    )
+    log.info(
+        "pit_timing.materialised_partition",
+        season=season,
+        round=rnd,
+        stops=len(result.summary),
+        scenarios=len(result.scenarios),
+    )
+    return result
+
+
+def build_all_pit_timing_sensitivity(
+    settings: Settings | None = None,
+) -> PitTimingSensitivityResult:
+    """Build pit-timing sensitivity for every race in the replay mart."""
+    settings = settings or get_settings()
+    result = _build_pit_timing_scope(None, None, settings)
+    _replace_pit_timing_tables(result, settings)
+    races = result.summary[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "pit_timing.materialised_all",
+        races=races,
+        stops=len(result.summary),
+        scenarios=len(result.scenarios),
+    )
     return result
 
 

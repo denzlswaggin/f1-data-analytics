@@ -12,7 +12,7 @@ from analytics.pipeline import (
     build_traffic_adjusted_pace,
     build_traffic_adjusted_pace_incremental,
 )
-from analytics.traffic import analyse_traffic_adjusted_pace
+from analytics.traffic import analyse_traffic_adjusted_pace, classify_representative_lap_air
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
@@ -124,6 +124,18 @@ def test_dead_band_and_under_covered_laps_are_mixed() -> None:
     )
     assert driver["confidence"] == "insufficient"
     assert pd.isna(driver["traffic_associated_delta_sec_per_lap"])
+
+
+def test_public_air_context_precedes_same_compound_peer_filter() -> None:
+    laps = _laps()
+    laps.loc[laps["driver_code"].eq("A"), "compound"] = "HARD"
+
+    context = classify_representative_lap_air(laps, _replay())
+    result = analyse_traffic_adjusted_pace(laps, _replay())
+
+    assert set(context["driver_code"]) == {"A", "B", "C"}
+    assert "air_state" in context
+    assert "A" not in set(result.evidence["driver_code"])
 
 
 @pytest.mark.parametrize("tick_s", [0.5, 1.0, 2.0])

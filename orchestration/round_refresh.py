@@ -14,6 +14,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_pace_consistency_incremental,
+    build_pit_timing_sensitivity_incremental,
     build_pit_window_effectiveness_incremental,
     build_race_control_impact_incremental,
     build_race_overtakes_incremental,
@@ -177,6 +178,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
     traffic = build_traffic_adjusted_pace_incremental(season, rnd, settings=settings)
     consistency = build_pace_consistency_incremental(season, rnd, settings=settings)
     tyre_warmup = build_tyre_warmup_incremental(season, rnd, settings=settings)
+    pit_timing = build_pit_timing_sensitivity_incremental(season, rnd, settings=settings)
     pit_windows = build_pit_window_effectiveness_incremental(season, rnd, settings=settings)
     race_control = build_race_control_impact_incremental(season, rnd, settings=settings)
     overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
@@ -190,6 +192,8 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         "pace_consistency_laps": len(consistency.laps),
         "tyre_warmup_stints": len(tyre_warmup.summary),
         "tyre_warmup_laps": len(tyre_warmup.laps),
+        "pit_timing_stops": len(pit_timing.summary),
+        "pit_timing_scenarios": len(pit_timing.scenarios),
         "pit_window_matchups": len(pit_windows),
         "race_control_events": len(race_control.events),
         "race_control_observations": len(race_control.evidence),
