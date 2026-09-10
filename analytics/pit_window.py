@@ -13,9 +13,9 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 
-MAX_STOP_SEPARATION_LAPS = 5
-MAX_PRE_GAP_SEC = 10.0
-MAX_POSITION_DISTANCE = 3
+MAX_STOP_SEPARATION_LAPS = 3
+MAX_PRE_GAP_SEC = 5.0
+MAX_POSITION_DISTANCE = 1
 OUTCOME_THRESHOLD_SEC = 0.5
 
 _RACE_KEYS = ["season", "round"]
@@ -28,6 +28,7 @@ _LAP_REQUIRED = {
     "lap_number",
     "stint",
     "compound",
+    "is_fresh_tyre",
     "tyre_life",
     "position",
     "lap_start_sec",
@@ -56,6 +57,8 @@ PIT_WINDOW_COLUMNS = [
     "early_new_compound",
     "late_old_compound",
     "late_new_compound",
+    "early_new_tyre_fresh",
+    "late_new_tyre_fresh",
     "position_before_early",
     "position_before_late",
     "position_after_early",
@@ -72,6 +75,7 @@ PIT_WINDOW_COLUMNS = [
     "eligible",
     "exclusion_reason",
     "confidence",
+    "opportunity_type",
     "outcome_label",
     "methodology_version",
 ]
@@ -103,6 +107,7 @@ def _prepare_laps(laps: pd.DataFrame) -> pd.DataFrame:
         ]
     )
     out = out.loc[out["lap_time_sec"].gt(0)].copy()
+    out["is_fresh_tyre"] = out["is_fresh_tyre"].fillna(False).astype(bool)
     out = out.sort_values([*_DRIVER_KEYS, "lap_number"]).drop_duplicates(
         [*_DRIVER_KEYS, "lap_number"], keep="last"
     )
@@ -130,11 +135,14 @@ def _derive_stops(laps: pd.DataFrame) -> pd.DataFrame:
                 "pit_lap",
                 "old_compound",
                 "new_compound",
+                "new_tyre_fresh",
             ]
         )
     transitions["stop_number"] = transitions.groupby(_DRIVER_KEYS).cumcount() + 1
     transitions["pit_lap"] = transitions["lap_number"] - 1
-    transitions = transitions.rename(columns={"compound": "new_compound"})
+    transitions = transitions.rename(
+        columns={"compound": "new_compound", "is_fresh_tyre": "new_tyre_fresh"}
+    )
     return transitions.loc[
         :,
         [
@@ -146,6 +154,7 @@ def _derive_stops(laps: pd.DataFrame) -> pd.DataFrame:
             "pit_lap",
             "old_compound",
             "new_compound",
+            "new_tyre_fresh",
         ],
     ]
 
@@ -183,13 +192,20 @@ def _window_laps(
     ]
 
 
-def _outcome_label(gap_before: float, gain: float, threshold: float) -> str:
+def _outcome_label(
+    gap_before: float,
+    gain: float,
+    position_flip: bool,
+    threshold: float,
+) -> str:
     early_was_behind = gap_before > 0
-    if abs(gain) < threshold:
-        return "Neutral cycle"
-    if gain > 0:
-        return "Undercut worked" if early_was_behind else "Early stop defended"
-    return "Overcut held" if early_was_behind else "Overcut worked"
+    if position_flip:
+        return "Undercut completed" if early_was_behind else "Overcut completed"
+    if gain >= threshold:
+        return "Early stop gained"
+    if gain <= -threshold:
+        return "Late stop gained"
+    return "Position held"
 
 
 def _confidence(
@@ -197,10 +213,19 @@ def _confidence(
     position_distance: int,
     separation: int,
     has_stop_timing: bool,
+    same_new_compound: bool,
+    fresh_new_tyres: bool,
 ) -> str:
-    if abs(gap_before) <= 3 and position_distance == 1 and separation <= 3 and has_stop_timing:
+    if (
+        abs(gap_before) <= 3
+        and position_distance == 1
+        and separation <= 2
+        and has_stop_timing
+        and same_new_compound
+        and fresh_new_tyres
+    ):
         return "high"
-    if abs(gap_before) <= 6 and position_distance <= 2 and separation <= 4:
+    if abs(gap_before) <= 5 and position_distance == 1 and separation <= 3:
         return "medium"
     return "low"
 
@@ -319,6 +344,9 @@ def analyse_pit_windows(
             on_track_gain = gain + stop_delta if has_stop_timing else np.nan
             before_relation = int(np.sign(positions[1] - positions[0]))
             after_relation = int(np.sign(positions[3] - positions[2]))
+            position_flip = before_relation != after_relation
+            same_new_compound = early["new_compound"] == late["new_compound"]
+            fresh_new_tyres = bool(early["new_tyre_fresh"]) and bool(late["new_tyre_fresh"])
 
             rows.append(
                 {
@@ -341,6 +369,8 @@ def analyse_pit_windows(
                     "early_new_compound": early["new_compound"],
                     "late_old_compound": late["old_compound"],
                     "late_new_compound": late["new_compound"],
+                    "early_new_tyre_fresh": bool(early["new_tyre_fresh"]),
+                    "late_new_tyre_fresh": bool(late["new_tyre_fresh"]),
                     "position_before_early": int(positions[0]),
                     "position_before_late": int(positions[1]),
                     "position_after_early": int(positions[2]),
@@ -352,17 +382,32 @@ def analyse_pit_windows(
                     "late_stop_duration_sec": late_duration,
                     "stop_duration_delta_sec": stop_delta,
                     "on_track_gain_sec": on_track_gain if eligible else np.nan,
-                    "position_flip": before_relation != after_relation,
+                    "position_flip": position_flip,
                     "window_green": bool(window_green),
                     "eligible": eligible,
                     "exclusion_reason": exclusion_reason,
                     "confidence": (
-                        _confidence(gap_before, position_distance, separation, has_stop_timing)
+                        _confidence(
+                            gap_before,
+                            position_distance,
+                            separation,
+                            has_stop_timing,
+                            same_new_compound,
+                            fresh_new_tyres,
+                        )
                         if eligible
                         else "excluded"
                     ),
+                    "opportunity_type": (
+                        "Undercut opportunity" if gap_before > 0 else "Overcut opportunity"
+                    ),
                     "outcome_label": (
-                        _outcome_label(gap_before, gain, outcome_threshold_sec)
+                        _outcome_label(
+                            gap_before,
+                            gain,
+                            position_flip,
+                            outcome_threshold_sec,
+                        )
                         if eligible
                         else "Excluded"
                     ),

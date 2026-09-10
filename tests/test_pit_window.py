@@ -43,14 +43,15 @@ def _race_laps(
                     "lap_number": lap,
                     "stint": 2 if second_stint else 1,
                     "compound": "HARD" if second_stint else "MEDIUM",
+                    "is_fresh_tyre": second_stint,
                     "tyre_life": lap - pit_lap if second_stint else lap,
                     "position": (
                         2
                         if code == "A" and lap <= b_pit_lap
                         else 1
-                        if code == "A"
+                        if code == "A" and after_gap < 0
                         else 1
-                        if lap <= b_pit_lap
+                        if code == "B" and (lap <= b_pit_lap or after_gap >= 0)
                         else 2
                     ),
                     "lap_start_sec": previous_end,
@@ -98,7 +99,8 @@ def test_measures_successful_undercut_on_common_lap_checkpoints() -> None:
     assert bool(row["position_flip"])
     assert bool(row["eligible"])
     assert row["confidence"] == "high"
-    assert row["outcome_label"] == "Undercut worked"
+    assert row["opportunity_type"] == "Undercut opportunity"
+    assert row["outcome_label"] == "Undercut completed"
 
 
 def test_labels_overcut_when_earlier_driver_loses_time() -> None:
@@ -106,7 +108,8 @@ def test_labels_overcut_when_earlier_driver_loses_time() -> None:
 
     row = result.iloc[0]
     assert row["net_time_gain_sec"] == pytest.approx(-2.0)
-    assert row["outcome_label"] == "Overcut held"
+    assert not bool(row["position_flip"])
+    assert row["outcome_label"] == "Late stop gained"
 
 
 def test_same_lap_stops_are_not_an_undercut_or_overcut_window() -> None:
