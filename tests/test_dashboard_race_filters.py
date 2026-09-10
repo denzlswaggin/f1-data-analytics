@@ -5,6 +5,7 @@ ROOT = PAGES_DIR.parents[1]
 RACE_PAGES = {
     "pit-strategy.md",
     "pit-window-effectiveness.md",
+    "pace-consistency.md",
     "race-pace.md",
     "traffic-adjusted-pace.md",
     "race-control-impact.md",

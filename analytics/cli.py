@@ -23,6 +23,7 @@ from ingestion.pipeline import season_rounds
 
 from analytics.pipeline import (
     build_all_overtakes,
+    build_all_pace_consistency,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
     build_all_replays,
@@ -32,6 +33,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_driver_ratings_v3,
+    build_pace_consistency,
     build_pit_window_effectiveness,
     build_race_control_impact,
     build_race_overtakes,
@@ -395,6 +397,32 @@ def tyre_warmup(
     eligible = int(result.summary["warmup_eligible"].sum()) if not result.summary.empty else 0
     typer.echo(
         f"Built tyre warm-up evidence for {scope}: {len(result.summary)} stints, "
+        f"{eligible} eligible and {len(result.laps)} lap observations."
+    )
+
+
+@app.command("pace-consistency")
+def pace_consistency(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race with traffic-adjusted lap evidence."),
+    ] = False,
+) -> None:
+    """Build clean-air repeatability and unexplained slow-tail evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_pace_consistency()
+        scope = "all traffic-covered races"
+    elif season is not None and round_ is not None:
+        result = build_pace_consistency(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result.summary["consistency_eligible"].sum()) if not result.summary.empty else 0
+    typer.echo(
+        f"Built pace consistency for {scope}: {len(result.summary)} driver-races, "
         f"{eligible} eligible and {len(result.laps)} lap observations."
     )
 

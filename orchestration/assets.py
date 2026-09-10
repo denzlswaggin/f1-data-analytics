@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from analytics.pipeline import (
+    build_all_pace_consistency,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
     build_all_traffic_adjusted_pace,
@@ -366,6 +367,29 @@ def traffic_adjusted_pace() -> MaterializeResult:
             "publishable_driver_races": publishable,
             "evidence_laps": len(result.evidence),
             "races": races,
+        }
+    )
+
+
+@asset(
+    deps=[AssetKey(["traffic_adjusted_pace"]), AssetKey(["stg_driver_codes"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def pace_consistency() -> MaterializeResult:
+    result = build_all_pace_consistency()
+    eligible = int(result.summary["consistency_eligible"].sum()) if not result.summary.empty else 0
+    races = int(
+        result.summary.loc[result.summary["consistency_eligible"], ["season", "round"]]
+        .drop_duplicates()
+        .shape[0]
+    )
+    return MaterializeResult(
+        metadata={
+            "driver_races": len(result.summary),
+            "eligible_driver_races": eligible,
+            "eligible_races": races,
+            "evidence_laps": len(result.laps),
         }
     )
 

@@ -8,6 +8,7 @@ from ingestion.loaders.warehouse import read_query, replace_table, replace_table
 from ingestion.logging import get_logger
 
 from analytics.overtakes import detect_overtakes
+from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
 from analytics.pit_window import analyse_pit_windows
 from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
@@ -631,6 +632,112 @@ def build_all_traffic_adjusted_pace(
         races=races,
         evidence_laps=len(result.evidence),
         drivers=len(result.summary),
+    )
+    return result
+
+
+def _pace_consistency_query(season: int | None, rnd: int | None) -> str:
+    where = ""
+    if season is not None:
+        where = f" where traffic.season = {int(season)}"
+        if rnd is not None:
+            where += f" and traffic.round = {int(rnd)}"
+    return f"""
+        select
+            traffic.*,
+            coalesce(codes.driver_name, traffic.driver_code) as driver_name
+        from marts.traffic_adjusted_laps as traffic
+        left join staging.stg_driver_codes as codes
+            on codes.season = traffic.season
+            and codes.driver_code = traffic.driver_code
+        {where}
+    """
+
+
+def _build_pace_consistency_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> PaceConsistencyResult:
+    traffic_laps = read_query(_pace_consistency_query(season, rnd), settings)
+    return analyse_pace_consistency(traffic_laps)
+
+
+def _replace_pace_consistency_tables(result: PaceConsistencyResult, settings: Settings) -> None:
+    replace_table(result.summary, schema="marts", table="pace_consistency", settings=settings)
+    replace_table(
+        result.laps,
+        schema="marts",
+        table="pace_consistency_laps",
+        settings=settings,
+    )
+
+
+def build_pace_consistency(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> PaceConsistencyResult:
+    """Build one race's pace-consistency marts, replacing their full contents."""
+    settings = settings or get_settings()
+    result = _build_pace_consistency_scope(season, rnd, settings)
+    _replace_pace_consistency_tables(result, settings)
+    log.info(
+        "pace_consistency.materialised",
+        season=season,
+        round=rnd,
+        drivers=len(result.summary),
+        evidence_laps=len(result.laps),
+    )
+    return result
+
+
+def build_pace_consistency_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> PaceConsistencyResult:
+    """Recalculate one race while preserving every other consistency partition."""
+    settings = settings or get_settings()
+    result = _build_pace_consistency_scope(season, rnd, settings)
+    partition: dict[str, object] = {"season": season, "round": rnd}
+    replace_table_partition(
+        result.summary,
+        schema="marts",
+        table="pace_consistency",
+        partition=partition,
+        settings=settings,
+    )
+    replace_table_partition(
+        result.laps,
+        schema="marts",
+        table="pace_consistency_laps",
+        partition=partition,
+        settings=settings,
+    )
+    log.info(
+        "pace_consistency.materialised_partition",
+        season=season,
+        round=rnd,
+        drivers=len(result.summary),
+        evidence_laps=len(result.laps),
+    )
+    return result
+
+
+def build_all_pace_consistency(
+    settings: Settings | None = None,
+) -> PaceConsistencyResult:
+    """Build pace consistency for every race with traffic-adjusted laps."""
+    settings = settings or get_settings()
+    result = _build_pace_consistency_scope(None, None, settings)
+    _replace_pace_consistency_tables(result, settings)
+    races = result.summary[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "pace_consistency.materialised_all",
+        races=races,
+        drivers=len(result.summary),
+        evidence_laps=len(result.laps),
     )
     return result
 
