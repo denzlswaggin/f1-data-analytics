@@ -24,6 +24,7 @@
             ['Driver ratings', 'driver-ratings'],
             ['Compare drivers', 'driver-comparison'],
             ['Pace consistency', 'pace-consistency'],
+            ['Racecraft battles', 'racecraft-battles'],
             ['Saturday vs Sunday', 'saturday-vs-sunday']
         ],
         trust: [
