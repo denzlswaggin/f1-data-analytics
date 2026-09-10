@@ -24,6 +24,7 @@ from ingestion.pipeline import season_rounds
 from analytics.pipeline import (
     build_all_overtakes,
     build_all_replays,
+    build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -32,6 +33,7 @@ from analytics.pipeline import (
     build_race_overtakes_season,
     build_race_replay,
     build_race_replays,
+    build_traffic_adjusted_pace,
 )
 from analytics.validation import (
     backtest_ratings,
@@ -336,6 +338,32 @@ def replay(
     typer.echo(
         f"Built marts.race_replay for {label}: {len(df)} rows, "
         f"{df['driver_code'].nunique()} drivers, {race_count} race(s) at {tick}s ticks."
+    )
+
+
+@app.command("traffic-pace")
+def traffic_pace(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race currently present in the replay mart."),
+    ] = False,
+) -> None:
+    """Build clean-air pace and traffic-associated delta marts."""
+    configure_logging()
+    if all_races:
+        result = build_all_traffic_adjusted_pace()
+        scope = "all replay races"
+    elif season is not None and round_ is not None:
+        result = build_traffic_adjusted_pace(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    publishable = int(result.summary["traffic_adjusted_pace_delta_sec"].notna().sum())
+    typer.echo(
+        f"Built traffic pace for {scope}: {len(result.summary)} driver-races, "
+        f"{publishable} with publishable clean-air pace."
     )
 
 

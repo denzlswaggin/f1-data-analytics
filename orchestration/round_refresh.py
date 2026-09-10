@@ -2,8 +2,8 @@
 
 The asset graph remains the convenient season-backfill interface. This job is
 the operational path: one explicit ``season/round/session`` partition ingests
-only that race, refreshes dbt once, and replaces only that race in the two
-Python-built replay marts.
+only that race, refreshes dbt once, and replaces only that race in each
+Python-built race-analysis mart.
 """
 
 import time
@@ -15,6 +15,7 @@ from analytics.pipeline import (
     build_driver_ratings_v2,
     build_race_overtakes_incremental,
     build_race_replay_incremental,
+    build_traffic_adjusted_pace_incremental,
 )
 from dagster import (
     Failure,
@@ -169,12 +170,14 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         settings=settings,
     )
     replay = build_race_replay_incremental(season, rnd, settings=settings)
+    traffic = build_traffic_adjusted_pace_incremental(season, rnd, settings=settings)
     overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
     return {
         "ratings": len(ratings),
         "dynamic_ratings": len(dynamic_ratings),
         "pace_profiles": len(pace_profile),
         "replay_rows": len(replay),
+        "traffic_pace_drivers": len(traffic.summary),
         "overtakes": len(overtakes),
     }
 

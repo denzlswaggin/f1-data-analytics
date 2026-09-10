@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import duckdb
 import numpy as np
 import pandas as pd
 import pytest
+from analytics.pipeline import (
+    build_traffic_adjusted_pace,
+    build_traffic_adjusted_pace_incremental,
+)
 from analytics.traffic import analyse_traffic_adjusted_pace
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 TRAFFIC_LAPS = {3, 5, 7, 9, 11}
 
@@ -196,3 +205,57 @@ def test_validates_inputs_thresholds_and_empty_frames() -> None:
     assert result.evidence.empty
     assert result.summary.empty
     assert "traffic_associated_delta_sec_per_lap" in result.summary.columns
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema marts")
+        connection.register("laps", _laps())
+        connection.register("replay", _replay())
+        connection.execute("create table marts.mart_lap_times as select * from laps")
+        connection.execute("create table marts.race_replay as select * from replay")
+    finally:
+        connection.close()
+    return Settings(warehouse="duckdb", duckdb_path=path)
+
+
+def test_builder_materialises_both_traffic_marts(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "traffic.duckdb")
+
+    result = build_traffic_adjusted_pace(2026, 1, settings=settings)
+
+    summary = read_query("select * from marts.traffic_adjusted_pace", settings)
+    evidence = read_query("select * from marts.traffic_adjusted_laps", settings)
+    assert len(summary) == len(result.summary) == 3
+    assert len(evidence) == len(result.evidence) == 33
+    assert not summary["traffic_adjusted_pace_delta_sec"].isna().all()
+
+
+def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "traffic-incremental.duckdb")
+    result = build_traffic_adjusted_pace(2026, 1, settings=settings)
+    summary_copy = result.summary.copy().assign(round=2)
+    evidence_copy = result.evidence.copy().assign(round=2)
+    connection = duckdb.connect(str(settings.duckdb_path))
+    try:
+        connection.register("summary_copy", summary_copy)
+        connection.register("evidence_copy", evidence_copy)
+        connection.execute(
+            "insert into marts.traffic_adjusted_pace by name select * from summary_copy"
+        )
+        connection.execute(
+            "insert into marts.traffic_adjusted_laps by name select * from evidence_copy"
+        )
+    finally:
+        connection.close()
+
+    build_traffic_adjusted_pace_incremental(2026, 1, settings=settings)
+
+    rounds = read_query(
+        "select round, count(*) as rows from marts.traffic_adjusted_pace "
+        "group by round order by round",
+        settings,
+    )
+    assert rounds["round"].tolist() == [1, 2]
+    assert rounds["rows"].tolist() == [3, 3]

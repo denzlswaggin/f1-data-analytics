@@ -13,6 +13,7 @@ from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
 from analytics.replay import IncompleteReplayError, resample_race, validate_replay_sources
+from analytics.traffic import TrafficPaceResult, analyse_traffic_adjusted_pace
 from analytics.validation import bootstrap_ratings
 
 log = get_logger(__name__)
@@ -526,6 +527,109 @@ def build_all_replays(
     replace_table(combined, schema="marts", table="race_replay", settings=settings)
     log.info("replay.materialised_all", races=len(non_empty), rows=len(combined))
     return combined
+
+
+def _traffic_scope_query(table: str, season: int | None, rnd: int | None) -> str:
+    where = ""
+    if season is not None:
+        where = f" where season = {int(season)}"
+        if rnd is not None:
+            where += f" and round = {int(rnd)}"
+    return f"select * from marts.{table}{where}"
+
+
+def _build_traffic_adjusted_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> TrafficPaceResult:
+    laps = read_query(_traffic_scope_query("mart_lap_times", season, rnd), settings)
+    replay = read_query(_traffic_scope_query("race_replay", season, rnd), settings)
+    return analyse_traffic_adjusted_pace(laps, replay)
+
+
+def _replace_traffic_tables(result: TrafficPaceResult, settings: Settings) -> None:
+    replace_table(
+        result.evidence,
+        schema="marts",
+        table="traffic_adjusted_laps",
+        settings=settings,
+    )
+    replace_table(
+        result.summary,
+        schema="marts",
+        table="traffic_adjusted_pace",
+        settings=settings,
+    )
+
+
+def build_traffic_adjusted_pace(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> TrafficPaceResult:
+    """Build one race's traffic pace marts, replacing their full contents."""
+    settings = settings or get_settings()
+    result = _build_traffic_adjusted_scope(season, rnd, settings)
+    _replace_traffic_tables(result, settings)
+    log.info(
+        "traffic_pace.materialised",
+        season=season,
+        round=rnd,
+        evidence_laps=len(result.evidence),
+        drivers=len(result.summary),
+    )
+    return result
+
+
+def build_traffic_adjusted_pace_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> TrafficPaceResult:
+    """Recalculate one race while preserving every other mart partition."""
+    settings = settings or get_settings()
+    result = _build_traffic_adjusted_scope(season, rnd, settings)
+    partition = {"season": season, "round": rnd}
+    replace_table_partition(
+        result.evidence,
+        schema="marts",
+        table="traffic_adjusted_laps",
+        partition=partition,
+        settings=settings,
+    )
+    replace_table_partition(
+        result.summary,
+        schema="marts",
+        table="traffic_adjusted_pace",
+        partition=partition,
+        settings=settings,
+    )
+    log.info(
+        "traffic_pace.materialised_partition",
+        season=season,
+        round=rnd,
+        evidence_laps=len(result.evidence),
+        drivers=len(result.summary),
+    )
+    return result
+
+
+def build_all_traffic_adjusted_pace(
+    settings: Settings | None = None,
+) -> TrafficPaceResult:
+    """Build traffic pace marts for every race present in the replay mart."""
+    settings = settings or get_settings()
+    result = _build_traffic_adjusted_scope(None, None, settings)
+    _replace_traffic_tables(result, settings)
+    races = result.summary[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "traffic_pace.materialised_all",
+        races=races,
+        evidence_laps=len(result.evidence),
+        drivers=len(result.summary),
+    )
+    return result
 
 
 def _overtakes_query(season: int, rnd: int) -> str:
