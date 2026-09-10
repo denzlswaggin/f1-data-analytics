@@ -43,6 +43,7 @@ from orchestration.assets import (
     race_control_impact,
     race_overtakes,
     race_replay,
+    racecraft_battle_conversion,
     raw_ergast_laps,
     raw_laps,
     raw_pitstops,
@@ -102,6 +103,7 @@ all_assets = [
     pit_window_effectiveness,
     race_control_impact,
     race_overtakes,
+    racecraft_battle_conversion,
 ]
 
 # Broad season refresh: ingest -> dbt -> ratings + replay, partitioned by

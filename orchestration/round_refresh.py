@@ -19,6 +19,7 @@ from analytics.pipeline import (
     build_race_control_impact_incremental,
     build_race_overtakes_incremental,
     build_race_replay_incremental,
+    build_racecraft_battles_incremental,
     build_traffic_adjusted_pace_incremental,
     build_tyre_warmup_incremental,
 )
@@ -182,6 +183,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
     pit_windows = build_pit_window_effectiveness_incremental(season, rnd, settings=settings)
     race_control = build_race_control_impact_incremental(season, rnd, settings=settings)
     overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
+    racecraft = build_racecraft_battles_incremental(season, rnd, settings=settings)
     return {
         "ratings": len(ratings),
         "dynamic_ratings": len(dynamic_ratings),
@@ -198,6 +200,8 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         "race_control_events": len(race_control.events),
         "race_control_observations": len(race_control.evidence),
         "overtakes": len(overtakes),
+        "racecraft_battles": len(racecraft.battles),
+        "racecraft_drivers": len(racecraft.summary),
     }
 
 

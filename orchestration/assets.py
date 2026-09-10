@@ -14,6 +14,7 @@ from analytics.pipeline import (
     build_all_pit_timing_sensitivity,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
+    build_all_racecraft_battles,
     build_all_traffic_adjusted_pace,
     build_all_tyre_warmup,
     build_driver_pace_profile,
@@ -508,6 +509,31 @@ def race_overtakes() -> MaterializeResult:
     df = build_race_overtakes_season(CURRENT_SEASON)
     races = int(df["round"].nunique()) if not df.empty else 0
     return MaterializeResult(metadata={"passes": len(df), "races": races, "season": CURRENT_SEASON})
+
+
+@asset(
+    deps=[
+        AssetKey(["race_replay"]),
+        AssetKey(["race_overtakes"]),
+        AssetKey(["stg_laps"]),
+        AssetKey(["stg_driver_codes"]),
+        AssetKey(["stg_races"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def racecraft_battle_conversion() -> MaterializeResult:
+    result = build_all_racecraft_battles()
+    eligible = int(result.battles["eligible"].sum()) if not result.battles.empty else 0
+    races = int(result.summary[["season", "round"]].drop_duplicates().shape[0])
+    return MaterializeResult(
+        metadata={
+            "battles": len(result.battles),
+            "eligible_battles": eligible,
+            "driver_races": len(result.summary),
+            "races": races,
+        }
+    )
 
 
 # --- Asset checks (data-quality gates surfaced in the Dagster UI) ------------

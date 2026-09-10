@@ -3,10 +3,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
+import duckdb
 import pandas as pd
 import pytest
+from analytics.pipeline import (
+    build_all_racecraft_battles,
+    build_racecraft_battles_incremental,
+)
 from analytics.racecraft import RacecraftResult, analyse_racecraft_battles
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 
 def _replay(
@@ -224,3 +232,56 @@ def test_rejects_duplicate_directional_pass_rows() -> None:
 
     with pytest.raises(ValueError, match="duplicate directional pass"):
         analyse_racecraft_battles(_replay(70), passes)
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    replay = _replay(85, gap=lambda t: 0.8 if t < 70 else 2.5)
+    second = replay.assign(round=2, race_name="Second Grand Prix")
+    replay = pd.concat([replay, second], ignore_index=True)
+    lap_rows = (
+        replay[["season", "round", "driver_code", "lap_number", "stint", "team", "track_status"]]
+        .drop_duplicates(["season", "round", "driver_code", "lap_number"])
+        .assign(session="R")
+    )
+    races = pd.DataFrame(
+        [
+            {"season": 2026, "round": 1, "race_name": "Test Grand Prix"},
+            {"season": 2026, "round": 2, "race_name": "Second Grand Prix"},
+        ]
+    )
+    codes = replay[["season", "driver_code", "driver_name"]].drop_duplicates()
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema staging")
+        connection.execute("create schema marts")
+        for table, frame in {
+            "staging.stg_laps": lap_rows,
+            "staging.stg_races": races,
+            "staging.stg_driver_codes": codes,
+            "marts.race_replay": replay.drop(columns=["race_name", "driver_name", "team"]),
+            "marts.race_overtakes": _overtakes(),
+        }.items():
+            connection.register("source_frame", frame)
+            connection.execute(f"create table {table} as select * from source_frame")
+            connection.unregister("source_frame")
+    finally:
+        connection.close()
+    return Settings(duckdb_path=path)
+
+
+def test_pipeline_materialises_all_and_replaces_one_partition(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "racecraft.duckdb")
+
+    all_result = build_all_racecraft_battles(settings)
+    incremental = build_racecraft_battles_incremental(2026, 1, settings)
+    persisted = read_query(
+        "select season, round, outcome from marts.racecraft_battles order by round",
+        settings,
+    )
+    summaries = read_query("select * from marts.racecraft_driver_summary", settings)
+
+    assert len(all_result.battles) == 2
+    assert len(incremental.battles) == 1
+    assert persisted["round"].tolist() == [1, 2]
+    assert set(persisted["outcome"]) == {"Defended"}
+    assert len(summaries) == 6
