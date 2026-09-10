@@ -27,6 +27,7 @@ from analytics.pipeline import (
     build_all_pit_timing_sensitivity,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
+    build_all_racecraft_battles,
     build_all_replays,
     build_all_traffic_adjusted_pace,
     build_all_tyre_warmup,
@@ -42,6 +43,7 @@ from analytics.pipeline import (
     build_race_overtakes_season,
     build_race_replay,
     build_race_replays,
+    build_racecraft_battles,
     build_traffic_adjusted_pace,
     build_tyre_warmup,
 )
@@ -503,6 +505,32 @@ def race_control_impact(
     typer.echo(
         f"Built race-control impact for {scope}: {len(result.events)} events, "
         f"{eligible} eligible and {len(result.evidence)} driver observations."
+    )
+
+
+@app.command("racecraft")
+def racecraft(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race currently present in the replay mart."),
+    ] = False,
+) -> None:
+    """Build observed close-running conversion and defence evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_racecraft_battles()
+        scope = "all replay races"
+    elif season is not None and round_ is not None:
+        result = build_racecraft_battles(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result.battles["eligible"].sum()) if not result.battles.empty else 0
+    typer.echo(
+        f"Built racecraft evidence for {scope}: {len(result.battles)} battles, "
+        f"{eligible} eligible and {len(result.summary)} driver-race summaries."
     )
 
 

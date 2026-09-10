@@ -13,6 +13,7 @@ from analytics.pace_profile import build_pace_profile
 from analytics.pit_timing import PitTimingSensitivityResult, analyse_pit_timing_sensitivity
 from analytics.pit_window import analyse_pit_windows
 from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
+from analytics.racecraft import RacecraftResult, analyse_racecraft_battles
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
@@ -1353,3 +1354,167 @@ def build_all_overtakes(settings: Settings | None = None) -> pd.DataFrame:
     replace_table(combined, schema="marts", table="race_overtakes", settings=settings)
     log.info("overtakes.materialised_all", races=len(non_empty), passes=len(combined))
     return combined
+
+
+def _racecraft_replay_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("replay", season, rnd)
+    return f"""
+        with lap_context as (
+            select
+                laps.*,
+                min(laps.lap_number) over stint_window as stint_first_lap,
+                max(laps.lap_number) over stint_window as stint_last_lap,
+                min(laps.stint) over driver_window as first_stint,
+                max(laps.stint) over driver_window as last_stint
+            from staging.stg_laps as laps
+            where laps.session = 'R'
+            window
+                stint_window as (
+                    partition by laps.season, laps.round, laps.driver_code, laps.stint
+                ),
+                driver_window as (
+                    partition by laps.season, laps.round, laps.driver_code
+                )
+        )
+        select
+            replay.season,
+            replay.round,
+            coalesce(races.race_name, 'Round ' || cast(replay.round as varchar)) as race_name,
+            replay.driver_code,
+            coalesce(codes.driver_name, replay.driver_code) as driver_name,
+            coalesce(laps.team, 'Unknown') as team,
+            replay.t_s,
+            replay.lap_number,
+            replay.lap_progress,
+            replay.stint,
+            replay.running_order,
+            replay.gap_to_ahead_s,
+            coalesce(laps.track_status, '') as track_status,
+            coalesce(
+                (
+                    replay.lap_number = laps.stint_first_lap
+                    and replay.stint > laps.first_stint
+                )
+                or (
+                    replay.lap_number = laps.stint_last_lap
+                    and replay.stint < laps.last_stint
+                ),
+                false
+            ) as is_pit_boundary
+        from marts.race_replay as replay
+        left join lap_context as laps
+            on laps.season = replay.season
+            and laps.round = replay.round
+            and laps.driver_code = replay.driver_code
+            and laps.lap_number = replay.lap_number
+        left join staging.stg_races as races
+            on races.season = replay.season and races.round = replay.round
+        left join staging.stg_driver_codes as codes
+            on codes.season = replay.season and codes.driver_code = replay.driver_code
+        where true{scope}
+    """
+
+
+def _racecraft_overtakes_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("passes", season, rnd)
+    return f"""
+        select
+            passes.season,
+            passes.round,
+            passes.t_s,
+            passes.passer_code,
+            passes.passed_code,
+            passes.confidence,
+            passes.reason
+        from marts.race_overtakes as passes
+        where true{scope}
+    """
+
+
+def _build_racecraft_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> RacecraftResult:
+    replay = read_query(_racecraft_replay_query(season, rnd), settings)
+    overtakes = read_query(_racecraft_overtakes_query(season, rnd), settings)
+    return analyse_racecraft_battles(replay, overtakes)
+
+
+def _replace_racecraft_tables(result: RacecraftResult, settings: Settings) -> None:
+    replace_table(result.battles, schema="marts", table="racecraft_battles", settings=settings)
+    replace_table(
+        result.summary,
+        schema="marts",
+        table="racecraft_driver_summary",
+        settings=settings,
+    )
+
+
+def build_racecraft_battles(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> RacecraftResult:
+    """Build one race's racecraft evidence, replacing both full marts."""
+    settings = settings or get_settings()
+    result = _build_racecraft_scope(season, rnd, settings)
+    _replace_racecraft_tables(result, settings)
+    log.info(
+        "racecraft.materialised",
+        season=season,
+        round=rnd,
+        battles=len(result.battles),
+        drivers=len(result.summary),
+    )
+    return result
+
+
+def build_racecraft_battles_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> RacecraftResult:
+    """Recalculate one race while preserving every other racecraft partition."""
+    settings = settings or get_settings()
+    result = _build_racecraft_scope(season, rnd, settings)
+    partition: dict[str, object] = {"season": season, "round": rnd}
+    replace_table_partition(
+        result.battles,
+        schema="marts",
+        table="racecraft_battles",
+        partition=partition,
+        settings=settings,
+    )
+    replace_table_partition(
+        result.summary,
+        schema="marts",
+        table="racecraft_driver_summary",
+        partition=partition,
+        settings=settings,
+    )
+    log.info(
+        "racecraft.materialised_partition",
+        season=season,
+        round=rnd,
+        battles=len(result.battles),
+        drivers=len(result.summary),
+    )
+    return result
+
+
+def build_all_racecraft_battles(
+    settings: Settings | None = None,
+) -> RacecraftResult:
+    """Build racecraft evidence for every race currently present in replay."""
+    settings = settings or get_settings()
+    result = _build_racecraft_scope(None, None, settings)
+    _replace_racecraft_tables(result, settings)
+    races = result.summary[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "racecraft.materialised_all",
+        races=races,
+        battles=len(result.battles),
+        drivers=len(result.summary),
+    )
+    return result

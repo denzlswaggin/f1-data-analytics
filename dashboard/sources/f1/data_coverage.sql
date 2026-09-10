@@ -164,6 +164,15 @@ coverage as (
         sum(eligible_driver_count), season, season
     from marts.race_control_events
     group by season, round, race_name
+
+    union all
+
+    select
+        'racecraft', cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct attacker_code), 1,
+        count(*) filter (where eligible), season, season
+    from marts.racecraft_battles
+    group by season, round, race_name
 )
 
 select

@@ -7,6 +7,7 @@ import pytest
 from analytics.pace_consistency import PaceConsistencyResult
 from analytics.pit_timing import PitTimingSensitivityResult
 from analytics.race_control_impact import RaceControlImpactResult
+from analytics.racecraft import RacecraftResult
 from analytics.traffic import TrafficPaceResult
 from analytics.tyre_warmup import TyreWarmupResult
 from ingestion.config import Settings
@@ -78,6 +79,13 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
             scenarios=pd.DataFrame(index=range(17)),
         )
 
+    def racecraft(season: int, rnd: int, *, settings: Settings) -> RacecraftResult:
+        calls.append(("racecraft", (season, rnd, settings)))
+        return RacecraftResult(
+            battles=pd.DataFrame(index=range(18)),
+            summary=pd.DataFrame(index=range(19)),
+        )
+
     monkeypatch.setattr(round_refresh, "build_driver_ratings", ratings)
     monkeypatch.setattr(round_refresh, "build_driver_ratings_v2", ratings_v2)
     monkeypatch.setattr(round_refresh, "build_driver_pace_profile", pace_profile)
@@ -89,6 +97,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     monkeypatch.setattr(round_refresh, "build_pit_window_effectiveness_incremental", pit_windows)
     monkeypatch.setattr(round_refresh, "build_race_control_impact_incremental", race_control)
     monkeypatch.setattr(round_refresh, "build_race_overtakes_incremental", overtakes)
+    monkeypatch.setattr(round_refresh, "build_racecraft_battles_incremental", racecraft)
     settings = Settings(duckdb_path=tmp_path / "round.duckdb")
 
     summary = round_refresh._build_round_analytics(2026, 12, settings)
@@ -109,6 +118,8 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "race_control_events": 10,
         "race_control_observations": 11,
         "overtakes": 6,
+        "racecraft_battles": 18,
+        "racecraft_drivers": 19,
     }
     assert [name for name, _ in calls] == [
         "ratings",
@@ -122,6 +133,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "pit_windows",
         "race_control",
         "overtakes",
+        "racecraft",
     ]
     assert calls[2][1] == (PACE_PROFILE_FROM_SEASON, settings)
     assert calls[3][1] == (2026, 12, settings)
@@ -132,3 +144,4 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     assert calls[8][1] == (2026, 12, settings)
     assert calls[9][1] == (2026, 12, settings)
     assert calls[10][1] == (2026, 12, settings)
+    assert calls[11][1] == (2026, 12, settings)
