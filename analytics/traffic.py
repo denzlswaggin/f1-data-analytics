@@ -88,6 +88,10 @@ _SUMMARY_COLUMNS = [
     "traffic_associated_p25_sec",
     "traffic_associated_p75_sec",
     "confidence",
+    "clean_air_eligible",
+    "clean_air_confidence",
+    "traffic_association_eligible",
+    "traffic_association_confidence",
     "traffic_gap_threshold_s",
     "clean_air_gap_threshold_s",
     "methodology_version",
@@ -325,6 +329,13 @@ def classify_representative_lap_air(
     return pace
 
 
+def _sample_strength(samples: int, min_publish_laps: int) -> str:
+    """Heuristic sample strength, not calibrated statistical confidence."""
+    if samples < min_publish_laps:
+        return "insufficient"
+    return "high" if samples >= 12 else "medium" if samples >= 8 else "low"
+
+
 def _summarise(
     laps: pd.DataFrame,
     *,
@@ -342,15 +353,8 @@ def _summarise(
         publish_clean = len(clean) >= min_publish_laps
         publish_association = publish_clean and len(matched) >= min_publish_laps
         strength = min(len(clean), len(matched))
-        confidence = (
-            "high"
-            if strength >= 12
-            else "medium"
-            if strength >= 8
-            else "low"
-            if strength >= min_publish_laps
-            else "insufficient"
-        )
+        clean_confidence = _sample_strength(len(clean), min_publish_laps)
+        association_confidence = _sample_strength(strength, min_publish_laps)
         clean_delta = (
             float(clean["controlled_pace_delta_sec"].median()) if publish_clean else np.nan
         )
@@ -399,10 +403,16 @@ def _summarise(
                 "traffic_associated_p75_sec": (
                     association.quantile(0.75) if publish_association else np.nan
                 ),
-                "confidence": confidence,
+                # Retained for existing consumers: this alias describes only
+                # the traffic association, never the clean-air estimate.
+                "confidence": association_confidence,
+                "clean_air_eligible": publish_clean,
+                "clean_air_confidence": clean_confidence,
+                "traffic_association_eligible": publish_association,
+                "traffic_association_confidence": association_confidence,
                 "traffic_gap_threshold_s": traffic_gap_s,
                 "clean_air_gap_threshold_s": clean_air_gap_s,
-                "methodology_version": "traffic-v2-pit-context",
+                "methodology_version": "traffic-v3-metric-evidence",
             }
         )
     return pd.DataFrame(rows, columns=_SUMMARY_COLUMNS)

@@ -21,6 +21,10 @@ select
     traffic_associated_p25_sec,
     traffic_associated_p75_sec,
     confidence,
+    clean_air_eligible,
+    clean_air_confidence,
+    traffic_association_eligible,
+    traffic_association_confidence,
     traffic_gap_threshold_s,
     clean_air_gap_threshold_s,
     methodology_version
@@ -35,6 +39,7 @@ select
     cast(0 as double), cast(0 as double),
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), cast(null as double),
-    'unavailable', cast(1.5 as double), cast(3.0 as double), 'traffic-v2-pit-context'
+    'unavailable', false, 'unavailable', false, 'unavailable',
+    cast(1.5 as double), cast(3.0 as double), 'traffic-v3-metric-evidence'
 where not exists (select 1 from marts.traffic_adjusted_pace)
 order by season, round, driver_code
