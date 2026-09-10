@@ -16,6 +16,22 @@ from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
 
+def test_actual_additional_pit_without_stint_change_excludes_scenarios() -> None:
+    laps, replay = _race()
+    stops = pd.concat([_stops(), _stops().assign(pit_lap=14)], ignore_index=True)
+    result = analyse_pit_timing_sensitivity(laps, replay, stops, bootstrap_samples=5)
+    assert result.summary.iloc[0]["exclusion_reason"] == "additional_stop_in_window"
+
+
+def test_pre_attached_full_context_is_preserved() -> None:
+    laps, replay = _race()
+    laps["is_pit_in_lap"] = laps["driver_code"].eq("A") & laps["lap_number"].eq(14)
+    laps["is_pit_out_lap"] = laps["driver_code"].eq("A") & laps["lap_number"].eq(15)
+    laps["is_pit_boundary"] = laps["is_pit_in_lap"] | laps["is_pit_out_lap"]
+    result = analyse_pit_timing_sensitivity(laps, replay, _stops(), bootstrap_samples=5)
+    assert result.summary.iloc[0]["exclusion_reason"] == "additional_stop_in_window"
+
+
 def _race(
     *, warmup_scale: float = 1.0, old_slope: float = 0.20
 ) -> tuple[pd.DataFrame, pd.DataFrame]:

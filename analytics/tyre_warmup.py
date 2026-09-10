@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "tyre-warmup-v1"
+METHODOLOGY_VERSION = "tyre-warmup-v2"
 STABLE_BAND_SEC = 0.50
 MIN_STINT_LAPS = 11
 MIN_REPLAY_COVERAGE_PCT = 80.0
@@ -277,6 +277,8 @@ def _summary_exclusion_reason(
         return f"Stint shorter than {MIN_STINT_LAPS} laps"
     if first is None:
         return "First flying lap unavailable"
+    if pd.notna(first.get("is_pit_boundary")) and bool(first.get("is_pit_boundary")):
+        return "First flying lap was a pit boundary"
     if str(first["track_status"]) != "1":
         return "First flying lap was not green"
     if pd.isna(first["controlled_pace_delta_sec"]):
@@ -375,6 +377,7 @@ def analyse_tyre_warmup(
             & window["air_state"].astype("string").eq("clean_air")
             & window["controlled_pace_delta_sec"].notna()
             & window["replay_coverage_pct"].ge(MIN_REPLAY_COVERAGE_PCT).fillna(False)
+            & ~window.get("is_pit_boundary", pd.Series(False, index=window.index)).fillna(False)
         )
         evaluation = window["post_stop_offset"].between(1, 6)
         mature_mask = window["post_stop_offset"].between(7, 12)
@@ -484,7 +487,11 @@ def analyse_tyre_warmup(
             expected = intercept + slope * offset if np.isfinite(slope) else np.nan
             loss = valid_losses.get(offset, np.nan)
             lap_reason = ""
-            if str(row.track_status) != "1":
+            if pd.notna(getattr(row, "is_pit_boundary", False)) and bool(
+                getattr(row, "is_pit_boundary", False)
+            ):
+                lap_reason = "Pit entry or exit lap"
+            elif str(row.track_status) != "1":
                 lap_reason = "Lap was not green"
             elif pd.isna(row.controlled_pace_delta_sec):
                 lap_reason = "Traffic context unavailable"

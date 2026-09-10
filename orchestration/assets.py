@@ -11,6 +11,7 @@ from typing import Any
 
 from analytics.pipeline import (
     build_all_pace_consistency,
+    build_all_pit_lap_context,
     build_all_pit_timing_sensitivity,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
@@ -355,7 +356,19 @@ def race_replay() -> MaterializeResult:
 
 
 @asset(
-    deps=[AssetKey(["race_replay"]), AssetKey(["mart_lap_times"])],
+    deps=[AssetKey(["stg_laps"]), AssetKey(["stg_pitstops"]), AssetKey(["stg_driver_codes"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def pit_lap_context() -> MaterializeResult:
+    result = build_all_pit_lap_context()
+    return MaterializeResult(
+        metadata={"laps": len(result), "pit_laps": int(result["is_pit_boundary"].sum())}
+    )
+
+
+@asset(
+    deps=[AssetKey(["race_replay"]), AssetKey(["mart_lap_times"]), AssetKey(["pit_lap_context"])],
     group_name="analytics",
     compute_kind="python",
 )
@@ -399,6 +412,7 @@ def pace_consistency() -> MaterializeResult:
 @asset(
     deps=[
         AssetKey(["traffic_adjusted_pace"]),
+        AssetKey(["pit_lap_context"]),
         AssetKey(["stg_laps"]),
         AssetKey(["stg_driver_codes"]),
         AssetKey(["stg_races"]),
@@ -428,6 +442,7 @@ def tyre_warmup() -> MaterializeResult:
     deps=[
         AssetKey(["stg_laps"]),
         AssetKey(["stg_pitstops"]),
+        AssetKey(["pit_lap_context"]),
         AssetKey(["stg_driver_codes"]),
         AssetKey(["stg_races"]),
     ],
@@ -452,6 +467,7 @@ def pit_window_effectiveness() -> MaterializeResult:
         AssetKey(["race_replay"]),
         AssetKey(["stg_laps"]),
         AssetKey(["stg_pitstops"]),
+        AssetKey(["pit_lap_context"]),
         AssetKey(["stg_driver_codes"]),
         AssetKey(["stg_races"]),
     ],
@@ -515,6 +531,7 @@ def race_overtakes() -> MaterializeResult:
     deps=[
         AssetKey(["race_replay"]),
         AssetKey(["race_overtakes"]),
+        AssetKey(["pit_lap_context"]),
         AssetKey(["stg_laps"]),
         AssetKey(["stg_driver_codes"]),
         AssetKey(["stg_races"]),

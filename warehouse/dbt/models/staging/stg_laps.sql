@@ -28,6 +28,10 @@ renamed as (
         is_personal_best,
         track_status,
         cast(lap_start_sec as double precision)             as lap_start_sec,
+        {{ optional_source_column(source('raw', 'laps'), 'pit_in_time_sec', 'double precision') }}
+                                                           as pit_in_time_sec,
+        {{ optional_source_column(source('raw', 'laps'), 'pit_out_time_sec', 'double precision') }}
+                                                           as pit_out_time_sec,
         cast(speed_i1_kph as double precision)              as speed_i1_kph,
         cast(speed_i2_kph as double precision)              as speed_i2_kph,
         cast(speed_fl_kph as double precision)              as speed_fl_kph,

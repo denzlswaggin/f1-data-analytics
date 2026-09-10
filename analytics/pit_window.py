@@ -13,6 +13,8 @@ from itertools import combinations
 import numpy as np
 import pandas as pd
 
+from analytics.pit_context import attach_pit_lap_context, build_pit_lap_context
+
 MAX_STOP_SEPARATION_LAPS = 3
 MAX_PRE_GAP_SEC = 5.0
 MAX_POSITION_DISTANCE = 1
@@ -137,12 +139,19 @@ def _empty_result() -> pd.DataFrame:
     )
 
 
-def _prepare_laps(laps: pd.DataFrame) -> pd.DataFrame:
+def _prepare_laps(laps: pd.DataFrame, stops: pd.DataFrame | None = None) -> pd.DataFrame:
     out = laps.copy()
     for column in ("season", "round", "lap_number", "stint", "position"):
         out[column] = pd.to_numeric(out[column], errors="coerce")
     for column in ("lap_start_sec", "lap_time_sec", "tyre_life"):
         out[column] = pd.to_numeric(out[column], errors="coerce")
+    pit_context = None
+    if not {"is_pit_in_lap", "is_pit_out_lap", "is_pit_boundary"}.issubset(out.columns):
+        # Boundaries belong to the full lap feed, including laps without valid timing.
+        context_laps = out.dropna(subset=[*_DRIVER_KEYS, "lap_number"]).drop_duplicates(
+            [*_DRIVER_KEYS, "lap_number"], keep="last"
+        )
+        pit_context = build_pit_lap_context(context_laps, stops)
     out = out.dropna(
         subset=[
             *_DRIVER_KEYS,
@@ -158,6 +167,8 @@ def _prepare_laps(laps: pd.DataFrame) -> pd.DataFrame:
         [*_DRIVER_KEYS, "lap_number"], keep="last"
     )
     out["lap_end_sec"] = out["lap_start_sec"] + out["lap_time_sec"]
+    if pit_context is not None:
+        out = attach_pit_lap_context(out, pit_context)
     return out.reset_index(drop=True)
 
 
@@ -300,7 +311,7 @@ def analyse_pit_windows(
     if laps.empty:
         return _empty_result()
 
-    pace = _prepare_laps(laps)
+    pace = _prepare_laps(laps, stops)
     events = _attach_durations(_derive_stops(pace), stops)
     if events.empty:
         return _empty_result()
@@ -371,6 +382,16 @@ def analyse_pit_windows(
                 & race_events["pit_lap"].between(early["pit_lap"], after_lap)
             ]
             single_stop_each = pair_events.groupby("driver_code").size().eq(1).all()
+            expected_pit = window["driver_code"].map(
+                {early["driver_code"]: early["pit_lap"], late["driver_code"]: late["pit_lap"]}
+            )
+            extra_pit = (
+                window["is_pit_in_lap"].fillna(False) & window["lap_number"].ne(expected_pit)
+            ) | (window["is_pit_out_lap"].fillna(False) & window["lap_number"].ne(expected_pit + 1))
+            extra_pit |= window["is_pit_boundary"].fillna(False) & ~(
+                window["lap_number"].eq(expected_pit) | window["lap_number"].eq(expected_pit + 1)
+            )
+            single_stop_each = single_stop_each and not extra_pit.any()
             if not window_complete:
                 exclusion_reason = "Incomplete timing window"
             elif not window_green:
@@ -461,7 +482,7 @@ def analyse_pit_windows(
                         if eligible
                         else "Excluded"
                     ),
-                    "methodology_version": "pit-window-v1",
+                    "methodology_version": "pit-window-v2",
                 }
             )
     if not rows:

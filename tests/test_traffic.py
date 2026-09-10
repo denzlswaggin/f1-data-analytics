@@ -19,6 +19,14 @@ from ingestion.loaders.warehouse import read_query
 TRAFFIC_LAPS = {3, 5, 7, 9, 11}
 
 
+def test_explicit_pit_boundary_excludes_visit_without_stint_change() -> None:
+    laps = _laps()
+    laps["is_pit_boundary"] = laps["driver_code"].eq("A") & laps["lap_number"].isin([6, 7])
+    result = classify_representative_lap_air(laps, _replay())
+    assert result.loc[result["driver_code"].eq("A"), "lap_number"].isin([6, 7]).sum() == 0
+    assert result.loc[result["driver_code"].eq("B"), "lap_number"].isin([6, 7]).sum() == 2
+
+
 def _laps() -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for lap in range(1, 13):
@@ -223,9 +231,11 @@ def _seed_warehouse(path: Path) -> Settings:
     connection = duckdb.connect(str(path))
     try:
         connection.execute("create schema marts")
+        connection.execute("create schema staging")
         connection.register("laps", _laps())
         connection.register("replay", _replay())
         connection.execute("create table marts.mart_lap_times as select * from laps")
+        connection.execute("create table staging.stg_laps as select *, 'R' as session from laps")
         connection.execute("create table marts.race_replay as select * from replay")
     finally:
         connection.close()
@@ -242,6 +252,23 @@ def test_builder_materialises_both_traffic_marts(tmp_path: Path) -> None:
     assert len(summary) == len(result.summary) == 3
     assert len(evidence) == len(result.evidence) == 33
     assert not summary["traffic_adjusted_pace_delta_sec"].isna().all()
+
+
+def test_builder_excludes_recorded_stop_without_stint_change(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "actual-stop.duckdb")
+    with duckdb.connect(str(settings.duckdb_path)) as connection:
+        connection.execute(
+            "create table staging.stg_driver_codes as "
+            "select 2026 season, 'driver_a' driver_id, 'A' driver_code"
+        )
+        connection.execute(
+            "create table staging.stg_pitstops as "
+            "select 2026 season, 1 round, 'driver_a' driver_id, 6 pit_lap, 25.0 duration_sec"
+        )
+    result = build_traffic_adjusted_pace(2026, 1, settings=settings)
+    assert not (
+        result.evidence["driver_code"].eq("A") & result.evidence["lap_number"].isin([6, 7])
+    ).any()
 
 
 def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:

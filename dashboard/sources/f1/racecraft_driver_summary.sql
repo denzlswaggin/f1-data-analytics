@@ -49,6 +49,6 @@ select
     0, 0, 0, cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), 0, 0, 0, 0, 0, 0, 0, cast(null as double),
     false, false, 'No data', 'No data', 'insufficient', 'insufficient',
-    'insufficient', 'racecraft-v1'
+    'insufficient', 'racecraft-v2-pit-context'
 where not exists (select 1 from marts.racecraft_driver_summary)
 order by season, round, driver_code

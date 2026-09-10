@@ -117,6 +117,9 @@ def _load_duckdb(
         con.execute(
             f'CREATE TABLE IF NOT EXISTS raw."{table}" AS SELECT * FROM incoming WHERE 1 = 0'
         )
+        if table == "laps":
+            for column in ("pit_in_time_sec", "pit_out_time_sec"):
+                con.execute(f'ALTER TABLE raw."laps" ADD COLUMN IF NOT EXISTS {column} DOUBLE')
         if rounds is not None:
             placeholders = ", ".join("?" for _ in rounds)
             con.execute(
@@ -196,6 +199,12 @@ def _load_postgres(
             conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
             # head(0) append creates the table if missing, else no-op.
             df.head(0).to_sql(table, conn, schema=schema, if_exists="append", index=False)
+            if table == "laps":
+                for column in ("pit_in_time_sec", "pit_out_time_sec"):
+                    conn.exec_driver_sql(
+                        f'ALTER TABLE "{schema}"."laps" '
+                        f"ADD COLUMN IF NOT EXISTS {column} DOUBLE PRECISION"
+                    )
             if rounds is not None:
                 conn.execute(
                     text(

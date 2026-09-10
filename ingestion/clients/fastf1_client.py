@@ -212,6 +212,10 @@ class FastF1Client:
         )
         for src, dst in _TIMEDELTA_COLS.items():
             out[dst] = _seconds(laps[src])
+        # Keep actual pit visits, including drive-throughs without a tyre change.
+        # These are timestamps on the session clock, not pit-lane durations.
+        for src, dst in (("PitInTime", "pit_in_time_sec"), ("PitOutTime", "pit_out_time_sec")):
+            out[dst] = _seconds(laps[src]) if src in laps else float("nan")
 
         # In/out laps without a set time arrive as NaT; `_seconds` maps those to
         # NaN here. The raw layer keeps every lap (stint-boundary rows included);

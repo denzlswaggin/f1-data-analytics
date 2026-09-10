@@ -216,12 +216,13 @@ def _exclude_non_representative_laps(laps: pd.DataFrame, replay: pd.DataFrame) -
     is_start = out["lap_number"].le(1)
     is_out_lap = out["lap_number"].eq(out["stint_first_lap"]) & out["stint"].gt(1)
     is_in_lap = out["lap_number"].eq(out["stint_last_lap"]) & out["stint"].lt(out["last_stint"])
+    pit_boundary = out.get("is_pit_boundary", pd.Series(False, index=out.index)).fillna(False)
     known_compound = out["compound"].astype(str).str.strip().str.upper().ne("UNKNOWN")
     known_compound &= out["compound"].astype(str).str.strip().ne("")
     mature_tyre = out["tyre_life"].ge(2)
-    return out.loc[~(is_start | is_out_lap | is_in_lap) & known_compound & mature_tyre].drop(
-        columns=["stint_first_lap", "stint_last_lap", "last_stint"]
-    )
+    return out.loc[
+        ~(is_start | is_out_lap | is_in_lap | pit_boundary) & known_compound & mature_tyre
+    ].drop(columns=["stint_first_lap", "stint_last_lap", "last_stint"])
 
 
 def _add_controlled_delta(laps: pd.DataFrame) -> pd.DataFrame:
@@ -401,7 +402,7 @@ def _summarise(
                 "confidence": confidence,
                 "traffic_gap_threshold_s": traffic_gap_s,
                 "clean_air_gap_threshold_s": clean_air_gap_s,
-                "methodology_version": "traffic-v1",
+                "methodology_version": "traffic-v2-pit-context",
             }
         )
     return pd.DataFrame(rows, columns=_SUMMARY_COLUMNS)

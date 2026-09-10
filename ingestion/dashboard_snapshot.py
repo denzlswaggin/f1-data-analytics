@@ -31,6 +31,18 @@ DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 # database. Optional datasets still materialise an empty table with the declared
 # columns, so their absence is always a broken pipeline rather than "no data".
 DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
+    ("marts", "pit_lap_context"): {
+        "season",
+        "round",
+        "driver_code",
+        "lap_number",
+        "is_pit_in_lap",
+        "is_pit_out_lap",
+        "is_pit_boundary",
+        "pit_context_source",
+        "pit_context_status",
+        "pit_exclusion_reason",
+    },
     ("staging", "stg_races"): {"season", "round", "race_name", "race_date"},
     ("staging", "stg_driver_codes"): {
         "season",

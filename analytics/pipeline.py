@@ -10,6 +10,7 @@ from ingestion.logging import get_logger
 from analytics.overtakes import detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
+from analytics.pit_context import attach_pit_lap_context, build_pit_lap_context
 from analytics.pit_timing import PitTimingSensitivityResult, analyse_pit_timing_sensitivity
 from analytics.pit_window import analyse_pit_windows
 from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
@@ -550,6 +551,7 @@ def _build_traffic_adjusted_scope(
     settings: Settings,
 ) -> TrafficPaceResult:
     laps = read_query(_traffic_scope_query("mart_lap_times", season, rnd), settings)
+    laps = attach_pit_lap_context(laps, _build_pit_context_scope(season, rnd, settings))
     replay = read_query(_traffic_scope_query("race_replay", season, rnd), settings)
     return analyse_traffic_adjusted_pace(laps, replay)
 
@@ -776,6 +778,7 @@ def _build_tyre_warmup_scope(
     settings: Settings,
 ) -> TyreWarmupResult:
     laps = read_query(_tyre_warmup_laps_query(season, rnd), settings)
+    laps = attach_pit_lap_context(laps, _build_pit_context_scope(season, rnd, settings))
     traffic_laps = read_query(_traffic_scope_query("traffic_adjusted_laps", season, rnd), settings)
     return analyse_tyre_warmup(laps, traffic_laps)
 
@@ -917,6 +920,7 @@ def _build_pit_window_scope(
     settings: Settings,
 ) -> pd.DataFrame:
     laps = read_query(_pit_window_laps_query(season, rnd), settings)
+    laps = attach_pit_lap_context(laps, _build_pit_context_scope(season, rnd, settings))
     stops = read_query(_pit_window_stops_query(season, rnd), settings)
     return analyse_pit_windows(laps, stops)
 
@@ -986,6 +990,7 @@ def _build_pit_timing_scope(
     settings: Settings,
 ) -> PitTimingSensitivityResult:
     laps = read_query(_tyre_warmup_laps_query(season, rnd), settings)
+    laps = attach_pit_lap_context(laps, _build_pit_context_scope(season, rnd, settings))
     replay = read_query(_traffic_scope_query("race_replay", season, rnd), settings)
     stops = read_query(_pit_window_stops_query(season, rnd), settings)
     return analyse_pit_timing_sensitivity(laps, replay, stops)
@@ -1437,6 +1442,7 @@ def _build_racecraft_scope(
     settings: Settings,
 ) -> RacecraftResult:
     replay = read_query(_racecraft_replay_query(season, rnd), settings)
+    replay = attach_pit_lap_context(replay, _build_pit_context_scope(season, rnd, settings))
     overtakes = read_query(_racecraft_overtakes_query(season, rnd), settings)
     return analyse_racecraft_battles(replay, overtakes)
 
@@ -1466,6 +1472,49 @@ def build_racecraft_battles(
         round=rnd,
         battles=len(result.battles),
         drivers=len(result.summary),
+    )
+    return result
+
+
+def _build_pit_context_scope(
+    season: int | None, rnd: int | None, settings: Settings
+) -> pd.DataFrame:
+    """Use unfiltered laps so pit evidence survives representative-lap filtering."""
+    scope = _pit_window_scope_clause(season, rnd)
+    laps = read_query(
+        f"select * from staging.stg_laps as laps where session = 'R'{scope}", settings
+    )
+    available = read_query(
+        "select table_name from information_schema.tables "
+        "where table_schema = 'staging' and table_name = 'stg_pitstops'",
+        settings,
+    )
+    # A missing optional source is not evidence of a race without pit visits.
+    stops = None if available.empty else read_query(_pit_window_stops_query(season, rnd), settings)
+    return build_pit_lap_context(laps, stops)
+
+
+def build_all_pit_lap_context(settings: Settings | None = None) -> pd.DataFrame:
+    """Publish the source and reason for every loaded race lap's pit mask."""
+    settings = settings or get_settings()
+    result = _build_pit_context_scope(None, None, settings)
+    replace_table(result, schema="marts", table="pit_lap_context", settings=settings)
+    log.info("pit_context.materialised", laps=len(result))
+    return result
+
+
+def build_pit_lap_context_incremental(
+    season: int, rnd: int, settings: Settings | None = None
+) -> pd.DataFrame:
+    """Replace exactly one race's pit context, including an empty corrected partition."""
+    settings = settings or get_settings()
+    result = _build_pit_context_scope(season, rnd, settings)
+    replace_table_partition(
+        result,
+        schema="marts",
+        table="pit_lap_context",
+        partition={"season": season, "round": rnd},
+        settings=settings,
     )
     return result
 

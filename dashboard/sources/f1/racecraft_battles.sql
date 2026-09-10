@@ -58,6 +58,6 @@ select
     'Unavailable', 'no_data', false, false, cast(null as double),
     cast(null as integer), cast(null as double), cast(null as double),
     'No data', false, cast(null as double), false, 'No data',
-    'insufficient', 'racecraft-v1'
+    'insufficient', 'racecraft-v2-pit-context'
 where not exists (select 1 from marts.racecraft_battles)
 order by season, round, battle_number

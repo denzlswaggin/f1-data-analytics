@@ -35,6 +35,6 @@ select
     cast(0 as double), cast(0 as double),
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), cast(null as double),
-    'unavailable', cast(1.5 as double), cast(3.0 as double), 'traffic-v1'
+    'unavailable', cast(1.5 as double), cast(3.0 as double), 'traffic-v2-pit-context'
 where not exists (select 1 from marts.traffic_adjusted_pace)
 order by season, round, driver_code

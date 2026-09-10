@@ -27,6 +27,6 @@ select
     0, 0, '__NO_DATA__', '__NO_DATA__', '__NO_DATA__', '__NO_DATA__',
     0, 0, 0, 0, 0, 0, cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), 0,
-    false, 'No data', 'pit-timing-sensitivity-v1'
+    false, 'No data', 'pit-timing-sensitivity-v2'
 where not exists (select 1 from marts.pit_timing_scenarios)
 order by season, round, driver_code, stop_number, shift_laps

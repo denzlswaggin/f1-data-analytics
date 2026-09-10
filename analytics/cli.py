@@ -24,6 +24,7 @@ from ingestion.pipeline import season_rounds
 from analytics.pipeline import (
     build_all_overtakes,
     build_all_pace_consistency,
+    build_all_pit_lap_context,
     build_all_pit_timing_sensitivity,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
@@ -36,6 +37,7 @@ from analytics.pipeline import (
     build_driver_ratings_v2,
     build_driver_ratings_v3,
     build_pace_consistency,
+    build_pit_lap_context_incremental,
     build_pit_timing_sensitivity,
     build_pit_window_effectiveness,
     build_race_control_impact,
@@ -506,6 +508,25 @@ def race_control_impact(
         f"Built race-control impact for {scope}: {len(result.events)} events, "
         f"{eligible} eligible and {len(result.evidence)} driver observations."
     )
+
+
+@app.command("pit-context")
+def pit_context(
+    season: Annotated[int | None, typer.Option(help="Season to refresh.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to refresh.")] = None,
+    all_races: Annotated[
+        bool, typer.Option("--all", help="Rebuild all race-lap pit evidence.")
+    ] = False,
+) -> None:
+    """Publish shared pit flags, provenance and exclusions."""
+    configure_logging()
+    if all_races:
+        result = build_all_pit_lap_context()
+    elif season is not None and round_ is not None:
+        result = build_pit_lap_context_incremental(season, round_)
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    typer.echo(f"Published pit context for {len(result)} race laps.")
 
 
 @app.command("racecraft")
