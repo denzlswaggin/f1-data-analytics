@@ -183,10 +183,7 @@ def _lap_context(
     grouped["traffic_share"] = grouped["traffic_samples"] / valid
     grouped["clean_air_share"] = grouped["clean_air_samples"] / valid
     grouped["replay_coverage_pct"] = (
-        100
-        * grouped["context_samples"]
-        * grouped["tick_interval_s"]
-        / grouped["lap_time_sec"]
+        100 * grouped["context_samples"] * grouped["tick_interval_s"] / grouped["lap_time_sec"]
     ).clip(upper=100)
     return grouped.loc[:, output_columns].reset_index(drop=True)
 
@@ -217,9 +214,7 @@ def _exclude_non_representative_laps(laps: pd.DataFrame, replay: pd.DataFrame) -
     )
     is_start = out["lap_number"].le(1)
     is_out_lap = out["lap_number"].eq(out["stint_first_lap"]) & out["stint"].gt(1)
-    is_in_lap = out["lap_number"].eq(out["stint_last_lap"]) & out["stint"].lt(
-        out["last_stint"]
-    )
+    is_in_lap = out["lap_number"].eq(out["stint_last_lap"]) & out["stint"].lt(out["last_stint"])
     known_compound = out["compound"].astype(str).str.strip().str.upper().ne("UNKNOWN")
     known_compound &= out["compound"].astype(str).str.strip().ne("")
     mature_tyre = out["tyre_life"].ge(2)
@@ -234,9 +229,7 @@ def _add_controlled_delta(laps: pd.DataFrame) -> pd.DataFrame:
     out = laps.copy()
     grouped = out.groupby(peers)["lap_time_sec"]
     out["peer_count"] = grouped.transform("count") - 1
-    out["peer_lap_avg_sec"] = (grouped.transform("sum") - out["lap_time_sec"]) / out[
-        "peer_count"
-    ]
+    out["peer_lap_avg_sec"] = (grouped.transform("sum") - out["lap_time_sec"]) / out["peer_count"]
     out = out.loc[out["peer_count"].ge(2)].copy()
     out["controlled_pace_delta_sec"] = out["lap_time_sec"] - out["peer_lap_avg_sec"]
     return out.drop(columns="peer_count")
@@ -307,9 +300,7 @@ def _summarise(
         coverage_weight = float(driver_laps["lap_time_sec"].sum())
         replay_coverage = (
             float(
-                (
-                    driver_laps["replay_coverage_pct"] * driver_laps["lap_time_sec"]
-                ).sum()
+                (driver_laps["replay_coverage_pct"] * driver_laps["lap_time_sec"]).sum()
                 / coverage_weight
             )
             if coverage_weight
@@ -334,9 +325,7 @@ def _summarise(
                 ].median(),
                 "clean_air_controlled_pace_delta_sec": clean_delta,
                 "traffic_adjusted_pace_delta_sec": clean_delta,
-                "traffic_controlled_pace_delta_sec": traffic[
-                    "controlled_pace_delta_sec"
-                ].median(),
+                "traffic_controlled_pace_delta_sec": traffic["controlled_pace_delta_sec"].median(),
                 "traffic_associated_delta_sec_per_lap": (
                     association.median() if publish_association else np.nan
                 ),

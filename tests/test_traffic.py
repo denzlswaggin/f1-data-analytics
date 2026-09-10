@@ -77,7 +77,9 @@ def test_publishes_clean_air_pace_and_paired_traffic_association() -> None:
     evidence = result.evidence.loc[result.evidence["driver_code"].eq("A")]
     assert 1 not in evidence["lap_number"].tolist()
     assert evidence.loc[evidence["lap_number"].eq(3), "matched_clean_laps"].iloc[0] == 2
-    assert evidence.loc[evidence["lap_number"].eq(5), "paired_traffic_delta_sec"].iloc[0] == pytest.approx(2.0)
+    assert evidence.loc[evidence["lap_number"].eq(5), "paired_traffic_delta_sec"].iloc[
+        0
+    ] == pytest.approx(2.0)
 
 
 def test_leader_is_clean_but_zero_gap_follower_is_unknown() -> None:
@@ -107,9 +109,10 @@ def test_dead_band_and_under_covered_laps_are_mixed() -> None:
     assert states.loc[("A", 3)] == "mixed"
     assert states.loc[("A", 5)] == "mixed"
     driver = result.summary.loc[result.summary["driver_code"].eq("A")].iloc[0]
-    assert driver["clean_air_laps"] + driver["traffic_laps"] + driver["mixed_laps"] == driver[
-        "eligible_laps"
-    ]
+    assert (
+        driver["clean_air_laps"] + driver["traffic_laps"] + driver["mixed_laps"]
+        == driver["eligible_laps"]
+    )
     assert driver["confidence"] == "insufficient"
     assert pd.isna(driver["traffic_associated_delta_sec_per_lap"])
 
@@ -167,9 +170,9 @@ def test_negative_association_is_not_clipped() -> None:
 
 def test_final_lap_linger_does_not_change_classification() -> None:
     replay = _replay()
-    linger_rows = replay.loc[
-        (replay["driver_code"] == "A") & (replay["lap_number"] == 12)
-    ].iloc[:50].copy()
+    linger_rows = (
+        replay.loc[(replay["driver_code"] == "A") & (replay["lap_number"] == 12)].iloc[:50].copy()
+    )
     linger_rows["t_s"] += 1000
     linger_rows["gap_to_ahead_s"] = 1.0
     replay = pd.concat([replay, linger_rows], ignore_index=True)
