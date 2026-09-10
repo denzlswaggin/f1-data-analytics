@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from analytics.traffic import TrafficPaceResult
 from ingestion.config import Settings
 from orchestration import round_refresh
 from orchestration.constants import PACE_PROFILE_FROM_SEASON
@@ -34,10 +35,18 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         calls.append(("overtakes", (season, rnd, settings)))
         return pd.DataFrame(index=range(6))
 
+    def traffic(season: int, rnd: int, *, settings: Settings) -> TrafficPaceResult:
+        calls.append(("traffic", (season, rnd, settings)))
+        return TrafficPaceResult(
+            evidence=pd.DataFrame(index=range(8)),
+            summary=pd.DataFrame(index=range(7)),
+        )
+
     monkeypatch.setattr(round_refresh, "build_driver_ratings", ratings)
     monkeypatch.setattr(round_refresh, "build_driver_ratings_v2", ratings_v2)
     monkeypatch.setattr(round_refresh, "build_driver_pace_profile", pace_profile)
     monkeypatch.setattr(round_refresh, "build_race_replay_incremental", replay)
+    monkeypatch.setattr(round_refresh, "build_traffic_adjusted_pace_incremental", traffic)
     monkeypatch.setattr(round_refresh, "build_race_overtakes_incremental", overtakes)
     settings = Settings(duckdb_path=tmp_path / "round.duckdb")
 
@@ -48,6 +57,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "dynamic_ratings": 3,
         "pace_profiles": 4,
         "replay_rows": 5,
+        "traffic_pace_drivers": 7,
         "overtakes": 6,
     }
     assert [name for name, _ in calls] == [
@@ -55,8 +65,10 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "ratings_v2",
         "pace_profile",
         "replay",
+        "traffic",
         "overtakes",
     ]
     assert calls[2][1] == (PACE_PROFILE_FROM_SEASON, settings)
     assert calls[3][1] == (2026, 12, settings)
     assert calls[4][1] == (2026, 12, settings)
+    assert calls[5][1] == (2026, 12, settings)

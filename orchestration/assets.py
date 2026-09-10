@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from analytics.pipeline import (
+    build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -345,6 +346,25 @@ def race_replay() -> MaterializeResult:
     df = build_race_replays(CURRENT_SEASON, rounds)
     races = int(df["round"].nunique()) if not df.empty else 0
     return MaterializeResult(metadata={"rows": len(df), "races": races, "season": CURRENT_SEASON})
+
+
+@asset(
+    deps=[AssetKey(["race_replay"]), AssetKey(["mart_lap_times"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def traffic_adjusted_pace() -> MaterializeResult:
+    result = build_all_traffic_adjusted_pace()
+    publishable = int(result.summary["traffic_adjusted_pace_delta_sec"].notna().sum())
+    races = int(result.summary[["season", "round"]].drop_duplicates().shape[0])
+    return MaterializeResult(
+        metadata={
+            "drivers": len(result.summary),
+            "publishable_driver_races": publishable,
+            "evidence_laps": len(result.evidence),
+            "races": races,
+        }
+    )
 
 
 @asset(

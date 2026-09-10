@@ -10,6 +10,7 @@
                 { label: 'Latest race', path: 'latest-race' },
                 { label: 'Race replay', path: 'race-replay' },
                 { label: 'Race pace', path: 'race-pace' },
+                { label: 'Traffic-adjusted pace', path: 'traffic-adjusted-pace' },
                 { label: 'Pit strategy', path: 'pit-strategy' },
                 { label: 'Tyre strategy', path: 'tyre-strategy' },
                 { label: 'Telemetry', path: 'telemetry' },
