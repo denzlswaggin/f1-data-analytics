@@ -11,6 +11,7 @@ from typing import Any
 
 from analytics.pipeline import (
     build_all_pit_window_effectiveness,
+    build_all_race_control_impact,
     build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
     build_driver_ratings,
@@ -387,6 +388,29 @@ def pit_window_effectiveness() -> MaterializeResult:
             "matchups": len(df),
             "eligible_matchups": eligible,
             "eligible_races": races,
+        }
+    )
+
+
+@asset(
+    deps=[
+        AssetKey(["race_replay"]),
+        AssetKey(["stg_race_control"]),
+        AssetKey(["stg_laps"]),
+        AssetKey(["stg_driver_codes"]),
+        AssetKey(["stg_races"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def race_control_impact() -> MaterializeResult:
+    result = build_all_race_control_impact()
+    eligible = int(result.events["eligible"].sum()) if not result.events.empty else 0
+    return MaterializeResult(
+        metadata={
+            "events": len(result.events),
+            "eligible_events": eligible,
+            "driver_observations": len(result.evidence),
         }
     )
 

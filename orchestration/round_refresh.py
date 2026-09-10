@@ -14,6 +14,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_pit_window_effectiveness_incremental,
+    build_race_control_impact_incremental,
     build_race_overtakes_incremental,
     build_race_replay_incremental,
     build_traffic_adjusted_pace_incremental,
@@ -173,6 +174,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
     replay = build_race_replay_incremental(season, rnd, settings=settings)
     traffic = build_traffic_adjusted_pace_incremental(season, rnd, settings=settings)
     pit_windows = build_pit_window_effectiveness_incremental(season, rnd, settings=settings)
+    race_control = build_race_control_impact_incremental(season, rnd, settings=settings)
     overtakes = build_race_overtakes_incremental(season, rnd, settings=settings)
     return {
         "ratings": len(ratings),
@@ -181,6 +183,8 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         "replay_rows": len(replay),
         "traffic_pace_drivers": len(traffic.summary),
         "pit_window_matchups": len(pit_windows),
+        "race_control_events": len(race_control.events),
+        "race_control_observations": len(race_control.evidence),
         "overtakes": len(overtakes),
     }
 

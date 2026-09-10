@@ -24,6 +24,7 @@ from ingestion.pipeline import season_rounds
 from analytics.pipeline import (
     build_all_overtakes,
     build_all_pit_window_effectiveness,
+    build_all_race_control_impact,
     build_all_replays,
     build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
@@ -31,6 +32,7 @@ from analytics.pipeline import (
     build_driver_ratings_v2,
     build_driver_ratings_v3,
     build_pit_window_effectiveness,
+    build_race_control_impact,
     build_race_overtakes,
     build_race_overtakes_season,
     build_race_replay,
@@ -391,6 +393,32 @@ def pit_windows(
     eligible = int(result["eligible"].sum()) if not result.empty else 0
     typer.echo(
         f"Built pit-window evidence for {scope}: {len(result)} matchups, {eligible} eligible."
+    )
+
+
+@app.command("race-control-impact")
+def race_control_impact(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race with race-control and replay data."),
+    ] = False,
+) -> None:
+    """Build Safety Car, VSC and red-flag impact evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_race_control_impact()
+        scope = "all loaded races"
+    elif season is not None and round_ is not None:
+        result = build_race_control_impact(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result.events["eligible"].sum()) if not result.events.empty else 0
+    typer.echo(
+        f"Built race-control impact for {scope}: {len(result.events)} events, "
+        f"{eligible} eligible and {len(result.evidence)} driver observations."
     )
 
 
