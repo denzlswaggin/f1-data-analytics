@@ -79,6 +79,24 @@ def test_replace_rounds_appends_new_rounds(tmp_path: Path) -> None:
     assert out["round"].tolist() == [1, 2, 3]
 
 
+def test_lap_pit_fields_migrate_legacy_table_without_losing_other_rounds(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    with duckdb.connect(str(settings.duckdb_path)) as connection:
+        connection.execute("create schema raw")
+        connection.execute("create table raw.laps as select 2025 season, 1 round, 10 val")
+    incoming = _round_frame(2025, [2])
+    incoming["pit_in_time_sec"] = 123.5
+    incoming["pit_out_time_sec"] = float("nan")
+    load_dataframe(incoming, "laps", 2025, settings, replace_rounds=True)
+    # Re-ingestion from an older raw shape must still work after the migration.
+    load_dataframe(_round_frame(2025, [3]), "laps", 2025, settings, replace_rounds=True)
+    result = read_query("select * from raw.laps order by round", settings)
+    assert result["round"].tolist() == [1, 2, 3]
+    assert result.loc[1, "pit_in_time_sec"] == 123.5
+    assert result.pit_in_time_sec.isna().tolist() == [True, False, True]
+    assert result.pit_out_time_sec.isna().all()
+
+
 def test_replace_table_partition_preserves_other_mart_rounds(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     initial = pd.DataFrame(
