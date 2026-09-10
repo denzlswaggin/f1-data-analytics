@@ -20,8 +20,9 @@ validation of the analytical claims.
    an adequate comparable cohort for adjusted-gap centering; align recovery
    eligibility with the description of complete green laps.
    Implementation and before/after evidence: [race-control v2 validation](race-control-v2-validation.md).
-3. **Racecraft** — fix reversal ownership and require continuous release and
+3. **Racecraft** — `fix/racecraft-continuous-battles`; fix reversal ownership and require continuous release and
    pressure intervals. Add synthetic boundary cases and real-data regressions.
+   Implementation and before/after evidence: [racecraft v3 validation](racecraft-v3-validation.md).
 4. **Metric semantics and evidence** — label pit-lane duration correctly; separate
    confidence for individual traffic metrics; represent incomplete/censored tyre
    settling honestly; show racecraft denominators and interrupted outcomes.
