@@ -56,12 +56,22 @@ def _replay() -> pd.DataFrame:
 
 
 def _control(messages: list[tuple[float, int, str, str | None]]) -> pd.DataFrame:
-    columns = ["season", "round", "t_s", "category", "flag", "message", "lap"]
+    columns = [
+        "season",
+        "round",
+        "race_name",
+        "t_s",
+        "category",
+        "flag",
+        "message",
+        "lap",
+    ]
     return pd.DataFrame(
         [
             {
                 "season": 2026,
                 "round": 1,
+                "race_name": "Test GP",
                 "t_s": t_s,
                 "category": "SafetyCar" if flag is None else "Flag",
                 "flag": flag,

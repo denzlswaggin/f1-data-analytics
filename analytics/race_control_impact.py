@@ -33,7 +33,15 @@ _REPLAY_REQUIRED = {
     "running_order",
     "gap_to_leader_s",
 }
-_CONTROL_REQUIRED = {*_RACE_KEYS, "t_s", "category", "flag", "message", "lap"}
+_CONTROL_REQUIRED = {
+    *_RACE_KEYS,
+    "race_name",
+    "t_s",
+    "category",
+    "flag",
+    "message",
+    "lap",
+}
 _LAPS_REQUIRED = {*_RACE_KEYS, "lap_number", "track_status"}
 
 RACE_CONTROL_EVENT_COLUMNS = [
@@ -602,6 +610,8 @@ def analyse_race_control_impact(
             race_name = (
                 str(replay_race["race_name"].dropna().iloc[0])
                 if not replay_race["race_name"].dropna().empty
+                else str(control_race["race_name"].dropna().iloc[0])
+                if not control_race["race_name"].dropna().empty
                 else "Unknown race"
             )
             checkpoint = _post_checkpoint(replay_race, event) if not replay_race.empty else None

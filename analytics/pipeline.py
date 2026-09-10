@@ -817,6 +817,7 @@ def _race_control_messages_query(season: int | None, rnd: int | None) -> str:
         select
             messages.season,
             messages.round,
+            races.race_name,
             messages.session_time_sec - windows.race_start_sec as t_s,
             messages.category,
             messages.flag,
@@ -825,6 +826,8 @@ def _race_control_messages_query(season: int | None, rnd: int | None) -> str:
         from staging.stg_race_control as messages
         inner join race_windows as windows
             on windows.season = messages.season and windows.round = messages.round
+        left join staging.stg_races as races
+            on races.season = messages.season and races.round = messages.round
         where messages.session = 'R'{scope}
     """
 
