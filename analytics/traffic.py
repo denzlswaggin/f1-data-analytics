@@ -140,11 +140,12 @@ def _lap_context(
     context = context.drop_duplicates(subset=[*_LAP_KEYS, "t_s"])
     context["t_s"] = pd.to_numeric(context["t_s"], errors="coerce")
     context = context.dropna(subset=["t_s"]).sort_values([*_DRIVER_KEYS, "t_s"])
-    context["tick_interval_s"] = context.groupby(_DRIVER_KEYS)["t_s"].diff()
+    context["sample_interval_s"] = context.groupby(_DRIVER_KEYS)["t_s"].diff()
     tick_interval = (
-        context.loc[context["tick_interval_s"].gt(0)]
-        .groupby(_DRIVER_KEYS, as_index=False)["tick_interval_s"]
+        context.loc[context["sample_interval_s"].gt(0)]
+        .groupby(_DRIVER_KEYS, as_index=False)["sample_interval_s"]
         .median()
+        .rename(columns={"sample_interval_s": "tick_interval_s"})
     )
     context = context.merge(lap_durations, on=_LAP_KEYS, how="inner", validate="many_to_one")
     context = context.merge(tick_interval, on=_DRIVER_KEYS, how="left", validate="many_to_one")
