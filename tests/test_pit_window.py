@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import duckdb
 import numpy as np
 import pandas as pd
 import pytest
+from analytics.pipeline import (
+    build_pit_window_effectiveness,
+    build_pit_window_effectiveness_incremental,
+)
 from analytics.pit_window import PIT_WINDOW_COLUMNS, analyse_pit_windows
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 
 def _race_laps(
@@ -165,3 +174,73 @@ def test_empty_typed_input_returns_stable_schema() -> None:
 
     assert result.empty
     assert list(result.columns) == PIT_WINDOW_COLUMNS
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    settings = Settings(warehouse="duckdb", duckdb_path=path)
+    laps = _race_laps().assign(session="R")
+    races = laps.loc[:, ["season", "round", "race_name"]].drop_duplicates()
+    codes = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "driver_code": code,
+                "driver_id": f"driver_{code.lower()}",
+                "driver_name": f"Driver {code}",
+            }
+            for code in ("A", "B")
+        ]
+    )
+    stops = (
+        _stops()
+        .merge(codes, on=["season", "driver_code"])
+        .loc[:, ["season", "round", "driver_id", "pit_lap", "duration_sec"]]
+    )
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema staging")
+        for name, frame in (
+            ("stg_laps", laps),
+            ("stg_races", races),
+            ("stg_driver_codes", codes),
+            ("stg_pitstops", stops),
+        ):
+            connection.register("incoming", frame)
+            connection.execute(f"create table staging.{name} as select * from incoming")
+            connection.unregister("incoming")
+    finally:
+        connection.close()
+    return settings
+
+
+def test_builder_materialises_pit_window_mart(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "pit-window.duckdb")
+
+    result = build_pit_window_effectiveness(2026, 4, settings=settings)
+    materialised = read_query("select * from marts.pit_window_effectiveness", settings)
+
+    assert len(materialised) == len(result) == 1
+    assert bool(materialised["eligible"].iloc[0])
+    assert materialised["net_time_gain_sec"].iloc[0] == pytest.approx(3.0)
+
+
+def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "pit-window-incremental.duckdb")
+    result = build_pit_window_effectiveness(2026, 4, settings=settings)
+    copy = result.assign(round=3)
+    connection = duckdb.connect(str(settings.duckdb_path))
+    try:
+        connection.register("copy", copy)
+        connection.execute("insert into marts.pit_window_effectiveness by name select * from copy")
+    finally:
+        connection.close()
+
+    build_pit_window_effectiveness_incremental(2026, 4, settings=settings)
+
+    rounds = read_query(
+        "select round, count(*) as rows from marts.pit_window_effectiveness "
+        "group by round order by round",
+        settings,
+    )
+    assert rounds["round"].tolist() == [3, 4]
+    assert rounds["rows"].tolist() == [1, 1]

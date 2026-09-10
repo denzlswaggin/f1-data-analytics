@@ -9,6 +9,7 @@ from ingestion.logging import get_logger
 
 from analytics.overtakes import detect_overtakes
 from analytics.pace_profile import build_pace_profile
+from analytics.pit_window import analyse_pit_windows
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
@@ -629,6 +630,132 @@ def build_all_traffic_adjusted_pace(
         evidence_laps=len(result.evidence),
         drivers=len(result.summary),
     )
+    return result
+
+
+def _pit_window_scope_clause(season: int | None, rnd: int | None) -> str:
+    if season is None:
+        return ""
+    clause = f" and laps.season = {int(season)}"
+    if rnd is not None:
+        clause += f" and laps.round = {int(rnd)}"
+    return clause
+
+
+def _pit_window_laps_query(season: int | None, rnd: int | None) -> str:
+    scope = _pit_window_scope_clause(season, rnd)
+    return f"""
+        select
+            laps.season,
+            laps.round,
+            races.race_name,
+            laps.driver_code,
+            coalesce(codes.driver_name, laps.driver_code) as driver_name,
+            laps.team,
+            laps.lap_number,
+            laps.stint,
+            laps.compound,
+            laps.is_fresh_tyre,
+            laps.tyre_life,
+            laps.position,
+            laps.lap_start_sec,
+            laps.lap_time_sec,
+            laps.track_status
+        from staging.stg_laps as laps
+        left join staging.stg_races as races
+            on races.season = laps.season and races.round = laps.round
+        left join staging.stg_driver_codes as codes
+            on codes.season = laps.season and codes.driver_code = laps.driver_code
+        where laps.session = 'R'{scope}
+    """
+
+
+def _pit_window_stops_query(season: int | None, rnd: int | None) -> str:
+    where = ""
+    if season is not None:
+        where = f" where stops.season = {int(season)}"
+        if rnd is not None:
+            where += f" and stops.round = {int(rnd)}"
+    return f"""
+        select
+            stops.season,
+            stops.round,
+            codes.driver_code,
+            stops.pit_lap,
+            stops.duration_sec
+        from staging.stg_pitstops as stops
+        inner join staging.stg_driver_codes as codes
+            on codes.season = stops.season and codes.driver_id = stops.driver_id
+        {where}
+    """
+
+
+def _build_pit_window_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> pd.DataFrame:
+    laps = read_query(_pit_window_laps_query(season, rnd), settings)
+    stops = read_query(_pit_window_stops_query(season, rnd), settings)
+    return analyse_pit_windows(laps, stops)
+
+
+def build_pit_window_effectiveness(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> pd.DataFrame:
+    """Build one race's pairwise pit-window mart, replacing its full contents."""
+    settings = settings or get_settings()
+    result = _build_pit_window_scope(season, rnd, settings)
+    replace_table(
+        result,
+        schema="marts",
+        table="pit_window_effectiveness",
+        settings=settings,
+    )
+    log.info("pit_window.materialised", season=season, round=rnd, matchups=len(result))
+    return result
+
+
+def build_pit_window_effectiveness_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> pd.DataFrame:
+    """Recalculate one race while preserving every other pit-window partition."""
+    settings = settings or get_settings()
+    result = _build_pit_window_scope(season, rnd, settings)
+    replace_table_partition(
+        result,
+        schema="marts",
+        table="pit_window_effectiveness",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    log.info(
+        "pit_window.materialised_partition",
+        season=season,
+        round=rnd,
+        matchups=len(result),
+    )
+    return result
+
+
+def build_all_pit_window_effectiveness(
+    settings: Settings | None = None,
+) -> pd.DataFrame:
+    """Build the pairwise pit-window mart for every loaded FastF1 race."""
+    settings = settings or get_settings()
+    result = _build_pit_window_scope(None, None, settings)
+    replace_table(
+        result,
+        schema="marts",
+        table="pit_window_effectiveness",
+        settings=settings,
+    )
+    races = result[["season", "round"]].drop_duplicates().shape[0]
+    log.info("pit_window.materialised_all", races=races, matchups=len(result))
     return result
 
 
