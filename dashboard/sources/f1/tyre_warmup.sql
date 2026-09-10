@@ -27,6 +27,9 @@ select
     stable_band_sec,
     stable_window_start_lap,
     time_to_pace_laps,
+    first_observed_confirmation_laps,
+    confirmation_history_complete,
+    settling_status,
     stable_pace_achieved,
     right_censored,
     observation_complete,
@@ -47,7 +50,8 @@ select
     0, 0, 0,
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double),
-    cast(0.5 as double), null, null, false, false, false, false, false,
-    'No data', 'Insufficient', cast(null as double), 'tyre-warmup-v2'
+    cast(0.5 as double), null, null, cast(null as integer), false, 'unavailable',
+    false, false, false, false, false,
+    'No data', 'Insufficient', cast(null as double), 'tyre-warmup-v3-observation'
 where not exists (select 1 from marts.tyre_warmup)
 order by season, round, driver_code, stint

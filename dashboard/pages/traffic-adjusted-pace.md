@@ -8,7 +8,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Race analysis"
     title="Who was fast in clean air?"
-    description="Separate representative clean-air laps from traffic-exposed running, with replay coverage and sample confidence attached."
+    description="Separate representative clean-air laps from traffic-exposed running, with replay coverage and metric-specific heuristic sample strength."
 />
 
 <KeyInsight label="How to read this">
@@ -54,7 +54,9 @@ where section = 'traffic_pace'
 ```sql race_results
 select
     *,
-    rank() over (order by traffic_adjusted_pace_delta_sec nulls last) as clean_air_rank
+    case when clean_air_eligible then
+        rank() over (order by case when clean_air_eligible then traffic_adjusted_pace_delta_sec end nulls last)
+    end as clean_air_rank
 from f1.traffic_adjusted_pace
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by traffic_adjusted_pace_delta_sec nulls last, driver_code
@@ -63,7 +65,7 @@ order by traffic_adjusted_pace_delta_sec nulls last, driver_code
 ```sql clean_air_leader
 select driver_code, traffic_adjusted_pace_delta_sec
 from ${race_results}
-where traffic_adjusted_pace_delta_sec is not null
+where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
 order by traffic_adjusted_pace_delta_sec
 limit 1
 ```
@@ -78,7 +80,7 @@ limit 1
 ```sql association_leader
 select driver_code, traffic_associated_delta_sec_per_lap
 from ${race_results}
-where traffic_associated_delta_sec_per_lap is not null
+where traffic_association_eligible and traffic_associated_delta_sec_per_lap is not null
 order by traffic_associated_delta_sec_per_lap desc
 limit 1
 ```
@@ -95,8 +97,13 @@ This is the median delta to at least two other drivers on the same lap and
 compound, using only clean-air laps. A driver needs five clean laps before a
 value is published.
 
+```sql clean_air_results
+select * from ${race_results}
+where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
+```
+
 <BarChart
-    data={race_results}
+    data={clean_air_results}
     x=driver_code
     y=traffic_adjusted_pace_delta_sec
     yAxisTitle="clean-air controlled pace delta (s) — lower is faster"
@@ -109,13 +116,14 @@ value is published.
 
 Exposure is tick-weighted across all eligible laps. The vertical measure pairs
 each traffic lap with clean laps from the same driver and compound within two
-laps of tyre age. The interval and confidence show how much evidence sits behind
-the median.
+laps of tyre age. P25 and P75 describe the middle half of the observed matched
+lap differences, not a confidence interval. Heuristic sample strength describes
+the available counts, not a calibrated probability or the accuracy of the estimate.
 
 ```sql association
 select *
 from ${race_results}
-where traffic_associated_delta_sec_per_lap is not null
+where traffic_association_eligible and traffic_associated_delta_sec_per_lap is not null
 ```
 
 <ScatterPlot
@@ -142,7 +150,10 @@ where traffic_associated_delta_sec_per_lap is not null
     <Column id=clean_air_laps title="Clean laps" />
     <Column id=matched_traffic_laps title="Matched traffic laps" />
     <Column id=replay_coverage_pct title="Replay coverage (%)" fmt="0.0" />
-    <Column id=confidence title="Confidence" />
+    <Column id=clean_air_eligible title="Clean-air eligible" />
+    <Column id=clean_air_confidence title="Clean-air sample strength" />
+    <Column id=traffic_association_eligible title="Association eligible" />
+    <Column id=traffic_association_confidence title="Association sample strength" />
 </DataTable>
 
 ```sql drivers
@@ -193,6 +204,16 @@ close traffic. Laps need 80% replay coverage; lap one, pit in/out laps, unknown
 compounds and tyre life below two are excluded. Gaps are reconstructed from lap
 timing and do not capture every lapped-car interaction, so this analysis must not
 be read as a causal counterfactual finish result.
+
+Method: `traffic-v3-metric-evidence`. Clean-air pace requires at least five clean
+laps; the traffic association requires both five clean laps and five matched
+traffic laps. A clean-air estimate can therefore be eligible even when the
+association is unavailable. Clean-air sample strength uses the clean-lap count;
+association sample strength uses the smaller of clean and matched-traffic counts.
+For each metric, five to seven samples are low, eight to eleven medium and twelve
+or more high; below five is insufficient. These are heuristic sample-strength
+labels, not statistical confidence levels. The exported legacy `confidence`
+field remains an alias for traffic-association sample strength only.
 </ExpandableSection>
 
 ```sql excluded_pit_laps

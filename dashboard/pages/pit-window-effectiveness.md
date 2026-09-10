@@ -8,7 +8,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Strategy analysis"
     title="Who won the pit window?"
-    description="Measure the observed time swing between nearby rivals who stopped on different laps, then separate pit execution from the rest of the cycle."
+    description="Measure the observed time swing between nearby rivals who stopped on different laps, then separate recorded pit-lane duration from the rest of the cycle."
     accent="strategy"
 />
 
@@ -119,10 +119,15 @@ limit 20
 
 ## Timing versus the rest of the pit cycle
 
-The horizontal axis is the stationary-time advantage of the earlier stop. The
-vertical axis removes that measured stop-duration difference from the full
-cycle. It still includes tyre warm-up, traffic and driver pace, so it must not be
-read as a pure tyre or strategy effect.
+The horizontal axis is the earlier driver's full pit-lane duration minus the
+later driver's: a positive value means the earlier stop took longer. The vertical
+axis adds this difference to the observed early-stop swing to remove its timing
+contribution. This residual still includes tyre warm-up, traffic and driver pace;
+it is not an isolated on-track, tyre or strategy effect.
+
+Jolpica duration includes pit entry and exit and can include red-flag time. It is
+not stationary service time and cannot isolate mechanic performance.
+[Source definition](https://github.com/jolpica/jolpica-f1/blob/main/docs/endpoints/pitstops.md).
 
 ```sql decomposed
 select * from ${eligible_matchups}
@@ -134,12 +139,12 @@ where on_track_gain_sec is not null
     x=stop_duration_delta_sec
     y=on_track_gain_sec
     series=confidence
-    xAxisTitle="early stop duration minus late stop (s)"
-    yAxisTitle="cycle swing excluding stationary-time difference (s)"
+    xAxisTitle="early minus late pit-lane duration (s)"
+    yAxisTitle="residual swing after pit-lane-duration adjustment (s)"
     tooltipTitle=matchup
     pointSize=24
 >
-    <ReferenceLine x=0 label="equal stop time" />
+    <ReferenceLine x=0 label="equal pit-lane duration" />
     <ReferenceLine y=0 label="no remaining swing" />
 </ScatterPlot>
 
@@ -157,8 +162,8 @@ where on_track_gain_sec is not null
     <Column id=gap_before_sec title="Gap before (s)" fmt="+0.00;-0.00" />
     <Column id=gap_after_sec title="Gap after (s)" fmt="+0.00;-0.00" />
     <Column id=net_time_gain_sec title="Early-stop swing (s)" fmt="+0.00;-0.00" />
-    <Column id=stop_duration_delta_sec title="Stop Δ (s)" fmt="+0.00;-0.00" />
-    <Column id=on_track_gain_sec title="Non-stop swing (s)" fmt="+0.00;-0.00" />
+    <Column id=stop_duration_delta_sec title="Pit-lane duration Δ (s)" fmt="+0.00;-0.00" />
+    <Column id=on_track_gain_sec title="Residual swing (s)" fmt="+0.00;-0.00" />
     <Column id=outcome_label title="Outcome" />
     <Column id=confidence title="Evidence" />
 </DataTable>
@@ -180,7 +185,7 @@ one to three laps apart. Both cars need a complete timing window with only green
 track status and no additional stop. The baseline is the end of the lap before
 the first stop; the outcome is the end of the later driver's out-lap. High
 confidence additionally requires a pre-gap within three seconds, a one- or
-two-lap offset, the same new compound, fresh tyres and both stationary times.
+two-lap offset, the same new compound, fresh tyres and both pit-lane durations.
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="pit-window-effectiveness" season={inputs.season.value} race={inputs.race.value} />

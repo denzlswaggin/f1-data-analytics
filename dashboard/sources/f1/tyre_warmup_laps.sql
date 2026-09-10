@@ -34,6 +34,6 @@ select
     0, '__NO_DATA__', false, 0, 0, 0, cast(null as double), cast(null as double),
     '__NO_DATA__', 'unavailable', cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), cast(null as double),
-    false, false, false, 'No data', 'tyre-warmup-v2'
+    false, false, false, 'No data', 'tyre-warmup-v3-observation'
 where not exists (select 1 from marts.tyre_warmup_laps)
 order by season, round, driver_code, stint, lap_number

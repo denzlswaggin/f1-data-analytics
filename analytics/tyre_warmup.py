@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "tyre-warmup-v2"
+METHODOLOGY_VERSION = "tyre-warmup-v3-observation"
 STABLE_BAND_SEC = 0.50
 MIN_STINT_LAPS = 11
 MIN_REPLAY_COVERAGE_PCT = 80.0
@@ -70,6 +70,9 @@ TYRE_WARMUP_COLUMNS = [
     "stable_band_sec",
     "stable_window_start_lap",
     "time_to_pace_laps",
+    "first_observed_confirmation_laps",
+    "confirmation_history_complete",
+    "settling_status",
     "stable_pace_achieved",
     "right_censored",
     "observation_complete",
@@ -124,6 +127,7 @@ _SUMMARY_INTEGER = {
     "mature_reference_laps",
     "stable_window_start_lap",
     "time_to_pace_laps",
+    "first_observed_confirmation_laps",
 }
 _SUMMARY_FLOAT = {
     "baseline_slope_sec_per_lap",
@@ -141,6 +145,7 @@ _SUMMARY_BOOLEAN = {
     "stable_pace_achieved",
     "right_censored",
     "observation_complete",
+    "confirmation_history_complete",
     "warmup_eligible",
     "crossover_eligible",
 }
@@ -413,7 +418,26 @@ def analyse_tyre_warmup(
             warmup_eligible and all(offset in valid_losses for offset in range(1, 7))
         )
         right_censored = bool(warmup_eligible and not stable_pace_achieved and observation_complete)
-        crossover_eligible = bool(stable_pace_achieved or right_censored)
+        first_observed_confirmation = stable_start + 1 if stable_start is not None else None
+        confirmation_history_complete = bool(
+            first_observed_confirmation is not None
+            and all(offset in valid_losses for offset in range(1, first_observed_confirmation + 1))
+        )
+        # A later observed pair cannot establish the first confirmation when
+        # earlier eligible laps are missing. Censored cases remain usable as
+        # bounds, never as exact times or entries in an exact-time ranking.
+        crossover_eligible = bool(confirmation_history_complete or right_censored)
+        settling_status = (
+            "observed_complete"
+            if confirmation_history_complete
+            else "observed_incomplete"
+            if stable_pace_achieved
+            else "right_censored"
+            if right_censored
+            else "incomplete"
+            if warmup_eligible
+            else "unavailable"
+        )
         first_loss = valid_losses.get(1, np.nan)
         second_loss = valid_losses.get(2, np.nan)
         first_two_cost = (
@@ -468,7 +492,12 @@ def analyse_tyre_warmup(
                 "stable_window_start_lap": (
                     start_lap + stable_start if stable_start is not None else None
                 ),
-                "time_to_pace_laps": stable_start + 1 if stable_start is not None else None,
+                "time_to_pace_laps": (
+                    first_observed_confirmation if confirmation_history_complete else None
+                ),
+                "first_observed_confirmation_laps": first_observed_confirmation,
+                "confirmation_history_complete": confirmation_history_complete,
+                "settling_status": settling_status,
                 "stable_pace_achieved": stable_pace_achieved,
                 "right_censored": right_censored,
                 "observation_complete": observation_complete,

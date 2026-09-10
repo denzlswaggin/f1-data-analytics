@@ -71,22 +71,38 @@ select
     count(*) as observed_battles,
     count(*) filter (where eligible) as eligible_battles,
     count(*) filter (where eligible and outcome = 'Converted') as conversions,
-    count(*) filter (where eligible and outcome = 'Defended') as defences
+    count(*) filter (where eligible and outcome = 'Defended') as defences,
+    count(*) filter (where outcome = 'Interrupted') as interrupted_battles,
+    count(*) filter (where outcome = 'Unresolved') as unresolved_battles,
+    count(*) filter (where not eligible and outcome in ('Converted', 'Defended')) as excluded_resolved
 from ${race_battles}
 ```
 
 <Grid cols=4>
     <BigValue data={race_totals} value=observed_battles title="Observed battles" />
-    <BigValue data={race_totals} value=eligible_battles title="Eligible outcomes" />
+    <BigValue data={race_totals} value=eligible_battles title="Resolved denominator" />
     <BigValue data={race_totals} value=conversions title="Confirmed conversions" />
     <BigValue data={race_totals} value=defences title="Clean defences" />
 </Grid>
 
+<Grid cols=3>
+    <BigValue data={race_totals} value=interrupted_battles title="Interrupted — excluded" />
+    <BigValue data={race_totals} value=unresolved_battles title="Unresolved — excluded" />
+    <BigValue data={race_totals} value=excluded_resolved title="Other resolved — insufficient evidence" />
+</Grid>
+
+The rate denominator contains only eligible **resolved** episodes. Interrupted,
+unresolved and insufficient-evidence episodes are excluded, not counted as failed
+attacks or successful defences. These counts partition all observed episodes.
+Conversion is therefore not the probability of passing after any close approach.
+
 ## Attack and defence rates — {inputs.season.value} {inputs.race.label}
 
-Rates appear only after five eligible opportunities in the relevant role. The
-90% Wilson interval stays beside each estimate so a small sample cannot look
-more decisive than it is.
+Rates appear only after five eligible resolved opportunities in the relevant
+role: attack rate is conversions / attack n; defence rate is holds / defence n.
+The 90% Wilson interval describes binomial sampling uncertainty within this
+selected subset. It does not cover event-detection errors, dependence between
+repeated battles, or selection from interrupted and unresolved episodes.
 
 ```sql role_rates
 select
@@ -143,19 +159,35 @@ on both axes are omitted.
 <DataTable data={race_drivers} rows=25 search=true download=true>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
-    <Column id=attacking_opportunities title="Attacks" />
+    <Column id=attacking_opportunities title="Attack n" />
     <Column id=converted_opportunities title="Converted" />
     <Column id=attack_conversion_pct title="Attack (%)" fmt="0.0" />
-    <Column id=attack_conversion_p05_pct title="Attack P05" fmt="0.0" />
-    <Column id=attack_conversion_p95_pct title="Attack P95" fmt="0.0" />
-    <Column id=defensive_opportunities title="Defences" />
+    <Column id=attack_conversion_p05_pct title="Attack 90% lower" fmt="0.0" />
+    <Column id=attack_conversion_p95_pct title="Attack 90% upper" fmt="0.0" />
+    <Column id=defensive_opportunities title="Defence n" />
     <Column id=defences_held title="Held" />
     <Column id=defence_hold_pct title="Defence (%)" fmt="0.0" />
-    <Column id=defence_hold_p05_pct title="Defence P05" fmt="0.0" />
-    <Column id=defence_hold_p95_pct title="Defence P95" fmt="0.0" />
+    <Column id=defence_hold_p05_pct title="Defence 90% lower" fmt="0.0" />
+    <Column id=defence_hold_p95_pct title="Defence 90% upper" fmt="0.0" />
     <Column id=quick_reversals_made title="Re-passes made" />
     <Column id=quick_reversals_conceded title="Re-passes conceded" />
-    <Column id=confidence title="Evidence" />
+    <Column id=offense_confidence title="Attack evidence" />
+    <Column id=defense_confidence title="Defence evidence" />
+</DataTable>
+
+### Episodes outside the resolved denominator
+
+Counts below retain every interrupted or unresolved episode, including short
+approaches. One battle has an attacker and a defender, so do not add role counts
+to infer the number of unique race-wide episodes. Resolved episodes excluded for
+insufficient evidence remain available in the excluded-episodes table below.
+
+<DataTable data={race_drivers} rows=25 search=true>
+    <Column id=driver_code title="Driver" />
+    <Column id=interrupted_attacks title="Interrupted attacks" />
+    <Column id=unresolved_attacks title="Unresolved attacks" />
+    <Column id=interrupted_defences title="Interrupted defences" />
+    <Column id=unresolved_defences title="Unresolved defences" />
 </DataTable>
 
 ```sql drivers

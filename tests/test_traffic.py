@@ -12,7 +12,11 @@ from analytics.pipeline import (
     build_traffic_adjusted_pace,
     build_traffic_adjusted_pace_incremental,
 )
-from analytics.traffic import analyse_traffic_adjusted_pace, classify_representative_lap_air
+from analytics.traffic import (
+    _summarise,
+    analyse_traffic_adjusted_pace,
+    classify_representative_lap_air,
+)
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
@@ -111,6 +115,62 @@ def test_leader_is_clean_but_zero_gap_follower_is_unknown() -> None:
         "clean_air"
     }
     assert states.loc[("A", 2)] == "mixed"
+
+
+def test_clean_only_driver_has_publishable_clean_pace_without_association() -> None:
+    result = analyse_traffic_adjusted_pace(_laps(), _replay())
+    leader = result.summary.loc[result.summary["driver_code"].eq("B")].iloc[0]
+    assert leader["clean_air_laps"] == 11
+    assert leader["clean_air_eligible"]
+    assert leader["clean_air_confidence"] == "medium"
+    assert pd.notna(leader["traffic_adjusted_pace_delta_sec"])
+    assert not leader["traffic_association_eligible"]
+    assert leader["traffic_association_confidence"] == leader["confidence"] == "insufficient"
+    assert pd.isna(leader["traffic_associated_delta_sec_per_lap"])
+
+
+def test_configured_publication_minimum_precedes_sample_strength_labels() -> None:
+    result = analyse_traffic_adjusted_pace(_laps(), _replay(), min_publish_laps=12)
+    leader = result.summary.loc[result.summary["driver_code"].eq("B")].iloc[0]
+    assert leader["clean_air_laps"] == 11
+    assert not leader["clean_air_eligible"]
+    assert leader["clean_air_confidence"] == "insufficient"
+    assert pd.isna(leader["traffic_adjusted_pace_delta_sec"])
+
+
+@pytest.mark.parametrize(
+    ("clean_count", "matched_count", "clean_strength", "association_strength"),
+    [
+        (4, 12, "insufficient", "insufficient"),
+        (5, 5, "low", "low"),
+        (7, 7, "low", "low"),
+        (8, 8, "medium", "medium"),
+        (11, 11, "medium", "medium"),
+        (12, 12, "high", "high"),
+        (12, 4, "high", "insufficient"),
+        (12, 8, "high", "medium"),
+    ],
+)
+def test_metric_specific_sample_strength_boundaries(
+    clean_count: int, matched_count: int, clean_strength: str, association_strength: str
+) -> None:
+    evidence = analyse_traffic_adjusted_pace(_laps(), _replay()).evidence
+    driver = evidence.loc[evidence["driver_code"].eq("A")]
+    clean = driver.loc[driver["air_state"].eq("clean_air")].iloc[[0]]
+    traffic = driver.loc[driver["air_state"].eq("traffic")].iloc[[0]]
+    samples = pd.concat([clean] * clean_count + [traffic] * matched_count, ignore_index=True)
+    summary = _summarise(samples, min_publish_laps=5, traffic_gap_s=1.5, clean_air_gap_s=3.0).iloc[
+        0
+    ]
+    assert summary["clean_air_confidence"] == clean_strength
+    assert summary["traffic_association_confidence"] == association_strength
+    assert summary["confidence"] == association_strength
+    assert bool(summary["clean_air_eligible"]) == (clean_count >= 5)
+    assert bool(summary["traffic_association_eligible"]) == (min(clean_count, matched_count) >= 5)
+    assert pd.notna(summary["traffic_adjusted_pace_delta_sec"]) == (clean_count >= 5)
+    assert pd.notna(summary["traffic_associated_delta_sec_per_lap"]) == (
+        min(clean_count, matched_count) >= 5
+    )
 
 
 def test_dead_band_and_under_covered_laps_are_mixed() -> None:
