@@ -17,6 +17,8 @@ select
     end_t_s,
     duration_s,
     pressure_seconds,
+    longest_pressure_run_s,
+    release_run_s,
     contact_seconds,
     start_lap,
     end_lap,
@@ -51,6 +53,7 @@ select
     '__NO_DATA__', '__NO_DATA__', '__NO_DATA__', '__NO_DATA__',
     '__NO_DATA__', '__NO_DATA__', false,
     cast(null as double), cast(null as double), cast(null as double),
+    cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as integer),
     cast(null as integer), cast(null as integer), cast(null as integer),
     cast(null as integer), cast(null as integer), cast(null as double),
@@ -58,6 +61,6 @@ select
     'Unavailable', 'no_data', false, false, cast(null as double),
     cast(null as integer), cast(null as double), cast(null as double),
     'No data', false, cast(null as double), false, 'No data',
-    'insufficient', 'racecraft-v2-pit-context'
+    'insufficient', 'racecraft-v3-continuity'
 where not exists (select 1 from marts.racecraft_battles)
 order by season, round, battle_number

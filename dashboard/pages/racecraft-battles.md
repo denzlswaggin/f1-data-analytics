@@ -13,7 +13,7 @@ max_width: 1600
 />
 
 <KeyInsight label="Observed racecraft, not a driver-skill score">
-A battle begins after at least ten seconds within one second of the car directly ahead. Conversion requires a confirmed order change; an unmatched episode only counts as a defence after a clean, sustained gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
+An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a confirmed order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
 </KeyInsight>
 
 ```sql seasons
@@ -153,7 +153,8 @@ on both axes are omitted.
     <Column id=defence_hold_pct title="Defence (%)" fmt="0.0" />
     <Column id=defence_hold_p05_pct title="Defence P05" fmt="0.0" />
     <Column id=defence_hold_p95_pct title="Defence P95" fmt="0.0" />
-    <Column id=quick_reversals_made title="Quick reversals" />
+    <Column id=quick_reversals_made title="Re-passes made" />
+    <Column id=quick_reversals_conceded title="Re-passes conceded" />
     <Column id=confidence title="Evidence" />
 </DataTable>
 
@@ -194,7 +195,9 @@ order by start_t_s
     <Column id=start_lap title="Start lap" />
     <Column id=end_lap title="End lap" />
     <Column id=position_contested title="For position" />
-    <Column id=pressure_seconds title="Within 1.0 s" fmt="0 s" />
+    <Column id=pressure_seconds title="Total pressure (sample-supported)" fmt="0 s" />
+    <Column id=longest_pressure_run_s title="Longest pressure run" fmt="0 s" />
+    <Column id=release_run_s title="Uninterrupted release" fmt="0 s" />
     <Column id=min_gap_s title="Minimum gap" fmt="0.000 s" />
     <Column id=driver_outcome title="Outcome" />
     <Column id=quick_reversal title="Reversed ≤60 s" />
@@ -208,6 +211,8 @@ select
     defender_code,
     start_lap,
     pressure_seconds,
+    longest_pressure_run_s,
+    release_run_s,
     outcome,
     terminal_reason,
     exclusion_reason
@@ -216,16 +221,29 @@ where not eligible
 order by start_t_s
 ```
 
-<ExpandableSection title="See excluded episodes and the v1 method">
+<ExpandableSection title="See excluded episodes and the v3 continuity method">
 <DataTable data={excluded_battles} rows=80 search=true />
 
 The follower must run directly behind the same car, on a comparable lap deficit,
-for at least ten green-flag seconds within 1.0 second. A confirmed directional
+for at least ten uninterrupted green-flag seconds within 1.0 second. Pressure
+duration is sample-supported: ten consecutive one-second replay samples count
+as ten seconds, not nine seconds between their timestamps. Total pressure may
+include separate runs and is diagnostic only; eligibility uses the longest
+uninterrupted run. High-confidence episodes need at least 20 seconds in that run,
+alongside the other coverage and evidence requirements. A confirmed directional
 pass can arrive up to three seconds after that close-running segment. A defence
 requires the original order to remain while the gap exceeds 2.0 seconds for 15
-seconds. Pit-boundary laps, neutralisations and a third car entering the pair
-interrupt rather than resolve the episode. Feed gaps and race-end boundaries
-remain unresolved.
+measured elapsed seconds. The release timer resets at any gap of 2.0 seconds or
+less (including the 1.5–2.0-second neutral band), a missing or invalid gap,
+an incomparable lap deficit, or a missed expected replay sample. Pressure runs
+also reset on gaps above 1.0 second or missing expected samples.
+Pit-boundary laps and neutralisations interrupt rather than resolve the episode.
+Without a matching confirmed pass, a third car entering the pair also interrupts
+it, while feed gaps and race-end boundaries remain unresolved.
+
+A quick reversal is a confirmed pass back within 60 seconds. The original
+defender receives the re-pass made; the original attacker receives the re-pass
+conceded. It does not erase the initial confirmed conversion.
 
 Replay gaps are reconstructed at one-second resolution and are not official DRS
 eligibility. Results are descriptive: car and tyre performance, fuel, damage,

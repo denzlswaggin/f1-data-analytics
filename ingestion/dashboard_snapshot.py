@@ -669,6 +669,8 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "end_t_s",
         "duration_s",
         "pressure_seconds",
+        "longest_pressure_run_s",
+        "release_run_s",
         "contact_seconds",
         "start_lap",
         "end_lap",

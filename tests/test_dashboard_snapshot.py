@@ -186,6 +186,9 @@ def _warehouse(path: Path) -> None:
             "end_t_s": "double",
             "post_checkpoint_t_s": "double",
             "duration_s": "double",
+            "pressure_seconds": "double",
+            "longest_pressure_run_s": "double",
+            "release_run_s": "double",
             "gap_to_leader_before_s": "double",
             "gap_to_leader_after_s": "double",
             "raw_gap_gain_s": "double",
@@ -346,3 +349,42 @@ def test_race_control_sources_preserve_time_eligibility_schema(tmp_path: Path, t
         assert row["time_comparable_driver_count"] == 4
         assert not row["time_eligible"]
         assert row["time_exclusion_reason"] == "Insufficient comparable cohort"
+
+
+@pytest.mark.parametrize("table", ["racecraft_battles", "racecraft_driver_summary"])
+def test_racecraft_sources_execute_empty_and_populated_schema(tmp_path: Path, table: str) -> None:
+    source = tmp_path / "source.duckdb"
+    _warehouse(source)
+    query = (
+        Path(__file__).resolve().parents[1] / "dashboard" / "sources" / "f1" / f"{table}.sql"
+    ).read_text(encoding="utf-8")
+    with duckdb.connect(str(source)) as connection:
+        connection.execute(f"delete from marts.{table}")
+        result = connection.execute(query).fetchdf()
+        assert len(result) == 1
+        assert result.iloc[0]["season"] == 0
+        assert result.iloc[0]["methodology_version"] == "racecraft-v3-continuity"
+        if table == "racecraft_battles":
+            for field in ("pressure_seconds", "longest_pressure_run_s", "release_run_s"):
+                assert result[field].isna().all()
+                assert result[field].dtype.kind == "f"
+            connection.execute(
+                "insert into marts.racecraft_battles "
+                "(season, round, pressure_seconds, longest_pressure_run_s, release_run_s, "
+                "methodology_version) values (2025, 1, 24.0, 12.0, 15.0, "
+                "'racecraft-v3-continuity')"
+            )
+        else:
+            connection.execute(
+                "insert into marts.racecraft_driver_summary "
+                "(season, round, methodology_version) "
+                "values (2025, 1, 'racecraft-v3-continuity')"
+            )
+        result = connection.execute(query).fetchdf()
+        assert len(result) == 1
+        assert result.iloc[0]["season"] == 2025
+        assert result.iloc[0]["methodology_version"] == "racecraft-v3-continuity"
+        if table == "racecraft_battles":
+            assert result.iloc[0]["pressure_seconds"] == 24.0
+            assert result.iloc[0]["longest_pressure_run_s"] == 12.0
+            assert result.iloc[0]["release_run_s"] == 15.0
