@@ -2,7 +2,8 @@
 
 Official Safety Car, VSC and red-flag messages are paired with a small state
 machine. Driver state at deployment is compared with the third leader crossing
-after the end signal, giving two complete racing laps for the field to settle.
+after the end signal. Publication requires two complete green reference-leader
+laps, not a claim that every driver's recovery is independently observed.
 The metric is descriptive evidence, not a causal strategy estimate.
 """
 
@@ -361,6 +362,8 @@ def _post_checkpoint(replay: pd.DataFrame, event: _Event) -> tuple[float, int] |
         replay["t_s"].le(event.end_t_s) & replay["running_order"].eq(1)
     ].sort_values("t_s")
     if leader_at_end.empty:
+        return None
+    if event.end_t_s - float(leader_at_end.iloc[-1]["t_s"]) > MAX_CAPTURE_OFFSET_S:
         return None
     end_lap = _optional_int(leader_at_end.iloc[-1]["lap_number"])
     if end_lap is None:

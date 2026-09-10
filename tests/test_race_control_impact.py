@@ -397,6 +397,14 @@ def test_end_message_lap_is_not_used_as_recovery_clock() -> None:
     assert result.events.iloc[0]["recovery_clean"]
 
 
+def test_stale_leader_at_end_signal_does_not_define_recovery() -> None:
+    replay = _replay().loc[lambda frame: ~frame.t_s.eq(150)]
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)], replay=replay
+    )
+    assert result.events.iloc[0]["exclusion_reason"] == "Two-lap recovery unavailable"
+
+
 def test_straddling_previous_sc_lap_does_not_poison_green_leader_laps() -> None:
     # BBB leads two fully green laps [200, 260]. AAA's SC lap ends at 205;
     # its aggregate flag does not establish any yellow within [200, 205].

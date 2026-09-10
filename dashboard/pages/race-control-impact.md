@@ -13,7 +13,7 @@ max_width: 1600
 />
 
 <KeyInsight label="Observed impact, not causality">
-Position changes starts at the official deployment message and ends after two complete racing laps following the end signal. Incidents, field compression, pit timing, restarts and retirements can all shape the result, so this page describes what happened across the window rather than what race control caused.
+Position comparison starts at the official deployment message and ends after two complete green reference-leader laps, between the first and third crossings following the end signal. Incidents, field compression, pit timing, restarts and retirements can all shape the result, so this page describes what happened across the window rather than what race control caused.
 </KeyInsight>
 
 ```sql seasons
@@ -88,7 +88,7 @@ from ${selected_event}
 
 <Grid cols=4>
     <BigValue data={selected_event} value=event_type comparison=duration_s comparisonFmt="0 s" title="Intervention" />
-    <BigValue data={event_driver_total} value=drivers title="Comparable drivers" />
+    <BigValue data={event_driver_total} value=drivers title="Position-comparable drivers" />
     <BigValue data={event_stops} value=stops title="Stops under intervention" />
     <BigValue data={event_gainers} value=gainers title="Position gainers" />
 </Grid>
@@ -127,13 +127,25 @@ Positive bars are positions gained between deployment and the shared post-event 
     <ReferenceLine y=0 label="position held" />
 </BarChart>
 
-## Relative-time movement beyond field compression
+## Relative-time movement against the event median
 
-For Safety Car and VSC periods, the raw gap change is centred on the event median. This removes the field-wide compression shared by the measured drivers. Red-flag time changes and drivers whose lap deficit changed are intentionally left blank because their seconds are not comparable.
+For Safety Car and VSC periods, the raw gap change is centred on the median of time-comparable drivers. This is a descriptive comparison within the measured cohort, not proof that field-wide compression has been removed. At least five time-comparable drivers are required to publish the centred result; this is a publication rule, not statistical validation. Red flags publish positions only.
+
+<BigValue data={selected_event} value=time_comparable_driver_count title="Time-comparable drivers (minimum 5)" />
+
+```sql time_unavailable
+select time_exclusion_reason
+from ${selected_event}
+where not time_eligible
+```
+
+<DataTable data={time_unavailable} rows=5>
+    <Column id=time_exclusion_reason title="Why the relative-time chart is unavailable" />
+</DataTable>
 
 ```sql time_movers
 select * from ${eligible_drivers}
-where field_adjusted_gap_gain_s is not null
+where time_eligible and field_adjusted_gap_gain_s is not null
 order by abs(field_adjusted_gap_gain_s) desc
 limit 18
 ```
@@ -143,7 +155,7 @@ limit 18
     x=driver_code
     y=field_adjusted_gap_gain_s
     series=pit_context
-    yAxisTitle="field-adjusted relative gap gain (s)"
+    yAxisTitle="median-centred relative gap gain (s)"
     swapXY=true
     labels=true
     sort=false
@@ -160,7 +172,9 @@ limit 18
     <Column id=position_after title="After" />
     <Column id=positions_gained title="Position Δ" fmt="+0;-0" />
     <Column id=raw_gap_gain_s title="Raw gap gain (s)" fmt="+0.00;-0.00" />
-    <Column id=field_adjusted_gap_gain_s title="Adjusted gain (s)" fmt="+0.00;-0.00" />
+    <Column id=field_adjusted_gap_gain_s title="Median-centred gain (s)" fmt="+0.00;-0.00" />
+    <Column id=time_eligible title="Time eligible" />
+    <Column id=time_exclusion_reason title="Why time is excluded" />
     <Column id=compound_before title="Tyre before" />
     <Column id=compound_after title="Tyre after" />
     <Column id=pit_context title="Pit context" />
@@ -178,6 +192,8 @@ limit 18
     <Column id=post_checkpoint_lap title="Measured after" />
     <Column id=duration_s title="Duration (s)" fmt="0" />
     <Column id=eligible_driver_count title="Drivers" />
+    <Column id=time_comparable_driver_count title="Time-comparable drivers" />
+    <Column id=time_exclusion_reason title="Time exclusion" />
     <Column id=intervention_stop_count title="Stops" />
     <Column id=event_status title="Status" />
     <Column id=confidence title="Evidence" />
@@ -191,7 +207,7 @@ select * from ${driver_evidence} where not eligible
 select * from ${race_events} where not eligible
 ```
 
-<ExpandableSection title="See exclusions and the v1 method">
+<ExpandableSection title="See exclusions and the v2 method">
 <DataTable data={excluded_events} rows=20>
     <Column id=event_label title="Event" />
     <Column id=event_status title="Status" />
@@ -204,7 +220,11 @@ select * from ${race_events} where not eligible
     <Column id=exclusion_reason title="Why excluded" />
 </DataTable>
 
-The parser accepts only exact official deployment and end messages. A valid event needs a replay baseline, a completed two-lap recovery uninterrupted by another neutralisation and at least 12 cars. Driver snapshots must be within three seconds of the shared clock. A changed lap deficit suppresses time metrics but not position evidence. Red flags publish position movement only.
+The parser accepts only exact official deployment and end messages. A valid event needs a replay baseline, at least 12 cars and two complete, timed, contiguous green laps by the reference leader between the first and third crossings after the end signal. The same driver must lead at both ends of this fixed window. Another neutralisation interrupts recovery. Driver snapshots must be within three seconds of the shared clock.
+
+Other recorded laps wholly contained in that timestamp interval must have green status; non-green or missing status rejects the recovery. An incomplete lap starting inside the interval with an unknown end also rejects it. Laps straddling a window boundary cannot localise their recorded flags to the recovery interval, so their lap-level status alone does not establish contamination. This check does not prove that the entire field stayed green or that field-wide coverage is complete.
+
+Lap deficit is estimated from continuous lap distance (lap number minus one plus lap progress) at identical timestamps, not from integer lap counters alone. Estimates close to a whole-lap boundary are uncertain and suppress time metrics, as do changed estimated deficits or missing comparable timing. These estimates are not confirmation of physical lapping. Position eligibility is separate from time eligibility, so a driver can retain position evidence while their time comparison is blank. Red flags publish position movement only.
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="race-control-impact" season={inputs.season.value} race={inputs.race.value} />

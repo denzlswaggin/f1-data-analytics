@@ -19,6 +19,9 @@ select
     pre_driver_count,
     post_driver_count,
     eligible_driver_count,
+    time_comparable_driver_count,
+    time_eligible,
+    time_exclusion_reason,
     intervention_stop_count,
     recovery_stop_count,
     position_gainer_count,
@@ -37,7 +40,7 @@ select
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as integer), cast(null as integer), cast(null as integer),
     cast(null as double), 'unavailable', false,
-    0, 0, 0, 0, 0, 0, 0,
-    false, 'No data', 'Low', 'race-control-impact-v1'
+    0, 0, 0, 0, false, 'No data', 0, 0, 0, 0,
+    false, 'No data', 'Low', 'race-control-impact-v2'
 where not exists (select 1 from marts.race_control_events)
 order by season, round, event_number
