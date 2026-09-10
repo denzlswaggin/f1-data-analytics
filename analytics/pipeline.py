@@ -1111,7 +1111,8 @@ def _race_control_replay_query(season: int | None, rnd: int | None) -> str:
             replay.compound,
             replay.tyre_life,
             replay.running_order,
-            replay.gap_to_leader_s
+            replay.gap_to_leader_s,
+            replay.lap_progress
         from marts.race_replay as replay
         left join staging.stg_races as races
             on races.season = replay.season and races.round = replay.round
@@ -1155,8 +1156,14 @@ def _race_control_messages_query(season: int | None, rnd: int | None) -> str:
 def _race_control_laps_query(season: int | None, rnd: int | None) -> str:
     scope = _race_control_scope_clause("laps", season, rnd)
     return f"""
-        select laps.season, laps.round, laps.lap_number, laps.track_status
+        select laps.season, laps.round, laps.driver_code, laps.lap_number, laps.track_status,
+            laps.lap_start_sec - windows.race_start_sec as lap_start_t_s,
+            laps.lap_start_sec + laps.lap_time_sec - windows.race_start_sec as lap_end_t_s
         from staging.stg_laps as laps
+        inner join (
+            select season, round, min(lap_start_sec) as race_start_sec
+            from staging.stg_laps where session = 'R' group by season, round
+        ) as windows on windows.season = laps.season and windows.round = laps.round
         where laps.session = 'R'{scope}
     """
 

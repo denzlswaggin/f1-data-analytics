@@ -13,10 +13,14 @@ from dataclasses import dataclass, replace
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "race-control-impact-v1"
+METHODOLOGY_VERSION = "race-control-impact-v2"
 MAX_CAPTURE_OFFSET_S = 3.0
 HIGH_CONFIDENCE_OFFSET_S = 1.5
 DEFAULT_MIN_EVENT_DRIVERS = 12
+MIN_TIME_COMPARABLE_DRIVERS = 5
+# Reconstructed progress is not official lapping evidence. Suppress estimates
+# close to a whole-lap boundary rather than converting interpolation noise to a lap.
+LAP_DEFICIT_BOUNDARY_MARGIN = 0.02
 
 _RACE_KEYS = ["season", "round"]
 _REPLAY_REQUIRED = {
@@ -27,6 +31,7 @@ _REPLAY_REQUIRED = {
     "team",
     "t_s",
     "lap_number",
+    "lap_progress",
     "stint",
     "compound",
     "tyre_life",
@@ -42,7 +47,14 @@ _CONTROL_REQUIRED = {
     "message",
     "lap",
 }
-_LAPS_REQUIRED = {*_RACE_KEYS, "lap_number", "track_status"}
+_LAPS_REQUIRED = {
+    *_RACE_KEYS,
+    "driver_code",
+    "lap_number",
+    "track_status",
+    "lap_start_t_s",
+    "lap_end_t_s",
+}
 
 RACE_CONTROL_EVENT_COLUMNS = [
     "season",
@@ -63,6 +75,9 @@ RACE_CONTROL_EVENT_COLUMNS = [
     "pre_driver_count",
     "post_driver_count",
     "eligible_driver_count",
+    "time_comparable_driver_count",
+    "time_eligible",
+    "time_exclusion_reason",
     "intervention_stop_count",
     "recovery_stop_count",
     "position_gainer_count",
@@ -90,6 +105,9 @@ RACE_CONTROL_IMPACT_COLUMNS = [
     "gap_to_leader_after_s",
     "raw_gap_gain_s",
     "field_adjusted_gap_gain_s",
+    "time_comparable_driver_count",
+    "time_eligible",
+    "time_exclusion_reason",
     "lap_before",
     "lap_after",
     "lap_deficit_before",
@@ -125,13 +143,14 @@ _EVENT_INTEGER = {
     "pre_driver_count",
     "post_driver_count",
     "eligible_driver_count",
+    "time_comparable_driver_count",
     "intervention_stop_count",
     "recovery_stop_count",
     "position_gainer_count",
     "position_loser_count",
 }
 _EVENT_FLOAT = {"start_t_s", "end_t_s", "post_checkpoint_t_s", "duration_s"}
-_EVENT_BOOLEAN = {"recovery_clean", "eligible"}
+_EVENT_BOOLEAN = {"recovery_clean", "eligible", "time_eligible"}
 _IMPACT_INTEGER = {
     "season",
     "round",
@@ -148,6 +167,7 @@ _IMPACT_INTEGER = {
     "tyre_life_before",
     "tyre_life_after",
     "stop_count",
+    "time_comparable_driver_count",
 }
 _IMPACT_FLOAT = {
     "gap_to_leader_before_s",
@@ -164,6 +184,7 @@ _IMPACT_BOOLEAN = {
     "tyre_changed_during_suspension",
     "active_after",
     "eligible",
+    "time_eligible",
 }
 
 
@@ -355,12 +376,99 @@ def _post_checkpoint(replay: pd.DataFrame, event: _Event) -> tuple[float, int] |
     return float(crossing["t_s"].min()), post_lap
 
 
-def _recovery_clean(laps: pd.DataFrame, end_lap: int | None, post_lap: int | None) -> bool:
-    if end_lap is None or post_lap is None:
+def _recovery_clean(
+    laps: pd.DataFrame, replay: pd.DataFrame, event: _Event, checkpoint: tuple[float, int] | None
+) -> bool:
+    """Require timed, complete green laps, not same-number laps of lapped cars.
+
+    The two complete reference-leader laps must be green. Other laps wholly
+    inside the interval may contradict them; flags on straddling laps cannot be
+    localised to this interval. This is not proof of full-field status coverage.
+    """
+    if checkpoint is None or event.end_t_s is None:
         return False
-    recovery = laps.loc[laps["lap_number"].gt(end_lap) & laps["lap_number"].lt(post_lap)]
-    statuses = recovery["track_status"].dropna().astype("string")
-    return bool(not statuses.empty and statuses.eq("1").all())
+    end, post_lap = checkpoint
+    first = replay.loc[
+        replay["t_s"].gt(event.end_t_s)
+        & replay["running_order"].eq(1)
+        & replay["lap_number"].eq(post_lap - 2)
+    ].sort_values("t_s")
+    last = replay.loc[replay["t_s"].eq(end) & replay["running_order"].eq(1)]
+    if first.empty or len(last) != 1:
+        return False
+    start = float(first.iloc[0]["t_s"])
+    driver = first.iloc[0]["driver_code"]
+    if start >= end or driver != last.iloc[0]["driver_code"]:
+        return False
+    reference = laps.loc[
+        laps["driver_code"].eq(driver) & laps["lap_number"].isin([post_lap - 2, post_lap - 1])
+    ].sort_values("lap_number")
+    if len(reference) != 2 or reference["lap_number"].nunique() != 2:
+        return False
+    starts = reference["lap_start_t_s"].to_numpy(dtype=float)
+    ends = reference["lap_end_t_s"].to_numpy(dtype=float)
+    if not (np.isfinite(starts).all() and np.isfinite(ends).all() and (ends > starts).all()):
+        return False
+    # Replay samples the crossings; staged lap times provide the true interval.
+    if not (
+        0 <= start - starts[0] <= MAX_CAPTURE_OFFSET_S
+        and 0 <= end - ends[1] <= MAX_CAPTURE_OFFSET_S
+        and abs(ends[0] - starts[1]) <= 0.001
+    ):
+        return False
+    if not reference["track_status"].astype("string").eq("1").fillna(False).all():
+        return False
+    # A later observed lap start bounds an earlier untimed lap; otherwise one
+    # missing SC lap duration would poison every subsequent recovery in the race.
+    coverage = laps.sort_values(["driver_code", "lap_number"]).copy()
+    next_start = coverage.groupby("driver_code")["lap_start_t_s"].shift(-1)
+    coverage_end = coverage["lap_end_t_s"].fillna(next_start)
+    contained = coverage.loc[
+        coverage["lap_start_t_s"].ge(starts[0])
+        & coverage_end.le(ends[1])
+        & coverage_end.gt(coverage["lap_start_t_s"])
+    ]
+    unknown = (
+        coverage["lap_start_t_s"].ge(starts[0])
+        & coverage["lap_start_t_s"].lt(ends[1])
+        & (coverage_end.isna() | coverage_end.le(coverage["lap_start_t_s"]))
+    )
+    if unknown.any():
+        return False
+    return bool(
+        not contained.empty
+        and contained["track_status"].astype("string").eq("1").fillna(False).all()
+    )
+
+
+def _estimated_lap_deficits(snapshot: pd.DataFrame) -> dict[str, int | None]:
+    leaders = snapshot.loc[snapshot["running_order"].eq(1)]
+    if len(leaders) != 1:
+        return {}
+    leader = leaders.iloc[0]
+    if pd.isna(leader["lap_number"]) or pd.isna(leader["lap_progress"]):
+        return {}
+    leader_progress = float(leader["lap_number"] - 1 + leader["lap_progress"])
+    result: dict[str, int | None] = {}
+    for row in snapshot.itertuples(index=False):
+        if pd.isna(row.lap_number) or pd.isna(row.lap_progress):
+            result[str(row.driver_code)] = None
+            continue
+        distance = leader_progress - float(row.lap_number - 1 + row.lap_progress)
+        deficit = None
+        if (
+            np.isfinite(distance)
+            and row.t_s == leader["t_s"]
+            and 0 <= row.lap_progress <= 1
+            and 0 <= leader["lap_progress"] <= 1
+            and distance >= -0.0001
+        ):
+            distance = max(0.0, distance)
+            nearest = round(distance)
+            if nearest == 0 or abs(distance - nearest) > LAP_DEFICIT_BOUNDARY_MARGIN + 1e-9:
+                deficit = int(np.floor(distance))
+        result[str(row.driver_code)] = deficit
+    return result
 
 
 def _to_int(value: object) -> int | None:
@@ -400,10 +508,8 @@ def _driver_rows(
         if post_t_s is not None
         else replay["t_s"].eq(np.inf)
     ]
-    leader_pre = pre.loc[pre["running_order"].eq(1)]
-    leader_post = post.loc[post["running_order"].eq(1)]
-    leader_pre_lap = _to_int(leader_pre.iloc[0]["lap_number"]) if not leader_pre.empty else None
-    leader_post_lap = _to_int(leader_post.iloc[0]["lap_number"]) if not leader_post.empty else None
+    deficits_pre = _estimated_lap_deficits(pre)
+    deficits_post = _estimated_lap_deficits(post)
 
     rows: list[dict[str, object]] = []
     for before in pre.itertuples(index=False):
@@ -422,20 +528,12 @@ def _driver_rows(
         )
         lap_before = _to_int(before.lap_number)
         lap_after = _to_int(after["lap_number"]) if after is not None else None
-        deficit_before = (
-            leader_pre_lap - lap_before
-            if leader_pre_lap is not None and lap_before is not None
-            else None
-        )
-        deficit_after = (
-            leader_post_lap - lap_after
-            if leader_post_lap is not None and lap_after is not None
-            else None
-        )
+        deficit_before = deficits_pre.get(driver)
+        deficit_after = deficits_post.get(driver)
         deficit_changed = (
             deficit_before != deficit_after
             if deficit_before is not None and deficit_after is not None
-            else True
+            else None
         )
         gap_before = float(before.gap_to_leader_s) if pd.notna(before.gap_to_leader_s) else np.nan
         gap_after = (
@@ -446,6 +544,7 @@ def _driver_rows(
         raw_gap_gain = (
             gap_before - gap_after
             if event.event_type != "Red Flag"
+            and deficit_changed is not None
             and not deficit_changed
             and np.isfinite(gap_before)
             and np.isfinite(gap_after)
@@ -501,6 +600,17 @@ def _driver_rows(
         elif position_before is None or position_after is None:
             reason = "Incomplete position timing"
         confidence = event_confidence if driver_eligible else "Low"
+        time_reason = ""
+        if not driver_eligible:
+            time_reason = reason
+        elif event.event_type == "Red Flag":
+            time_reason = "Red flag: position evidence only"
+        elif deficit_changed is None:
+            time_reason = "Lap deficit unavailable or near an uncertain boundary"
+        elif deficit_changed:
+            time_reason = "Estimated lap deficit changed"
+        elif not np.isfinite(raw_gap_gain):
+            time_reason = "Incomplete gap timing"
         rows.append(
             {
                 "season": int(before.season),
@@ -519,6 +629,9 @@ def _driver_rows(
                 "gap_to_leader_after_s": gap_after,
                 "raw_gap_gain_s": raw_gap_gain,
                 "field_adjusted_gap_gain_s": np.nan,
+                "time_comparable_driver_count": 0,
+                "time_eligible": not time_reason,
+                "time_exclusion_reason": time_reason,
                 "lap_before": lap_before,
                 "lap_after": lap_after,
                 "lap_deficit_before": deficit_before,
@@ -590,12 +703,16 @@ def analyse_race_control_impact(
     for frame in (replay, race_control, laps):
         for column in ("season", "round"):
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
-    for column in ("t_s", "lap_number", "stint", "tyre_life", "running_order"):
+    for column in ("t_s", "lap_number", "lap_progress", "stint", "tyre_life", "running_order"):
         replay[column] = pd.to_numeric(replay[column], errors="coerce")
     replay["gap_to_leader_s"] = pd.to_numeric(replay["gap_to_leader_s"], errors="coerce")
     race_control["t_s"] = pd.to_numeric(race_control["t_s"], errors="coerce")
     race_control["lap"] = pd.to_numeric(race_control["lap"], errors="coerce")
     laps["lap_number"] = pd.to_numeric(laps["lap_number"], errors="coerce")
+    for column in ("lap_start_t_s", "lap_end_t_s"):
+        laps[column] = pd.to_numeric(laps[column], errors="coerce").replace(
+            [np.inf, -np.inf], np.nan
+        )
 
     event_rows: list[dict[str, object]] = []
     evidence_rows: list[dict[str, object]] = []
@@ -637,7 +754,7 @@ def analyse_race_control_impact(
                 None,
             )
             recovery_interrupted = later_start is not None
-            recovery_clean = _recovery_clean(laps_race, event.end_lap, post_lap)
+            recovery_clean = _recovery_clean(laps_race, replay_race, event, checkpoint)
             reason = event.parse_reason or ""
             if not reason and replay_race.empty:
                 reason = "Replay unavailable"
@@ -649,6 +766,8 @@ def analyse_race_control_impact(
                 reason = "Recovery interrupted by another neutralisation"
             elif not reason and len(pre) < min_event_drivers:
                 reason = f"Fewer than {min_event_drivers} pre-event drivers"
+            elif not reason and not recovery_clean:
+                reason = "Two complete green recovery laps not verified"
             event_eligible = not reason
             offsets = pd.concat(
                 [
@@ -677,6 +796,29 @@ def analyse_race_control_impact(
                 confidence,
                 post_t_s,
             )
+            comparable = [row for row in driver_rows if bool(row["time_eligible"])]
+            time_count = len(comparable)
+            time_reason = reason or (
+                "Red flag: position evidence only"
+                if event.event_type == "Red Flag"
+                else f"Fewer than {MIN_TIME_COMPARABLE_DRIVERS} comparable time drivers"
+                if time_count < MIN_TIME_COMPARABLE_DRIVERS
+                else ""
+            )
+            median = (
+                float(np.median([row["raw_gap_gain_s"] for row in comparable]))
+                if not time_reason
+                else np.nan
+            )
+            for row in driver_rows:
+                row["time_comparable_driver_count"] = time_count
+                if row["time_eligible"]:
+                    row["time_eligible"] = not time_reason
+                    row["time_exclusion_reason"] = time_reason
+                    if not time_reason:
+                        row["field_adjusted_gap_gain_s"] = (
+                            float(str(row["raw_gap_gain_s"])) - median
+                        )
             evidence_rows.extend(driver_rows)
             eligible_driver_rows = [row for row in driver_rows if bool(row["eligible"])]
             event_rows.append(
@@ -701,6 +843,9 @@ def analyse_race_control_impact(
                     "pre_driver_count": len(pre),
                     "post_driver_count": len(post),
                     "eligible_driver_count": len(eligible_driver_rows),
+                    "time_comparable_driver_count": time_count,
+                    "time_eligible": not time_reason,
+                    "time_exclusion_reason": time_reason,
                     "intervention_stop_count": sum(
                         bool(row["pitted_during_intervention"]) for row in driver_rows
                     ),
@@ -735,11 +880,6 @@ def analyse_race_control_impact(
         _IMPACT_BOOLEAN,
     )
     if not evidence_frame.empty:
-        valid_time = evidence_frame["eligible"] & evidence_frame["raw_gap_gain_s"].notna()
-        medians = evidence_frame.loc[valid_time].groupby("event_id")["raw_gap_gain_s"].median()
-        evidence_frame.loc[valid_time, "field_adjusted_gap_gain_s"] = evidence_frame.loc[
-            valid_time, "raw_gap_gain_s"
-        ] - evidence_frame.loc[valid_time, "event_id"].map(medians)
         evidence_frame = evidence_frame.sort_values(
             ["season", "round", "event_number", "position_before"]
         ).reset_index(drop=True)
