@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import copy
+import hashlib
+import json
+from pathlib import Path
 from typing import Any
 
 import duckdb
@@ -117,3 +120,14 @@ def test_invalid_tolerance_rejected(value: Any) -> None:
     ref["lap_tolerance"] = value
     with pytest.raises(ValueError, match="lap_tolerance"):
         evaluate(c, ref)
+
+
+def test_committed_report_binds_frozen_annotations() -> None:
+    root = Path(__file__).parents[1] / "validation"
+    content = (root / "reference-events-v1.json").read_text(encoding="utf-8").encode("utf-8")
+    report = json.loads((root / "reference-results-v1.json").read_text())
+    assert report["reference_sha256"] == hashlib.sha256(content).hexdigest()
+    reference = json.loads(content)
+    assert {c["id"] for c in report["cases"]} == {c["id"] for c in reference["cases"]}
+    assert report["exact_positive_matches"] == 13
+    assert report["population_precision"] is None

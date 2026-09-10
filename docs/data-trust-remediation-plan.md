@@ -37,6 +37,9 @@ validation of the analytical claims.
 6. **Independent validation** — assemble annotated reference races and held-out
    checks for detected events and model outputs; report coverage, false positives,
    uncertainty and failures before strengthening product claims.
+   Initial delivery: [reference panel and temporal diagnostic](independent-validation.md).
+   Independent adjudication, exhaustive event windows and untouched-race
+   production-model validation remain open; package 6 is not fully complete.
 
 ## Package 1 behavior and limitations
 

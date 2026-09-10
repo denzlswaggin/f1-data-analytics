@@ -124,7 +124,12 @@ def main() -> None:
     args = parser.parse_args()
     with duckdb.connect(str(args.snapshot), read_only=True) as connection:
         laps = connection.execute("select * from marts.traffic_adjusted_laps").fetchdf()
-    print(json.dumps(evaluate(laps), indent=2, allow_nan=False))
+        metadata = connection.execute(
+            "select version, generated_at from dashboard.snapshot_metadata"
+        ).fetchall()
+    result = evaluate(laps)
+    result["snapshot_metadata"] = metadata
+    print(json.dumps(result, indent=2, allow_nan=False, default=str))
 
 
 if __name__ == "__main__":

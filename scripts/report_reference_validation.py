@@ -135,7 +135,8 @@ def main() -> None:
         "--reference", type=Path, default=Path("validation/reference-events-v1.json")
     )
     args = parser.parse_args()
-    content = args.reference.read_bytes()
+    # Git may check out CRLF on Windows; hash the UTF-8, LF-normalized reference.
+    content = args.reference.read_text(encoding="utf-8").encode("utf-8")
     with duckdb.connect(str(args.snapshot), read_only=True) as connection:
         result = evaluate(connection, json.loads(content))
         result["snapshot_metadata"] = connection.execute(

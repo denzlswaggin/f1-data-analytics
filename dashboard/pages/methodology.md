@@ -16,6 +16,29 @@ max_width: 1600
 The dashboard publishes immutable, checksum-verified snapshots and exposes sample coverage. Results still describe the available data rather than proving causality.
 </KeyInsight>
 
+## Validation status — exploratory, not certified
+
+The first external reference panel checks 16 selected cases from the 2025
+Belgian and Italian Grands Prix against official F1 reports. On snapshot
+`20260911-robust-estimates-v4`, 13 of 14 positive events match the exact lap;
+all 14 match within one lap. Both explicitly annotated negative windows agree.
+These are selected examples, **not a population accuracy score**. The annotations
+are single-reviewer and have not been independently adjudicated.
+
+One discrepancy remains visible: Piastri's Spa pass on Norris is assigned to
+replay lap 4 instead of reported race lap 5.
+
+A separate retrospective test trained an independent linear pace benchmark on
+the first eight clean laps of each eligible stint. Across 5,239 later laps its
+mean absolute error was **1.114 s**, worse than the training-median baseline's
+**0.626 s**. This tests extrapolation risk, not the production estimator's
+accuracy or the correctness of hypothetical pit strategies.
+
+These results describe the named snapshot, not a continuously updated audit.
+Coverage is incomplete, races were already inspected, and neither calibrated
+uncertainty nor causal strategy claims have been validated.
+[Read the protocol, sources, failures and remaining gates](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/independent-validation.md).
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,
