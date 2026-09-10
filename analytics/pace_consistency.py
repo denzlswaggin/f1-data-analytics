@@ -290,6 +290,7 @@ def _model_stints(
         expected = intercept + slope * candidate["tyre_life"]
         residual = candidate["controlled_pace_delta_sec"] - expected
         centre = float(residual.median())
+        intercept += centre
         expected += centre
         residual -= centre
         out.loc[indices, "stint_slope_sec_per_tyre_lap"] = slope
@@ -391,7 +392,7 @@ def _summarise(
                 ),
                 "p90_slow_tail_sec": float(residual.quantile(0.90)) if publish else np.nan,
                 "slow_lap_threshold_sec": threshold,
-                "unexplained_slow_laps": len(slow) if publish else 0,
+                "unexplained_slow_laps": len(slow),
                 "unexplained_slow_lap_share_pct": (
                     100.0 * len(slow) / len(modelled) if publish else np.nan
                 ),

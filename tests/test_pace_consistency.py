@@ -85,6 +85,24 @@ def test_robust_fit_keeps_one_slow_tail_outlier_visible() -> None:
     assert driver["slow_lap_cost_per_10_laps_sec"] == pytest.approx(10 * expected_excess / 8)
 
 
+def test_fast_outlier_and_absolute_pace_shift_do_not_create_slow_cost() -> None:
+    residuals = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0]
+    base = _stint(residuals=residuals)
+    shifted = base.copy()
+    shifted["controlled_pace_delta_sec"] += 7.5
+
+    base_result = analyse_pace_consistency(base)
+    shifted_result = analyse_pace_consistency(shifted)
+
+    assert base_result.summary.iloc[0]["unexplained_slow_lap_cost_sec"] == 0
+    assert base_result.summary.iloc[0]["robust_consistency_sec"] == pytest.approx(
+        shifted_result.summary.iloc[0]["robust_consistency_sec"]
+    )
+    assert base_result.summary.iloc[0]["unexplained_slow_lap_cost_sec"] == pytest.approx(
+        shifted_result.summary.iloc[0]["unexplained_slow_lap_cost_sec"]
+    )
+
+
 def test_separate_stint_trends_are_removed_before_pooling() -> None:
     residuals = [-0.2, 0.1, 0.0, 0.2, -0.1]
     first = _stint(count=5, residuals=residuals)
@@ -134,6 +152,18 @@ def test_under_covered_and_incomplete_laps_are_excluded() -> None:
     reasons = result.laps.set_index("lap_number")["lap_exclusion_reason"]
     assert reasons.loc[10] == "replay_under_covered"
     assert reasons.loc[11] == "missing_or_invalid_timing"
+
+
+def test_fitted_but_short_driver_sample_keeps_counts_and_hides_headlines() -> None:
+    result = analyse_pace_consistency(_stint(count=7))
+
+    driver = result.summary.iloc[0]
+    assert driver["modelled_laps"] == 7
+    assert driver["unexplained_slow_laps"] == 0
+    assert not bool(driver["consistency_eligible"])
+    assert pd.isna(driver["robust_consistency_sec"])
+    assert pd.isna(driver["slow_lap_cost_per_10_laps_sec"])
+    assert driver["exclusion_reason"] == "insufficient_modelled_laps"
 
 
 @pytest.mark.parametrize(

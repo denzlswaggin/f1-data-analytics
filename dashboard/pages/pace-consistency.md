@@ -55,7 +55,11 @@ where section = 'pace_consistency'
 ```sql race_results
 select
     *,
-    rank() over (order by robust_consistency_sec nulls last) as consistency_rank
+    case
+        when consistency_eligible then rank() over (
+            order by case when consistency_eligible then robust_consistency_sec end nulls last
+        )
+    end as consistency_rank
 from f1.pace_consistency
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by robust_consistency_sec nulls last, driver_code
@@ -144,6 +148,7 @@ laps so different sample sizes remain comparable.
 select distinct driver_code
 from f1.pace_consistency_laps
 where season = ${inputs.season.value} and round = ${inputs.race.value}
+    and lap_eligible
 order by driver_code
 ```
 
