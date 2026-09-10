@@ -10,6 +10,7 @@ RACE_PAGES = {
     "race-control-impact.md",
     "telemetry.md",
     "tyre-strategy.md",
+    "tyre-warmup.md",
     "weather-and-speed.md",
 }
 

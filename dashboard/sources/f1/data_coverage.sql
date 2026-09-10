@@ -123,6 +123,15 @@ coverage as (
     union all
 
     select
+        'tyre_warmup', cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct driver_code), 1,
+        count(*) filter (where warmup_eligible), season, season
+    from marts.tyre_warmup
+    group by season, round, race_name
+
+    union all
+
+    select
         'pit_window', cast(season as varchar) || ' ' || race_name,
         count(*), count(*), 1,
         count(*) filter (where eligible), season, season
