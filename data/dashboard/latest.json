@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260910T191007Z-local.duckdb",
-  "generated_at": "2026-09-10T19:10:07.957382+00:00",
+  "database_file": "f1-dashboard-20260910T2200-racecraft.duckdb",
+  "generated_at": "2026-09-10T19:57:44.185466+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "7d02e45b4ba93b6c0fdc2e09f564251a97fc1a75643956bcabf6d9e78f3adf2e",
-  "size_bytes": 732442624,
+  "sha256": "a59373e7d66f2e68179bd78e8ce6e7018053eab0ef9187eea1250be0158b82e8",
+  "size_bytes": 732180480,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -31,6 +31,8 @@
     "marts.race_control_impact": 1169,
     "marts.race_overtakes": 1604,
     "marts.race_replay": 4129511,
+    "marts.racecraft_battles": 6166,
+    "marts.racecraft_driver_summary": 776,
     "marts.traffic_adjusted_laps": 34214,
     "marts.traffic_adjusted_pace": 766,
     "marts.tyre_warmup": 2142,
@@ -51,5 +53,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260910T191007Z-local"
+  "version": "20260910T2200-racecraft"
 }
