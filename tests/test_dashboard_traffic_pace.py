@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[1]
 PAGE = ROOT / "dashboard" / "pages" / "traffic-adjusted-pace.md"
 PACE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "traffic_adjusted_pace.sql"
