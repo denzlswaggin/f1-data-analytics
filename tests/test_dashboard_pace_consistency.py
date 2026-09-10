@@ -18,6 +18,9 @@ def test_page_exposes_consistency_tail_and_lap_evidence() -> None:
     assert "not labelled as driver errors" in page
     assert "Confidence depends only on sample" in page
     assert "eight modelled laps" in page
+    assert page.count("where confidence in ('medium', 'high')") == 2
+    assert "Point-estimate ranks do not establish" in page
+    assert "median of at least three other cars" in page
 
 
 def test_sources_publish_summary_evidence_and_typed_sentinels() -> None:

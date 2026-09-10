@@ -52,6 +52,6 @@ select
     cast(null as double), cast(null as double), cast(null as double),
     cast(0.5 as double), null, null, cast(null as integer), false, 'unavailable',
     false, false, false, false, false,
-    'No data', 'Insufficient', cast(null as double), 'tyre-warmup-v3-observation'
+    'No data', 'Insufficient', cast(null as double), 'tyre-warmup-v4-robust-peers'
 where not exists (select 1 from marts.tyre_warmup)
 order by season, round, driver_code, stint

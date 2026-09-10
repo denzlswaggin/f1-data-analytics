@@ -34,6 +34,6 @@ select
     'unavailable', cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), cast(null as double),
     false, false, 'No data', 0, cast(null as double), cast(null as double),
-    'pace-consistency-v2-pit-context'
+    'pace-consistency-v3-robust-peers'
 where not exists (select 1 from marts.pace_consistency_laps)
 order by season, round, driver_code, stint, lap_number

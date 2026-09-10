@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "tyre-warmup-v3-observation"
+METHODOLOGY_VERSION = "tyre-warmup-v4-robust-peers"
 STABLE_BAND_SEC = 0.50
 MIN_STINT_LAPS = 11
 MIN_REPLAY_COVERAGE_PCT = 80.0

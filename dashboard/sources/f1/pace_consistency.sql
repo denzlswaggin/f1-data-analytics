@@ -37,6 +37,6 @@ select
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), 0, cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), false,
-    'No data', 'insufficient', 'pace-consistency-v2-pit-context'
+    'No data', 'insufficient', 'pace-consistency-v3-robust-peers'
 where not exists (select 1 from marts.pace_consistency)
 order by season, round, driver_code

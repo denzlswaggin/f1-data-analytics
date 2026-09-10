@@ -73,6 +73,7 @@ where consistency_eligible
 ```sql most_repeatable
 select driver_code, robust_consistency_sec
 from ${eligible_results}
+where confidence in ('medium', 'high')
 order by robust_consistency_sec, modelled_laps desc
 limit 1
 ```
@@ -80,6 +81,7 @@ limit 1
 ```sql largest_tail
 select driver_code, slow_lap_cost_per_10_laps_sec
 from ${eligible_results}
+where confidence in ('medium', 'high')
 order by slow_lap_cost_per_10_laps_sec desc, modelled_laps desc
 limit 1
 ```
@@ -94,6 +96,12 @@ from ${eligible_results}
     <BigValue data={largest_tail} value=driver_code comparison=slow_lap_cost_per_10_laps_sec comparisonFmt="0.000 s / 10 laps" title="Largest observed slow tail" />
     <BigValue data={evidence_count} value=drivers comparison=laps comparisonFmt="0 modelled laps" title="Eligible drivers" />
 </Grid>
+
+Headline comparisons require medium or high heuristic evidence; low-evidence
+estimates remain in the charts and table. No headline is shown if that subset is
+empty. Point-estimate ranks do not establish statistically distinguishable drivers.
+The underlying lap baseline is the median of at least three other cars on the
+same lap and compound; small cohorts and correlated field effects remain limits.
 
 ## Consistency ranking — {inputs.season.value} {inputs.race.label}
 
@@ -213,7 +221,7 @@ from ${lap_evidence}
 where not lap_eligible
 ```
 
-<ExpandableSection title="See excluded laps and the v1 method">
+<ExpandableSection title="See excluded laps and the robust-peer method">
 <DataTable data={excluded_laps} rows=60 search=true />
 
 A stint needs at least five clean-air laps, four distinct tyre-age values and a

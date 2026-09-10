@@ -209,7 +209,7 @@ from ${race_stints}
 where not warmup_eligible
 ```
 
-<ExpandableSection title="See excluded stints and the v3 observation method">
+<ExpandableSection title="See excluded stints and the robust-peer observation method">
 <DataTable data={excluded_stints} rows=30 search=true />
 
 The inferred out-lap (offset 0) is never timed because its lap time can include
@@ -219,8 +219,11 @@ coverage, and at least three clean mature-reference laps. The mature trend is
 rejected when its absolute slope exceeds 0.50 s/lap or its median residual
 exceeds 0.50 s. Used tyres remain eligible but cannot receive high confidence.
 
-This analysis measures settling relative to later race pace. It cannot observe
-tyre temperature or energy, and it does not claim that one compound causally
+This analysis measures settling relative to later race pace. Its controlled lap delta uses a
+leave-one-driver-out median with at least three other same-lap/compound peers
+(`tyre-warmup-v4-robust-peers`). This reduces single-peer outlier influence but
+does not remove car differences, peer selection or model uncertainty.
+It cannot observe tyre temperature or energy, and it does not claim that one compound causally
 crosses over another. A missing result after traffic or a neutralisation is
 reported as incomplete; only six fully observed clean laps can be right-censored.
 The legacy crossover_eligible flag includes complete-history confirmations and
