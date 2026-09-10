@@ -80,6 +80,37 @@ PIT_WINDOW_COLUMNS = [
     "methodology_version",
 ]
 
+_INTEGER_COLUMNS = {
+    "season",
+    "round",
+    "stop_number",
+    "early_pit_lap",
+    "late_pit_lap",
+    "stop_separation_laps",
+    "checkpoint_before_lap",
+    "checkpoint_after_lap",
+    "position_before_early",
+    "position_before_late",
+    "position_after_early",
+    "position_after_late",
+}
+_FLOAT_COLUMNS = {
+    "gap_before_sec",
+    "gap_after_sec",
+    "net_time_gain_sec",
+    "early_stop_duration_sec",
+    "late_stop_duration_sec",
+    "stop_duration_delta_sec",
+    "on_track_gain_sec",
+}
+_BOOLEAN_COLUMNS = {
+    "early_new_tyre_fresh",
+    "late_new_tyre_fresh",
+    "position_flip",
+    "window_green",
+    "eligible",
+}
+
 
 def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None:
     missing = required - set(frame.columns)
@@ -88,7 +119,22 @@ def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None
 
 
 def _empty_result() -> pd.DataFrame:
-    return pd.DataFrame(columns=PIT_WINDOW_COLUMNS)
+    return pd.DataFrame(
+        {
+            column: pd.Series(
+                dtype=(
+                    "Int64"
+                    if column in _INTEGER_COLUMNS
+                    else "float64"
+                    if column in _FLOAT_COLUMNS
+                    else "boolean"
+                    if column in _BOOLEAN_COLUMNS
+                    else "string"
+                )
+            )
+            for column in PIT_WINDOW_COLUMNS
+        }
+    )
 
 
 def _prepare_laps(laps: pd.DataFrame) -> pd.DataFrame:
@@ -337,8 +383,12 @@ def analyse_pit_windows(
 
             gap_after = float(timing[2] - timing[3])
             gain = gap_before - gap_after
-            early_duration = float(early["duration_sec"])
-            late_duration = float(late["duration_sec"])
+            early_duration = (
+                float(early["duration_sec"]) if pd.notna(early["duration_sec"]) else np.nan
+            )
+            late_duration = (
+                float(late["duration_sec"]) if pd.notna(late["duration_sec"]) else np.nan
+            )
             has_stop_timing = not (np.isnan(early_duration) or np.isnan(late_duration))
             stop_delta = early_duration - late_duration if has_stop_timing else np.nan
             on_track_gain = gain + stop_delta if has_stop_timing else np.nan

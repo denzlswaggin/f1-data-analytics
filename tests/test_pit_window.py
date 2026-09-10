@@ -126,6 +126,9 @@ def test_same_lap_stops_are_not_an_undercut_or_overcut_window() -> None:
 
     assert result.empty
     assert list(result.columns) == PIT_WINDOW_COLUMNS
+    assert str(result["season"].dtype) == "Int64"
+    assert str(result["net_time_gain_sec"].dtype) == "float64"
+    assert str(result["eligible"].dtype) == "boolean"
 
 
 def test_distant_cars_are_not_treated_as_strategy_rivals() -> None:
