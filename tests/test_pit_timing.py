@@ -5,8 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import duckdb
+import numpy as np
 import pandas as pd
 import pytest
+from analytics import pit_timing
 from analytics.pipeline import (
     build_pit_timing_sensitivity,
     build_pit_timing_sensitivity_incremental,
@@ -108,7 +110,7 @@ def _result(
     stops: pd.DataFrame | None = None,
 ) -> tuple[pd.Series, pd.DataFrame]:
     result = analyse_pit_timing_sensitivity(
-        laps, replay, stops, bootstrap_samples=50, random_seed=17
+        laps, replay, stops, bootstrap_samples=100, random_seed=17
     )
     summary = result.summary.loc[result.summary["driver_code"].eq("A")].iloc[0]
     scenarios = result.scenarios.loc[result.scenarios["driver_code"].eq("A")]
@@ -193,6 +195,205 @@ def test_bootstrap_is_reproducible_and_reports_uncertainty() -> None:
     assert first["delta_p25_sec"].to_numpy() == pytest.approx(second["delta_p25_sec"].to_numpy())
     assert first["delta_p75_sec"].to_numpy() == pytest.approx(second["delta_p75_sec"].to_numpy())
     assert first_summary["best_shift_win_pct"] == second_summary["best_shift_win_pct"]
+    assert first_summary["bootstrap_requested_samples"] == 100
+    assert first_summary["bootstrap_valid_samples"] == 100
+    assert first_summary["bootstrap_attempted_samples"] >= 100
+
+
+def test_small_gain_is_not_mislabelled_as_interval_containing_actual() -> None:
+    laps, replay = _race()
+    target = laps.driver_code.eq("A")
+    laps.loc[target & laps.lap_number.lt(9), "lap_time_sec"] = 100.05
+    laps.loc[target & laps.lap_number.gt(9), "lap_time_sec"] = 100.0
+    summary, _ = _result(laps, replay)
+    assert summary["estimated_gain_vs_actual_sec"] == pytest.approx(0.15)
+    assert summary["best_delta_p75_sec"] < 0
+    assert summary["timing_signal"] == "No meaningful directional signal"
+
+
+def test_noisy_fixture_direction_is_stable_across_resampling_budgets() -> None:
+    laps, replay = _race()
+    target = laps.driver_code.eq("A")
+    laps.loc[target, "lap_time_sec"] += laps.loc[target, "lap_number"].mod(3) * 0.07
+    for samples in (100, 300, 600):
+        summary = analyse_pit_timing_sensitivity(
+            laps, replay, bootstrap_samples=samples, random_seed=17
+        ).summary.iloc[0]
+        assert summary["bootstrap_valid_samples"] == samples
+        assert summary["best_supported_shift_laps"] == -3
+        assert summary["best_delta_p25_sec"] == pytest.approx(-5.718)
+        assert summary["best_delta_p75_sec"] == pytest.approx(-5.340)
+        assert summary["confidence"] == "medium"
+        assert "optimum unlocated" in summary["timing_signal"]
+
+
+def test_extrapolation_exact_boundary_and_warmup_not_counted_as_extrapolation() -> None:
+    laps, replay = _race()
+    summary, scenarios = _result(laps, replay)
+    by_shift = scenarios.set_index("shift_laps")
+    assert by_shift.loc[3, "old_extrapolation_laps"] == 4
+    assert by_shift.loc[3, "supported"]
+    assert by_shift["new_extrapolation_laps"].eq(0).all()
+    assert summary["actual_old_extrapolation_laps"] == 1
+    assert summary["boundary_minimum"]
+    assert summary["confidence"] != "high"
+    assert "optimum unlocated" in summary["timing_signal"]
+
+
+def test_partial_scenario_support_retains_all_rows_and_nulls_rejected_estimates() -> None:
+    laps, replay = _race()
+    result = analyse_pit_timing_sensitivity(
+        laps, replay, bootstrap_samples=100, max_old_extrapolation_laps=2
+    )
+    scenarios = result.scenarios.set_index("shift_laps")
+    assert result.summary.iloc[0]["supported_scenarios"] == 5
+    assert scenarios.loc[1, "supported"]
+    assert not scenarios.loc[2, "supported"]
+    assert scenarios.loc[2, "old_extrapolation_laps"] == 3
+    assert scenarios.loc[2, "exclusion_reason"] == "old_reference_extrapolation_limit"
+    assert (
+        scenarios.loc[[2, 3], ["delta_vs_actual_sec", "delta_p25_sec", "estimated_cost_index_sec"]]
+        .isna()
+        .all()
+        .all()
+    )
+
+
+def test_sparse_new_references_gate_earlier_extrapolation() -> None:
+    laps, replay = _race()
+    replay.loc[replay.driver_code.eq("A") & replay.lap_number.ge(19), "gap_to_ahead_s"] = 1.0
+    result = analyse_pit_timing_sensitivity(
+        laps, replay, bootstrap_samples=100, max_new_extrapolation_laps=2
+    )
+    scenarios = result.scenarios.set_index("shift_laps")
+    assert scenarios.loc[-3, "new_extrapolation_laps"] == 3
+    assert not scenarios.loc[-3, "supported"]
+    assert scenarios.loc[-2, "supported"]
+    assert scenarios.loc[-2, "new_extrapolation_laps"] == 2
+    assert result.summary.iloc[0]["best_supported_shift_laps"] == -2
+    assert result.summary.iloc[0]["boundary_minimum"]
+
+
+def test_actual_baseline_must_pass_extrapolation_gate() -> None:
+    laps, replay = _race()
+    result = analyse_pit_timing_sensitivity(laps, replay, max_old_extrapolation_laps=0)
+    assert result.summary.iloc[0]["exclusion_reason"] == "unsupported_actual_baseline"
+    assert result.summary.iloc[0]["actual_old_extrapolation_laps"] == 1
+    assert not result.scenarios.supported.any()
+    assert result.scenarios.delta_vs_actual_sec.isna().all()
+
+
+def test_no_supported_alternative_does_not_publish_a_conclusion() -> None:
+    laps, replay = _race()
+    replay.loc[replay.driver_code.eq("A") & replay.lap_number.ge(19), "gap_to_ahead_s"] = 1.0
+    result = analyse_pit_timing_sensitivity(
+        laps, replay, max_old_extrapolation_laps=1, max_new_extrapolation_laps=0
+    )
+    assert result.summary.iloc[0]["exclusion_reason"] == "no_supported_alternative"
+    assert not result.scenarios.supported.any()
+
+
+@pytest.mark.parametrize(("valid", "requested"), [(0, 100), (80, 100), (100, 200)])
+def test_empty_or_partial_bootstrap_is_explicitly_excluded(
+    monkeypatch: pytest.MonkeyPatch, valid: int, requested: int
+) -> None:
+    laps, replay = _race()
+    monkeypatch.setattr(
+        pit_timing,
+        "_bootstrap_deltas",
+        lambda *args, **kwargs: pit_timing._BootstrapResult(
+            {shift: np.zeros(valid) for shift in range(-3, 4)}, requested, requested * 10
+        ),
+    )
+    result = analyse_pit_timing_sensitivity(laps, replay, bootstrap_samples=requested)
+    summary = result.summary.iloc[0]
+    assert summary["exclusion_reason"] == "insufficient_valid_bootstrap_samples"
+    assert summary["bootstrap_valid_samples"] == valid
+    assert summary["bootstrap_attempted_samples"] == requested * 10
+    assert not result.scenarios.supported.any()
+    assert result.scenarios.delta_p25_sec.isna().all()
+
+
+def test_flat_model_splits_bootstrap_credit_instead_of_claiming_certain_actual_win() -> None:
+    laps, replay = _race()
+    laps.loc[laps.driver_code.eq("A") & laps.lap_number.ne(9), "lap_time_sec"] = 100.0
+    summary, _ = _result(laps, replay)
+    assert summary["best_supported_shift_laps"] == 0
+    assert summary["best_shift_win_pct"] == pytest.approx(100 / 7)
+    assert not summary["boundary_minimum"]
+    assert summary["timing_signal"] == "No meaningful directional signal"
+    assert pit_timing._best_shift({-1: -1.0, 1: -1.0, 0: 0.0}) == -1
+    assert pit_timing._tied_minima({-1: -1.0, 1: -1.0, 0: 0.0}) == [-1, 1]
+
+
+def test_bootstrap_rejects_nonfinite_fit_draws(monkeypatch: pytest.MonkeyPatch) -> None:
+    frame = pd.DataFrame(
+        {"tyre_life": [1.0, 2.0], "post_stop_offset": [7, 8], "field_pace_residual_sec": [0.0, 1.0]}
+    )
+    monkeypatch.setattr(pit_timing, "_fit", lambda *args: (np.nan, 0.0, 0.0))
+    result = pit_timing._bootstrap_deltas(
+        frame, frame, frame, actual_in_age=3, actual_out_lap=4, samples=2, seed=1
+    )
+    assert result.valid == 0
+    assert result.attempted == 20
+
+
+@pytest.mark.parametrize(
+    ("boundary", "valid", "expected"),
+    [(True, 300, "medium"), (False, 299, "medium"), (False, 300, "high")],
+)
+def test_high_evidence_requires_interior_minimum_and_300_draws(
+    boundary: bool, valid: int, expected: str
+) -> None:
+    assert (
+        pit_timing._confidence(
+            pd.Series({"new_tyre_fresh": True}), 6, 6, 100.0, 0.0, 0.0, 100.0, boundary, valid
+        )
+        == expected
+    )
+
+
+def test_exact_bootstrap_completion_threshold_is_publishable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    laps, replay = _race()
+    monkeypatch.setattr(
+        pit_timing,
+        "_bootstrap_deltas",
+        lambda *args, **kwargs: pit_timing._BootstrapResult(
+            {shift: np.zeros(180) for shift in range(-3, 4)}, 200, 2000
+        ),
+    )
+    result = analyse_pit_timing_sensitivity(laps, replay, bootstrap_samples=200)
+    assert result.summary.iloc[0]["eligible"]
+    assert result.summary.iloc[0]["bootstrap_valid_samples"] == 180
+
+
+@pytest.mark.parametrize("limit", [-1.0, np.nan, np.inf])
+def test_rejects_invalid_extrapolation_limits(limit: float) -> None:
+    laps, replay = _race()
+    with pytest.raises(ValueError, match="finite and non-negative"):
+        analyse_pit_timing_sensitivity(laps, replay, max_old_extrapolation_laps=limit)
+
+
+def test_bootstrap_seed_is_stable_when_another_race_is_added() -> None:
+    laps, replay = _race()
+    target = laps.driver_code.eq("A")
+    laps.loc[target, "lap_time_sec"] += laps.loc[target, "lap_number"].mod(3) * 0.07
+    baseline = analyse_pit_timing_sensitivity(laps, replay, bootstrap_samples=100)
+    combined = analyse_pit_timing_sensitivity(
+        pd.concat([laps.assign(round=0), laps]).sample(frac=1, random_state=3),
+        pd.concat([replay.assign(round=0), replay]),
+        bootstrap_samples=100,
+    )
+    pd.testing.assert_frame_equal(
+        baseline.summary,
+        combined.summary.loc[combined.summary["round"].eq(1)].reset_index(drop=True),
+    )
+    pd.testing.assert_frame_equal(
+        baseline.scenarios,
+        combined.scenarios.loc[combined.scenarios["round"].eq(1)].reset_index(drop=True),
+    )
 
 
 @pytest.mark.parametrize(

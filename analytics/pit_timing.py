@@ -9,6 +9,7 @@ Those limitations are made visible through eligibility and uncertainty fields.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 
 import numpy as np
@@ -17,7 +18,7 @@ import pandas as pd
 from analytics.pit_context import attach_pit_lap_context, build_pit_lap_context
 from analytics.traffic import classify_representative_lap_air
 
-METHODOLOGY_VERSION = "pit-timing-sensitivity-v2"
+METHODOLOGY_VERSION = "pit-timing-sensitivity-v3"
 SUPPORTED_COMPOUNDS = {"SOFT", "MEDIUM", "HARD"}
 SCENARIO_SHIFTS = tuple(range(-3, 4))
 MIN_FIELD_PEERS = 5
@@ -28,6 +29,10 @@ MIN_NEW_MATURE_LAPS = 3
 MAX_MODEL_MAD_SEC = 0.50
 MEANINGFUL_GAIN_SEC = 0.30
 BOOTSTRAP_SAMPLES = 300
+MIN_BOOTSTRAP_VALID_SAMPLES = 100
+MIN_BOOTSTRAP_COMPLETION = 0.90
+MAX_OLD_EXTRAPOLATION_LAPS = 4.0
+MAX_NEW_EXTRAPOLATION_LAPS = 3.0
 
 _DRIVER_KEYS = ["season", "round", "driver_code"]
 _LAP_KEYS = [*_DRIVER_KEYS, "lap_number"]
@@ -80,6 +85,14 @@ PIT_TIMING_COLUMNS = [
     "best_earlier_delta_sec",
     "best_later_delta_sec",
     "supported_scenarios",
+    "bootstrap_requested_samples",
+    "bootstrap_valid_samples",
+    "bootstrap_attempted_samples",
+    "boundary_minimum",
+    "best_old_extrapolation_laps",
+    "best_new_extrapolation_laps",
+    "actual_old_extrapolation_laps",
+    "actual_new_extrapolation_laps",
     "old_reference_laps",
     "new_mature_reference_laps",
     "warmup_profile_laps",
@@ -115,6 +128,8 @@ PIT_TIMING_SCENARIO_COLUMNS = [
     "delta_p25_sec",
     "delta_p75_sec",
     "old_tyre_extension_laps",
+    "old_extrapolation_laps",
+    "new_extrapolation_laps",
     "supported",
     "exclusion_reason",
     "methodology_version",
@@ -133,11 +148,18 @@ _SUMMARY_INTEGER = {
     "best_supported_shift_laps",
     "best_hypothetical_pit_lap",
     "supported_scenarios",
+    "bootstrap_requested_samples",
+    "bootstrap_valid_samples",
+    "bootstrap_attempted_samples",
     "old_reference_laps",
     "new_mature_reference_laps",
     "warmup_profile_laps",
 }
 _SUMMARY_FLOAT = {
+    "best_old_extrapolation_laps",
+    "best_new_extrapolation_laps",
+    "actual_old_extrapolation_laps",
+    "actual_new_extrapolation_laps",
     "pit_duration_sec",
     "estimated_gain_vs_actual_sec",
     "best_delta_p25_sec",
@@ -152,7 +174,7 @@ _SUMMARY_FLOAT = {
     "replay_coverage_pct",
     "field_peer_count_median",
 }
-_SUMMARY_BOOLEAN = {"official_pit_match", "new_tyre_fresh", "eligible"}
+_SUMMARY_BOOLEAN = {"official_pit_match", "new_tyre_fresh", "eligible", "boundary_minimum"}
 _SCENARIO_INTEGER = {
     "season",
     "round",
@@ -165,6 +187,8 @@ _SCENARIO_INTEGER = {
     "old_tyre_extension_laps",
 }
 _SCENARIO_FLOAT = {
+    "old_extrapolation_laps",
+    "new_extrapolation_laps",
     "estimated_cost_index_sec",
     "delta_vs_actual_sec",
     "estimated_gain_vs_actual_sec",
@@ -192,6 +216,17 @@ class _StopModel:
     new_mad: float
     actual_in_age: float
     warmup: dict[int, float]
+
+
+@dataclass(frozen=True)
+class _BootstrapResult:
+    deltas: dict[int, np.ndarray]
+    requested: int
+    attempted: int
+
+    @property
+    def valid(self) -> int:
+        return len(self.deltas[0])
 
 
 def _typed_empty(
@@ -496,7 +531,7 @@ def _bootstrap_deltas(
     actual_out_lap: int,
     samples: int,
     seed: int,
-) -> dict[int, np.ndarray]:
+) -> _BootstrapResult:
     rng = np.random.default_rng(seed)
     output: dict[int, list[float]] = {shift: [] for shift in SCENARIO_SHIFTS}
     attempts = 0
@@ -514,6 +549,10 @@ def _bootstrap_deltas(
                 new_sample["field_pace_residual_sec"].to_numpy(dtype=float),
             )
         except ValueError:
+            continue
+        if not np.isfinite(
+            [old_slope, old_intercept, old_mad, new_slope, new_intercept, new_mad]
+        ).all():
             continue
         profile = {
             int(row.post_stop_offset): float(
@@ -533,13 +572,56 @@ def _bootstrap_deltas(
             profile,
         )
         costs = {shift: _scenario_cost(sampled, actual_out_lap, shift) for shift in SCENARIO_SHIFTS}
+        deltas = {shift: costs[shift] - costs[0] for shift in SCENARIO_SHIFTS}
+        if not np.isfinite([*costs.values(), *deltas.values()]).all():
+            continue
         for shift in SCENARIO_SHIFTS:
-            output[shift].append(costs[shift] - costs[0])
-    return {shift: np.asarray(values, dtype=float) for shift, values in output.items()}
+            output[shift].append(deltas[shift])
+    return _BootstrapResult(
+        {shift: np.asarray(values, dtype=float) for shift, values in output.items()},
+        samples,
+        attempts,
+    )
+
+
+def _tied_minima(costs: dict[int, float]) -> list[int]:
+    minimum = min(costs.values())
+    return [
+        shift for shift in sorted(costs) if np.isclose(costs[shift], minimum, atol=1e-9, rtol=0)
+    ]
 
 
 def _best_shift(costs: dict[int, float]) -> int:
-    return min(SCENARIO_SHIFTS, key=lambda shift: (round(costs[shift], 9), shift != 0, abs(shift)))
+    return min(_tied_minima(costs), key=lambda shift: (shift != 0, abs(shift), shift))
+
+
+def _extrapolation_distances(
+    model: _StopModel, old: pd.DataFrame, mature: pd.DataFrame, out_lap: int, shift: int
+) -> tuple[float, float]:
+    old_ages = [
+        model.actual_in_age + lap - (out_lap - 1)
+        for lap in range(out_lap - 3, out_lap + 10)
+        if lap < out_lap + shift
+    ]
+    # Offsets 1..6 reproduce observed warmup residuals exactly; they are not
+    # extrapolated mature predictions despite the algebraic fit/profile split.
+    new_offsets = [
+        lap - (out_lap + shift)
+        for lap in range(out_lap - 3, out_lap + 10)
+        if lap - (out_lap + shift) >= 7
+    ]
+
+    def distance(values: list[float] | list[int], lower: float, upper: float) -> float:
+        return max((max(lower - value, value - upper, 0.0) for value in values), default=0.0)
+
+    return (
+        distance(old_ages, float(old.tyre_life.min()), float(old.tyre_life.max())),
+        distance(
+            new_offsets,
+            float(mature.post_stop_offset.min()),
+            float(mature.post_stop_offset.max()),
+        ),
+    )
 
 
 def _unsupported_scenarios(transition: pd.Series, reason: str) -> list[dict[str, object]]:
@@ -563,6 +645,8 @@ def _unsupported_scenarios(transition: pd.Series, reason: str) -> list[dict[str,
             "delta_p25_sec": np.nan,
             "delta_p75_sec": np.nan,
             "old_tyre_extension_laps": max(shift, 0),
+            "old_extrapolation_laps": np.nan,
+            "new_extrapolation_laps": np.nan,
             "supported": False,
             "exclusion_reason": reason,
             "methodology_version": METHODOLOGY_VERSION,
@@ -612,6 +696,14 @@ def _excluded_summary(
         "best_earlier_delta_sec": np.nan,
         "best_later_delta_sec": np.nan,
         "supported_scenarios": 0,
+        "bootstrap_requested_samples": 0,
+        "bootstrap_valid_samples": 0,
+        "bootstrap_attempted_samples": 0,
+        "boundary_minimum": False,
+        "best_old_extrapolation_laps": np.nan,
+        "best_new_extrapolation_laps": np.nan,
+        "actual_old_extrapolation_laps": np.nan,
+        "actual_new_extrapolation_laps": np.nan,
         "old_reference_laps": old_count,
         "new_mature_reference_laps": mature_count,
         "warmup_profile_laps": warmup_count,
@@ -637,6 +729,8 @@ def _confidence(
     old_mad: float,
     new_mad: float,
     win_pct: float,
+    boundary_minimum: bool,
+    valid_samples: int,
 ) -> str:
     if (
         old_count >= 6
@@ -646,6 +740,8 @@ def _confidence(
         and old_mad <= 0.25
         and new_mad <= 0.25
         and win_pct >= 70
+        and not boundary_minimum
+        and valid_samples >= 300
     ):
         return "high"
     return "medium"
@@ -660,6 +756,8 @@ def analyse_pit_timing_sensitivity(
     min_replay_coverage_pct: float = MIN_REPLAY_COVERAGE_PCT,
     bootstrap_samples: int = BOOTSTRAP_SAMPLES,
     random_seed: int = 0,
+    max_old_extrapolation_laps: float = MAX_OLD_EXTRAPOLATION_LAPS,
+    max_new_extrapolation_laps: float = MAX_NEW_EXTRAPOLATION_LAPS,
 ) -> PitTimingSensitivityResult:
     """Estimate ±3-lap pit-timing scenarios from observed clean-air pace."""
     _require_columns(laps, _LAP_REQUIRED, "laps")
@@ -670,6 +768,12 @@ def analyse_pit_timing_sensitivity(
         raise ValueError("min_replay_coverage_pct must be in (0, 100]")
     if bootstrap_samples < 1:
         raise ValueError("bootstrap_samples must be positive")
+    for name, value in (
+        ("max_old_extrapolation_laps", max_old_extrapolation_laps),
+        ("max_new_extrapolation_laps", max_new_extrapolation_laps),
+    ):
+        if not np.isfinite(value) or value < 0:
+            raise ValueError(f"{name} must be finite and non-negative")
     if laps.empty:
         return _empty_result()
 
@@ -687,7 +791,7 @@ def analyse_pit_timing_sensitivity(
     )
     summary_rows: list[dict[str, object]] = []
     scenario_rows: list[dict[str, object]] = []
-    for transition_index, transition in transitions.iterrows():
+    for _, transition in transitions.iterrows():
         driver_laps = prepared.loc[
             prepared["season"].eq(transition["season"])
             & prepared["round"].eq(transition["round"])
@@ -713,37 +817,120 @@ def analyse_pit_timing_sensitivity(
         out_lap = int(transition["actual_out_lap"])
         costs = {shift: _scenario_cost(model, out_lap, shift) for shift in SCENARIO_SHIFTS}
         deltas = {shift: costs[shift] - costs[0] for shift in SCENARIO_SHIFTS}
-        samples = _bootstrap_deltas(
+        distances = {
+            shift: _extrapolation_distances(model, old, mature, out_lap, shift)
+            for shift in SCENARIO_SHIFTS
+        }
+        reasons = {
+            shift: (
+                "old_reference_extrapolation_limit"
+                if distance[0] > max_old_extrapolation_laps
+                else "new_reference_extrapolation_limit"
+                if distance[1] > max_new_extrapolation_laps
+                else "nonfinite_scenario_model"
+                if not np.isfinite(costs[shift]) or not np.isfinite(deltas[shift])
+                else ""
+            )
+            for shift, distance in distances.items()
+        }
+        supported = [shift for shift in SCENARIO_SHIFTS if not reasons[shift]]
+        excluded_reason = (
+            "unsupported_actual_baseline"
+            if reasons[0]
+            else "no_supported_alternative"
+            if len(supported) < 2
+            else ""
+        )
+        if excluded_reason:
+            summary = _excluded_summary(
+                transition, excluded_reason, len(old), len(mature), len(warmup)
+            )
+            summary.update(
+                actual_old_extrapolation_laps=distances[0][0],
+                actual_new_extrapolation_laps=distances[0][1],
+            )
+            summary_rows.append(summary)
+            excluded = _unsupported_scenarios(transition, excluded_reason)
+            for row in excluded:
+                shift = int(str(row["shift_laps"]))
+                row.update(
+                    old_extrapolation_laps=distances[shift][0],
+                    new_extrapolation_laps=distances[shift][1],
+                )
+            scenario_rows.extend(excluded)
+            continue
+        seed_key = ":".join(str(transition[key]) for key in (*_DRIVER_KEYS, "stop_number"))
+        seed = int.from_bytes(hashlib.sha256(seed_key.encode()).digest()[:8], "little")
+        bootstrap = _bootstrap_deltas(
             old,
             mature,
             warmup,
             actual_in_age=model.actual_in_age,
             actual_out_lap=out_lap,
             samples=bootstrap_samples,
-            seed=random_seed + int(transition_index),
+            seed=(random_seed + seed) % (2**64),
         )
-        best = _best_shift(costs)
+        if (
+            bootstrap.valid < MIN_BOOTSTRAP_VALID_SAMPLES
+            or bootstrap.valid < bootstrap_samples * MIN_BOOTSTRAP_COMPLETION
+        ):
+            reason = "insufficient_valid_bootstrap_samples"
+            summary = _excluded_summary(transition, reason, len(old), len(mature), len(warmup))
+            summary.update(
+                bootstrap_requested_samples=bootstrap.requested,
+                bootstrap_valid_samples=bootstrap.valid,
+                bootstrap_attempted_samples=bootstrap.attempted,
+                actual_old_extrapolation_laps=distances[0][0],
+                actual_new_extrapolation_laps=distances[0][1],
+            )
+            summary_rows.append(summary)
+            excluded = _unsupported_scenarios(transition, reason)
+            for row in excluded:
+                shift = int(str(row["shift_laps"]))
+                row.update(
+                    old_extrapolation_laps=distances[shift][0],
+                    new_extrapolation_laps=distances[shift][1],
+                )
+            scenario_rows.extend(excluded)
+            continue
+        samples = bootstrap.deltas
+        best = _best_shift({shift: costs[shift] for shift in supported})
+        boundary = best != 0 and best in (min(supported), max(supported))
         best_samples = samples[best]
         best_p25 = float(np.quantile(best_samples, 0.25))
         best_p75 = float(np.quantile(best_samples, 0.75))
-        winners = []
+        win_credit = 0.0
         for sample_index in range(len(best_samples)):
-            sample_costs = {shift: float(samples[shift][sample_index]) for shift in SCENARIO_SHIFTS}
-            winners.append(_best_shift(sample_costs))
-        win_pct = 100.0 * winners.count(best) / len(winners)
+            sample_costs = {shift: float(samples[shift][sample_index]) for shift in supported}
+            minima = _tied_minima(sample_costs)
+            if best in minima:
+                win_credit += 1 / len(minima)
+        win_pct = 100.0 * win_credit / len(best_samples)
         gain = -deltas[best]
         meaningful = best != 0 and gain >= MEANINGFUL_GAIN_SEC and best_p75 < 0
         timing_signal = (
-            "Earlier stop supported"
+            "Earlier edge favoured; optimum unlocated"
+            if meaningful and best < 0 and boundary
+            else "Later edge favoured; optimum unlocated"
+            if meaningful and best > 0 and boundary
+            else "Earlier stop supported"
             if meaningful and best < 0
             else "Later stop supported"
             if meaningful and best > 0
-            else "Actual lap within uncertainty"
+            else "No meaningful directional signal"
         )
         evidence = pd.concat([old, mature, warmup], ignore_index=True)
         coverage = float(evidence["replay_coverage_pct"].median())
         peer_count = float(evidence["field_peer_count"].median())
         for shift in SCENARIO_SHIFTS:
+            if reasons[shift]:
+                row = _unsupported_scenarios(transition, reasons[shift])[shift + 3]
+                row.update(
+                    old_extrapolation_laps=distances[shift][0],
+                    new_extrapolation_laps=distances[shift][1],
+                )
+                scenario_rows.append(row)
+                continue
             distribution = samples[shift]
             scenario_rows.append(
                 {
@@ -765,6 +952,8 @@ def analyse_pit_timing_sensitivity(
                     "delta_p25_sec": float(np.quantile(distribution, 0.25)),
                     "delta_p75_sec": float(np.quantile(distribution, 0.75)),
                     "old_tyre_extension_laps": max(shift, 0),
+                    "old_extrapolation_laps": distances[shift][0],
+                    "new_extrapolation_laps": distances[shift][1],
                     "supported": True,
                     "exclusion_reason": "",
                     "methodology_version": METHODOLOGY_VERSION,
@@ -779,9 +968,21 @@ def analyse_pit_timing_sensitivity(
                 "best_delta_p25_sec": best_p25,
                 "best_delta_p75_sec": best_p75,
                 "best_shift_win_pct": win_pct,
-                "best_earlier_delta_sec": min(deltas[shift] for shift in (-3, -2, -1)),
-                "best_later_delta_sec": min(deltas[shift] for shift in (1, 2, 3)),
-                "supported_scenarios": len(SCENARIO_SHIFTS),
+                "best_earlier_delta_sec": min(
+                    (deltas[shift] for shift in supported if shift < 0), default=np.nan
+                ),
+                "best_later_delta_sec": min(
+                    (deltas[shift] for shift in supported if shift > 0), default=np.nan
+                ),
+                "supported_scenarios": len(supported),
+                "bootstrap_requested_samples": bootstrap.requested,
+                "bootstrap_valid_samples": bootstrap.valid,
+                "bootstrap_attempted_samples": bootstrap.attempted,
+                "boundary_minimum": boundary,
+                "best_old_extrapolation_laps": distances[best][0],
+                "best_new_extrapolation_laps": distances[best][1],
+                "actual_old_extrapolation_laps": distances[0][0],
+                "actual_new_extrapolation_laps": distances[0][1],
                 "old_reference_laps": len(old),
                 "new_mature_reference_laps": len(mature),
                 "warmup_profile_laps": len(warmup),
@@ -802,6 +1003,8 @@ def analyse_pit_timing_sensitivity(
                     model.old_mad,
                     model.new_mad,
                     win_pct,
+                    boundary,
+                    bootstrap.valid,
                 ),
                 "methodology_version": METHODOLOGY_VERSION,
             }
@@ -810,6 +1013,8 @@ def analyse_pit_timing_sensitivity(
     summary = pd.DataFrame(summary_rows, columns=PIT_TIMING_COLUMNS).sort_values(
         ["season", "round", "driver_code", "stop_number"]
     )
+    # The request is known even when a pre-model exclusion prevents any draws.
+    summary["bootstrap_requested_samples"] = bootstrap_samples
     scenarios = pd.DataFrame(scenario_rows, columns=PIT_TIMING_SCENARIO_COLUMNS).sort_values(
         ["season", "round", "driver_code", "stop_number", "shift_laps"]
     )
