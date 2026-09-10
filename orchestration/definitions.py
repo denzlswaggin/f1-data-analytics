@@ -55,6 +55,7 @@ from orchestration.assets import (
     raw_telemetry,
     raw_weather,
     traffic_adjusted_pace,
+    tyre_warmup,
 )
 from orchestration.round_refresh import (
     latest_round_schedule,
@@ -93,6 +94,7 @@ all_assets = [
     driver_pace_profile,
     race_replay,
     traffic_adjusted_pace,
+    tyre_warmup,
     pit_window_effectiveness,
     race_control_impact,
     race_overtakes,

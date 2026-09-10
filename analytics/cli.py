@@ -27,6 +27,7 @@ from analytics.pipeline import (
     build_all_race_control_impact,
     build_all_replays,
     build_all_traffic_adjusted_pace,
+    build_all_tyre_warmup,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -38,6 +39,7 @@ from analytics.pipeline import (
     build_race_replay,
     build_race_replays,
     build_traffic_adjusted_pace,
+    build_tyre_warmup,
 )
 from analytics.validation import (
     backtest_ratings,
@@ -368,6 +370,32 @@ def traffic_pace(
     typer.echo(
         f"Built traffic pace for {scope}: {len(result.summary)} driver-races, "
         f"{publishable} with publishable clean-air pace."
+    )
+
+
+@app.command("tyre-warmup")
+def tyre_warmup(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race with traffic-adjusted lap evidence."),
+    ] = False,
+) -> None:
+    """Build post-stop tyre warm-up and time-to-stable-pace evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_tyre_warmup()
+        scope = "all traffic-covered races"
+    elif season is not None and round_ is not None:
+        result = build_tyre_warmup(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result.summary["eligible"].sum()) if not result.summary.empty else 0
+    typer.echo(
+        f"Built tyre warm-up evidence for {scope}: {len(result.summary)} stints, "
+        f"{eligible} eligible and {len(result.laps)} lap observations."
     )
 
 
