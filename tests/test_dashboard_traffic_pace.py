@@ -4,6 +4,7 @@ import duckdb
 import pandas as pd
 import pytest
 from analytics.traffic import (
+    _EVIDENCE_COLUMNS,
     _LAP_REQUIRED,
     _REPLAY_REQUIRED,
     _SUMMARY_COLUMNS,
@@ -39,6 +40,11 @@ def test_traffic_page_exposes_rank_association_and_lap_evidence() -> None:
     assert "id=confidence" not in page
     assert "id=clean_air_confidence" in page
     assert "id=traffic_association_confidence" in page
+    assert "leave-one-driver-out median" in page
+    assert "not an externally validated" in page
+    assert "peer_count" in page
+    assert "peer_lap_median_sec" in page
+    assert "arithmetic peer average remains a diagnostic only" in page
 
 
 def test_traffic_sources_publish_the_method_evidence() -> None:
@@ -78,7 +84,7 @@ def test_traffic_source_preserves_metric_evidence_and_sentinel_types(populated: 
         traffic_association_eligible=False,
         traffic_association_confidence="insufficient",
         confidence="insufficient",
-        methodology_version="traffic-v3-metric-evidence",
+        methodology_version="traffic-v4-robust-peers",
     )
     frame = pd.DataFrame([row])
     with duckdb.connect() as connection:
@@ -90,7 +96,7 @@ def test_traffic_source_preserves_metric_evidence_and_sentinel_types(populated: 
         result = connection.execute(PACE_SOURCE.read_text(encoding="utf-8")).df()
     assert len(result) == 1
     output = result.iloc[0]
-    assert output["methodology_version"] == "traffic-v3-metric-evidence"
+    assert output["methodology_version"] == "traffic-v4-robust-peers"
     assert bool(output["clean_air_eligible"]) == populated
     assert not output["traffic_association_eligible"]
     assert output["clean_air_confidence"] == ("medium" if populated else "unavailable")
@@ -126,3 +132,39 @@ def test_actual_empty_traffic_summary_materializes_boolean_eligibility() -> None
         assert str(result[field].dtype) == "bool"
         assert not result.iloc[0][field]
     assert result["season"].tolist() == [0]
+
+
+@pytest.mark.parametrize("populated", [False, True])
+def test_lap_source_preserves_median_mean_count_and_empty_types(populated: bool) -> None:
+    text_columns = {"race_name", "driver_code", "team", "compound", "air_state"}
+    row: dict[str, object] = {
+        column: "test" if column in text_columns else 1.0 for column in _EVIDENCE_COLUMNS
+    }
+    row.update(
+        season=2026, round=1, peer_count=3, peer_lap_avg_sec=130.0, peer_lap_median_sec=100.0
+    )
+    with duckdb.connect() as connection:
+        connection.execute("create schema marts")
+        connection.register("fixture", pd.DataFrame([row]))
+        connection.execute("create table marts.traffic_adjusted_laps as select * from fixture")
+        if not populated:
+            connection.execute("delete from marts.traffic_adjusted_laps")
+        result = connection.execute(LAPS_SOURCE.read_text(encoding="utf-8")).df()
+    assert len(result) == 1
+    assert str(result["peer_count"].dtype) == "int64"
+    assert str(result["peer_lap_median_sec"].dtype) == "float64"
+    assert result.iloc[0]["peer_count"] == (3 if populated else 0)
+    if populated:
+        assert result.iloc[0]["peer_lap_avg_sec"] == 130.0
+        assert result.iloc[0]["peer_lap_median_sec"] == 100.0
+    else:
+        assert pd.isna(result.iloc[0]["peer_lap_median_sec"])
+
+
+def test_empty_evidence_preserves_new_numeric_types() -> None:
+    result = analyse_traffic_adjusted_pace(
+        pd.DataFrame(columns=sorted(_LAP_REQUIRED)),
+        pd.DataFrame(columns=sorted(_REPLAY_REQUIRED)),
+    )
+    assert str(result.evidence["peer_count"].dtype) == "int64"
+    assert str(result.evidence["peer_lap_median_sec"].dtype) == "float64"

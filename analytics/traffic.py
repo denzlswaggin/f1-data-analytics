@@ -21,6 +21,7 @@ MAX_CLEAN_LAP_TRAFFIC_SHARE = 0.10
 MIN_REPLAY_COVERAGE = 0.80
 TYRE_AGE_WINDOW = 2.0
 MIN_PUBLISH_LAPS = 5
+MIN_PEER_DRIVERS = 3
 
 _LAP_KEYS = ["season", "round", "driver_code", "lap_number"]
 _DRIVER_KEYS = ["season", "round", "driver_code"]
@@ -61,6 +62,8 @@ _EVIDENCE_COLUMNS = [
     "median_gap_to_ahead_s",
     "air_state",
     "peer_lap_avg_sec",
+    "peer_lap_median_sec",
+    "peer_count",
     "controlled_pace_delta_sec",
     "matched_clean_laps",
     "matched_clean_delta_sec",
@@ -147,7 +150,9 @@ def _empty_result() -> TrafficPaceResult:
         }
     )
     return TrafficPaceResult(
-        evidence=pd.DataFrame(columns=_EVIDENCE_COLUMNS),
+        evidence=pd.DataFrame(columns=_EVIDENCE_COLUMNS).astype(
+            {"peer_lap_median_sec": "float64", "peer_count": "int64"}
+        ),
         summary=summary,
     )
 
@@ -262,16 +267,35 @@ def _exclude_non_representative_laps(laps: pd.DataFrame, replay: pd.DataFrame) -
     ].drop(columns=["stint_first_lap", "stint_last_lap", "last_stint"])
 
 
-def _add_controlled_delta(laps: pd.DataFrame) -> pd.DataFrame:
-    """Compare each lap with at least two *other* cars on that lap/compound."""
+def _add_controlled_delta(
+    laps: pd.DataFrame, min_peer_drivers: int = MIN_PEER_DRIVERS
+) -> pd.DataFrame:
+    """Use a leave-one-driver-out median; retain the mean only as a diagnostic."""
+    _validate_peer_minimum(min_peer_drivers)
     peers = ["season", "round", "lap_number", "compound"]
     out = laps.copy()
+    if out.duplicated(_LAP_KEYS).any():
+        raise ValueError("laps must contain one observation per driver and lap")
     grouped = out.groupby(peers)["lap_time_sec"]
     out["peer_count"] = grouped.transform("count") - 1
     out["peer_lap_avg_sec"] = (grouped.transform("sum") - out["lap_time_sec"]) / out["peer_count"]
-    out = out.loc[out["peer_count"].ge(2)].copy()
-    out["controlled_pace_delta_sec"] = out["lap_time_sec"] - out["peer_lap_avg_sec"]
-    return out.drop(columns="peer_count")
+    out["peer_lap_median_sec"] = grouped.transform(
+        lambda values: pd.Series(
+            [
+                float(np.median(np.delete(values.to_numpy(), index))) if len(values) > 1 else np.nan
+                for index in range(len(values))
+            ],
+            index=values.index,
+        )
+    )
+    out = out.loc[out["peer_count"].ge(min_peer_drivers)].copy()
+    out["controlled_pace_delta_sec"] = out["lap_time_sec"] - out["peer_lap_median_sec"]
+    return out
+
+
+def _validate_peer_minimum(value: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or value < 2:
+        raise ValueError("min_peer_drivers must be an integer >= 2")
 
 
 def _match_clean_air_laps(laps: pd.DataFrame, tyre_age_window: float) -> pd.DataFrame:
@@ -329,12 +353,14 @@ def classify_representative_lap_air(
         return pd.DataFrame()
 
     pace = laps.copy()
+    if pace.duplicated(_LAP_KEYS).any():
+        raise ValueError("laps must contain one observation per driver and lap")
     for column in ("lap_number", "stint", "tyre_life", "lap_time_sec"):
         pace[column] = pd.to_numeric(pace[column], errors="coerce")
     pace = pace.dropna(
         subset=["lap_number", "stint", "tyre_life", "lap_time_sec", "driver_code", "compound"]
     )
-    pace = pace.loc[pace["lap_time_sec"].gt(0)]
+    pace = pace.loc[pace["lap_time_sec"].gt(0) & np.isfinite(pace["lap_time_sec"])]
     pace = _exclude_non_representative_laps(pace, replay)
 
     lap_durations = pace.loc[:, [*_LAP_KEYS, "lap_time_sec"]].drop_duplicates(_LAP_KEYS)
@@ -445,7 +471,7 @@ def _summarise(
                 "traffic_association_confidence": association_confidence,
                 "traffic_gap_threshold_s": traffic_gap_s,
                 "clean_air_gap_threshold_s": clean_air_gap_s,
-                "methodology_version": "traffic-v3-metric-evidence",
+                "methodology_version": "traffic-v4-robust-peers",
             }
         )
     return pd.DataFrame(rows, columns=_SUMMARY_COLUMNS)
@@ -463,6 +489,7 @@ def analyse_traffic_adjusted_pace(
     min_replay_coverage: float = MIN_REPLAY_COVERAGE,
     tyre_age_window: float = TYRE_AGE_WINDOW,
     min_publish_laps: int = MIN_PUBLISH_LAPS,
+    min_peer_drivers: int = MIN_PEER_DRIVERS,
 ) -> TrafficPaceResult:
     """Calculate clean-air observed pace and traffic-associated differences.
 
@@ -471,9 +498,13 @@ def analyse_traffic_adjusted_pace(
     leading or beyond ``clean_air_gap_s``, with no more than 10% close traffic.
     Laps below the configured replay coverage are classified as mixed. Headline
     metrics remain null until their published sample threshold is met.
+    Controlled deltas use the median of at least three other same-lap/compound
+    drivers by default. This cutoff is a heuristic, not an externally validated
+    guarantee of precision; two-peer sensitivity runs are explicitly opt-in.
     """
     if tyre_age_window < 0 or min_publish_laps < 1:
         raise ValueError("matching thresholds must be non-negative")
+    _validate_peer_minimum(min_peer_drivers)
     pace = classify_representative_lap_air(
         laps,
         replay,
@@ -486,7 +517,7 @@ def analyse_traffic_adjusted_pace(
     )
     if pace.empty:
         return _empty_result()
-    pace = _add_controlled_delta(pace)
+    pace = _add_controlled_delta(pace, min_peer_drivers)
     if pace.empty:
         return _empty_result()
     pace = _match_clean_air_laps(pace, tyre_age_window)

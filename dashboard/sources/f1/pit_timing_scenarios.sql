@@ -17,6 +17,8 @@ select
     delta_p25_sec,
     delta_p75_sec,
     old_tyre_extension_laps,
+    old_extrapolation_laps,
+    new_extrapolation_laps,
     supported,
     exclusion_reason,
     methodology_version
@@ -27,6 +29,7 @@ select
     0, 0, '__NO_DATA__', '__NO_DATA__', '__NO_DATA__', '__NO_DATA__',
     0, 0, 0, 0, 0, 0, cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), 0,
-    false, 'No data', 'pit-timing-sensitivity-v2'
+    cast(null as double), cast(null as double),
+    false, 'No data', 'pit-timing-sensitivity-v3'
 where not exists (select 1 from marts.pit_timing_scenarios)
 order by season, round, driver_code, stop_number, shift_laps

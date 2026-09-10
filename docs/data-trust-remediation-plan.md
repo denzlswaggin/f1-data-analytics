@@ -30,9 +30,10 @@ validation of the analytical claims.
 
 ## Stage 2: methodological robustness
 
-5. **Robust estimates and uncertainty** — test robust peer baselines, sample
+5. **Robust estimates and uncertainty** — `fix/robust-estimates-uncertainty`; test robust peer baselines, sample
    thresholds and bootstrap/sensitivity behavior. Do not read model-fit confidence
    as a calibrated probability or causal claim.
+   Implementation, policy grids and before/after evidence: [robust estimates validation](robust-estimates-validation.md).
 6. **Independent validation** — assemble annotated reference races and held-out
    checks for detected events and model outputs; report coverage, false positives,
    uncertainty and failures before strengthening product claims.

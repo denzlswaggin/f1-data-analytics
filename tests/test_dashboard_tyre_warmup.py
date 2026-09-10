@@ -57,14 +57,14 @@ def test_summary_sql_preserves_observation_schema_and_typed_sentinel(populated: 
                      first_observed_confirmation_laps, confirmation_history_complete,
                      settling_status, methodology_version)
                 values (2026, 1, 'AAA', 2, null, 4, false,
-                        'observed_incomplete', 'tyre-warmup-v3-observation')
+                        'observed_incomplete', 'tyre-warmup-v4-robust-peers')
                 """)
         result = connection.execute(SUMMARY_SOURCE.read_text(encoding="utf-8")).fetchdf()
     assert len(result) == 1
     assert result.iloc[0]["season"] == (2026 if populated else 0)
     assert pd.isna(result.iloc[0]["time_to_pace_laps"])
     assert not bool(result.iloc[0]["confirmation_history_complete"])
-    assert result.iloc[0]["methodology_version"] == "tyre-warmup-v3-observation"
+    assert result.iloc[0]["methodology_version"] == "tyre-warmup-v4-robust-peers"
     assert pd.api.types.is_integer_dtype(result["first_observed_confirmation_laps"])
     if populated:
         assert result.iloc[0]["first_observed_confirmation_laps"] == 4

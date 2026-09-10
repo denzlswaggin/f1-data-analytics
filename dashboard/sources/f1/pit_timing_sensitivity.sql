@@ -28,6 +28,14 @@ select
     best_earlier_delta_sec,
     best_later_delta_sec,
     supported_scenarios,
+    bootstrap_requested_samples,
+    bootstrap_valid_samples,
+    bootstrap_attempted_samples,
+    boundary_minimum,
+    best_old_extrapolation_laps,
+    best_new_extrapolation_laps,
+    actual_old_extrapolation_laps,
+    actual_new_extrapolation_laps,
     old_reference_laps,
     new_mature_reference_laps,
     warmup_profile_laps,
@@ -51,9 +59,11 @@ select
     '__NO_DATA__', '__NO_DATA__', false, 0, 0, cast(null as integer),
     cast(null as integer), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double),
-    cast(null as double), 0, 0, 0, 0, cast(null as double), cast(null as double),
+    cast(null as double), 0, 0, 0, 0, false,
+    cast(null as double), cast(null as double), cast(null as double), cast(null as double),
+    0, 0, 0, cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), 'Insufficient evidence', false, 'No data',
-    'insufficient', 'pit-timing-sensitivity-v2'
+    'insufficient', 'pit-timing-sensitivity-v3'
 where not exists (select 1 from marts.pit_timing_sensitivity)
 order by season, round, driver_code, stop_number

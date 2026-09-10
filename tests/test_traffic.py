@@ -13,6 +13,7 @@ from analytics.pipeline import (
     build_traffic_adjusted_pace_incremental,
 )
 from analytics.traffic import (
+    _add_controlled_delta,
     _summarise,
     analyse_traffic_adjusted_pace,
     classify_representative_lap_air,
@@ -21,6 +22,59 @@ from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
 TRAFFIC_LAPS = {3, 5, 7, 9, 11}
+
+
+def test_peer_median_excludes_self_and_resists_one_outlier() -> None:
+    laps = _laps().query("lap_number == 2").copy()
+    laps["lap_time_sec"] = [90.0, 100.0, 102.0, 1000.0]
+    evidence = _add_controlled_delta(laps).set_index("driver_code")
+    assert evidence.loc["A", "peer_count"] == 3
+    assert evidence.loc["A", "peer_lap_median_sec"] == 102.0
+    assert evidence.loc["A", "peer_lap_avg_sec"] == pytest.approx(1202 / 3)
+    assert evidence.loc["A", "controlled_pace_delta_sec"] == -12.0
+    assert evidence.loc["D", "peer_lap_median_sec"] == 100.0
+    shuffled = _add_controlled_delta(laps.sample(frac=1, random_state=42))
+    pd.testing.assert_frame_equal(
+        evidence.sort_index(), shuffled.set_index("driver_code").sort_index()
+    )
+
+
+def test_peer_minimum_three_default_and_two_explicit() -> None:
+    laps = _laps().query("driver_code != 'D'")
+    replay = _replay().query("driver_code != 'D'")
+    assert analyse_traffic_adjusted_pace(laps, replay).evidence.empty
+    evidence = analyse_traffic_adjusted_pace(laps, replay, min_peer_drivers=2).evidence
+    assert len(evidence) == 33
+    assert evidence["peer_count"].eq(2).all()
+    assert evidence["peer_lap_avg_sec"].equals(evidence["peer_lap_median_sec"])
+
+
+@pytest.mark.parametrize("minimum", [0, 1, 2.5, True])
+def test_invalid_peer_minimum_is_rejected_even_for_empty_input(minimum: int) -> None:
+    with pytest.raises(ValueError, match="min_peer_drivers"):
+        analyse_traffic_adjusted_pace(_laps().iloc[:0], _replay(), min_peer_drivers=minimum)
+
+
+@pytest.mark.parametrize("conflicting", [False, True])
+def test_duplicate_driver_laps_cannot_inflate_peer_count(conflicting: bool) -> None:
+    laps = _laps()
+    extra = laps.iloc[[4]].copy()
+    if conflicting:
+        extra["lap_time_sec"] += 20
+    duplicated = pd.concat([laps, extra], ignore_index=True)
+    with pytest.raises(ValueError, match="one observation per driver and lap"):
+        analyse_traffic_adjusted_pace(duplicated, _replay())
+
+
+def test_duplicate_replay_ticks_and_input_permutation_do_not_change_estimates() -> None:
+    replay = _replay()
+    duplicated = pd.concat([replay, replay.iloc[::20]], ignore_index=True)
+    expected = analyse_traffic_adjusted_pace(_laps(), replay)
+    actual = analyse_traffic_adjusted_pace(
+        _laps().sample(frac=1, random_state=8), duplicated.sample(frac=1, random_state=9)
+    )
+    pd.testing.assert_frame_equal(expected.evidence, actual.evidence)
+    pd.testing.assert_frame_equal(expected.summary, actual.summary)
 
 
 def test_explicit_pit_boundary_excludes_visit_without_stint_change() -> None:
@@ -34,7 +88,7 @@ def test_explicit_pit_boundary_excludes_visit_without_stint_change() -> None:
 def _laps() -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for lap in range(1, 13):
-        for driver in ("A", "B", "C"):
+        for driver in ("A", "B", "C", "D"):
             traffic_offset = float((lap - 1) // 2) if driver == "A" and lap in TRAFFIC_LAPS else 0
             rows.append(
                 {
@@ -57,7 +111,7 @@ def _replay(tick_s: float = 1.0) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for lap in range(1, 13):
         for offset in np.arange(0.0, 100.0, tick_s):
-            for order, driver in enumerate(("B", "A", "C"), start=1):
+            for order, driver in enumerate(("B", "A", "C", "D"), start=1):
                 if driver == "A":
                     gap = 1.0 if lap in TRAFFIC_LAPS else 4.0
                 elif order == 1:
@@ -201,7 +255,7 @@ def test_public_air_context_precedes_same_compound_peer_filter() -> None:
     context = classify_representative_lap_air(laps, _replay())
     result = analyse_traffic_adjusted_pace(laps, _replay())
 
-    assert set(context["driver_code"]) == {"A", "B", "C"}
+    assert set(context["driver_code"]) == {"A", "B", "C", "D"}
     assert "air_state" in context
     assert "A" not in set(result.evidence["driver_code"])
 
@@ -309,8 +363,8 @@ def test_builder_materialises_both_traffic_marts(tmp_path: Path) -> None:
 
     summary = read_query("select * from marts.traffic_adjusted_pace", settings)
     evidence = read_query("select * from marts.traffic_adjusted_laps", settings)
-    assert len(summary) == len(result.summary) == 3
-    assert len(evidence) == len(result.evidence) == 33
+    assert len(summary) == len(result.summary) == 4
+    assert len(evidence) == len(result.evidence) == 44
     assert not summary["traffic_adjusted_pace_delta_sec"].isna().all()
 
 
@@ -357,4 +411,4 @@ def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
         settings,
     )
     assert rounds["round"].tolist() == [1, 2]
-    assert rounds["rows"].tolist() == [3, 3]
+    assert rounds["rows"].tolist() == [4, 4]

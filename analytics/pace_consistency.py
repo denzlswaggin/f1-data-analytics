@@ -13,7 +13,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "pace-consistency-v2-pit-context"
+METHODOLOGY_VERSION = "pace-consistency-v3-robust-peers"
 MIN_STINT_CLEAN_LAPS = 5
 MIN_TYRE_AGE_VALUES = 4
 MIN_TYRE_AGE_SPAN = 4.0

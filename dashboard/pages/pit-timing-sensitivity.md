@@ -7,7 +7,7 @@ max_width: 1600
 
 <PageHeader
     eyebrow="Strategy intelligence"
-    title="Was the stop timed near its best lap?"
+    title="How sensitive was the stop to its timing?"
     description="Replay each observed dry-tyre stop from three laps earlier to three laps later, using the driver's clean-air pace before and after the stop."
     accent="strategy"
 />
@@ -73,7 +73,7 @@ select * from ${race_stops} where eligible
 ```sql largest_supported_gain
 select stop_label, estimated_gain_vs_actual_sec
 from ${supported_stops}
-where timing_signal <> 'Actual lap within uncertainty'
+where timing_signal <> 'No meaningful directional signal'
 order by estimated_gain_vs_actual_sec desc
 limit 1
 ```
@@ -82,35 +82,40 @@ limit 1
 select
     count(*) as observed_stops,
     count(*) filter (where eligible) as eligible_stops,
-    count(*) filter (where timing_signal = 'Actual lap within uncertainty') as within_uncertainty
+    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal
 from ${race_stops}
 ```
 
 <Grid cols=3>
     <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest supported timing signal" />
     <BigValue data={evidence_summary} value=eligible_stops comparison=observed_stops comparisonFmt="0 observed stops" title="Eligible stops" />
-    <BigValue data={evidence_summary} value=within_uncertainty title="Actual lap within uncertainty" />
+    <BigValue data={evidence_summary} value=no_signal title="No meaningful directional signal" />
 </Grid>
 
 ## Stop timing overview — {inputs.season.value} {inputs.race.label}
 
-The best shift is the lowest modelled cost among seven supported scenarios. A
+The displayed shift is the lowest modelled cost among the supported scenarios. A
 negative shift means stopping earlier; a positive shift means stopping later.
-The evidence label requires at least 0.30 seconds of estimated gain and a P75
-bootstrap bound below zero before calling either direction supported.
+The directional finding requires at least 0.30 seconds of estimated gain and a
+75th percentile resampling delta below zero before calling a direction supported.
+Otherwise the result has no meaningful directional signal; this can reflect
+the practical gain threshold, not necessarily a spread that contains zero.
+An edge minimum gives a direction within the tested range, not an optimal pit
+lap. Rejected scenarios remain visible below with their extrapolation distances.
 
 <DataTable data={race_stops} rows=40 search=true download=true>
     <Column id=driver_code title="Driver" />
     <Column id=stop_number title="Stop" />
     <Column id=actual_pit_lap title="Actual pit lap" />
     <Column id=compound_change title="Tyres" />
-    <Column id=best_supported_shift_laps title="Best shift (laps)" fmt="+0;-0;0" />
+    <Column id=best_supported_shift_laps title="Lowest-cost tested shift (laps)" fmt="+0;-0;0" />
     <Column id=estimated_gain_vs_actual_sec title="Modelled gain (s)" fmt="0.000" />
     <Column id=best_delta_p25_sec title="Δ P25 (s)" fmt="+0.000;-0.000" />
     <Column id=best_delta_p75_sec title="Δ P75 (s)" fmt="+0.000;-0.000" />
-    <Column id=best_shift_win_pct title="Bootstrap wins (%)" fmt="0.0" />
+    <Column id=best_shift_win_pct title="Fractional bootstrap wins (%)" fmt="0.0" />
+    <Column id=boundary_minimum title="Range-edge minimum" />
     <Column id=displayed_signal title="Finding" />
-    <Column id=confidence title="Evidence" />
+    <Column id=confidence title="Heuristic evidence" />
 </DataTable>
 
 ```sql stop_choices
@@ -146,8 +151,11 @@ from f1.pit_timing_scenarios as scenarios
 where season = ${inputs.season.value}
     and round = ${inputs.race.value}
     and driver_code || ' · Stop ' || cast(stop_number as varchar) = '${inputs.stop.value}'
-    and supported
 order by shift_laps
+```
+
+```sql supported_curve
+select * from ${selected_scenarios} where supported
 ```
 
 ## Scenario curve — {inputs.stop.value}
@@ -157,7 +165,7 @@ pit/out-lap transition is held constant in every scenario, so this chart isolate
 the timing trade-off between extending the old stint and starting the new one.
 
 <BarChart
-    data={selected_scenarios}
+    data={supported_curve}
     x=shift_label
     y=delta_vs_actual_sec
     series=timing_direction
@@ -176,6 +184,10 @@ the timing trade-off between extending the old stint and starting the new one.
     <Column id=delta_p25_sec title="Bootstrap P25 (s)" fmt="+0.000;-0.000" />
     <Column id=delta_p75_sec title="Bootstrap P75 (s)" fmt="+0.000;-0.000" />
     <Column id=old_tyre_extension_laps title="Old-tyre extension" />
+    <Column id=old_extrapolation_laps title="Old reference extrapolation (laps)" />
+    <Column id=new_extrapolation_laps title="New reference extrapolation (laps)" />
+    <Column id=supported title="Supported" />
+    <Column id=exclusion_reason title="Exclusion reason" />
 </DataTable>
 
 ```sql selected_evidence
@@ -189,6 +201,13 @@ select
     new_model_mad_sec,
     replay_coverage_pct,
     field_peer_count_median,
+    bootstrap_requested_samples,
+    bootstrap_valid_samples,
+    bootstrap_attempted_samples,
+    actual_old_extrapolation_laps,
+    actual_new_extrapolation_laps,
+    best_old_extrapolation_laps,
+    best_new_extrapolation_laps,
     pit_duration_sec,
     official_pit_match
 from ${selected_stop}
@@ -204,15 +223,24 @@ from ${selected_stop}
     <Column id=new_model_mad_sec title="New fit MAD (s)" fmt="0.000" />
     <Column id=replay_coverage_pct title="Replay coverage (%)" fmt="0.0" />
     <Column id=field_peer_count_median title="Median field peers" fmt="0.0" />
+    <Column id=bootstrap_requested_samples title="Requested draws" />
+    <Column id=bootstrap_valid_samples title="Valid draws" />
+    <Column id=bootstrap_attempted_samples title="Attempted draws" />
+    <Column id=actual_old_extrapolation_laps title="Actual old extrapolation" />
+    <Column id=actual_new_extrapolation_laps title="Actual new extrapolation" />
+    <Column id=best_old_extrapolation_laps title="Selected old extrapolation" />
+    <Column id=best_new_extrapolation_laps title="Selected new extrapolation" />
 </DataTable>
 
 ```sql excluded_stops
-select stop_label, actual_pit_lap, compound_change, exclusion_reason
+select stop_label, actual_pit_lap, compound_change, exclusion_reason,
+    bootstrap_requested_samples, bootstrap_valid_samples, bootstrap_attempted_samples,
+    actual_old_extrapolation_laps, actual_new_extrapolation_laps
 from ${race_stops}
 where not eligible
 ```
 
-<ExpandableSection title="See excluded stops and the v1 method">
+<ExpandableSection title="See excluded stops and the v3 method">
 <DataTable data={excluded_stops} rows=40 search=true />
 
 A stop needs a complete green-flag window from three laps before its out-lap to
@@ -224,9 +252,29 @@ lap needs at least 80% replay coverage and five other clean-air field peers.
 The old and new trends use robust Theil–Sen fits. The early settling profile
 moves with the hypothetical stop rather than remaining attached to its original
 race laps. Deterministic resampling reports P25/P75 uncertainty and how often the
-point-estimate winner also wins the bootstrap samples. Pit duration is displayed
+point-estimate minimum wins the bootstrap samples, with equal fractional credit
+for tied minima. Pit duration is displayed
 as context but is not added to the scenario delta because the same stop occurs
 in every scenario. Results do not model alternate traffic or race events.
+
+The extrapolation policy permits at most four old-tyre laps and three mature
+new-tyre laps outside their respective observed reference ranges. These are
+operational limits, not validated physical thresholds. The actual baseline must
+pass both limits before any comparison; alternatives are gated individually.
+The six observed settling offsets are reused exactly and do not count as mature
+model extrapolation. A range-edge minimum, including an edge created by rejected
+scenarios, establishes no optimum outside the supported window.
+
+Independent-row resampling is conditional on the selected clean-air laps and
+field peers; warmup observations and the model family remain fixed. P25/P75 is
+the middle 50% resampling spread, not a confidence interval with guaranteed
+coverage. At least 100 valid draws and 90% of the requested draws are required
+before publishing estimates. Non-finite fits are rejected. The evidence label
+and publication cutoffs are operational safeguards, not validated calibration.
+The evidence label
+is heuristic, not a calibrated probability; range-edge minima and fewer than
+300 valid draws cannot receive high evidence. Serial dependence, alternate
+traffic and field-reference uncertainty are not captured by this bootstrap.
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="pit-timing-sensitivity" season={inputs.season.value} race={inputs.race.value} />
