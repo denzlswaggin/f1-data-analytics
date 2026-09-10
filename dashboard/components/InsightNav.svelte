@@ -6,6 +6,7 @@
                 ['How did the latest race unfold?', 'latest-race', 'Result, controlled pace, execution and key evidence'],
                 ['Where was the race won?', 'race-pace', 'Compare drivers and race phases without a 20-car spaghetti chart'],
                 ['Which pit cycles changed the race?', 'pit-strategy', 'Separate stop speed, position swing and race-control context'],
+                ['Was the stop timed near its best lap?', 'pit-timing-sensitivity', 'Compare the observed stop with ±3-lap clean-air counterfactuals'],
                 ['Watch the race unfold', 'race-replay', 'Replay positions, overtakes, incidents and team radio']
             ]
         },

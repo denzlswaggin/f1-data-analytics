@@ -13,6 +13,7 @@
                 { label: 'Traffic-adjusted pace', path: 'traffic-adjusted-pace' },
                 { label: 'Pit strategy', path: 'pit-strategy' },
                 { label: 'Pit-window effectiveness', path: 'pit-window-effectiveness' },
+                { label: 'Pit timing sensitivity', path: 'pit-timing-sensitivity' },
                 { label: 'Race-control impact', path: 'race-control-impact' },
                 { label: 'Tyre strategy', path: 'tyre-strategy' },
                 { label: 'Tyre pace settling', path: 'tyre-warmup' },
