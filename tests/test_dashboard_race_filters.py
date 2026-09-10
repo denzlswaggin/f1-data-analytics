@@ -7,6 +7,7 @@ RACE_PAGES = {
     "pit-window-effectiveness.md",
     "race-pace.md",
     "traffic-adjusted-pace.md",
+    "race-control-impact.md",
     "telemetry.md",
     "tyre-strategy.md",
     "weather-and-speed.md",
