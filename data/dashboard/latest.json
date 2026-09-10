@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260910T2250-shared-pit-context.duckdb",
-  "generated_at": "2026-09-10T20:48:28.163310+00:00",
+  "database_file": "f1-dashboard-20260910-race-control-v2.duckdb",
+  "generated_at": "2026-09-10T21:13:20.389714+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "b7ccfb67b90986696d1acf30d5ef9a63e3ddf4eeb373bfb50d504243d8eaf66e",
-  "size_bytes": 732442624,
+  "sha256": "1521f50f7f0eb07e3b95367c7a3f4e33730078265f0c1209c618f01ebc74d9a1",
+  "size_bytes": 731918336,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -54,5 +54,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260910T2250-shared-pit-context"
+  "version": "20260910-race-control-v2"
 }
