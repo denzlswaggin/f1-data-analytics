@@ -8,9 +8,10 @@ tyre advantage, team orders, damage, or opponent quality.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from math import sqrt
-from typing import cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -277,42 +278,23 @@ def _prepare_overtakes(overtakes: pd.DataFrame) -> pd.DataFrame:
 
 
 def _adjacency(replay: pd.DataFrame) -> pd.DataFrame:
-    followers = replay.copy()
-    ahead = replay.loc[
-        :,
-        [
-            *_RACE_KEYS,
-            "t_s",
-            "running_order",
-            "driver_code",
-            "driver_name",
-            "team",
-            "lap_number",
-            "lap_progress",
-            "stint",
-            "track_status",
-            "is_pit_boundary",
-        ],
-    ].copy()
-    ahead["running_order"] += 1
-    ahead = ahead.rename(
-        columns={
-            "driver_code": "defender_code",
-            "driver_name": "defender_name",
-            "team": "defender_team",
-            "lap_number": "defender_lap_number",
-            "lap_progress": "defender_lap_progress",
-            "stint": "defender_stint",
-            "track_status": "defender_track_status",
-            "is_pit_boundary": "defender_pit_boundary",
-        }
-    )
-    return followers.merge(
-        ahead,
-        on=[*_RACE_KEYS, "t_s", "running_order"],
-        how="left",
-        validate="one_to_one",
-    ).sort_values([*_RACE_KEYS, "driver_code", "t_s"])
+    order_keys = [*_RACE_KEYS, "t_s", "running_order"]
+    if replay.duplicated(order_keys).any():
+        raise ValueError("replay contains duplicate running positions at a race tick")
+    out = replay.sort_values(order_keys).copy()
+    groups = out.groupby([*_RACE_KEYS, "t_s"], sort=False)
+    for source, target in {
+        "driver_code": "defender_code",
+        "driver_name": "defender_name",
+        "team": "defender_team",
+        "lap_number": "defender_lap_number",
+        "lap_progress": "defender_lap_progress",
+        "stint": "defender_stint",
+        "track_status": "defender_track_status",
+        "is_pit_boundary": "defender_pit_boundary",
+    }.items():
+        out[target] = groups[source].shift(1)
+    return out.sort_values([*_RACE_KEYS, "driver_code", "t_s"])
 
 
 def _tick_interval(driver_ticks: pd.DataFrame) -> float:
@@ -321,7 +303,7 @@ def _tick_interval(driver_ticks: pd.DataFrame) -> float:
     return float(usable.median()) if not usable.empty else 1.0
 
 
-def _same_lap_deficit(row: pd.Series) -> bool:
+def _same_lap_deficit(row: Mapping[str, Any]) -> bool:
     values = [
         row["lap_number"],
         row["lap_progress"],
@@ -336,11 +318,11 @@ def _same_lap_deficit(row: pd.Series) -> bool:
     return -0.05 <= difference <= 0.25
 
 
-def _green(row: pd.Series) -> bool:
+def _green(row: Mapping[str, Any]) -> bool:
     return bool(row["track_status"] == "1" and row["defender_track_status"] == "1")
 
 
-def _contact(row: pd.Series, contact_gap_s: float) -> bool:
+def _contact(row: Mapping[str, Any], contact_gap_s: float) -> bool:
     gap = row["gap_to_ahead_s"]
     return (
         isinstance(row["defender_code"], str)
@@ -539,7 +521,7 @@ def _episode_row(
     }
 
 
-def _new_state(row: pd.Series, tick_s: float, contact_gap_s: float) -> dict[str, object]:
+def _new_state(row: Mapping[str, Any], tick_s: float, contact_gap_s: float) -> dict[str, object]:
     return {
         "season": row["season"],
         "round": row["round"],
@@ -562,7 +544,7 @@ def _new_state(row: pd.Series, tick_s: float, contact_gap_s: float) -> dict[str,
     }
 
 
-def _observation(row: pd.Series) -> dict[str, object]:
+def _observation(row: Mapping[str, Any]) -> dict[str, object]:
     return {
         "t_s": float(row["t_s"]),
         "lap_number": int(row["lap_number"]),
@@ -593,7 +575,8 @@ def _detect_battles(
             driver_ticks = driver_ticks.sort_values("t_s")
             tick_s = _tick_interval(driver_ticks)
             state: dict[str, object] | None = None
-            for _, row in driver_ticks.iterrows():
+            records = cast(list[dict[str, Any]], driver_ticks.to_dict(orient="records"))
+            for row in records:
                 now = float(row["t_s"])
                 is_contact = _contact(row, contact_gap_s)
                 if state is None:
