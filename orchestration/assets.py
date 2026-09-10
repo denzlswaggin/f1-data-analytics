@@ -13,6 +13,7 @@ from analytics.pipeline import (
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
     build_all_traffic_adjusted_pace,
+    build_all_tyre_warmup,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -365,6 +366,34 @@ def traffic_adjusted_pace() -> MaterializeResult:
             "publishable_driver_races": publishable,
             "evidence_laps": len(result.evidence),
             "races": races,
+        }
+    )
+
+
+@asset(
+    deps=[
+        AssetKey(["traffic_adjusted_pace"]),
+        AssetKey(["stg_laps"]),
+        AssetKey(["stg_driver_codes"]),
+        AssetKey(["stg_races"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def tyre_warmup() -> MaterializeResult:
+    result = build_all_tyre_warmup()
+    eligible = int(result.summary["warmup_eligible"].sum()) if not result.summary.empty else 0
+    races = int(
+        result.summary.loc[result.summary["warmup_eligible"], ["season", "round"]]
+        .drop_duplicates()
+        .shape[0]
+    )
+    return MaterializeResult(
+        metadata={
+            "stints": len(result.summary),
+            "eligible_stints": eligible,
+            "eligible_races": races,
+            "evidence_laps": len(result.laps),
         }
     )
 

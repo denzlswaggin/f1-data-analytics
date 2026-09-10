@@ -15,6 +15,7 @@
             ['Pit-window effectiveness', 'pit-window-effectiveness'],
             ['Race-control impact', 'race-control-impact'],
             ['Tyre strategy', 'tyre-strategy'],
+            ['Tyre pace settling', 'tyre-warmup'],
             ['Telemetry', 'telemetry'],
             ['Conditions', 'weather-and-speed']
         ],

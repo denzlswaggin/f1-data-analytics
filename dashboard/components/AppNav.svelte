@@ -15,6 +15,7 @@
                 { label: 'Pit-window effectiveness', path: 'pit-window-effectiveness' },
                 { label: 'Race-control impact', path: 'race-control-impact' },
                 { label: 'Tyre strategy', path: 'tyre-strategy' },
+                { label: 'Tyre pace settling', path: 'tyre-warmup' },
                 { label: 'Telemetry', path: 'telemetry' },
                 { label: 'Conditions & speed', path: 'weather-and-speed' }
             ]
