@@ -10,6 +10,7 @@
             ['Race story', 'latest-race'],
             ['Race replay', 'race-replay'],
             ['Race pace', 'race-pace'],
+            ['Traffic-adjusted pace', 'traffic-adjusted-pace'],
             ['Pit strategy', 'pit-strategy'],
             ['Tyre strategy', 'tyre-strategy'],
             ['Telemetry', 'telemetry'],

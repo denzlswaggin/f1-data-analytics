@@ -110,6 +110,15 @@ coverage as (
     from marts.race_replay rr
     join races r on r.season = rr.season and r.round = rr.round
     group by rr.season, rr.round, r.race_name
+
+    union all
+
+    select
+        'traffic_pace', cast(season as varchar) || ' ' || race_name,
+        sum(eligible_laps), count(distinct driver_code), 1,
+        sum(clean_air_laps + traffic_laps), season, season
+    from marts.traffic_adjusted_pace
+    group by season, round, race_name
 )
 
 select
