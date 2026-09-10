@@ -22,6 +22,7 @@
         drivers: [
             ['Driver ratings', 'driver-ratings'],
             ['Compare drivers', 'driver-comparison'],
+            ['Pace consistency', 'pace-consistency'],
             ['Saturday vs Sunday', 'saturday-vs-sunday']
         ],
         trust: [

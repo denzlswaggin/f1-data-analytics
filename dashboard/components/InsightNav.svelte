@@ -14,6 +14,7 @@
             links: [
                 ['Who is fastest beyond the car?', 'driver-ratings', 'Teammate-normalised career pace and current form'],
                 ['Compare two drivers honestly', 'driver-comparison', 'Season form with uncertainty and shared-season evidence'],
+                ['Who repeats their pace most reliably?', 'pace-consistency', 'Clean-air consistency and unexplained slow-lap tail'],
                 ['Who gains on Sunday?', 'saturday-vs-sunday', 'Qualifying pace versus controlled race pace'],
                 ['Where does each driver gain time?', 'telemetry', 'Speed, cumulative time delta and pedal inputs']
             ]

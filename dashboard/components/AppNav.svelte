@@ -25,6 +25,7 @@
             items: [
                 { label: 'Driver ratings', path: 'driver-ratings' },
                 { label: 'Compare drivers', path: 'driver-comparison' },
+                { label: 'Pace consistency', path: 'pace-consistency' },
                 { label: 'Saturday vs Sunday', path: 'saturday-vs-sunday' }
             ]
         },

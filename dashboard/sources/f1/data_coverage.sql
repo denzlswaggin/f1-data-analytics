@@ -123,6 +123,15 @@ coverage as (
     union all
 
     select
+        'pace_consistency', cast(season as varchar) || ' ' || race_name,
+        sum(candidate_laps), count(distinct driver_code), 1,
+        sum(modelled_laps), season, season
+    from marts.pace_consistency
+    group by season, round, race_name
+
+    union all
+
+    select
         'tyre_warmup', cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1,
         count(*) filter (where warmup_eligible), season, season
