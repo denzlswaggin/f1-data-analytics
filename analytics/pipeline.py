@@ -590,7 +590,7 @@ def build_traffic_adjusted_pace_incremental(
     """Recalculate one race while preserving every other mart partition."""
     settings = settings or get_settings()
     result = _build_traffic_adjusted_scope(season, rnd, settings)
-    partition = {"season": season, "round": rnd}
+    partition: dict[str, object] = {"season": season, "round": rnd}
     replace_table_partition(
         result.evidence,
         schema="marts",
