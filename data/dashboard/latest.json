@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260910T175540Z-local.duckdb",
-  "generated_at": "2026-09-10T17:55:40.599339+00:00",
+  "database_file": "f1-dashboard-20260910T191007Z-local.duckdb",
+  "generated_at": "2026-09-10T19:10:07.957382+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "f52833512d0dda9fc11dd6f6527aed10f0373459b775cf068bc4ab59394bfc8a",
-  "size_bytes": 733229056,
+  "sha256": "7d02e45b4ba93b6c0fdc2e09f564251a97fc1a75643956bcabf6d9e78f3adf2e",
+  "size_bytes": 732442624,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -24,6 +24,8 @@
     "marts.mart_weather_degradation": 166,
     "marts.pace_consistency": 766,
     "marts.pace_consistency_laps": 34214,
+    "marts.pit_timing_scenarios": 14994,
+    "marts.pit_timing_sensitivity": 2142,
     "marts.pit_window_effectiveness": 385,
     "marts.race_control_events": 66,
     "marts.race_control_impact": 1169,
@@ -49,5 +51,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260910T175540Z-local"
+  "version": "20260910T191007Z-local"
 }
