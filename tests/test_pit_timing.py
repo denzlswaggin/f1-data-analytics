@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import duckdb
 import pandas as pd
 import pytest
-from analytics.pit_timing import analyse_pit_timing_sensitivity
+from analytics.pipeline import (
+    build_pit_timing_sensitivity,
+    build_pit_timing_sensitivity_incremental,
+)
+from analytics.pit_timing import PIT_TIMING_COLUMNS, analyse_pit_timing_sensitivity
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 
 def _race(
@@ -223,3 +232,84 @@ def test_rejects_duplicate_driver_lap_rows() -> None:
 
     with pytest.raises(ValueError, match="duplicate driver-lap"):
         analyse_pit_timing_sensitivity(duplicated, replay)
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    laps, replay = _race()
+    laps["session"] = "R"
+    races = pd.DataFrame([{"season": 2026, "round": 1, "race_name": "Test Grand Prix"}])
+    codes = pd.DataFrame(
+        [
+            {"season": 2026, "driver_id": driver, "driver_code": driver, "driver_name": name}
+            for driver, name in laps[["driver_code", "driver_name"]]
+            .drop_duplicates()
+            .itertuples(index=False)
+        ]
+    )
+    stops = _stops().rename(columns={"driver_code": "driver_id"})
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema staging")
+        connection.execute("create schema marts")
+        for name, frame in {
+            "laps": laps,
+            "replay": replay,
+            "races": races,
+            "codes": codes,
+            "stops": stops,
+        }.items():
+            connection.register(name, frame)
+        connection.execute("create table staging.stg_laps as select * from laps")
+        connection.execute("create table marts.race_replay as select * from replay")
+        connection.execute("create table staging.stg_races as select * from races")
+        connection.execute("create table staging.stg_driver_codes as select * from codes")
+        connection.execute("create table staging.stg_pitstops as select * from stops")
+    finally:
+        connection.close()
+    return Settings(warehouse="duckdb", duckdb_path=path)
+
+
+def test_builder_materialises_both_marts_and_incremental_preserves_races(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "pit-timing.duckdb")
+
+    result = build_pit_timing_sensitivity(2026, 1, settings=settings)
+
+    assert list(result.summary.columns) == PIT_TIMING_COLUMNS
+    assert len(result.summary) == 1
+    assert len(result.scenarios) == 7
+    persisted = read_query("select * from marts.pit_timing_sensitivity", settings)
+    assert bool(persisted.iloc[0]["eligible"])
+
+    connection = duckdb.connect(str(settings.duckdb_path))
+    try:
+        connection.execute(
+            "insert into marts.pit_timing_sensitivity "
+            "select * replace (2 as round) from marts.pit_timing_sensitivity"
+        )
+        connection.execute(
+            "insert into marts.pit_timing_scenarios "
+            "select * replace (2 as round) from marts.pit_timing_scenarios"
+        )
+    finally:
+        connection.close()
+
+    build_pit_timing_sensitivity_incremental(2026, 1, settings=settings)
+
+    summary_rounds = read_query(
+        "select round, count(*) as rows from marts.pit_timing_sensitivity "
+        "group by round order by round",
+        settings,
+    )
+    scenario_rounds = read_query(
+        "select round, count(*) as rows from marts.pit_timing_scenarios "
+        "group by round order by round",
+        settings,
+    )
+    assert summary_rounds.to_dict("records") == [
+        {"round": 1, "rows": 1},
+        {"round": 2, "rows": 1},
+    ]
+    assert scenario_rounds.to_dict("records") == [
+        {"round": 1, "rows": 7},
+        {"round": 2, "rows": 7},
+    ]

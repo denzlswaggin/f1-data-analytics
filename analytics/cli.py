@@ -24,6 +24,7 @@ from ingestion.pipeline import season_rounds
 from analytics.pipeline import (
     build_all_overtakes,
     build_all_pace_consistency,
+    build_all_pit_timing_sensitivity,
     build_all_pit_window_effectiveness,
     build_all_race_control_impact,
     build_all_replays,
@@ -34,6 +35,7 @@ from analytics.pipeline import (
     build_driver_ratings_v2,
     build_driver_ratings_v3,
     build_pace_consistency,
+    build_pit_timing_sensitivity,
     build_pit_window_effectiveness,
     build_race_control_impact,
     build_race_overtakes,
@@ -449,6 +451,32 @@ def pit_windows(
     eligible = int(result["eligible"].sum()) if not result.empty else 0
     typer.echo(
         f"Built pit-window evidence for {scope}: {len(result)} matchups, {eligible} eligible."
+    )
+
+
+@app.command("pit-timing")
+def pit_timing(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race currently present in the replay mart."),
+    ] = False,
+) -> None:
+    """Build stop-level ±3-lap pit-timing sensitivity evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_pit_timing_sensitivity()
+        scope = "all replay races"
+    elif season is not None and round_ is not None:
+        result = build_pit_timing_sensitivity(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result.summary["eligible"].sum()) if not result.summary.empty else 0
+    typer.echo(
+        f"Built pit-timing sensitivity for {scope}: {len(result.summary)} stops, "
+        f"{eligible} eligible and {len(result.scenarios)} scenarios."
     )
 
 

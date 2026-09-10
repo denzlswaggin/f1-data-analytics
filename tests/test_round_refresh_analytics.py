@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from analytics.pace_consistency import PaceConsistencyResult
+from analytics.pit_timing import PitTimingSensitivityResult
 from analytics.race_control_impact import RaceControlImpactResult
 from analytics.traffic import TrafficPaceResult
 from analytics.tyre_warmup import TyreWarmupResult
@@ -70,6 +71,13 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
             laps=pd.DataFrame(index=range(15)),
         )
 
+    def pit_timing(season: int, rnd: int, *, settings: Settings) -> PitTimingSensitivityResult:
+        calls.append(("pit_timing", (season, rnd, settings)))
+        return PitTimingSensitivityResult(
+            summary=pd.DataFrame(index=range(16)),
+            scenarios=pd.DataFrame(index=range(17)),
+        )
+
     monkeypatch.setattr(round_refresh, "build_driver_ratings", ratings)
     monkeypatch.setattr(round_refresh, "build_driver_ratings_v2", ratings_v2)
     monkeypatch.setattr(round_refresh, "build_driver_pace_profile", pace_profile)
@@ -77,6 +85,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     monkeypatch.setattr(round_refresh, "build_traffic_adjusted_pace_incremental", traffic)
     monkeypatch.setattr(round_refresh, "build_pace_consistency_incremental", pace_consistency)
     monkeypatch.setattr(round_refresh, "build_tyre_warmup_incremental", tyre_warmup)
+    monkeypatch.setattr(round_refresh, "build_pit_timing_sensitivity_incremental", pit_timing)
     monkeypatch.setattr(round_refresh, "build_pit_window_effectiveness_incremental", pit_windows)
     monkeypatch.setattr(round_refresh, "build_race_control_impact_incremental", race_control)
     monkeypatch.setattr(round_refresh, "build_race_overtakes_incremental", overtakes)
@@ -94,6 +103,8 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "pace_consistency_laps": 15,
         "tyre_warmup_stints": 12,
         "tyre_warmup_laps": 13,
+        "pit_timing_stops": 16,
+        "pit_timing_scenarios": 17,
         "pit_window_matchups": 9,
         "race_control_events": 10,
         "race_control_observations": 11,
@@ -107,6 +118,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "traffic",
         "pace_consistency",
         "tyre_warmup",
+        "pit_timing",
         "pit_windows",
         "race_control",
         "overtakes",
@@ -119,3 +131,4 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     assert calls[7][1] == (2026, 12, settings)
     assert calls[8][1] == (2026, 12, settings)
     assert calls[9][1] == (2026, 12, settings)
+    assert calls[10][1] == (2026, 12, settings)
