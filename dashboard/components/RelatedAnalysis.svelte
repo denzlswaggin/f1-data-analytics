@@ -12,6 +12,7 @@
             ['Race pace', 'race-pace'],
             ['Traffic-adjusted pace', 'traffic-adjusted-pace'],
             ['Pit strategy', 'pit-strategy'],
+            ['Pit-window effectiveness', 'pit-window-effectiveness'],
             ['Tyre strategy', 'tyre-strategy'],
             ['Telemetry', 'telemetry'],
             ['Conditions', 'weather-and-speed']

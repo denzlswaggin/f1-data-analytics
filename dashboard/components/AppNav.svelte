@@ -12,6 +12,7 @@
                 { label: 'Race pace', path: 'race-pace' },
                 { label: 'Traffic-adjusted pace', path: 'traffic-adjusted-pace' },
                 { label: 'Pit strategy', path: 'pit-strategy' },
+                { label: 'Pit-window effectiveness', path: 'pit-window-effectiveness' },
                 { label: 'Tyre strategy', path: 'tyre-strategy' },
                 { label: 'Telemetry', path: 'telemetry' },
                 { label: 'Conditions & speed', path: 'weather-and-speed' }
