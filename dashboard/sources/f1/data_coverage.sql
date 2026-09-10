@@ -119,6 +119,15 @@ coverage as (
         sum(clean_air_laps + traffic_laps), season, season
     from marts.traffic_adjusted_pace
     group by season, round, race_name
+
+    union all
+
+    select
+        'pit_window', cast(season as varchar) || ' ' || race_name,
+        count(*), count(*), 1,
+        count(*) filter (where eligible), season, season
+    from marts.pit_window_effectiveness
+    group by season, round, race_name
 )
 
 select

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from analytics.pipeline import (
+    build_all_pit_window_effectiveness,
     build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
     build_driver_ratings,
@@ -363,6 +364,29 @@ def traffic_adjusted_pace() -> MaterializeResult:
             "publishable_driver_races": publishable,
             "evidence_laps": len(result.evidence),
             "races": races,
+        }
+    )
+
+
+@asset(
+    deps=[
+        AssetKey(["stg_laps"]),
+        AssetKey(["stg_pitstops"]),
+        AssetKey(["stg_driver_codes"]),
+        AssetKey(["stg_races"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def pit_window_effectiveness() -> MaterializeResult:
+    df = build_all_pit_window_effectiveness()
+    eligible = int(df["eligible"].sum()) if not df.empty else 0
+    races = int(df.loc[df["eligible"], ["season", "round"]].drop_duplicates().shape[0])
+    return MaterializeResult(
+        metadata={
+            "matchups": len(df),
+            "eligible_matchups": eligible,
+            "eligible_races": races,
         }
     )
 

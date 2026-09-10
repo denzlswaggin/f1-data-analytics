@@ -37,6 +37,7 @@ from orchestration.assets import (
     driver_ratings_v2_are_sane,
     driver_ratings_v3,
     driver_ratings_v3_are_sane,
+    pit_window_effectiveness,
     race_overtakes,
     race_replay,
     raw_ergast_laps,
@@ -91,6 +92,7 @@ all_assets = [
     driver_pace_profile,
     race_replay,
     traffic_adjusted_pace,
+    pit_window_effectiveness,
     race_overtakes,
 ]
 

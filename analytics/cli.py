@@ -23,12 +23,14 @@ from ingestion.pipeline import season_rounds
 
 from analytics.pipeline import (
     build_all_overtakes,
+    build_all_pit_window_effectiveness,
     build_all_replays,
     build_all_traffic_adjusted_pace,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
     build_driver_ratings_v3,
+    build_pit_window_effectiveness,
     build_race_overtakes,
     build_race_overtakes_season,
     build_race_replay,
@@ -364,6 +366,31 @@ def traffic_pace(
     typer.echo(
         f"Built traffic pace for {scope}: {len(result.summary)} driver-races, "
         f"{publishable} with publishable clean-air pace."
+    )
+
+
+@app.command("pit-windows")
+def pit_windows(
+    season: Annotated[int | None, typer.Option(help="Season of the race to analyse.")] = None,
+    round_: Annotated[int | None, typer.Option("--round", help="Round to analyse.")] = None,
+    all_races: Annotated[
+        bool,
+        typer.Option("--all", help="Build every race with FastF1 lap timing."),
+    ] = False,
+) -> None:
+    """Build pairwise early-stop versus late-stop evidence."""
+    configure_logging()
+    if all_races:
+        result = build_all_pit_window_effectiveness()
+        scope = "all loaded races"
+    elif season is not None and round_ is not None:
+        result = build_pit_window_effectiveness(season, round_)
+        scope = f"{season} round {round_}"
+    else:
+        raise typer.BadParameter("Provide --season and --round together, or use --all.")
+    eligible = int(result["eligible"].sum()) if not result.empty else 0
+    typer.echo(
+        f"Built pit-window evidence for {scope}: {len(result)} matchups, {eligible} eligible."
     )
 
 
