@@ -13,7 +13,11 @@ def test_page_exposes_position_time_pit_and_exclusion_evidence() -> None:
     assert "positions_gained" in page
     assert "field_adjusted_gap_gain_s" in page
     assert "pitted_during_intervention" in page
-    assert "lap deficit changed" in page.lower()
+    assert "changed estimated deficits" in page.lower()
+    assert "time_comparable_driver_count" in page
+    assert "time_exclusion_reason" in page
+    assert "where time_eligible and field_adjusted_gap_gain_s is not null" in page
+    assert "at least five time-comparable drivers" in page.lower()
     assert "rather than what race control caused" in page
     assert "at least 12 cars" in page
 

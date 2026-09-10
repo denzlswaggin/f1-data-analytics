@@ -34,6 +34,9 @@ select
     tyre_changed_during_suspension,
     active_after,
     eligible,
+    time_comparable_driver_count,
+    time_eligible,
+    time_exclusion_reason,
     exclusion_reason,
     confidence,
     outcome_label,
@@ -53,7 +56,8 @@ select
     cast(null as integer), cast(null as integer), '', '',
     cast(null as integer), cast(null as integer),
     false, false, 0, false, false, false,
+    0, false, 'No data',
     'No data', 'Low', 'Excluded',
-    cast(null as double), cast(null as double), 'race-control-impact-v1'
+    cast(null as double), cast(null as double), 'race-control-impact-v2'
 where not exists (select 1 from marts.race_control_impact)
 order by season, round, event_number, position_before

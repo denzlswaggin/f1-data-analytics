@@ -16,9 +16,10 @@ validation of the analytical claims.
    boundaries, including visits without a tyre change. Apply the context to
    traffic, consistency, tyre settling, pit timing/windows and racecraft. Publish
    exclusions and provenance. Reproduce Monaco 2025 / Russell before and after.
-2. **Race-control** — correct the start/finish-line lap-deficit artifact; require
+2. **Race-control** — `fix/race-control-comparability`; correct the start/finish-line lap-deficit artifact; require
    an adequate comparable cohort for adjusted-gap centering; align recovery
    eligibility with the description of complete green laps.
+   Implementation and before/after evidence: [race-control v2 validation](race-control-v2-validation.md).
 3. **Racecraft** — fix reversal ownership and require continuous release and
    pressure intervals. Add synthetic boundary cases and real-data regressions.
 4. **Metric semantics and evidence** — label pit-lane duration correctly; separate
