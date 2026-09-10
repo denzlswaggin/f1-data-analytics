@@ -57,6 +57,6 @@ select
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double), cast(null as double),
     false, false, false,
-    'No data', 'excluded', 'No opportunity', 'Excluded', 'pit-window-v1'
+    'No data', 'excluded', 'No opportunity', 'Excluded', 'pit-window-v2'
 where not exists (select 1 from marts.pit_window_effectiveness)
 order by season, round, early_pit_lap, early_driver_code, late_driver_code

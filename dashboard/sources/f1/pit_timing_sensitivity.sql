@@ -54,6 +54,6 @@ select
     cast(null as double), 0, 0, 0, 0, cast(null as double), cast(null as double),
     cast(null as double), cast(null as double), cast(null as double),
     cast(null as double), 'Insufficient evidence', false, 'No data',
-    'insufficient', 'pit-timing-sensitivity-v1'
+    'insufficient', 'pit-timing-sensitivity-v2'
 where not exists (select 1 from marts.pit_timing_sensitivity)
 order by season, round, driver_code, stop_number

@@ -184,7 +184,7 @@ order by lap_number
     <ReferenceLine y=0 label="peer average" />
 </LineChart>
 
-<ExpandableSection title="See every included lap and the v1 method">
+<ExpandableSection title="See every included lap and the method">
 <DataTable data={lap_evidence} rows=80 download=true />
 
 Traffic is at least 50% of valid replay ticks within 1.5 seconds of a car ahead.
@@ -193,6 +193,27 @@ close traffic. Laps need 80% replay coverage; lap one, pit in/out laps, unknown
 compounds and tyre life below two are excluded. Gaps are reconstructed from lap
 timing and do not capture every lapped-car interaction, so this analysis must not
 be read as a causal counterfactual finish result.
+</ExpandableSection>
+
+```sql excluded_pit_laps
+select driver_code, lap_number, pit_context_source, pit_exclusion_reason
+from f1.pit_lap_context
+where season = ${inputs.season.value} and round = ${inputs.race.value}
+    and is_pit_boundary
+order by driver_code, lap_number
+```
+
+<ExpandableSection title="Pit laps excluded from pace references">
+Pit visits are excluded even when the tyre stint does not change. Evidence
+combines available pit-entry/exit timestamps, recorded pit laps and inferred
+stint boundaries. Missing pit records do not prove that no pit visit occurred.
+
+<DataTable data={excluded_pit_laps} rows=40 search=true download=true>
+    <Column id=driver_code title="Driver" />
+    <Column id=lap_number title="Lap" />
+    <Column id=pit_context_source title="Evidence source" />
+    <Column id=pit_exclusion_reason title="Exclusion" />
+</DataTable>
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="traffic-adjusted-pace" season={inputs.season.value} race={inputs.race.value} />
