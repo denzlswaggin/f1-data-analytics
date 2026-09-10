@@ -8,4 +8,5 @@
 # Binary / data
 *.parquet binary
 *.duckdb binary
+data/dashboard/latest.duckdb filter=lfs diff=lfs merge=lfs -text
 *.png binary
