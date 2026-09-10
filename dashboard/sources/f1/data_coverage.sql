@@ -128,6 +128,15 @@ coverage as (
         count(*) filter (where eligible), season, season
     from marts.pit_window_effectiveness
     group by season, round, race_name
+
+    union all
+
+    select
+        'race_control', cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct event_id), 1,
+        sum(eligible_driver_count), season, season
+    from marts.race_control_events
+    group by season, round, race_name
 )
 
 select

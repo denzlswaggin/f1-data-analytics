@@ -13,6 +13,7 @@
             ['Traffic-adjusted pace', 'traffic-adjusted-pace'],
             ['Pit strategy', 'pit-strategy'],
             ['Pit-window effectiveness', 'pit-window-effectiveness'],
+            ['Race-control impact', 'race-control-impact'],
             ['Tyre strategy', 'tyre-strategy'],
             ['Telemetry', 'telemetry'],
             ['Conditions', 'weather-and-speed']

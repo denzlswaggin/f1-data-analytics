@@ -10,6 +10,7 @@ from ingestion.logging import get_logger
 from analytics.overtakes import detect_overtakes
 from analytics.pace_profile import build_pace_profile
 from analytics.pit_window import analyse_pit_windows
+from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
@@ -756,6 +757,173 @@ def build_all_pit_window_effectiveness(
     )
     races = result[["season", "round"]].drop_duplicates().shape[0]
     log.info("pit_window.materialised_all", races=races, matchups=len(result))
+    return result
+
+
+def _race_control_scope_clause(alias: str, season: int | None, rnd: int | None) -> str:
+    if season is None:
+        return ""
+    clause = f" and {alias}.season = {int(season)}"
+    if rnd is not None:
+        clause += f" and {alias}.round = {int(rnd)}"
+    return clause
+
+
+def _race_control_replay_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("replay", season, rnd)
+    return f"""
+        with teams as (
+            select season, round, driver_code, max(team) as team
+            from staging.stg_laps
+            where session = 'R'
+            group by season, round, driver_code
+        )
+        select
+            replay.season,
+            replay.round,
+            races.race_name,
+            replay.driver_code,
+            coalesce(codes.driver_name, replay.driver_code) as driver_name,
+            teams.team,
+            replay.t_s,
+            replay.lap_number,
+            replay.stint,
+            replay.compound,
+            replay.tyre_life,
+            replay.running_order,
+            replay.gap_to_leader_s
+        from marts.race_replay as replay
+        left join staging.stg_races as races
+            on races.season = replay.season and races.round = replay.round
+        left join staging.stg_driver_codes as codes
+            on codes.season = replay.season and codes.driver_code = replay.driver_code
+        left join teams
+            on teams.season = replay.season
+            and teams.round = replay.round
+            and teams.driver_code = replay.driver_code
+        where true{scope}
+    """
+
+
+def _race_control_messages_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("messages", season, rnd)
+    return f"""
+        with race_windows as (
+            select season, round, min(lap_start_sec) as race_start_sec
+            from staging.stg_laps
+            where session = 'R'
+            group by season, round
+        )
+        select
+            messages.season,
+            messages.round,
+            races.race_name,
+            messages.session_time_sec - windows.race_start_sec as t_s,
+            messages.category,
+            messages.flag,
+            messages.message,
+            messages.lap
+        from staging.stg_race_control as messages
+        inner join race_windows as windows
+            on windows.season = messages.season and windows.round = messages.round
+        left join staging.stg_races as races
+            on races.season = messages.season and races.round = messages.round
+        where messages.session = 'R'{scope}
+    """
+
+
+def _race_control_laps_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("laps", season, rnd)
+    return f"""
+        select laps.season, laps.round, laps.lap_number, laps.track_status
+        from staging.stg_laps as laps
+        where laps.session = 'R'{scope}
+    """
+
+
+def _build_race_control_impact_scope(
+    season: int | None,
+    rnd: int | None,
+    settings: Settings,
+) -> RaceControlImpactResult:
+    replay = read_query(_race_control_replay_query(season, rnd), settings)
+    messages = read_query(_race_control_messages_query(season, rnd), settings)
+    laps = read_query(_race_control_laps_query(season, rnd), settings)
+    return analyse_race_control_impact(replay, messages, laps)
+
+
+def _replace_race_control_impact_tables(
+    result: RaceControlImpactResult, settings: Settings
+) -> None:
+    replace_table(result.events, schema="marts", table="race_control_events", settings=settings)
+    replace_table(result.evidence, schema="marts", table="race_control_impact", settings=settings)
+
+
+def build_race_control_impact(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> RaceControlImpactResult:
+    """Build one race's race-control impact mart, replacing its contents."""
+    settings = settings or get_settings()
+    result = _build_race_control_impact_scope(season, rnd, settings)
+    _replace_race_control_impact_tables(result, settings)
+    log.info(
+        "race_control_impact.materialised",
+        season=season,
+        round=rnd,
+        events=len(result.events),
+        evidence=len(result.evidence),
+    )
+    return result
+
+
+def build_race_control_impact_incremental(
+    season: int,
+    rnd: int,
+    settings: Settings | None = None,
+) -> RaceControlImpactResult:
+    """Recalculate one race while preserving other race-control partitions."""
+    settings = settings or get_settings()
+    result = _build_race_control_impact_scope(season, rnd, settings)
+    replace_table_partition(
+        result.events,
+        schema="marts",
+        table="race_control_events",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    replace_table_partition(
+        result.evidence,
+        schema="marts",
+        table="race_control_impact",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    log.info(
+        "race_control_impact.materialised_partition",
+        season=season,
+        round=rnd,
+        events=len(result.events),
+        evidence=len(result.evidence),
+    )
+    return result
+
+
+def build_all_race_control_impact(
+    settings: Settings | None = None,
+) -> RaceControlImpactResult:
+    """Build race-control impact for every race present in the replay mart."""
+    settings = settings or get_settings()
+    result = _build_race_control_impact_scope(None, None, settings)
+    _replace_race_control_impact_tables(result, settings)
+    races = result.events[["season", "round"]].drop_duplicates().shape[0]
+    log.info(
+        "race_control_impact.materialised_all",
+        races=races,
+        events=len(result.events),
+        evidence=len(result.evidence),
+    )
     return result
 
 
