@@ -18,6 +18,8 @@ select
     median_gap_to_ahead_s,
     air_state,
     peer_lap_avg_sec,
+    peer_lap_median_sec,
+    peer_count,
     controlled_pace_delta_sec,
     matched_clean_laps,
     matched_clean_delta_sec,
@@ -32,6 +34,7 @@ select
     0, 0, '__NO_DATA__', cast(0 as double), cast(0 as double),
     0, 0, 0, cast(0 as double), cast(0 as double), cast(0 as double),
     cast(null as double), 'mixed', cast(null as double), cast(null as double),
+    cast(0 as bigint), cast(null as double),
     0, cast(null as double), cast(null as double)
 where not exists (select 1 from marts.traffic_adjusted_laps)
 order by season, round, driver_code, lap_number

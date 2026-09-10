@@ -93,9 +93,12 @@ limit 1
 
 ## Clean-air pace ranking — {inputs.season.value} {inputs.race.label}
 
-This is the median delta to at least two other drivers on the same lap and
-compound, using only clean-air laps. A driver needs five clean laps before a
-value is published.
+Each lap is compared with the leave-one-driver-out median of at least three
+other drivers on the same lap and compound. The ranking is the median of those
+deltas on clean-air laps. A driver needs five clean laps before publication.
+The three-peer cutoff is a conservative heuristic, not an externally validated
+precision threshold. A median reduces one extreme peer's influence but cannot
+remove shared biases, car differences or unmeasured race context.
 
 ```sql clean_air_results
 select * from ${race_results}
@@ -109,7 +112,7 @@ where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
     yAxisTitle="clean-air controlled pace delta (s) — lower is faster"
     labels=true
 >
-    <ReferenceLine y=0 label="peer average" />
+    <ReferenceLine y=0 label="peer median" />
 </BarChart>
 
 ## Traffic exposure versus associated pace
@@ -175,6 +178,9 @@ select
     tyre_life,
     median_gap_to_ahead_s,
     replay_coverage_pct,
+    peer_count,
+    peer_lap_median_sec,
+    peer_lap_avg_sec,
     controlled_pace_delta_sec,
     paired_traffic_delta_sec
 from f1.traffic_adjusted_laps
@@ -192,7 +198,7 @@ order by lap_number
     yAxisTitle="controlled pace delta (s)"
     chartAreaHeight=340
 >
-    <ReferenceLine y=0 label="peer average" />
+    <ReferenceLine y=0 label="peer median" />
 </LineChart>
 
 <ExpandableSection title="See every included lap and the method">
@@ -205,7 +211,12 @@ compounds and tyre life below two are excluded. Gaps are reconstructed from lap
 timing and do not capture every lapped-car interaction, so this analysis must not
 be read as a causal counterfactual finish result.
 
-Method: `traffic-v3-metric-evidence`. Clean-air pace requires at least five clean
+Method: `traffic-v4-robust-peers`. Lap evidence shows the number of other drivers
+and their median baseline. The arithmetic peer average remains a diagnostic only;
+it is not the baseline used for controlled deltas. Each driver contributes at
+most one lap observation to a peer group, and their own time is excluded.
+
+Clean-air pace requires at least five clean
 laps; the traffic association requires both five clean laps and five matched
 traffic laps. A clean-air estimate can therefore be eligible even when the
 association is unavailable. Clean-air sample strength uses the clean-lap count;
