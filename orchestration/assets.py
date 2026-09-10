@@ -382,9 +382,9 @@ def traffic_adjusted_pace() -> MaterializeResult:
 )
 def tyre_warmup() -> MaterializeResult:
     result = build_all_tyre_warmup()
-    eligible = int(result.summary["eligible"].sum()) if not result.summary.empty else 0
+    eligible = int(result.summary["warmup_eligible"].sum()) if not result.summary.empty else 0
     races = int(
-        result.summary.loc[result.summary["eligible"], ["season", "round"]]
+        result.summary.loc[result.summary["warmup_eligible"], ["season", "round"]]
         .drop_duplicates()
         .shape[0]
     )

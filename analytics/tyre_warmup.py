@@ -1,8 +1,8 @@
-"""Traffic-controlled tyre warm-up after a racing pit stop.
+"""Estimate how post-stop pace settles after the first full flying lap.
 
-The first lap of a new stint is treated as the out-lap because its recorded lap
-time can include stationary pit time. Analysis starts on the following full lap
-and compares its controlled pace with laps three to five of the same stint.
+The recorded first lap of a stint can include stationary pit time, so offset 0
+is retained only as the inferred out-lap. A robust mature-pacing trend from
+clean-air offsets 7--12 is extrapolated back across evaluation offsets 1--6.
 """
 
 from __future__ import annotations
@@ -13,11 +13,15 @@ import numpy as np
 import pandas as pd
 
 METHODOLOGY_VERSION = "tyre-warmup-v1"
-STABLE_BAND_SEC = 0.30
+STABLE_BAND_SEC = 0.50
+MIN_STINT_LAPS = 11
+MIN_REPLAY_COVERAGE_PCT = 80.0
+MAX_BASELINE_SLOPE_SEC_PER_LAP = 0.50
+MAX_BASELINE_MAD_SEC = 0.50
 SUPPORTED_COMPOUNDS = {"SOFT", "MEDIUM", "HARD"}
-MIN_STINT_LAPS = 7
 
 _KEYS = ["season", "round", "driver_code", "stint"]
+_LAP_KEYS = [*_KEYS, "lap_number"]
 _LAPS_REQUIRED = {
     *_KEYS,
     "race_name",
@@ -31,11 +35,12 @@ _LAPS_REQUIRED = {
     "track_status",
 }
 _TRAFFIC_REQUIRED = {
-    *_KEYS,
-    "lap_number",
+    *_LAP_KEYS,
     "air_state",
-    "controlled_pace_delta_sec",
     "replay_coverage_pct",
+    "traffic_share",
+    "median_gap_to_ahead_s",
+    "controlled_pace_delta_sec",
 }
 
 TYRE_WARMUP_COLUMNS = [
@@ -47,23 +52,32 @@ TYRE_WARMUP_COLUMNS = [
     "team",
     "stint",
     "compound",
+    "is_fresh_tyre",
+    "out_lap",
     "stint_start_lap",
     "stint_end_lap",
     "stint_laps",
-    "started_fresh",
-    "first_flying_lap",
-    "baseline_laps",
-    "clean_air_samples_first5",
-    "stable_baseline_controlled_delta_sec",
-    "first_flying_loss_sec",
-    "second_flying_loss_sec",
+    "contiguous_stint_transition",
+    "clean_evaluation_laps",
+    "traffic_evaluation_laps",
+    "mature_reference_laps",
+    "baseline_slope_sec_per_lap",
+    "baseline_intercept_sec",
+    "baseline_mad_sec",
+    "first_flying_warmup_loss_sec",
+    "second_flying_warmup_loss_sec",
     "first_two_lap_warmup_cost_sec",
-    "time_to_stable_laps",
-    "stable_band_threshold_sec",
-    "replay_coverage_pct",
-    "eligible",
+    "stable_band_sec",
+    "stable_window_start_lap",
+    "time_to_pace_laps",
+    "stable_pace_achieved",
+    "right_censored",
+    "observation_complete",
+    "warmup_eligible",
+    "crossover_eligible",
     "exclusion_reason",
     "confidence",
+    "replay_coverage_pct",
     "methodology_version",
 ]
 
@@ -76,20 +90,24 @@ TYRE_WARMUP_LAP_COLUMNS = [
     "team",
     "stint",
     "compound",
+    "is_fresh_tyre",
+    "out_lap",
     "lap_number",
-    "stint_lap_offset",
-    "phase",
+    "post_stop_offset",
     "tyre_life",
     "lap_time_sec",
-    "track_green",
+    "track_status",
     "air_state",
     "replay_coverage_pct",
+    "traffic_share",
+    "median_gap_to_ahead_s",
     "controlled_pace_delta_sec",
-    "stable_baseline_controlled_delta_sec",
-    "warmup_delta_sec",
+    "expected_mature_delta_sec",
+    "warmup_loss_sec",
+    "used_for_baseline",
     "within_stable_band",
-    "eligible",
-    "exclusion_reason",
+    "lap_eligible",
+    "lap_exclusion_reason",
     "methodology_version",
 ]
 
@@ -97,37 +115,64 @@ _SUMMARY_INTEGER = {
     "season",
     "round",
     "stint",
+    "out_lap",
     "stint_start_lap",
     "stint_end_lap",
     "stint_laps",
-    "first_flying_lap",
-    "baseline_laps",
-    "clean_air_samples_first5",
-    "time_to_stable_laps",
+    "clean_evaluation_laps",
+    "traffic_evaluation_laps",
+    "mature_reference_laps",
+    "stable_window_start_lap",
+    "time_to_pace_laps",
 }
 _SUMMARY_FLOAT = {
-    "stable_baseline_controlled_delta_sec",
-    "first_flying_loss_sec",
-    "second_flying_loss_sec",
+    "baseline_slope_sec_per_lap",
+    "baseline_intercept_sec",
+    "baseline_mad_sec",
+    "first_flying_warmup_loss_sec",
+    "second_flying_warmup_loss_sec",
     "first_two_lap_warmup_cost_sec",
-    "stable_band_threshold_sec",
+    "stable_band_sec",
     "replay_coverage_pct",
 }
-_SUMMARY_BOOLEAN = {"started_fresh", "eligible"}
-_LAP_INTEGER = {"season", "round", "stint", "lap_number", "stint_lap_offset", "tyre_life"}
+_SUMMARY_BOOLEAN = {
+    "is_fresh_tyre",
+    "contiguous_stint_transition",
+    "stable_pace_achieved",
+    "right_censored",
+    "observation_complete",
+    "warmup_eligible",
+    "crossover_eligible",
+}
+_LAP_INTEGER = {
+    "season",
+    "round",
+    "stint",
+    "out_lap",
+    "lap_number",
+    "post_stop_offset",
+    "tyre_life",
+}
 _LAP_FLOAT = {
     "lap_time_sec",
     "replay_coverage_pct",
+    "traffic_share",
+    "median_gap_to_ahead_s",
     "controlled_pace_delta_sec",
-    "stable_baseline_controlled_delta_sec",
-    "warmup_delta_sec",
+    "expected_mature_delta_sec",
+    "warmup_loss_sec",
 }
-_LAP_BOOLEAN = {"track_green", "within_stable_band", "eligible"}
+_LAP_BOOLEAN = {
+    "is_fresh_tyre",
+    "used_for_baseline",
+    "within_stable_band",
+    "lap_eligible",
+}
 
 
 @dataclass(frozen=True)
 class TyreWarmupResult:
-    """Per-stint conclusions and their first-five-lap evidence."""
+    """Per-stint conclusions and the lap evidence behind them."""
 
     summary: pd.DataFrame
     laps: pd.DataFrame
@@ -190,53 +235,66 @@ def _cast_frame(
     return result
 
 
-def _phase(offset: int) -> str:
-    if offset == 1:
-        return "First flying lap"
-    if offset == 2:
-        return "Second flying lap"
-    return "Settling window"
+def _theil_sen_trend(offsets: pd.Series, values: pd.Series) -> tuple[float, float, float]:
+    x = offsets.to_numpy(dtype=float)
+    y = values.to_numpy(dtype=float)
+    slopes = [
+        (y[j] - y[i]) / (x[j] - x[i])
+        for i in range(len(x))
+        for j in range(i + 1, len(x))
+        if x[j] != x[i]
+    ]
+    slope = float(np.median(slopes))
+    intercept = float(np.median(y - slope * x))
+    mad = float(np.median(np.abs(y - (intercept + slope * x))))
+    return slope, intercept, mad
 
 
-def _exclusion_reason(
+def _first_stable_pair(valid_losses: dict[int, float], threshold: float) -> int | None:
+    for offset in range(1, 6):
+        if offset not in valid_losses or offset + 1 not in valid_losses:
+            continue
+        if abs(valid_losses[offset]) <= threshold and abs(valid_losses[offset + 1]) <= threshold:
+            return offset
+    return None
+
+
+def _summary_exclusion_reason(
     *,
     compound: str,
-    started_fresh: bool,
+    contiguous_transition: bool,
     stint_laps: int,
     first: pd.Series | None,
-    baseline_laps: int,
+    mature_points: int,
+    slope: float,
+    mad: float,
 ) -> str:
     if compound not in SUPPORTED_COMPOUNDS:
         return "Unsupported or wet-weather compound"
-    if not started_fresh:
-        return "Stint did not start on fresh tyres"
+    if not contiguous_transition:
+        return "Stint transition is not contiguous"
     if stint_laps < MIN_STINT_LAPS:
         return f"Stint shorter than {MIN_STINT_LAPS} laps"
     if first is None:
         return "First flying lap unavailable"
-    if not bool(first["track_green"]):
+    if str(first["track_status"]) != "1":
         return "First flying lap was not green"
     if pd.isna(first["controlled_pace_delta_sec"]):
         return "Traffic context unavailable on first flying lap"
     if str(first["air_state"]) != "clean_air":
         return "First flying lap was not in clean air"
-    if baseline_laps < 2:
-        return "Fewer than two clean baseline laps"
+    if (
+        pd.isna(first["replay_coverage_pct"])
+        or float(first["replay_coverage_pct"]) < MIN_REPLAY_COVERAGE_PCT
+    ):
+        return "Replay coverage below 80% on first flying lap"
+    if mature_points < 3:
+        return "Fewer than three clean mature-reference laps"
+    if abs(slope) > MAX_BASELINE_SLOPE_SEC_PER_LAP:
+        return "Mature-pace trend is too steep"
+    if mad > MAX_BASELINE_MAD_SEC:
+        return "Mature-pace trend is too noisy"
     return ""
-
-
-def _time_to_stable(valid_deltas: dict[int, float], threshold: float) -> int | None:
-    for offset in range(1, 5):
-        current = valid_deltas.get(offset)
-        following = valid_deltas.get(offset + 1)
-        if (
-            current is not None
-            and following is not None
-            and abs(current) <= threshold
-            and abs(following) <= threshold
-        ):
-            return offset
-    return None
 
 
 def analyse_tyre_warmup(
@@ -245,7 +303,7 @@ def analyse_tyre_warmup(
     *,
     stable_band_sec: float = STABLE_BAND_SEC,
 ) -> TyreWarmupResult:
-    """Measure first-flying-lap loss and time to a stable pace band."""
+    """Measure settling loss and time to a stable mature-pace band."""
     _require_columns(laps, _LAPS_REQUIRED, "laps")
     _require_columns(traffic_laps, _TRAFFIC_REQUIRED, "traffic_laps")
     if stable_band_sec <= 0:
@@ -253,28 +311,43 @@ def analyse_tyre_warmup(
     if laps.empty:
         return _empty_result()
 
-    laps = laps.copy()
-    traffic_laps = traffic_laps.copy()
-    numeric_keys = ("season", "round", "stint", "lap_number")
-    for frame in (laps, traffic_laps):
-        for column in numeric_keys:
+    prepared_laps = laps.copy()
+    prepared_traffic = traffic_laps.copy()
+    for frame in (prepared_laps, prepared_traffic):
+        for column in ("season", "round", "stint", "lap_number"):
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
     for column in ("tyre_life", "lap_time_sec"):
-        laps[column] = pd.to_numeric(laps[column], errors="coerce")
-    for column in ("controlled_pace_delta_sec", "replay_coverage_pct"):
-        traffic_laps[column] = pd.to_numeric(traffic_laps[column], errors="coerce")
-    lap_keys = [*_KEYS, "lap_number"]
-    traffic_context = traffic_laps.loc[
+        prepared_laps[column] = pd.to_numeric(prepared_laps[column], errors="coerce")
+    for column in (
+        "replay_coverage_pct",
+        "traffic_share",
+        "median_gap_to_ahead_s",
+        "controlled_pace_delta_sec",
+    ):
+        prepared_traffic[column] = pd.to_numeric(prepared_traffic[column], errors="coerce")
+
+    prepared_laps = prepared_laps.dropna(subset=_LAP_KEYS).drop_duplicates(_LAP_KEYS, keep="last")
+    prepared_laps = prepared_laps.sort_values(["season", "round", "driver_code", "lap_number"])
+    driver_keys = ["season", "round", "driver_code"]
+    prepared_laps["_previous_lap"] = prepared_laps.groupby(driver_keys)["lap_number"].shift()
+    prepared_laps["_previous_stint"] = prepared_laps.groupby(driver_keys)["stint"].shift()
+    traffic_context = prepared_traffic.loc[
         :,
-        [*_KEYS, "lap_number", "air_state", "controlled_pace_delta_sec", "replay_coverage_pct"],
-    ].drop_duplicates(lap_keys, keep="last")
-    prepared = laps.drop_duplicates(lap_keys, keep="last").merge(
+        [
+            *_LAP_KEYS,
+            "air_state",
+            "replay_coverage_pct",
+            "traffic_share",
+            "median_gap_to_ahead_s",
+            "controlled_pace_delta_sec",
+        ],
+    ].drop_duplicates(_LAP_KEYS, keep="last")
+    prepared = prepared_laps.merge(
         traffic_context,
-        on=lap_keys,
+        on=_LAP_KEYS,
         how="left",
         validate="one_to_one",
-    )
-    prepared = prepared.dropna(subset=[*_KEYS, "lap_number"]).sort_values([*_KEYS, "lap_number"])
+    ).sort_values([*_KEYS, "lap_number"])
 
     summary_rows: list[dict[str, object]] = []
     lap_rows: list[dict[str, object]] = []
@@ -282,58 +355,84 @@ def analyse_tyre_warmup(
         season, rnd, driver_code, stint_number = keys
         if int(stint_number) <= 1:
             continue
-        start_lap = int(stint["lap_number"].min())
+        first_stint_row = stint.iloc[0]
+        start_lap = int(first_stint_row["lap_number"])
         end_lap = int(stint["lap_number"].max())
-        stint_laps = end_lap - start_lap + 1
+        stint_laps = int(stint["lap_number"].nunique())
+        contiguous_transition = bool(
+            pd.notna(first_stint_row["_previous_lap"])
+            and int(first_stint_row["_previous_lap"]) == start_lap - 1
+            and pd.notna(first_stint_row["_previous_stint"])
+            and int(first_stint_row["_previous_stint"]) < int(stint_number)
+        )
         compound_values = stint["compound"].dropna().astype("string")
         compound = str(compound_values.iloc[0]).upper() if not compound_values.empty else "UNKNOWN"
-        started_fresh = bool(stint["is_fresh_tyre"].fillna(False).astype(bool).any())
-        window = stint.loc[stint["lap_number"].sub(start_lap).between(1, 5)].copy()
-        window["stint_lap_offset"] = window["lap_number"].sub(start_lap).astype(int)
-        window["track_green"] = window["track_status"].astype("string").eq("1")
+        is_fresh_tyre = bool(first_stint_row["is_fresh_tyre"])
+        window = stint.loc[stint["lap_number"].sub(start_lap).between(1, 12)].copy()
+        window["post_stop_offset"] = window["lap_number"].sub(start_lap).astype(int)
         window["context_eligible"] = (
-            window["track_green"]
+            window["track_status"].astype("string").eq("1")
             & window["air_state"].astype("string").eq("clean_air")
             & window["controlled_pace_delta_sec"].notna()
+            & window["replay_coverage_pct"].ge(MIN_REPLAY_COVERAGE_PCT).fillna(False)
         )
-        baseline = window.loc[
-            window["stint_lap_offset"].between(3, 5) & window["context_eligible"],
-            "controlled_pace_delta_sec",
-        ]
-        baseline_value = float(baseline.median()) if len(baseline) >= 2 else np.nan
-        first_rows = window.loc[window["stint_lap_offset"].eq(1)]
+        evaluation = window["post_stop_offset"].between(1, 6)
+        mature_mask = window["post_stop_offset"].between(7, 12)
+        mature = window.loc[mature_mask & window["context_eligible"]]
+        if len(mature) >= 3:
+            slope, intercept, baseline_mad = _theil_sen_trend(
+                mature["post_stop_offset"], mature["controlled_pace_delta_sec"]
+            )
+        else:
+            slope, intercept, baseline_mad = np.nan, np.nan, np.nan
+        first_rows = window.loc[window["post_stop_offset"].eq(1)]
         first = first_rows.iloc[0] if not first_rows.empty else None
-        reason = _exclusion_reason(
+        reason = _summary_exclusion_reason(
             compound=compound,
-            started_fresh=started_fresh,
+            contiguous_transition=contiguous_transition,
             stint_laps=stint_laps,
             first=first,
-            baseline_laps=len(baseline),
+            mature_points=len(mature),
+            slope=slope,
+            mad=baseline_mad,
         )
-        eligible = not reason
-        valid_deltas: dict[int, float] = {}
-        if np.isfinite(baseline_value):
+        warmup_eligible = not reason
+        valid_losses: dict[int, float] = {}
+        if warmup_eligible:
             for row in window.loc[window["context_eligible"]].itertuples(index=False):
-                valid_deltas[int(row.stint_lap_offset)] = (
-                    float(row.controlled_pace_delta_sec) - baseline_value
-                )
-        time_to_stable = _time_to_stable(valid_deltas, stable_band_sec) if eligible else None
-        first_loss = valid_deltas.get(1, np.nan) if eligible else np.nan
-        second_loss = valid_deltas.get(2, np.nan) if eligible else np.nan
+                offset = int(row.post_stop_offset)
+                expected = intercept + slope * offset
+                valid_losses[offset] = float(row.controlled_pace_delta_sec) - expected
+
+        stable_start = _first_stable_pair(valid_losses, stable_band_sec)
+        stable_pace_achieved = bool(warmup_eligible and stable_start is not None)
+        observation_complete = bool(
+            warmup_eligible and all(offset in valid_losses for offset in range(1, 7))
+        )
+        right_censored = bool(warmup_eligible and not stable_pace_achieved and observation_complete)
+        crossover_eligible = bool(stable_pace_achieved or right_censored)
+        first_loss = valid_losses.get(1, np.nan)
+        second_loss = valid_losses.get(2, np.nan)
         first_two_cost = (
             max(0.0, first_loss) + max(0.0, second_loss)
             if np.isfinite(first_loss) and np.isfinite(second_loss)
             else np.nan
         )
-        replay_coverage = pd.to_numeric(window["replay_coverage_pct"], errors="coerce").median()
-        high_confidence = (
-            eligible
-            and len(baseline) == 3
-            and set(valid_deltas) == {1, 2, 3, 4, 5}
-            and pd.notna(replay_coverage)
-            and replay_coverage >= 80
+        coverage = pd.to_numeric(window["replay_coverage_pct"], errors="coerce").median()
+        confirmation_offset = stable_start + 1 if stable_start is not None else 6
+        continuous_to_confirmation = all(
+            offset in valid_losses for offset in range(1, confirmation_offset + 1)
         )
-        confidence = "High" if high_confidence else "Medium" if eligible else "Low"
+        high_confidence = bool(
+            warmup_eligible
+            and is_fresh_tyre
+            and len(mature) >= 4
+            and baseline_mad <= 0.25
+            and pd.notna(coverage)
+            and coverage >= 90
+            and continuous_to_confirmation
+        )
+        confidence = "High" if high_confidence else "Medium" if warmup_eligible else "Insufficient"
 
         summary_rows.append(
             {
@@ -345,39 +444,60 @@ def analyse_tyre_warmup(
                 "team": str(stint["team"].iloc[0]),
                 "stint": int(stint_number),
                 "compound": compound,
+                "is_fresh_tyre": is_fresh_tyre,
+                "out_lap": start_lap,
                 "stint_start_lap": start_lap,
                 "stint_end_lap": end_lap,
                 "stint_laps": stint_laps,
-                "started_fresh": started_fresh,
-                "first_flying_lap": start_lap + 1,
-                "baseline_laps": len(baseline),
-                "clean_air_samples_first5": len(valid_deltas),
-                "stable_baseline_controlled_delta_sec": baseline_value,
-                "first_flying_loss_sec": first_loss,
-                "second_flying_loss_sec": second_loss,
+                "contiguous_stint_transition": contiguous_transition,
+                "clean_evaluation_laps": int((evaluation & window["context_eligible"]).sum()),
+                "traffic_evaluation_laps": int(
+                    (evaluation & window["air_state"].isin(["traffic", "mixed"])).sum()
+                ),
+                "mature_reference_laps": len(mature),
+                "baseline_slope_sec_per_lap": slope,
+                "baseline_intercept_sec": intercept,
+                "baseline_mad_sec": baseline_mad,
+                "first_flying_warmup_loss_sec": first_loss,
+                "second_flying_warmup_loss_sec": second_loss,
                 "first_two_lap_warmup_cost_sec": first_two_cost,
-                "time_to_stable_laps": time_to_stable,
-                "stable_band_threshold_sec": stable_band_sec,
-                "replay_coverage_pct": replay_coverage,
-                "eligible": eligible,
+                "stable_band_sec": stable_band_sec,
+                "stable_window_start_lap": (
+                    start_lap + stable_start if stable_start is not None else None
+                ),
+                "time_to_pace_laps": stable_start + 1 if stable_start is not None else None,
+                "stable_pace_achieved": stable_pace_achieved,
+                "right_censored": right_censored,
+                "observation_complete": observation_complete,
+                "warmup_eligible": warmup_eligible,
+                "crossover_eligible": crossover_eligible,
                 "exclusion_reason": reason,
                 "confidence": confidence,
+                "replay_coverage_pct": coverage,
                 "methodology_version": METHODOLOGY_VERSION,
             }
         )
+
         for row in window.itertuples(index=False):
-            offset = int(row.stint_lap_offset)
-            lap_eligible = bool(eligible and row.context_eligible)
+            offset = int(row.post_stop_offset)
+            used_for_baseline = bool(7 <= offset <= 12 and row.context_eligible)
+            expected = intercept + slope * offset if np.isfinite(slope) else np.nan
+            loss = valid_losses.get(offset, np.nan)
             lap_reason = ""
-            if not bool(row.track_green):
+            if str(row.track_status) != "1":
                 lap_reason = "Lap was not green"
             elif pd.isna(row.controlled_pace_delta_sec):
                 lap_reason = "Traffic context unavailable"
             elif str(row.air_state) != "clean_air":
                 lap_reason = "Lap was not in clean air"
-            elif not eligible:
+            elif (
+                pd.isna(row.replay_coverage_pct)
+                or row.replay_coverage_pct < MIN_REPLAY_COVERAGE_PCT
+            ):
+                lap_reason = "Replay coverage below 80%"
+            elif not warmup_eligible:
                 lap_reason = reason
-            delta = valid_deltas.get(offset, np.nan) if eligible else np.nan
+            lap_eligible = bool(warmup_eligible and row.context_eligible)
             lap_rows.append(
                 {
                     "season": int(season),
@@ -388,22 +508,26 @@ def analyse_tyre_warmup(
                     "team": str(row.team),
                     "stint": int(stint_number),
                     "compound": compound,
+                    "is_fresh_tyre": is_fresh_tyre,
+                    "out_lap": start_lap,
                     "lap_number": int(row.lap_number),
-                    "stint_lap_offset": offset,
-                    "phase": _phase(offset),
+                    "post_stop_offset": offset,
                     "tyre_life": row.tyre_life,
                     "lap_time_sec": row.lap_time_sec,
-                    "track_green": bool(row.track_green),
+                    "track_status": str(row.track_status),
                     "air_state": str(row.air_state) if pd.notna(row.air_state) else "unavailable",
                     "replay_coverage_pct": row.replay_coverage_pct,
+                    "traffic_share": row.traffic_share,
+                    "median_gap_to_ahead_s": row.median_gap_to_ahead_s,
                     "controlled_pace_delta_sec": row.controlled_pace_delta_sec,
-                    "stable_baseline_controlled_delta_sec": baseline_value,
-                    "warmup_delta_sec": delta,
+                    "expected_mature_delta_sec": expected,
+                    "warmup_loss_sec": loss,
+                    "used_for_baseline": used_for_baseline,
                     "within_stable_band": bool(
-                        lap_eligible and np.isfinite(delta) and abs(delta) <= stable_band_sec
+                        lap_eligible and np.isfinite(loss) and abs(loss) <= stable_band_sec
                     ),
-                    "eligible": lap_eligible,
-                    "exclusion_reason": lap_reason,
+                    "lap_eligible": lap_eligible,
+                    "lap_exclusion_reason": lap_reason,
                     "methodology_version": METHODOLOGY_VERSION,
                 }
             )

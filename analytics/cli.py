@@ -392,7 +392,7 @@ def tyre_warmup(
         scope = f"{season} round {round_}"
     else:
         raise typer.BadParameter("Provide --season and --round together, or use --all.")
-    eligible = int(result.summary["eligible"].sum()) if not result.summary.empty else 0
+    eligible = int(result.summary["warmup_eligible"].sum()) if not result.summary.empty else 0
     typer.echo(
         f"Built tyre warm-up evidence for {scope}: {len(result.summary)} stints, "
         f"{eligible} eligible and {len(result.laps)} lap observations."
