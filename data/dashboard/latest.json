@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260910-race-control-v2.duckdb",
-  "generated_at": "2026-09-10T21:13:20.389714+00:00",
+  "database_file": "f1-dashboard-20260910-racecraft-v3.duckdb",
+  "generated_at": "2026-09-10T21:44:10.353446+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "1521f50f7f0eb07e3b95367c7a3f4e33730078265f0c1209c618f01ebc74d9a1",
-  "size_bytes": 731918336,
+  "sha256": "5bf1bc42d2a96644bcf3f64ae6b4677d5a039d01c5d1f786f0279721be623c9f",
+  "size_bytes": 733491200,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -54,5 +54,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260910-race-control-v2"
+  "version": "20260910-racecraft-v3"
 }

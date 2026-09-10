@@ -35,3 +35,16 @@ def test_sources_publish_battles_summaries_and_empty_sentinels() -> None:
 def test_driver_navigation_links_to_racecraft_page() -> None:
     navigation = NAV.read_text(encoding="utf-8")
     assert "{ label: 'Racecraft battles', path: 'racecraft-battles' }" in navigation
+
+
+def test_page_distinguishes_continuous_evidence_and_reversal_ownership() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    for field in ("pressure_seconds", "longest_pressure_run_s", "release_run_s"):
+        assert f"<Column id={field}" in page
+    assert "Total pressure may" in page
+    assert "eligibility uses the longest" in page
+    assert "measured elapsed seconds" in page
+    assert "missed expected replay sample" in page
+    assert "defender receives the re-pass made" in page
+    assert "attacker receives the re-pass" in page
+    assert "quick_reversals_conceded" in page
