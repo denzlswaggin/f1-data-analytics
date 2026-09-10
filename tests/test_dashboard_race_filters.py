@@ -4,6 +4,7 @@ PAGES_DIR = Path(__file__).parents[1] / "dashboard" / "pages"
 ROOT = PAGES_DIR.parents[1]
 RACE_PAGES = {
     "pit-strategy.md",
+    "pit-timing-sensitivity.md",
     "pit-window-effectiveness.md",
     "pace-consistency.md",
     "race-pace.md",

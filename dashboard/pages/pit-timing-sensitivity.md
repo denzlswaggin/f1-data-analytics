@@ -24,7 +24,11 @@ order by season desc
 ```
 
 ```sql races
-select distinct round, race_name, race_label
+select distinct
+    round,
+    race_name,
+    'R' || lpad(cast(round as varchar), 2, '0') || ' · '
+        || replace(race_name, ' Grand Prix', '') as race_label
 from f1.pit_timing_sensitivity
 where season = ${inputs.season.value}
 order by round
