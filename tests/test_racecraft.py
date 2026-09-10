@@ -170,6 +170,124 @@ def test_flags_a_reverse_pass_within_sixty_seconds() -> None:
     assert battle["reversal_t_s"] == pytest.approx(100.0)
 
 
+def test_reversal_is_made_by_original_defender_and_conceded_by_original_attacker() -> None:
+    replay = _replay(72, order=lambda t: ("B", "A", "C") if t < 70 else ("A", "B", "C"))
+    result = analyse_racecraft_battles(replay, _overtakes((70, "A", "B"), (100, "B", "A")))
+    summary = result.summary.set_index("driver_code")
+    assert summary.loc["B", "quick_reversals_made"] == 1
+    assert summary.loc["B", "quick_reversals_conceded"] == 0
+    assert summary.loc["A", "quick_reversals_made"] == 0
+    assert summary.loc["A", "quick_reversals_conceded"] == 1
+    assert summary["quick_reversals_made"].sum() == summary["quick_reversals_conceded"].sum() == 1
+
+
+@pytest.mark.parametrize("interruption", [1.8, 2.0, 0.0, -1.0, float("nan"), float("inf")])
+def test_release_must_restart_after_neutral_invalid_or_missing_gap(interruption: float) -> None:
+    def gap(t: int) -> float:
+        return 0.8 if t < 70 else interruption if 71 <= t <= 84 else 2.5
+
+    short = _battle(analyse_racecraft_battles(_replay(85, gap=gap), _overtakes()))
+    assert short["outcome"] == "Unresolved"
+    assert not short["defender_retained"]
+    assert short["release_run_s"] == 0
+    recovered = _battle(analyse_racecraft_battles(_replay(100, gap=gap), _overtakes()))
+    assert recovered["outcome"] == "Defended"
+    assert recovered["end_t_s"] == 100
+    assert recovered["release_run_s"] == 15
+
+
+@pytest.mark.parametrize("interruption", [1.2, 1.8, 0.0, float("nan")])
+def test_fragmented_pressure_cannot_qualify_as_ten_continuous_seconds(interruption: float) -> None:
+    replay = _replay(
+        72,
+        gap=lambda t: interruption if t == 65 else 0.8,
+        order=lambda t: ("B", "A", "C") if t < 71 else ("A", "B", "C"),
+    )
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes((71, "A", "B"))))
+    assert battle["converted"]
+    assert battle["pressure_seconds"] == 10
+    assert battle["longest_pressure_run_s"] == 5
+    assert not battle["eligible"]
+    assert battle["exclusion_reason"] == "insufficient_sustained_pressure"
+
+
+def test_missing_nominal_pressure_tick_resets_run_even_when_episode_survives() -> None:
+    replay = _replay(72, order=lambda t: ("B", "A", "C") if t < 71 else ("A", "B", "C"))
+    replay = replay.loc[~replay.t_s.eq(65)]
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes((71, "A", "B"))))
+    assert battle["pressure_seconds"] == 10
+    assert battle["longest_pressure_run_s"] == 5
+    assert battle["coverage_pct"] > 80
+    assert not battle["eligible"]
+
+
+@pytest.mark.parametrize("kind", ["missing_tick", "lap_mismatch"])
+def test_release_restarts_after_missing_tick_or_lap_mismatch(kind: str) -> None:
+    def run(end: int) -> pd.Series:
+        replay = _replay(end, gap=lambda t: 0.8 if t < 70 else 2.5)
+        if kind == "missing_tick":
+            replay = replay.loc[~replay.t_s.eq(75)]
+        else:
+            replay.loc[replay.t_s.eq(75) & replay.driver_code.eq("B"), "lap_number"] = 3
+        return _battle(analyse_racecraft_battles(replay, _overtakes()))
+
+    assert run(85)["outcome"] == "Unresolved"
+    assert run(85)["release_run_s"] == 9
+    assert run(91)["outcome"] == "Defended"
+    assert run(91)["release_run_s"] == 15
+
+
+def test_high_confidence_uses_continuous_not_total_pressure() -> None:
+    replay = _replay(100, gap=lambda t: 1.2 if t == 72 else 0.8 if t < 85 else 2.5)
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes()))
+    assert battle["pressure_seconds"] == 24
+    assert battle["longest_pressure_run_s"] == 12
+    assert battle["eligible"]
+    assert battle["confidence"] == "medium"
+
+
+def test_lap_mismatch_breaks_continuous_pressure() -> None:
+    replay = _replay(70)
+    replay.loc[replay.t_s.eq(65) & replay.driver_code.eq("B"), "lap_number"] = 3
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes((71, "A", "B"))))
+    assert battle["pressure_seconds"] == 10
+    assert battle["longest_pressure_run_s"] == 5
+    assert not battle["eligible"]
+
+
+def test_two_second_cadence_uses_sample_supported_pressure_and_elapsed_release() -> None:
+    replay = _replay(86, gap=lambda t: 0.8 if t < 70 else 2.5)
+    replay = replay.loc[replay.t_s.mod(2).eq(0)]
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes()))
+    assert battle["pressure_seconds"] == 10
+    assert battle["longest_pressure_run_s"] == 10
+    assert battle["release_run_s"] == 16
+    assert battle["outcome"] == "Defended"
+    assert battle["eligible"]
+
+
+def test_missing_track_status_interrupts_instead_of_confirming_release() -> None:
+    replay = _replay(90, gap=lambda t: 0.8 if t < 70 else 2.5)
+    replay.loc[replay.t_s.eq(75) & replay.driver_code.eq("B"), "track_status"] = None
+    battle = _battle(analyse_racecraft_battles(replay, _overtakes()))
+    assert battle["outcome"] == "Interrupted"
+    assert not battle["eligible"]
+
+
+def test_release_requires_fifteen_elapsed_seconds_not_fifteen_samples() -> None:
+    def run(end: int) -> pd.Series:
+        return _battle(
+            analyse_racecraft_battles(
+                _replay(end, gap=lambda t: 0.8 if t < 70 else 2.5), _overtakes()
+            )
+        )
+
+    assert run(84)["outcome"] == "Unresolved"
+    assert run(84)["release_run_s"] == 14
+    assert run(85)["outcome"] == "Defended"
+    assert run(85)["longest_pressure_run_s"] == 10
+
+
 def test_rate_is_only_published_after_five_eligible_opportunities() -> None:
     def gap(t_s: int) -> float:
         return 0.8 if (t_s - 60) % 30 < 10 else 2.5
@@ -285,3 +403,7 @@ def test_pipeline_materialises_all_and_replaces_one_partition(tmp_path: Path) ->
     assert persisted["round"].tolist() == [1, 2]
     assert set(persisted["outcome"]) == {"Defended"}
     assert len(summaries) == 6
+    pd.testing.assert_frame_equal(
+        all_result.battles.loc[all_result.battles["round"].eq(1)].reset_index(drop=True),
+        incremental.battles.reset_index(drop=True),
+    )

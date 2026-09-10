@@ -16,7 +16,7 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "racecraft-v2-pit-context"
+METHODOLOGY_VERSION = "racecraft-v3-continuity"
 PRESSURE_GAP_S = 1.0
 CONTACT_GAP_S = 1.5
 RELEASE_GAP_S = 2.0
@@ -68,6 +68,8 @@ BATTLE_COLUMNS = [
     "end_t_s",
     "duration_s",
     "pressure_seconds",
+    "longest_pressure_run_s",
+    "release_run_s",
     "contact_seconds",
     "start_lap",
     "end_lap",
@@ -156,6 +158,8 @@ _BATTLE_FLOAT = {
     "end_t_s",
     "duration_s",
     "pressure_seconds",
+    "longest_pressure_run_s",
+    "release_run_s",
     "contact_seconds",
     "coverage_pct",
     "same_lap_deficit_share_pct",
@@ -319,7 +323,12 @@ def _same_lap_deficit(row: Mapping[str, Any]) -> bool:
 
 
 def _green(row: Mapping[str, Any]) -> bool:
-    return bool(row["track_status"] == "1" and row["defender_track_status"] == "1")
+    return bool(
+        pd.notna(row["track_status"])
+        and pd.notna(row["defender_track_status"])
+        and row["track_status"] == "1"
+        and row["defender_track_status"] == "1"
+    )
 
 
 def _contact(row: Mapping[str, Any], contact_gap_s: float) -> bool:
@@ -393,6 +402,9 @@ def _episode_row(
     pressure = frame.loc[frame["gap_to_ahead_s"].le(pressure_gap_s)]
     contact = frame.loc[frame["gap_to_ahead_s"].le(cast(float, state["contact_gap_s"]))]
     pressure_seconds = len(pressure) * tick_s
+    longest_pressure = cast(float, state["longest_pressure_run_s"])
+    release_start = cast(float | None, state["release_start"])
+    release_run = max(0.0, end_t - release_start) if release_start is not None else 0.0
     contact_seconds = len(contact) * tick_s
     start_t = cast(float, state["start_t"])
     duration = max(tick_s, end_t - start_t + tick_s)
@@ -442,10 +454,10 @@ def _episode_row(
     same_lap_samples = cast(int, state["same_lap_samples"])
     same_lap_share = 100.0 * same_lap_samples / valid_samples
     coverage = min(100.0, 100.0 * valid_samples * tick_s / duration)
-    sufficient = pressure_seconds >= min_pressure_s and same_lap_share >= 80 and coverage >= 80
+    sufficient = longest_pressure >= min_pressure_s and same_lap_share >= 80 and coverage >= 80
     resolved = outcome in {"Converted", "Defended"}
     eligible = sufficient and resolved
-    if pressure_seconds < min_pressure_s:
+    if longest_pressure < min_pressure_s:
         exclusion = "insufficient_sustained_pressure"
     elif same_lap_share < 80:
         exclusion = "lap_deficit_changed"
@@ -460,7 +472,7 @@ def _episode_row(
     confidence = (
         "high"
         if eligible
-        and pressure_seconds >= 20
+        and longest_pressure >= 20
         and coverage >= 95
         and same_lap_share >= 90
         and strong_pass
@@ -490,6 +502,8 @@ def _episode_row(
         "end_t_s": end_t,
         "duration_s": duration,
         "pressure_seconds": pressure_seconds,
+        "longest_pressure_run_s": longest_pressure,
+        "release_run_s": release_run,
         "contact_seconds": contact_seconds,
         "start_lap": start_lap,
         "end_lap": end_lap,
@@ -521,7 +535,10 @@ def _episode_row(
     }
 
 
-def _new_state(row: Mapping[str, Any], tick_s: float, contact_gap_s: float) -> dict[str, object]:
+def _new_state(
+    row: Mapping[str, Any], tick_s: float, contact_gap_s: float, pressure_gap_s: float
+) -> dict[str, object]:
+    pressure = float(row["gap_to_ahead_s"]) <= pressure_gap_s
     return {
         "season": row["season"],
         "round": row["round"],
@@ -536,6 +553,8 @@ def _new_state(row: Mapping[str, Any], tick_s: float, contact_gap_s: float) -> d
         "start_t": float(row["t_s"]),
         "last_t": float(row["t_s"]),
         "release_start": None,
+        "pressure_start": float(row["t_s"]) if pressure else None,
+        "longest_pressure_run_s": tick_s if pressure else 0.0,
         "tick_s": tick_s,
         "contact_gap_s": contact_gap_s,
         "valid_samples": 1,
@@ -581,14 +600,17 @@ def _detect_battles(
                 is_contact = _contact(row, contact_gap_s)
                 if state is None:
                     if is_contact:
-                        state = _new_state(row, tick_s, contact_gap_s)
+                        state = _new_state(row, tick_s, contact_gap_s, pressure_gap_s)
                         observations = state["observations"]
                         assert isinstance(observations, list)
                         observations.append(_observation(row))
                     continue
 
                 last_t = cast(float, state["last_t"])
-                same_pair = row["defender_code"] == state["defender_code"]
+                same_pair = (
+                    isinstance(row["defender_code"], str)
+                    and row["defender_code"] == state["defender_code"]
+                )
                 terminal = ""
                 if now - last_t > MAX_TICK_GAP_S:
                     terminal = "feed_gap"
@@ -613,22 +635,39 @@ def _detect_battles(
                         rows.append(episode)
                     state = None
                     if is_contact:
-                        state = _new_state(row, tick_s, contact_gap_s)
+                        state = _new_state(row, tick_s, contact_gap_s, pressure_gap_s)
                         observations = state["observations"]
                         assert isinstance(observations, list)
                         observations.append(_observation(row))
                     continue
 
                 gap = row["gap_to_ahead_s"]
+                same_lap = _same_lap_deficit(row)
+                # An episode may survive a short feed gap, but an uninterrupted
+                # condition cannot bridge even one missing expected sample.
+                if now - last_t > tick_s + 1e-6:
+                    state["pressure_start"] = None
+                    state["release_start"] = None
+                is_pressure = pd.notna(gap) and 0 < float(gap) <= pressure_gap_s and same_lap
+                if is_pressure:
+                    if state["pressure_start"] is None:
+                        state["pressure_start"] = now
+                    # Sample-supported duration: ten consecutive 1 Hz samples
+                    # support ten seconds, not ten seconds of exact telemetry.
+                    state["longest_pressure_run_s"] = max(
+                        cast(float, state["longest_pressure_run_s"]),
+                        now - cast(float, state["pressure_start"]) + tick_s,
+                    )
+                else:
+                    state["pressure_start"] = None
                 state["valid_samples"] = cast(int, state["valid_samples"]) + 1
-                if _same_lap_deficit(row):
+                if same_lap:
                     state["same_lap_samples"] = cast(int, state["same_lap_samples"]) + 1
-                if pd.notna(gap) and 0 < float(gap) <= contact_gap_s and _same_lap_deficit(row):
+                if pd.notna(gap) and 0 < float(gap) <= contact_gap_s and same_lap:
                     observations = state["observations"]
                     assert isinstance(observations, list)
                     observations.append(_observation(row))
-                    state["release_start"] = None
-                elif pd.notna(gap) and float(gap) > release_gap_s:
+                if pd.notna(gap) and float(gap) > release_gap_s and same_lap:
                     if state["release_start"] is None:
                         state["release_start"] = now
                     elif now - cast(float, state["release_start"]) >= release_confirm_s:
@@ -646,6 +685,10 @@ def _detect_battles(
                             rows.append(episode)
                         state = None
                         continue
+                else:
+                    # Includes the neutral 1.5-2s band, invalid gaps and a lap
+                    # mismatch. None proves uninterrupted release above 2s.
+                    state["release_start"] = None
                 state["last_t"] = now
             if state is not None:
                 episode = _episode_row(
@@ -755,8 +798,8 @@ def _summarise(replay: pd.DataFrame, battles: pd.DataFrame) -> pd.DataFrame:
                 "unresolved_attacks": int(attacks_all["outcome"].eq("Unresolved").sum()),
                 "interrupted_defences": int(defences_all["outcome"].eq("Interrupted").sum()),
                 "unresolved_defences": int(defences_all["outcome"].eq("Unresolved").sum()),
-                "quick_reversals_made": int(attacks_all["quick_reversal"].sum()),
-                "quick_reversals_conceded": int(defences_all["quick_reversal"].sum()),
+                "quick_reversals_made": int(defences_all["quick_reversal"].sum()),
+                "quick_reversals_conceded": int(attacks_all["quick_reversal"].sum()),
                 "longest_battle_s": float(
                     pd.concat([attacks_all["duration_s"], defences_all["duration_s"]]).max()
                 )
