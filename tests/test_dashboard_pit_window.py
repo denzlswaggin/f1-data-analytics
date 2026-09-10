@@ -27,3 +27,17 @@ def test_source_and_coverage_publish_pit_window_evidence() -> None:
     assert "opportunity_type" in source
     assert "where not exists" in source
     assert "'pit_window'" in coverage
+
+
+def test_pit_pages_do_not_label_full_duration_as_mechanic_service_time() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    strategy = (ROOT / "dashboard/pages/pit-strategy.md").read_text(encoding="utf-8")
+    for text in (page, strategy):
+        assert "pit-lane duration" in text.lower()
+        assert "pit entry and exit" in text
+        assert "mechanic performance" in text
+        assert 'title="Stationary' not in text
+        assert 'xAxisTitle="stationary' not in text
+    assert "a positive value means the earlier stop took longer" in page
+    assert "adds this difference" in page
+    assert "versus race median" in strategy

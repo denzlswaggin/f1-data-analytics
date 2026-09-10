@@ -48,3 +48,44 @@ def test_page_distinguishes_continuous_evidence_and_reversal_ownership() -> None
     assert "defender receives the re-pass made" in page
     assert "attacker receives the re-pass" in page
     assert "quick_reversals_conceded" in page
+
+
+def test_page_shows_resolved_denominator_and_excluded_role_counts() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    for field in (
+        "interrupted_attacks",
+        "unresolved_attacks",
+        "interrupted_defences",
+        "unresolved_defences",
+        "offense_confidence",
+        "defense_confidence",
+    ):
+        assert f"<Column id={field}" in page
+    assert 'title="Resolved denominator"' in page
+    assert "not the probability of passing" in page
+    assert "event-detection errors" in page
+    assert "not counted as failed" in page
+
+
+def test_headline_counts_partition_all_observed_battles() -> None:
+    import duckdb
+
+    page = PAGE.read_text(encoding="utf-8")
+    query = page.split("```sql race_totals\n", 1)[1].split("```", 1)[0]
+    query = query.replace("${race_battles}", "battles")
+    with duckdb.connect() as connection:
+        connection.execute("create table battles (eligible boolean, outcome varchar)")
+        for outcome, eligible in (
+            ("Converted", True),
+            ("Defended", True),
+            ("Converted", False),
+            ("Defended", False),
+            ("Interrupted", False),
+            ("Unresolved", False),
+        ):
+            connection.execute("insert into battles values (?, ?)", [eligible, outcome])
+        row = connection.execute(query).fetchdf().iloc[0]
+    assert row["observed_battles"] == 6
+    assert row["eligible_battles"] == row["conversions"] + row["defences"] == 2
+    assert row["excluded_resolved"] == 2
+    assert row["interrupted_battles"] == row["unresolved_battles"] == 1

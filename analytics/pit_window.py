@@ -300,8 +300,9 @@ def analyse_pit_windows(
 
     Positive ``net_time_gain_sec`` means the earlier-stopping driver improved
     their signed gap over the cycle.  ``on_track_gain_sec`` removes the observed
-    stationary-time difference, but still includes tyre warm-up, traffic and
-    driver pace; neither value is a causal strategy estimate.
+    full pit-lane-duration difference, not just stationary service time. The
+    residual still includes tyre warm-up, traffic and driver pace; neither
+    value is a causal strategy estimate or an isolated mechanic-performance score.
     """
     _require_columns(laps, _LAP_REQUIRED, "laps")
     if max_stop_separation_laps < 1:

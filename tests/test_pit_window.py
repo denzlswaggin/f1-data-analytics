@@ -173,7 +173,7 @@ def test_race_control_window_is_retained_but_excluded() -> None:
     assert np.isnan(row["net_time_gain_sec"])
 
 
-def test_missing_stationary_times_keep_cycle_with_reduced_confidence() -> None:
+def test_missing_pit_lane_durations_keep_cycle_with_reduced_confidence() -> None:
     result = analyse_pit_windows(_race_laps())
 
     row = result.iloc[0]
