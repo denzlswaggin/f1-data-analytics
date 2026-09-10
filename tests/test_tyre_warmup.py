@@ -124,6 +124,9 @@ def test_fits_mature_trend_and_measures_time_to_pace() -> None:
     assert stint["first_two_lap_warmup_cost_sec"] == pytest.approx(1.8)
     assert stint["stable_window_start_lap"] == 13
     assert stint["time_to_pace_laps"] == 4
+    assert stint["first_observed_confirmation_laps"] == 4
+    assert bool(stint["confirmation_history_complete"])
+    assert stint["settling_status"] == "observed_complete"
     assert stint["confidence"] == "High"
 
 
@@ -214,6 +217,9 @@ def test_complete_unsettled_window_is_right_censored() -> None:
     assert bool(stint["right_censored"])
     assert bool(stint["crossover_eligible"])
     assert pd.isna(stint["time_to_pace_laps"])
+    assert pd.isna(stint["first_observed_confirmation_laps"])
+    assert not bool(stint["confirmation_history_complete"])
+    assert stint["settling_status"] == "right_censored"
 
 
 def test_missing_evaluation_lap_is_incomplete_not_censored() -> None:
@@ -224,6 +230,66 @@ def test_missing_evaluation_lap_is_incomplete_not_censored() -> None:
     assert not bool(stint["observation_complete"])
     assert not bool(stint["right_censored"])
     assert not bool(stint["crossover_eligible"])
+    assert pd.isna(stint["time_to_pace_laps"])
+    assert pd.isna(stint["first_observed_confirmation_laps"])
+    assert stint["settling_status"] == "incomplete"
+
+
+@pytest.mark.parametrize("missing_kind", ["traffic", "missing_context", "missing_lap", "non_green"])
+def test_gap_before_observed_pair_does_not_publish_exact_time(missing_kind: str) -> None:
+    laps = _laps()
+    traffic = _traffic()
+    if missing_kind == "traffic":
+        traffic.loc[traffic["lap_number"].eq(12), "air_state"] = "traffic"
+    elif missing_kind == "missing_context":
+        traffic = traffic.loc[traffic["lap_number"].ne(12)]
+    elif missing_kind == "missing_lap":
+        laps = laps.loc[laps["lap_number"].ne(12)]
+    else:
+        laps.loc[laps["lap_number"].eq(12), "track_status"] = "12"
+    stint = analyse_tyre_warmup(laps, traffic).summary.iloc[0]
+    assert bool(stint["stable_pace_achieved"])
+    assert stint["stable_window_start_lap"] == 13
+    assert stint["first_observed_confirmation_laps"] == 4
+    assert pd.isna(stint["time_to_pace_laps"])
+    assert not bool(stint["confirmation_history_complete"])
+    assert not bool(stint["observation_complete"])
+    assert not bool(stint["right_censored"])
+    assert not bool(stint["crossover_eligible"])
+    assert stint["settling_status"] == "observed_incomplete"
+    assert stint["confidence"] == "Medium"
+    assert stint["first_flying_warmup_loss_sec"] == pytest.approx(1.2)
+
+
+def test_gap_after_confirming_pair_preserves_complete_confirmation_history() -> None:
+    stint = analyse_tyre_warmup(_laps(), _traffic(states={15: "traffic"})).summary.iloc[0]
+    assert stint["time_to_pace_laps"] == 4
+    assert stint["first_observed_confirmation_laps"] == 4
+    assert bool(stint["confirmation_history_complete"])
+    assert not bool(stint["observation_complete"])
+    assert not bool(stint["right_censored"])
+    assert bool(stint["crossover_eligible"])
+    assert stint["settling_status"] == "observed_complete"
+
+
+def test_pair_at_window_end_is_confirmation_not_right_censoring() -> None:
+    controlled = {10 + offset: _expected(offset) + 0.8 for offset in range(1, 5)}
+    stint = analyse_tyre_warmup(_laps(), _traffic(controlled)).summary.iloc[0]
+    assert stint["time_to_pace_laps"] == 6
+    assert stint["first_observed_confirmation_laps"] == 6
+    assert bool(stint["observation_complete"])
+    assert bool(stint["confirmation_history_complete"])
+    assert not bool(stint["right_censored"])
+    assert stint["settling_status"] == "observed_complete"
+
+
+def test_unavailable_stint_has_no_confirmation_or_censor_bound() -> None:
+    stint = analyse_tyre_warmup(_laps(), _traffic(states={11: "traffic"})).summary.iloc[0]
+    assert stint["settling_status"] == "unavailable"
+    assert pd.isna(stint["first_observed_confirmation_laps"])
+    assert pd.isna(stint["time_to_pace_laps"])
+    assert not bool(stint["confirmation_history_complete"])
+    assert not bool(stint["right_censored"])
 
 
 def test_rejects_implausibly_steep_mature_trend() -> None:
@@ -239,6 +305,9 @@ def test_empty_result_has_stable_typed_schemas() -> None:
     assert result.summary.columns.tolist() == TYRE_WARMUP_COLUMNS
     assert result.laps.columns.tolist() == TYRE_WARMUP_LAP_COLUMNS
     assert str(result.summary["warmup_eligible"].dtype) == "boolean"
+    assert str(result.summary["first_observed_confirmation_laps"].dtype) == "Int64"
+    assert str(result.summary["confirmation_history_complete"].dtype) == "boolean"
+    assert str(result.summary["settling_status"].dtype) == "string"
     assert str(result.laps["warmup_loss_sec"].dtype) == "float64"
 
 
