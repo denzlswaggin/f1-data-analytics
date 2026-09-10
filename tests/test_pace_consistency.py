@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 
+import duckdb
 import numpy as np
 import pandas as pd
 import pytest
 from analytics.pace_consistency import analyse_pace_consistency
+from analytics.pipeline import build_pace_consistency, build_pace_consistency_incremental
+from ingestion.config import Settings
+from ingestion.loaders.warehouse import read_query
 
 
 def _stint(
@@ -223,3 +228,68 @@ def test_validates_schema_parameters_duplicates_and_empty_output() -> None:
     assert empty.summary.empty and empty.laps.empty
     assert str(empty.summary["consistency_eligible"].dtype) == "boolean"
     assert str(empty.laps["pace_residual_sec"].dtype) == "float64"
+
+
+def _seed_warehouse(path: Path) -> Settings:
+    connection = duckdb.connect(str(path))
+    try:
+        connection.execute("create schema marts")
+        connection.execute("create schema staging")
+        connection.register("traffic_laps", _stint())
+        connection.execute("create table marts.traffic_adjusted_laps as select * from traffic_laps")
+        connection.execute(
+            "create table staging.stg_driver_codes as "
+            "select 2026 as season, 'AAA' as driver_code, 'Driver AAA' as driver_name"
+        )
+    finally:
+        connection.close()
+    return Settings(warehouse="duckdb", duckdb_path=path)
+
+
+def test_builder_materialises_summary_and_lap_evidence(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "consistency.duckdb")
+
+    result = build_pace_consistency(2026, 1, settings=settings)
+
+    summary = read_query("select * from marts.pace_consistency", settings)
+    evidence = read_query("select * from marts.pace_consistency_laps", settings)
+    assert len(summary) == len(result.summary) == 1
+    assert len(evidence) == len(result.laps) == 8
+    assert bool(summary.iloc[0]["consistency_eligible"])
+
+
+def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "consistency-incremental.duckdb")
+    result = build_pace_consistency(2026, 1, settings=settings)
+    summary_copy = result.summary.copy().assign(round=2)
+    laps_copy = result.laps.copy().assign(round=2)
+    connection = duckdb.connect(str(settings.duckdb_path))
+    try:
+        connection.register("summary_copy", summary_copy)
+        connection.register("laps_copy", laps_copy)
+        connection.execute("insert into marts.pace_consistency by name select * from summary_copy")
+        connection.execute(
+            "insert into marts.pace_consistency_laps by name select * from laps_copy"
+        )
+    finally:
+        connection.close()
+
+    build_pace_consistency_incremental(2026, 1, settings=settings)
+
+    summary_rounds = read_query(
+        "select round, count(*) as rows from marts.pace_consistency group by round order by round",
+        settings,
+    )
+    lap_rounds = read_query(
+        "select round, count(*) as rows from marts.pace_consistency_laps "
+        "group by round order by round",
+        settings,
+    )
+    assert summary_rounds.to_dict("records") == [
+        {"round": 1, "rows": 1},
+        {"round": 2, "rows": 1},
+    ]
+    assert lap_rounds.to_dict("records") == [
+        {"round": 1, "rows": 8},
+        {"round": 2, "rows": 8},
+    ]
