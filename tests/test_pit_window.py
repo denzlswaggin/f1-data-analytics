@@ -17,6 +17,15 @@ from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
 
+def test_additional_actual_pit_without_stint_change_is_retained_as_excluded() -> None:
+    stops = pd.concat([_stops(), _stops().iloc[[0]].assign(pit_lap=5)], ignore_index=True)
+    result = analyse_pit_windows(_race_laps(), stops)
+    assert len(result) == 1
+    assert not bool(result.iloc[0]["eligible"])
+    assert result.iloc[0]["exclusion_reason"] == "Additional stop in window"
+    assert pd.isna(result.iloc[0]["net_time_gain_sec"])
+
+
 def _race_laps(
     *,
     a_pit_lap: int = 3,

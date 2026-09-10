@@ -17,6 +17,23 @@ from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
 
 
+def test_explicit_pit_boundary_overrides_stale_clean_air_evidence() -> None:
+    laps = _laps()
+    laps["is_pit_boundary"] = laps["lap_number"].isin([17, 18, 19, 20])
+    result = analyse_tyre_warmup(laps, _traffic())
+    assert not bool(result.summary.iloc[0]["warmup_eligible"])
+    assert "mature" in str(result.summary.iloc[0]["exclusion_reason"]).lower()
+
+
+def test_pit_boundary_first_flying_lap_cannot_establish_warmup() -> None:
+    laps = _laps()
+    laps["is_pit_boundary"] = laps["lap_number"].eq(11)
+    result = analyse_tyre_warmup(laps, _traffic())
+    assert not bool(result.summary.iloc[0]["warmup_eligible"])
+    assert result.summary.iloc[0]["exclusion_reason"] == "First flying lap was a pit boundary"
+    assert result.laps.iloc[0]["lap_exclusion_reason"] == "Pit entry or exit lap"
+
+
 def _laps(
     *,
     compound: str = "HARD",

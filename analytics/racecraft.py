@@ -16,7 +16,7 @@ from typing import Any, cast
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "racecraft-v1"
+METHODOLOGY_VERSION = "racecraft-v2-pit-context"
 PRESSURE_GAP_S = 1.0
 CONTACT_GAP_S = 1.5
 RELEASE_GAP_S = 2.0

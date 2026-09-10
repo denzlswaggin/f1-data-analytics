@@ -14,6 +14,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_pace_consistency_incremental,
+    build_pit_lap_context_incremental,
     build_pit_timing_sensitivity_incremental,
     build_pit_window_effectiveness_incremental,
     build_race_control_impact_incremental,
@@ -176,6 +177,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         settings=settings,
     )
     replay = build_race_replay_incremental(season, rnd, settings=settings)
+    pit_context = build_pit_lap_context_incremental(season, rnd, settings=settings)
     traffic = build_traffic_adjusted_pace_incremental(season, rnd, settings=settings)
     consistency = build_pace_consistency_incremental(season, rnd, settings=settings)
     tyre_warmup = build_tyre_warmup_incremental(season, rnd, settings=settings)
@@ -189,6 +191,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         "dynamic_ratings": len(dynamic_ratings),
         "pace_profiles": len(pace_profile),
         "replay_rows": len(replay),
+        "pit_context_laps": len(pit_context),
         "traffic_pace_drivers": len(traffic.summary),
         "pace_consistency_drivers": len(consistency.summary),
         "pace_consistency_laps": len(consistency.laps),

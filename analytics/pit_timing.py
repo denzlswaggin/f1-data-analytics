@@ -14,9 +14,10 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
+from analytics.pit_context import attach_pit_lap_context, build_pit_lap_context
 from analytics.traffic import classify_representative_lap_air
 
-METHODOLOGY_VERSION = "pit-timing-sensitivity-v1"
+METHODOLOGY_VERSION = "pit-timing-sensitivity-v2"
 SUPPORTED_COMPOUNDS = {"SOFT", "MEDIUM", "HARD"}
 SCENARIO_SHIFTS = tuple(range(-3, 4))
 MIN_FIELD_PEERS = 5
@@ -383,6 +384,14 @@ def _base_exclusion(
         return "incomplete_evaluation_window"
     if not window["track_status"].eq("1").all():
         return "non_green_evaluation_window"
+    extra_pit = (window["is_pit_in_lap"].fillna(False) & window["lap_number"].ne(out_lap - 1)) | (
+        window["is_pit_out_lap"].fillna(False) & window["lap_number"].ne(out_lap)
+    )
+    extra_pit |= window["is_pit_boundary"].fillna(False) & ~window["lap_number"].isin(
+        [out_lap - 1, out_lap]
+    )
+    if extra_pit.any():
+        return "additional_stop_in_window"
     other = all_transitions.loc[
         all_transitions["driver_code"].eq(transition["driver_code"])
         & all_transitions["actual_out_lap"].between(start, end)
@@ -665,6 +674,8 @@ def analyse_pit_timing_sensitivity(
         return _empty_result()
 
     prepared = _prepare_laps(laps)
+    if not {"is_pit_in_lap", "is_pit_out_lap", "is_pit_boundary"}.issubset(prepared.columns):
+        prepared = attach_pit_lap_context(prepared, build_pit_lap_context(prepared, stops))
     transitions = _attach_stop_context(_derive_transitions(prepared), stops)
     if transitions.empty:
         return _empty_result()

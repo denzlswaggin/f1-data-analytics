@@ -40,6 +40,10 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         calls.append(("overtakes", (season, rnd, settings)))
         return pd.DataFrame(index=range(6))
 
+    def pit_context(season: int, rnd: int, *, settings: Settings) -> pd.DataFrame:
+        calls.append(("pit_context", (season, rnd, settings)))
+        return pd.DataFrame(index=range(20))
+
     def pit_windows(season: int, rnd: int, *, settings: Settings) -> pd.DataFrame:
         calls.append(("pit_windows", (season, rnd, settings)))
         return pd.DataFrame(index=range(9))
@@ -90,6 +94,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     monkeypatch.setattr(round_refresh, "build_driver_ratings_v2", ratings_v2)
     monkeypatch.setattr(round_refresh, "build_driver_pace_profile", pace_profile)
     monkeypatch.setattr(round_refresh, "build_race_replay_incremental", replay)
+    monkeypatch.setattr(round_refresh, "build_pit_lap_context_incremental", pit_context)
     monkeypatch.setattr(round_refresh, "build_traffic_adjusted_pace_incremental", traffic)
     monkeypatch.setattr(round_refresh, "build_pace_consistency_incremental", pace_consistency)
     monkeypatch.setattr(round_refresh, "build_tyre_warmup_incremental", tyre_warmup)
@@ -107,6 +112,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "dynamic_ratings": 3,
         "pace_profiles": 4,
         "replay_rows": 5,
+        "pit_context_laps": 20,
         "traffic_pace_drivers": 7,
         "pace_consistency_drivers": 14,
         "pace_consistency_laps": 15,
@@ -126,6 +132,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "ratings_v2",
         "pace_profile",
         "replay",
+        "pit_context",
         "traffic",
         "pace_consistency",
         "tyre_warmup",
