@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import duckdb
@@ -10,6 +11,68 @@ SUMMARY_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "pit_timing_sensitivity
 SCENARIO_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "pit_timing_scenarios.sql"
 COVERAGE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "data_coverage.sql"
 NAV = ROOT / "dashboard" / "components" / "AppNav.svelte"
+
+
+def test_stop_picker_includes_excluded_stops_and_uses_integer_labels() -> None:
+    page = PAGE.read_text(encoding="utf-8")
+    result = _empty_result()
+    with duckdb.connect() as connection:
+        connection.execute("create schema f1")
+        connection.register("contract", result.summary)
+        connection.execute("create table f1.pit_timing_sensitivity as select * from contract")
+        connection.execute("""insert into f1.pit_timing_sensitivity
+            (season, round, driver_code, stop_number, actual_pit_lap, eligible) values
+            (2026, 1, 'AAA', 1, 8, false), (2026, 1, 'BBB', 2, 10, true),
+            (2026, 2, 'CCC', 1, 5, true)""")
+        for name in ("race_stops", "stop_choices"):
+            match = re.search(rf"```sql {name}\n(.*?)\n```", page, re.S)
+            assert match is not None
+            query = (
+                match[1]
+                .replace("${inputs.season.value}", "2026")
+                .replace("${inputs.race.value}", "1")
+                .replace("${race_stops}", "race_stops")
+            )
+            connection.execute(f"create table {name} as {query}")
+        rows = connection.execute("select stop_label, choice_label from stop_choices").fetchall()
+    assert rows == [
+        ("AAA · Stop 1", "AAA · Stop 1 · Excluded"),
+        ("BBB · Stop 2", "BBB · Stop 2 · Supported"),
+    ]
+
+
+def test_race_catalog_separates_missing_inputs_from_model_exclusions() -> None:
+    with duckdb.connect() as connection:
+        connection.execute("""
+            create schema staging; create schema marts;
+            create table staging.stg_results as select * from (values
+                (2024, 1), (2024, 1), (2024, 2), (2026, 1), (2023, 1)
+            ) t(season, round);
+            create table staging.stg_races as select * from (values
+                (2024, 1, 'A', date '2024-03-01'),
+                (2024, 2, 'B', date '2024-03-08'),
+                (2026, 1, 'C', date '2026-03-01'),
+                (2026, 23, 'Future', date '2026-12-01'),
+                (2023, 1, 'Old', date '2023-03-01')
+            ) t(season, round, race_name, race_date);
+            create table marts.pit_timing_sensitivity as select * from (values
+                (2024, 1, 'AAA', true), (2024, 1, 'AAA', false),
+                (2024, 2, 'BBB', false)
+            ) t(season, round, driver_code, eligible);
+            create table staging.stg_laps as select * from (values
+                (2024, 1, 'R'), (2024, 2, 'R'), (2026, 1, 'Q')
+            ) t(season, round, session);
+            create table marts.race_replay as select 2024 as season, 1 as round;
+        """)
+        rows = connection.execute(
+            (SUMMARY_SOURCE.parent / "pit_timing_races.sql").read_text(encoding="utf-8")
+        ).fetchdf()
+    assert rows[["season", "round"]].values.tolist() == [[2024, 1], [2024, 2], [2026, 1]]
+    assert rows["observed_stops"].tolist() == [2, 1, 0]
+    assert rows["eligible_stops"].tolist() == [1, 0, 0]
+    assert rows["drivers"].tolist() == [1, 1, 0]
+    assert rows["lap_rows"].tolist() == [1, 1, 0]
+    assert rows["replay_rows"].tolist() == [1, 0, 0]
 
 
 def test_page_exposes_scenarios_uncertainty_and_limitations() -> None:

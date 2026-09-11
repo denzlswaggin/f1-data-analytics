@@ -18,8 +18,8 @@ The model moves the same observed stop and tyre-set transition. It does not know
 
 ```sql seasons
 select distinct season
-from f1.pit_timing_sensitivity
-where season > 0
+from f1.pit_timing_races
+where season between 2024 and 2026
 order by season desc
 ```
 
@@ -29,8 +29,10 @@ select distinct
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
-        || replace(race_name, ' Grand Prix', '') as race_label
-from f1.pit_timing_sensitivity
+        || replace(race_name, ' Grand Prix', '')
+        || ' · ' || cast(eligible_stops as integer) || '/' || cast(observed_stops as integer)
+        || ' supported stops' as race_label
+from f1.pit_timing_races
 where season = ${inputs.season.value}
 order by round
 ```
@@ -41,22 +43,49 @@ order by round
 </FilterBar>
 
 ```sql coverage
-select * from f1.data_coverage
-where section = 'pit_timing'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.pit_timing_sensitivity
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+select *, observed_stops as sample_rows, drivers as entity_count,
+    1 as race_count, season as first_season, season as last_season,
+    race_date as latest_event_date
+from f1.pit_timing_races
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 <DataTrust data={coverage} sampleLabel="observed stops" entityLabel="Drivers" method="clean-air ±3-lap counterfactual with bootstrap uncertainty" />
 
+```sql season_coverage
+select round, race_name, observed_stops, eligible_stops,
+    observed_stops - eligible_stops as excluded_stops,
+    case
+        when lap_rows = 0 then 'Lap data unavailable'
+        when replay_rows = 0 then 'Replay unavailable'
+        when observed_stops = 0 then 'No analysed transitions'
+        when eligible_stops = 0 then 'No stops pass the model rules'
+        else 'Supported results available'
+    end as evidence_status
+from f1.pit_timing_races
+where season = ${inputs.season.value}
+order by round
+```
+
+<ExpandableSection title="Find races with supported results — season coverage" open=true>
+All completed races with loaded results are listed. Input availability is separate
+from model eligibility: a loaded replay does not guarantee enough clean reference
+laps for a stop. Counts refer to observed tyre-stint transitions analysed by this model.
+
+<DataTable data={season_coverage} rows=24 search=true>
+    <Column id=round title="Round" fmt="0" />
+    <Column id=race_name title="Race" />
+    <Column id=observed_stops title="Observed stops" />
+    <Column id=eligible_stops title="Supported stops" />
+    <Column id=excluded_stops title="Excluded stops" />
+    <Column id=evidence_status title="Evidence status" />
+</DataTable>
+</ExpandableSection>
+
 ```sql race_stops
 select
     *,
-    driver_code || ' · Stop ' || cast(stop_number as varchar) as stop_label,
+    driver_code || ' · Stop ' || cast(cast(stop_number as integer) as varchar) as stop_label,
     old_compound || ' → ' || new_compound as compound_change,
     case
         when not eligible then 'Excluded'
@@ -93,6 +122,36 @@ from ${race_stops}
     <BigValue data={evidence_summary} value=no_signal title="No meaningful directional signal" />
 </Grid>
 
+{#if coverage[0]?.observed_stops === 0}
+<KeyInsight label="No analysed stops">
+This completed race has no analysed tyre-stint transitions in the loaded data.
+That does not establish that no pit stops occurred.
+</KeyInsight>
+{:else if evidence_summary[0]?.eligible_stops === 0}
+<KeyInsight label="No supported timing estimate">
+The observed stops are available below, but none passes every model rule.
+Select any stop to inspect its recorded context and exclusion reason.
+</KeyInsight>
+{/if}
+
+```sql exclusion_summary
+select replace(exclusion_reason, '_', ' ') as reason, count(*) as stops
+from ${race_stops}
+where not eligible
+group by exclusion_reason
+order by stops desc, reason
+```
+
+<ExpandableSection title="Why stops are excluded">
+Each stop is counted once, under the first failed rule. Later checks may not have
+run; blank diagnostics and zero reference counts do not prove the underlying feed
+is missing. Incomplete windows can also come from retirement or the end of a race.
+<DataTable data={exclusion_summary} rows=15>
+    <Column id=reason title="First failed rule" />
+    <Column id=stops title="Stops" />
+</DataTable>
+</ExpandableSection>
+
 ## Stop timing overview — {inputs.season.value} {inputs.race.label}
 
 The displayed shift is the lowest modelled cost among the supported scenarios. A
@@ -120,19 +179,20 @@ lap. Rejected scenarios remain visible below with their extrapolation distances.
 </DataTable>
 
 ```sql stop_choices
-select season, round, stop_label
+select season, round, stop_label,
+    stop_label || case when eligible then ' · Supported' else ' · Excluded' end as choice_label
 from ${race_stops}
-where eligible
 order by actual_pit_lap, driver_code, stop_number
 ```
 
-<FilterBar title="Inspect one stop" description="The zero-lap scenario is the observed timing baseline; every bar uses the same 13-lap evaluation window.">
-    <DependentDropdown data={stop_choices} name=stop value=stop_label title="Driver and stop" season={inputs.season.value} round={inputs.race.value} />
+<FilterBar title="Inspect one stop" description="All observed stops are selectable. Supported curves compare timing within the same 13-lap evaluation window.">
+    <DependentDropdown data={stop_choices} name=stop value=stop_label label=choice_label title="Driver and stop" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql selected_stop
 select * from ${race_stops}
 where stop_label = '${inputs.stop.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 ```sql selected_scenarios
@@ -151,13 +211,28 @@ select
 from f1.pit_timing_scenarios as scenarios
 where season = ${inputs.season.value}
     and round = ${inputs.race.value}
-    and driver_code || ' · Stop ' || cast(stop_number as varchar) = '${inputs.stop.value}'
+    and driver_code || ' · Stop ' || cast(cast(stop_number as integer) as varchar) = '${inputs.stop.value}'
 order by shift_laps
 ```
 
 ```sql supported_curve
 select * from ${selected_scenarios} where supported
 ```
+
+{#if selected_stop.length > 0}
+
+## Stop evidence — {inputs.stop.value}
+
+<DataTable data={selected_stop} rows=1>
+    <Column id=actual_pit_lap title="Observed pit lap" />
+    <Column id=compound_change title="Tyres" />
+    <Column id=pit_duration_sec title="Recorded pit duration (s)" fmt="0.000" />
+    <Column id=official_pit_match title="Official stop matched" />
+    <Column id=window_start_lap title="Window start" />
+    <Column id=window_end_lap title="Window end" />
+</DataTable>
+
+{#if selected_stop[0]?.eligible}
 
 ## Scenario curve — {inputs.stop.value}
 
@@ -177,6 +252,16 @@ the timing trade-off between extending the old stint and starting the new one.
 >
     <ReferenceLine y=0 label="actual timing" />
 </BarChart>
+
+{:else}
+
+<KeyInsight label="Timing estimate excluded">
+First failed rule: <strong>{selected_stop[0]?.exclusion_reason?.replaceAll('_', ' ')}</strong>.
+The observed stop context remains available. No modelled gain is published for
+this stop; uncomputed diagnostics are not evidence of a missing data feed.
+</KeyInsight>
+
+{/if}
 
 <DataTable data={selected_scenarios} rows=7>
     <Column id=shift_laps title="Shift (laps)" fmt="+0;-0;0" />
@@ -232,6 +317,8 @@ from ${selected_stop}
     <Column id=best_old_extrapolation_laps title="Selected old extrapolation" />
     <Column id=best_new_extrapolation_laps title="Selected new extrapolation" />
 </DataTable>
+
+{/if}
 
 ```sql excluded_stops
 select stop_label, actual_pit_lap, compound_change, exclusion_reason,
