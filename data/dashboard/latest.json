@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260911-race-control-history-2024-2026.duckdb",
-  "generated_at": "2026-09-11T11:55:01.769699+00:00",
+  "database_file": "f1-dashboard-20260911-pit-timing-history-2024-2026.duckdb",
+  "generated_at": "2026-09-11T13:31:37.536228+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "c29f59434736f1d3b122e8341be1c997fdfac1ad6bcc567ab35de528f31a4f63",
-  "size_bytes": 1058025472,
+  "sha256": "6d72d8d547921a3272372edff37e50d62f473ed830198eb77e97ae0ca2d116be",
+  "size_bytes": 1051209728,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -54,5 +54,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260911-race-control-history-2024-2026"
+  "version": "20260911-pit-timing-history-2024-2026"
 }

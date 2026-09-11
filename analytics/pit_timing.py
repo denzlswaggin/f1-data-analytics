@@ -382,7 +382,7 @@ def _add_field_residuals(
         green, replay, min_replay_coverage=min_replay_coverage_pct / 100.0
     )
     if context.empty:
-        return context.assign(
+        return green.iloc[0:0].assign(
             field_peer_count=pd.Series(dtype="Int64"),
             field_peer_median_sec=pd.Series(dtype="float64"),
             field_pace_residual_sec=pd.Series(dtype="float64"),
@@ -791,6 +791,9 @@ def analyse_pit_timing_sensitivity(
     )
     summary_rows: list[dict[str, object]] = []
     scenario_rows: list[dict[str, object]] = []
+    replay_races = (
+        set() if replay.empty else set(zip(replay["season"], replay["round"], strict=True))
+    )
     for _, transition in transitions.iterrows():
         driver_laps = prepared.loc[
             prepared["season"].eq(transition["season"])
@@ -802,6 +805,8 @@ def analyse_pit_timing_sensitivity(
             & transitions["round"].eq(transition["round"])
         ]
         reason = _base_exclusion(transition, driver_laps, race_transitions)
+        if not reason and (transition["season"], transition["round"]) not in replay_races:
+            reason = "missing_race_replay"
         if reason:
             summary_rows.append(_excluded_summary(transition, reason))
             scenario_rows.extend(_unsupported_scenarios(transition, reason))
