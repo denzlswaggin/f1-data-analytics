@@ -1,9 +1,9 @@
 {
-  "database_file": "f1-dashboard-20260911-robust-estimates-v4.duckdb",
-  "generated_at": "2026-09-10T22:57:24.717055+00:00",
+  "database_file": "f1-dashboard-20260911-race-control-history-2024-2026.duckdb",
+  "generated_at": "2026-09-11T11:55:01.769699+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "af90ff3bbfab995d8aaf42d8dd18a6c055a3b0c06bf2b4a8c6f276191de2fded",
-  "size_bytes": 735326208,
+  "sha256": "c29f59434736f1d3b122e8341be1c997fdfac1ad6bcc567ab35de528f31a4f63",
+  "size_bytes": 1058025472,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -28,10 +28,10 @@
     "marts.pit_timing_scenarios": 14994,
     "marts.pit_timing_sensitivity": 2142,
     "marts.pit_window_effectiveness": 385,
-    "marts.race_control_events": 66,
-    "marts.race_control_impact": 1169,
+    "marts.race_control_events": 83,
+    "marts.race_control_impact": 1468,
     "marts.race_overtakes": 1604,
-    "marts.race_replay": 4129511,
+    "marts.race_replay": 6147810,
     "marts.racecraft_battles": 6136,
     "marts.racecraft_driver_summary": 776,
     "marts.traffic_adjusted_laps": 33136,
@@ -45,14 +45,14 @@
     "staging.stg_ergast_laps": 29152,
     "staging.stg_laps": 67388,
     "staging.stg_pitstops": 3260,
-    "staging.stg_positions": 24555908,
+    "staging.stg_positions": 36716317,
     "staging.stg_qualifying": 8630,
-    "staging.stg_race_control": 4778,
+    "staging.stg_race_control": 6528,
     "staging.stg_races": 422,
     "staging.stg_results": 8653,
     "staging.stg_team_radio": 1486,
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260911-robust-estimates-v4"
+  "version": "20260911-race-control-history-2024-2026"
 }
