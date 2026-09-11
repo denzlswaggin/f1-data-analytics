@@ -32,9 +32,9 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
 
         assert "name=season value=season" in content
         assert 'name=race value=round label=race_label order="round asc"' in content
-        assert 'latest={true} preserveInitial={true}' in content
-        assert '<Dropdown data={races} name=race' not in content
-        assert '<Dropdown data={tel_races} name=race' not in content
+        assert "latest={true} preserveInitial={true}" in content
+        assert "<Dropdown data={races} name=race" not in content
+        assert "<Dropdown data={tel_races} name=race" not in content
         assert "where season = ${inputs.season.value}" in content
         assert "order by round" in content
         assert "lpad(cast(round as varchar), 2, '0')" in content
