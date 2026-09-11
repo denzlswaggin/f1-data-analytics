@@ -24,6 +24,7 @@ order by season desc
 
 ```sql tel_races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
@@ -34,7 +35,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Fastest-lap telemetry coverage varies by season.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql telemetry_coverage
@@ -56,15 +57,15 @@ Pick two drivers. Limiting the trace to a duel makes braking, minimum speed and
 acceleration differences readable instead of overlaying the entire field.
 
 ```sql duel_drivers
-select distinct driver_code, driver_name
+select distinct season, round, driver_code, driver_name
 from f1.telemetry_fastest_lap
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
 <FilterBar title="Choose a duel" description="Compare two fastest race laps point by point.">
-    <Dropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" />
-    <Dropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" />
+    <DependentDropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" season={inputs.season.value} round={inputs.race.value} />
+    <DependentDropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" season={inputs.season.value} round={inputs.race.value} fallbackIndex={1} />
 </FilterBar>
 
 ```sql speed_trace
@@ -179,14 +180,14 @@ Pick a driver to draw their lap as a racing line, each point coloured by the gea
 selected there — corners (low gears) and straights (high gears) separate cleanly.
 
 ```sql tel_drivers
-select distinct driver_code, driver_name
+select distinct season, round, driver_code, driver_name
 from f1.telemetry_fastest_lap
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
 <FilterBar title="Choose a driver" description="Colour the racing line by selected gear.">
-    <Dropdown data={tel_drivers} name=driver value=driver_code label=driver_name title="Driver" />
+    <DependentDropdown data={tel_drivers} name=driver value=driver_code label=driver_name title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql track

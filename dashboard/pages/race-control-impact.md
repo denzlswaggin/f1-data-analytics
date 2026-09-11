@@ -18,39 +18,41 @@ Position comparison starts at the official deployment message and ends after two
 
 ```sql seasons
 select distinct season
-from f1.race_control_events
-where season > 0
+from f1.race_control_races
+where season between 2024 and 2026
 order by season desc
 ```
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') as race_label
-from f1.race_control_events
+from f1.race_control_races
 where season = ${inputs.season.value}
 order by round
 ```
 
-<FilterBar title="Choose a race" description="Only official, exactly paired intervention messages are analysed.">
+<FilterBar title="Choose a race" description="All loaded races from 2024–2026, including races without a recorded neutralisation. Only official, exactly paired intervention messages are analysed.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
-```sql coverage
-select * from f1.data_coverage
-where section = 'race_control'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.race_control_events
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+```sql selected_race
+select * from f1.race_control_races
+where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
-<DataTrust data={coverage} sampleLabel="neutralisations" entityLabel="Events" method="exact message pairs; two-lap recovery" />
+```sql coverage
+select message_count as sample_rows, event_count as entity_count,
+    1 as race_count, season as first_season, season as last_season,
+    race_date as latest_event_date
+from ${selected_race}
+```
+
+<DataTrust data={coverage} sampleLabel="race-control messages" entityLabel="Neutralisations" method="exact message pairs; two-lap recovery" />
 
 ```sql race_events
 select
@@ -62,13 +64,16 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by event_number
 ```
 
+{#if race_events.length > 0}
+
 <FilterBar title="Choose an intervention" description="Incomplete events remain selectable so the missing evidence stays visible.">
-    <Dropdown data={race_events} name=event value=event_id label=event_label order="event_number asc" title="Event" />
+    <RaceEventDropdown data={race_events} season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql selected_event
 select * from ${race_events}
 where event_id = '${inputs.event.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 ```sql event_driver_total
@@ -104,6 +109,7 @@ select
     end as pit_context
 from f1.race_control_impact
 where event_id = '${inputs.event.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 order by position_before
 ```
 
@@ -226,5 +232,19 @@ Other recorded laps wholly contained in that timestamp interval must have green 
 
 Lap deficit is estimated from continuous lap distance (lap number minus one plus lap progress) at identical timestamps, not from integer lap counters alone. Estimates close to a whole-lap boundary are uncertain and suppress time metrics, as do changed estimated deficits or missing comparable timing. These estimates are not confirmation of physical lapping. Position eligibility is separate from time eligibility, so a driver can retain position evidence while their time comparison is blank. Red flags publish position movement only.
 </ExpandableSection>
+
+{:else}
+
+{#if selected_race[0]?.message_count > 0}
+<KeyInsight label="No recorded neutralisation">
+The loaded race-control messages contain no recognised Safety Car, VSC or red-flag intervention for this race. There is no intervention impact to compare.
+</KeyInsight>
+{:else}
+<KeyInsight label="Race-control data unavailable">
+Official race-control messages have not been loaded for this race. Missing messages do not establish that the race had no neutralisation.
+</KeyInsight>
+{/if}
+
+{/if}
 
 <RelatedAnalysis section="race" current="race-control-impact" season={inputs.season.value} race={inputs.race.value} />

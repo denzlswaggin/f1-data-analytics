@@ -25,6 +25,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
@@ -36,7 +37,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Races are ordered by championship round; excluded stops remain visible with their evidence gap.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
@@ -119,14 +120,14 @@ lap. Rejected scenarios remain visible below with their extrapolation distances.
 </DataTable>
 
 ```sql stop_choices
-select stop_label
+select season, round, stop_label
 from ${race_stops}
 where eligible
 order by actual_pit_lap, driver_code, stop_number
 ```
 
 <FilterBar title="Inspect one stop" description="The zero-lap scenario is the observed timing baseline; every bar uses the same 13-lap evaluation window.">
-    <Dropdown data={stop_choices} name=stop value=stop_label title="Driver and stop" />
+    <DependentDropdown data={stop_choices} name=stop value=stop_label title="Driver and stop" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql selected_stop

@@ -25,6 +25,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
@@ -36,7 +37,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Available races have sufficient lap timing and replay-derived clean-air context.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
@@ -153,7 +154,7 @@ laps so different sample sizes remain comparable.
 </DataTable>
 
 ```sql drivers
-select distinct driver_code
+select distinct season, round, driver_code
 from f1.pace_consistency_laps
 where season = ${inputs.season.value} and round = ${inputs.race.value}
     and lap_eligible
@@ -161,7 +162,7 @@ order by driver_code
 ```
 
 <FilterBar title="Inspect one driver's evidence" description="Only clean-air laps from valid stint models enter the headline metrics.">
-    <Dropdown data={drivers} name=driver value=driver_code title="Driver" />
+    <DependentDropdown data={drivers} name=driver value=driver_code title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql lap_evidence

@@ -25,6 +25,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
@@ -36,7 +37,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Available races have lap timing plus sufficient replay-derived traffic context.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
