@@ -100,14 +100,14 @@
         flex-direction: column;
         width: 14rem;
         padding: 1rem;
-        overflow-y: auto;
+        overflow: hidden;
         border: 1px solid rgba(160, 174, 201, 0.18);
         border-radius: 1rem;
         background: color-mix(in srgb, #11151d 92%, transparent);
         box-shadow: 0 24px 65px rgba(0, 0, 0, 0.25);
         backdrop-filter: blur(16px);
     }
-    .nav-head { display: flex; align-items: center; justify-content: space-between; }
+    .nav-head { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; }
     .brand,
     .links a { color: inherit; text-decoration: none; }
     .brand { display: inline-flex; align-items: center; gap: 0.7rem; flex: none; font-weight: 760; }
@@ -121,7 +121,18 @@
     .brand-copy { display: flex; align-items: flex-start; flex-direction: column; gap: 0.05rem; }
     .brand-copy strong { color: #f8fafc; font-size: 1.02rem; letter-spacing: -0.04em; }
     .brand-copy span { color: #9ba7ba; font-size: 0.68rem; font-weight: 720; letter-spacing: 0.09em; text-transform: uppercase; }
-    .nav-groups { display: flex; flex-direction: column; gap: 1.15rem; margin-top: 1.5rem; }
+    .nav-groups {
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+        margin-top: 1.5rem;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+        scrollbar-width: none;
+    }
+    .nav-groups::-webkit-scrollbar { display: none; }
     section { margin: 0; }
     .group-label {
         display: block;
@@ -172,6 +183,7 @@
     }
     .menu-toggle i { font-style: normal; font-size: 1rem; }
     .nav-foot {
+        flex-shrink: 0;
         display: flex;
         align-items: center;
         gap: 0.45rem;
@@ -183,6 +195,13 @@
         font-weight: 650;
     }
     .nav-foot span { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #46d39a; box-shadow: 0 0 0 3px rgba(70, 211, 154, 0.1); }
+    @media (min-width: 1241px) and (max-height: 1100px) {
+        .app-nav { padding: 0.75rem; }
+        .nav-groups { gap: 0.65rem; margin-top: 0.85rem; }
+        .links a { padding: 0.32rem 0.55rem; line-height: 1.25; }
+        .group-label { margin-bottom: 0.25rem; }
+        .nav-foot { padding-top: 0.6rem; }
+    }
     @media (max-width: 1240px) {
         .app-nav {
             position: sticky;
