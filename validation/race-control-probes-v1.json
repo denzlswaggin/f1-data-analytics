@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "lap_tolerance": 1,
+  "annotation_status": "Assistant-transcribed; single-reviewer; not adjudicated. Positive probes only, not exhaustive caution windows.",
+  "sources": {
+    "imola": {
+      "url": "https://www.formula1.com/en/latest/article/verstappen-storms-to-victory-in-thrilling-emilia-romagna-grand-prix-ahead-of.4YJG3CyQJdFzCI6tiBtqoU",
+      "accessed": "2026-09-11"
+    },
+    "brazil": {
+      "url": "https://www.formula1.com/en/latest/article/verstappen-wins-chaotic-sao-paulo-grand-prix-after-stunning-recovery-from.1DIc8pzRmGbC3jHJmvtBi1",
+      "accessed": "2026-09-11"
+    }
+  },
+  "cases": [
+    {
+      "id": "imola-vsc-start",
+      "season": 2025,
+      "round": 7,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "VSC",
+      "lap_min": 29,
+      "lap_max": 29,
+      "expected": true,
+      "source_id": "imola"
+    },
+    {
+      "id": "imola-sc-start",
+      "season": 2025,
+      "round": 7,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "Safety Car",
+      "lap_min": 46,
+      "lap_max": 46,
+      "expected": true,
+      "source_id": "imola"
+    },
+    {
+      "id": "imola-sc-end",
+      "season": 2025,
+      "round": 7,
+      "kind": "race_control_end",
+      "driver": "VER",
+      "other": "Safety Car",
+      "lap_min": 53,
+      "lap_max": 53,
+      "expected": true,
+      "source_id": "imola"
+    },
+    {
+      "id": "brazil-red-start",
+      "season": 2024,
+      "round": 21,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "Red Flag",
+      "lap_min": 32,
+      "lap_max": 32,
+      "expected": true,
+      "source_id": "brazil"
+    }
+  ]
+}
