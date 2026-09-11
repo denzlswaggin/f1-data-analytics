@@ -52,6 +52,19 @@ Pit-table and narrative-report lap conventions can differ. They do not establish
 global precision, accurate race-control effects or calibrated uncertainty.
 [Read the window protocol and remaining limitations](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/event-window-validation.md).
 
+### Pass-sequence review: unresolved case
+
+Three provisional pair windows now check event direction and order, with replay
+coverage required for both drivers. Monza's lap 2 position return and lap 4 pass
+match in order; no pass is detected in the selected Spa Leclerc/Verstappen window.
+
+In Austria's lap 11, neither short lead exchange described by the race report
+appears in the detector output. The reconstructed replay keeps Norris first
+throughout that lap. The source descriptions and minimum pass duration still
+need footage review: this is an **unresolved discrepancy**, not a proven detector
+error. These provisional labels do not support a precision or accuracy score.
+[Read the sequence protocol and finding](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/pass-window-validation.md).
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,

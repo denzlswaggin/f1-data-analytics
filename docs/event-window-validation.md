@@ -93,6 +93,10 @@ rules; passing CI does not certify the historical claims.
 
 ## Still open
 
+[Directed pass-sequence review](pass-window-validation.md) now adds ordered
+matching and paired replay coverage. Its labels remain provisional, so it does
+not close exhaustive pass adjudication.
+
 Second-reviewer adjudication; exhaustively annotated **on-track pass** windows
 including reversals, lapping and retirements; independent timing evidence;
 untouched-race production-model evaluation; race-clustered uncertainty and

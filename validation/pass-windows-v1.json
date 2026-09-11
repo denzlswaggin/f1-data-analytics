@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "lap_tolerance": 0,
+  "accessed": "2026-09-11",
+  "annotation_status": "Single assistant transcription; report-derived, not video-reviewed or independently adjudicated.",
+  "selection": "Pair-specific intervals fixed before querying their detector outputs. Previously inspected races; not a pristine holdout.",
+  "windows": [
+    {
+      "id": "austria-2025-mclaren-lap11",
+      "season": 2025,
+      "round": 11,
+      "pair": [
+        "NOR",
+        "PIA"
+      ],
+      "anchor_driver": "NOR",
+      "lap_min": 11,
+      "lap_max": 11,
+      "completeness": "provisional",
+      "source_url": "https://www.formula1.com/en/latest/article/norris-fends-off-piastri-for-austrian-gp-victory-in-thrilling-race-long.2CH71wVvRP1FaU8s04Tj7f",
+      "note": "Report describes Piastri taking lead at Turn 3 then Norris switchback before Turn 4. Duration is unknown; video-page caption says Norris stayed in front. Not verified against the detector's 3-second persistence definition.",
+      "expected": [
+        {
+          "passer_code": "PIA",
+          "passed_code": "NOR",
+          "lap_number": 11
+        },
+        {
+          "passer_code": "NOR",
+          "passed_code": "PIA",
+          "lap_number": 11
+        }
+      ]
+    },
+    {
+      "id": "monza-2025-lead-return-laps2-4",
+      "season": 2025,
+      "round": 16,
+      "pair": [
+        "VER",
+        "NOR"
+      ],
+      "anchor_driver": "VER",
+      "lap_min": 2,
+      "lap_max": 4,
+      "completeness": "provisional",
+      "source_url": "https://www.formula1.com/en/latest/article/verstappen-charges-to-italian-gp-win-over-norris-and-piastri.6J7R9E9tzOI9Asy6HBmoVf.6J7R9E9tzOI9Asy6HBmoVf",
+      "note": "Verstappen gives position back at start of lap 2, then passes Norris on lap 4. First event is a position return, not a competitive skill claim.",
+      "expected": [
+        {
+          "passer_code": "NOR",
+          "passed_code": "VER",
+          "lap_number": 2
+        },
+        {
+          "passer_code": "VER",
+          "passed_code": "NOR",
+          "lap_number": 4
+        }
+      ]
+    },
+    {
+      "id": "spa-2025-verstappen-leclerc-laps5-44",
+      "season": 2025,
+      "round": 13,
+      "pair": [
+        "VER",
+        "LEC"
+      ],
+      "anchor_driver": "LEC",
+      "lap_min": 5,
+      "lap_max": 44,
+      "completeness": "provisional",
+      "source_url": "https://www.formula1.com/en/latest/article/piastri-wins-wet-dry-belgian-gp-after-late-pressure-from-title-rival-and.7QmPcUP90MvR5iX0w3j91",
+      "note": "Report explicitly says Leclerc held Verstappen off throughout. A negative report-derived pair window, not exhaustive footage adjudication.",
+      "expected": []
+    }
+  ]
+}
