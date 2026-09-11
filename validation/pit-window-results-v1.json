@@ -1,0 +1,473 @@
+{
+  "annotated_windows": 12,
+  "scored_windows": 12,
+  "unscored_windows": [],
+  "counts": {
+    "true_positive": 25,
+    "false_negative": 0,
+    "false_positive": 0
+  },
+  "scored_candidate_events": 25,
+  "scored_expected_events": 25,
+  "precision": 1,
+  "recall": 1,
+  "coverage_basis": "Every annotated driver-lap must have a context row and no unknown pit flag; not continuous telemetry completeness.",
+  "matching": "Exact lap, one-to-one; duplicate detections count as extra false positives.",
+  "limitations": "Selected complete official listed-stop windows only. False positives are source disagreements, not proof of no pit visit. Not global truth, an independent sensor, held-out race validation, or timing/uncertainty calibration. No true negatives or population false-positive rate.",
+  "windows": [
+    {
+      "id": "2025-r4-pia-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "PIA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        14,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        14,
+        32
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        14,
+        32
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r4-nor-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "NOR",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        10,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        10,
+        32
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        10,
+        32
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r4-ver-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "VER",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        10,
+        26
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        10,
+        26
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        10,
+        26
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r4-ham-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "HAM",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        17,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        17,
+        32
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        17,
+        32
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r4-rus-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "RUS",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        13,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        13,
+        32
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        13,
+        32
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r4-ant-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "ANT",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        12,
+        27,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        12,
+        27,
+        32
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        12,
+        27,
+        32
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 3,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-pia-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "PIA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        13,
+        30
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        13,
+        30
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        13,
+        30
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-nor-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "NOR",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        28,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        28,
+        46
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        28,
+        46
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-ver-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "VER",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        29,
+        46
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        29,
+        46
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-ham-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "HAM",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        29,
+        46
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        29,
+        46
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-rus-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "RUS",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        11,
+        29
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        11,
+        29
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        11,
+        29
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    },
+    {
+      "id": "2025-r7-bea-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "BEA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        31
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary",
+      "covered": true,
+      "scored": true,
+      "unscored_reason": null,
+      "required_lap_count": 50,
+      "available_lap_count": 50,
+      "missing_laps": [],
+      "unknown_flag_laps": [],
+      "candidate_laps": [
+        29,
+        31
+      ],
+      "duplicate_candidate_laps": [],
+      "matched_laps": [
+        29,
+        31
+      ],
+      "missed_expected_laps": [],
+      "true_positive": 2,
+      "false_negative": 0,
+      "false_positive": 0,
+      "precision": 1,
+      "recall": 1
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260911-robust-estimates-v4",
+      "2026-09-11 00:57:24.717055+02:00"
+    ]
+  ],
+  "reference_sha256": "48644278ccddb0025fc026530409af326d77334d560cae2df9615c50de984645"
+}

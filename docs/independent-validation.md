@@ -107,6 +107,10 @@ does not label the historical database trustworthy merely because tests pass.
 
 ## Remaining validation gates
 
+Follow-up delivery: [event-window validation](event-window-validation.md) adds
+complete listed-stop windows and positive SC/VSC/red-flag probes. It does not
+close the broader gates below.
+
 1. Independently review/adjudicate these source annotations, especially lap
    boundaries. Preserve versions; do not overwrite a benchmark to fit outputs.
 2. Exhaustively annotate preselected windows on additional races, including

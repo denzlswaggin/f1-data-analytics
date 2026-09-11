@@ -131,3 +131,25 @@ def test_committed_report_binds_frozen_annotations() -> None:
     assert {c["id"] for c in report["cases"]} == {c["id"] for c in reference["cases"]}
     assert report["exact_positive_matches"] == 13
     assert report["population_precision"] is None
+
+
+@pytest.mark.parametrize(
+    "kind,column", [("race_control_start", "deployment_lap"), ("race_control_end", "end_lap")]
+)
+def test_control_probes_require_source_coverage(kind: str, column: str) -> None:
+    c, ref = fixture()
+    c.execute("create schema staging")
+    c.execute("create table staging.stg_race_control(season int, round int, session varchar)")
+    c.execute("""create table marts.race_control_events(season int, round int,
+        event_type varchar, deployment_lap int, end_lap int)""")
+    ref["cases"][0].update(kind=kind, other="VSC")
+    # An event row alone does not establish source coverage.
+    c.execute("insert into marts.race_control_events values (2025,13,'VSC',5,5)")
+    assert evaluate(c, ref)["counts"]["uncovered"] == 1
+    c.execute("insert into staging.stg_race_control values (2025,13,'R')")
+    assert evaluate(c, ref)["counts"]["true_positive"] == 1
+    c.execute(f"update marts.race_control_events set {column}=20")
+    assert evaluate(c, ref)["counts"]["false_negative"] == 1
+    ref["cases"][0]["expected"] = False
+    with pytest.raises(ValueError, match="positive"):
+        evaluate(c, ref)

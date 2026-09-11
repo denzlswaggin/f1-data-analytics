@@ -38,6 +38,7 @@ validation of the analytical claims.
    checks for detected events and model outputs; report coverage, false positives,
    uncertainty and failures before strengthening product claims.
    Initial delivery: [reference panel and temporal diagnostic](independent-validation.md).
+   Follow-up: [listed-stop windows and neutralisation probes](event-window-validation.md).
    Independent adjudication, exhaustive event windows and untouched-race
    production-model validation remain open; package 6 is not fully complete.
 

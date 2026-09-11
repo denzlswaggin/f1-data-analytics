@@ -1,0 +1,70 @@
+{
+  "counts": {
+    "true_positive": 4,
+    "true_negative": 0,
+    "false_positive": 0,
+    "false_negative": 0,
+    "uncovered": 0
+  },
+  "exact_positive_matches": 4,
+  "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
+  "annotated_cases": 4,
+  "covered_cases": 4,
+  "annotated_positive_recall": 1,
+  "population_precision": null,
+  "population_false_positive_rate": null,
+  "limitations": "Purposive, non-exhaustive, single-reviewer annotations. Unmentioned events are unknown, not false positives. No population accuracy or calibrated interval.",
+  "cases": [
+    {
+      "id": "imola-vsc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        29
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "imola-sc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        46
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "imola-sc-end",
+      "kind": "race_control_end",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        53
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "brazil-red-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        32
+      ],
+      "outcome": "true_positive"
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260911-robust-estimates-v4",
+      "2026-09-11 00:57:24.717055+02:00"
+    ]
+  ],
+  "reference_sha256": "2a9c666385198a19fe8512d3cc328032545550a884ae5a729f61074afdec2c88"
+}

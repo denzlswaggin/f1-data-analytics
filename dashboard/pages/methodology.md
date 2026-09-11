@@ -39,6 +39,19 @@ Coverage is incomplete, races were already inspected, and neither calibrated
 uncertainty nor causal strategy claims have been validated.
 [Read the protocol, sources, failures and remaining gates](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/independent-validation.md).
 
+### Additional source-agreement checks
+
+On the same snapshot, 12 selected pit-stop windows in Bahrain and Imola 2025
+cover 600 driver-laps. All 25 officially listed stops match exactly, with no
+extra pit-entry detections in those windows. Four positive SC/VSC/red-flag
+probes also match the reported lap.
+
+These checks use official sources that may share timing provenance with the
+app's inputs: they verify source agreement, **not independent sensor accuracy**.
+Pit-table and narrative-report lap conventions can differ. They do not establish
+global precision, accurate race-control effects or calibrated uncertainty.
+[Read the window protocol and remaining limitations](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/event-window-validation.md).
+
 ## What the rating means
 
 The model compares teammates in the last qualifying segment both completed,
