@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "annotation_status": "Assistant-transcribed, single-reviewer, not human-adjudicated.",
+  "accessed": "2026-09-11",
+  "selection": "Six driver windows per race, laps 1-50; selected before inspecting corresponding pit-context outputs. Not unseen races.",
+  "scope": "Complete listed pit-stop laps for these driver windows, not a guarantee of every physical pit-lane visit. Exact table-lap convention; no tolerance.",
+  "windows": [
+    {
+      "id": "2025-r4-pia-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "PIA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        14,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r4-nor-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "NOR",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        10,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r4-ver-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "VER",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        10,
+        26
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r4-ham-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "HAM",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        17,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r4-rus-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "RUS",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        13,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r4-ant-1-50",
+      "season": 2025,
+      "round": 4,
+      "kind": "pit_entry",
+      "driver": "ANT",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        12,
+        27,
+        32
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1257/bahrain/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-pia-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "PIA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        13,
+        30
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-nor-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "NOR",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        28,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-ver-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "VER",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-ham-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "HAM",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        46
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-rus-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "RUS",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        11,
+        29
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    },
+    {
+      "id": "2025-r7-bea-1-50",
+      "season": 2025,
+      "round": 7,
+      "kind": "pit_entry",
+      "driver": "BEA",
+      "lap_min": 1,
+      "lap_max": 50,
+      "expected_laps": [
+        29,
+        31
+      ],
+      "complete": true,
+      "source_url": "https://www.formula1.com/en/results/2025/races/1260/emilia-romagna/pit-stop-summary"
+    }
+  ]
+}
