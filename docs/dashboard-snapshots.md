@@ -52,6 +52,31 @@ race at a time. Other race partitions are preserved. Incomplete replay feeds sta
 excluded by the existing quality rules and are listed at the end of the run.
 Upcoming races without loaded results are not added to the picker.
 
+### Pit timing history (2024–2026)
+
+After filling replay inputs, rebuild pit timing separately: its estimates are not
+automatically refreshed by the race-control backfill. The command processes all
+completed races, including races without replay, and preserves other partitions.
+
+```bash
+python scripts/backfill_pit_timing.py --report data/pit-timing-coverage.json
+python scripts/check_robust_estimates.py data/warehouse/f1.duckdb
+make dashboard-snapshot
+cd dashboard && npm run sources:strict && npm run build:strict
+```
+
+Use `--from-season` and `--to-season` to restrict the default 2024–2026 range.
+The report records the original race coverage before any writes and checkpoints
+each completed partition. After an interrupted run, pass `--resume` with the same
+report and season range. A fresh run requires a new report path so the baseline
+cannot be overwritten accidentally. Resume assumes unchanged model code and inputs
+for completed partitions; use a fresh report to recompute those partitions too.
+
+The dashboard lists all completed races, shows season coverage and permits
+inspection of excluded stops. Exclusion counts show the first failed rule, not
+every possible problem; uncomputed diagnostics do not establish missing inputs.
+See [the September coverage audit](pit-timing-coverage-20260911.md).
+
 ## Production configuration
 
 Set repository variable `F1_DASHBOARD_SNAPSHOT_URI` to the object-store prefix
