@@ -41,6 +41,11 @@ div.print\:hidden:has(> aside.hidden.lg\:block) {
 }
 
 main:has(#evidence-main-article) {
+	/* Allow this flex item to shrink when a refreshed table/chart is wider
+	   than the viewport. Its own widgets retain their local scrolling. */
+	min-width: 0;
+	max-width: 100%;
+	flex-basis: 0;
 	margin-top: 0 !important;
 	padding: 0 !important;
 	overflow: visible !important;
@@ -52,6 +57,9 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 }
 
 #evidence-main-article {
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 100%;
 	width: min(100%, 1360px);
 	margin: 0 auto;
 	padding: 1.25rem 0 4rem 15.5rem;
@@ -149,12 +157,18 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 }
 
 #evidence-main-article .chart-container {
+	min-width: 0;
+	max-width: 100%;
 	margin: 1rem 0 1.75rem !important;
 	padding: 1rem 1rem 0.55rem;
 	border: 1px solid var(--dashboard-border);
 	border-radius: 0.95rem;
 	background: color-mix(in srgb, var(--dashboard-surface-raised) 92%, transparent);
 	box-shadow: var(--dashboard-shadow);
+}
+
+#evidence-main-article .chart-container .chart {
+	max-width: 100%;
 }
 
 #evidence-main-article .chart-container text {

@@ -24,6 +24,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
@@ -35,7 +36,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Only races with both green-flag lap timing and replay gaps are available.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
@@ -160,14 +161,14 @@ where traffic_association_eligible and traffic_associated_delta_sec_per_lap is n
 </DataTable>
 
 ```sql drivers
-select distinct driver_code
+select distinct season, round, driver_code
 from f1.traffic_adjusted_laps
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
 <FilterBar title="Inspect the lap evidence" description="Mixed laps remain visible but never enter the clean-air headline.">
-    <Dropdown data={drivers} name=driver value=driver_code title="Driver" />
+    <DependentDropdown data={drivers} name=driver value=driver_code title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql lap_evidence

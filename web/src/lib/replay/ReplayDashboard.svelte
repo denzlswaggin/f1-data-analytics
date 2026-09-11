@@ -15,6 +15,7 @@
 		weatherAtTime
 	} from './model';
 	import { loadManifest, loadRace } from './data';
+	import { latestRaceForSeason } from './selection';
 	import type {
 		LoadedRace,
 		RadioPhase,
@@ -230,7 +231,7 @@
 	}
 	function chooseSeason(event: Event) {
 		selectedSeason = Number((event.currentTarget as HTMLSelectElement).value);
-		const next = manifest?.races.find((r) => r.season === selectedSeason);
+		const next = latestRaceForSeason(manifest?.races ?? [], selectedSeason);
 		if (next) {
 			selectedRaceKey = next.key;
 			void selectRace(next);

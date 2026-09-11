@@ -14,6 +14,8 @@
 
     const rawValue = (name) => $inputs?.[name]?.rawValues?.[0]?.value ?? $inputs?.[name]?.value;
     const sameValue = (left, right) => String(left ?? '') === String(right ?? '');
+    const latestRace = (rows) => rows.reduce((latest, row) =>
+        !latest || Number(row.round) > Number(latest.round) ? row : latest, undefined);
 
     function publish(name, value, label) {
         const current = $inputs?.[name];
@@ -33,10 +35,13 @@
         selectedSeason = String(option.season);
         publish('season', option.season, option.season_label);
 
-        const firstRace = raceRows.find((row) => sameValue(row.season, option.season));
-        if (firstRace) {
-            selectedRace = String(firstRace.round);
-            publish('race', firstRace.round, firstRace.race_name);
+        const lastRace = latestRace(raceRows.filter((row) => sameValue(row.season, option.season)));
+        if (lastRace) {
+            selectedRace = String(lastRace.round);
+            publish('race', lastRace.round, lastRace.race_name);
+        } else {
+            selectedRace = '';
+            publish('race', null, '');
         }
         reconciledSeason = selectedSeason;
     }
@@ -66,9 +71,12 @@
         const availableRaces = raceRows.filter((row) => sameValue(row.season, season.season));
         if (availableRaces.length > 0) {
             const requestedRace = seasonChanged ? null : rawValue('race');
-            const race = availableRaces.find((row) => sameValue(row.round, requestedRace)) || availableRaces[0];
+            const race = availableRaces.find((row) => sameValue(row.round, requestedRace)) || latestRace(availableRaces);
             selectedRace = String(race.round);
             publish('race', race.round, race.race_name);
+        } else {
+            selectedRace = '';
+            publish('race', null, '');
         }
 
         reconciledSeason = nextSeason;

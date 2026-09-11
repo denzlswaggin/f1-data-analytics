@@ -32,12 +32,27 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
 
         assert "name=season value=season" in content
         assert 'name=race value=round label=race_label order="round asc"' in content
+        assert "latest={true} preserveInitial={true}" in content
+        assert "<Dropdown data={races} name=race" not in content
+        assert "<Dropdown data={tel_races} name=race" not in content
         assert "where season = ${inputs.season.value}" in content
         assert "order by round" in content
         assert "lpad(cast(round as varchar), 2, '0')" in content
         assert 'defaultValue="2024 Bahrain Grand Prix"' not in content
         assert "race_label = '${inputs.race.value}'" not in content
         assert "race_name = '${inputs.race.value}'" not in content
+
+
+def test_all_race_dependent_inputs_use_the_shared_reset() -> None:
+    import re
+
+    for page_name in RACE_PAGES:
+        content = (PAGES_DIR / page_name).read_text(encoding="utf-8")
+        assert not re.search(r"<Dropdown[^>]*name=(?:race|driver(?:_[ab])?|stop)\b", content)
+        for tag in re.findall(r"<DependentDropdown[^>]+>", content):
+            assert "season={inputs.season.value}" in tag
+            if "name=race " not in tag:
+                assert "round={inputs.race.value}" in tag
 
 
 def test_race_replay_redirects_to_the_dedicated_app() -> None:

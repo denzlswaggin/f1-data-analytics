@@ -14,6 +14,8 @@
 <style>
     .filter-bar {
         display: flex;
+        flex-wrap: wrap;
+        min-width: 0;
         align-items: flex-end;
         justify-content: space-between;
         gap: 1rem;
@@ -27,7 +29,8 @@
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
-        min-width: 8rem;
+        flex: 1 1 16rem;
+        min-width: 0;
     }
     .filter-heading strong { color: #f3f6fa; font-size: 0.92rem; }
     .filter-heading span { max-width: 28rem; color: #9ba7ba; font-size: 0.81rem; line-height: 1.4; }
@@ -37,11 +40,21 @@
         justify-content: flex-end;
         gap: 0.75rem;
         flex: 1;
+        min-width: 0;
         flex-wrap: wrap;
     }
-    :global(.filter-controls > *) { margin: 0; min-width: 10rem; }
+    :global(.filter-controls > *) { margin: 0; min-width: min(10rem, 100%); max-width: 100%; }
+    :global(.filter-controls [role="combobox"]) {
+        max-width: 100%;
+        height: auto;
+        min-height: 2rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: left;
+    }
     @media (max-width: 680px) {
         .filter-bar { align-items: stretch; flex-direction: column; }
+        .filter-heading { flex-basis: auto; }
         .filter-controls { align-items: stretch; justify-content: stretch; }
         :global(.filter-controls > *) { width: 100%; min-width: 0; }
     }

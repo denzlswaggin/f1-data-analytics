@@ -23,6 +23,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
@@ -33,7 +34,7 @@ order by round
 
 <FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql pace_coverage
@@ -50,15 +51,15 @@ where section = 'race_pace'
 <DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="descriptive, filtered timing" />
 
 ```sql drivers
-select distinct driver_code
+select distinct season, round, driver_code
 from f1.lap_times
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
 <FilterBar title="Choose a duel" description="Two traces remain readable across a full race.">
-    <Dropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" />
-    <Dropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" />
+    <DependentDropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" season={inputs.season.value} round={inputs.race.value} />
+    <DependentDropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" season={inputs.season.value} round={inputs.race.value} fallbackIndex={1} />
 </FilterBar>
 
 ```sql race_laps

@@ -31,6 +31,27 @@ make dashboard-snapshot
 cd dashboard && npm run sources:strict && npm run build:strict
 ```
 
+### Race-control history (2024–2026)
+
+The race-control picker includes every race with loaded results in these seasons,
+including races with no recognised neutralisation. Missing messages are shown
+separately from a loaded feed with no intervention.
+
+To fill historical gaps before exporting a snapshot:
+
+```bash
+python scripts/backfill_race_control.py --from-season 2024 --to-season 2026
+python scripts/check_race_control_impact.py data/warehouse/f1.duckdb
+make dashboard-snapshot
+cd dashboard && npm run sources:strict && npm run build:strict
+```
+
+The backfill reuses existing message and position partitions, fetches missing
+ones with FastF1, builds missing replays and recalculates race-control impact one
+race at a time. Other race partitions are preserved. Incomplete replay feeds stay
+excluded by the existing quality rules and are listed at the end of the run.
+Upcoming races without loaded results are not added to the picker.
+
 ## Production configuration
 
 Set repository variable `F1_DASHBOARD_SNAPSHOT_URI` to the object-store prefix

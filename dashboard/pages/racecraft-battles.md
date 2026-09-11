@@ -25,6 +25,7 @@ order by season desc
 
 ```sql races
 select distinct
+    season,
     round,
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
@@ -36,7 +37,7 @@ order by round
 
 <FilterBar title="Choose a race" description="Races are ordered by championship round; every replay-covered driver remains in the summary even with zero eligible battles.">
     <Dropdown data={seasons} name=season value=season title="Season" />
-    <Dropdown data={races} name=race value=round label=race_label order="round asc" title="Race" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
@@ -191,13 +192,13 @@ insufficient evidence remain available in the excluded-episodes table below.
 </DataTable>
 
 ```sql drivers
-select driver_code
+select season, round, driver_code
 from ${race_drivers}
 order by driver_code
 ```
 
 <FilterBar title="Inspect one driver's battles" description="Both attacking and defending episodes are shown chronologically; interrupted and unresolved evidence remains visible.">
-    <Dropdown data={drivers} name=driver value=driver_code title="Driver" />
+    <DependentDropdown data={drivers} name=driver value=driver_code title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
 ```sql driver_battles
