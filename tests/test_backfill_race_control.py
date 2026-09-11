@@ -1,16 +1,19 @@
 import sys
 
 import pandas as pd
+import pytest
 from analytics.replay import IncompleteReplayError
 from scripts import backfill_race_control
 
 
-def test_backfill_reuses_inputs_and_keeps_incomplete_replay_excluded(monkeypatch, capsys):
+def test_backfill_reuses_inputs_and_keeps_incomplete_replay_excluded(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     calls = []
     monkeypatch.setattr(sys, "argv", ["backfill_race_control.py"])
     monkeypatch.setattr(backfill_race_control, "get_settings", lambda: None)
 
-    def query(sql, settings):
+    def query(sql: str, settings: object) -> pd.DataFrame:
         if "staging.stg_results" in sql:
             return pd.DataFrame({"season": [2024, 2025, 2026], "round": [1, 1, 1]})
         # 2024 already has all inputs and a replay; 2025 has only messages.
@@ -29,7 +32,7 @@ def test_backfill_reuses_inputs_and_keeps_incomplete_replay_excluded(monkeypatch
         lambda season, rounds, **kwargs: calls.append(("positions", season)),
     )
 
-    def replay(season, rnd, **kwargs):
+    def replay(season: int, rnd: int, **kwargs: object) -> None:
         calls.append(("replay", season))
         if season == 2026:
             raise IncompleteReplayError("Incomplete position feed")
