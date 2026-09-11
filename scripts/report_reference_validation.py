@@ -41,6 +41,26 @@ def evaluate(connection: duckdb.DuckDBPyConnection, reference: dict[str, Any]) -
                 where season=? and round=? and driver_code=? and is_pit_in_lap""",
                 params,
             ).fetchall()
+        elif kind in {"race_control_start", "race_control_end"}:
+            if case["other"] not in {"Safety Car", "VSC", "Red Flag"}:
+                raise ValueError("Unknown race-control event type")
+            if not case["expected"]:
+                raise ValueError("Race-control probes currently support positive references only")
+            # Coverage cannot be established from detected events themselves.
+            # Require independent replay rows plus an available source-message partition.
+            coverage = connection.execute(
+                """select count(distinct lap_number) from marts.race_replay
+                where season=? and round=? and driver_code=? and lap_number between ? and ?
+                and exists (select 1 from staging.stg_race_control m
+                    where m.season=? and m.round=? and m.session='R')""",
+                [*params, low, high, case["season"], case["round"]],
+            ).fetchone()
+            column = "deployment_lap" if kind == "race_control_start" else "end_lap"
+            detections = connection.execute(
+                f"select {column} from marts.race_control_events "
+                "where season=? and round=? and event_type=?",
+                [case["season"], case["round"], case["other"]],
+            ).fetchall()
         elif kind in {"overtake", "competitive_conversion"}:
             coverage = connection.execute(
                 """select count(distinct lap_number)
@@ -117,7 +137,7 @@ def evaluate(connection: duckdb.DuckDBPyConnection, reference: dict[str, Any]) -
             r["covered"] and r["exact_match"] and c["expected"]
             for r, c in zip(results, cases, strict=True)
         ),
-        "coverage_basis": "At least one source row per annotated driver-lap; not continuous telemetry completeness.",
+        "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
         "annotated_cases": len(cases),
         "covered_cases": len(cases) - counts["uncovered"],
         "annotated_positive_recall": counts["true_positive"] / positives if positives else None,
