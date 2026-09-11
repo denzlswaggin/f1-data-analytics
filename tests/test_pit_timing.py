@@ -25,6 +25,20 @@ def test_actual_additional_pit_without_stint_change_excludes_scenarios() -> None
     assert result.summary.iloc[0]["exclusion_reason"] == "additional_stop_in_window"
 
 
+@pytest.mark.parametrize("other_race", [False, True])
+def test_missing_race_replay_retains_stop_without_publishing_estimates(other_race: bool) -> None:
+    laps, replay = _race()
+    replay = replay.assign(round=2) if other_race else replay.iloc[0:0]
+    result = analyse_pit_timing_sensitivity(laps, replay, _stops())
+    assert len(result.summary) == 1
+    assert result.summary.iloc[0]["exclusion_reason"] == "missing_race_replay"
+    assert not result.summary["eligible"].any()
+    assert result.summary["estimated_gain_vs_actual_sec"].isna().all()
+    assert len(result.scenarios) == 7
+    assert not result.scenarios["supported"].any()
+    assert result.scenarios["delta_vs_actual_sec"].isna().all()
+
+
 def test_pre_attached_full_context_is_preserved() -> None:
     laps, replay = _race()
     laps["is_pit_in_lap"] = laps["driver_code"].eq("A") & laps["lap_number"].eq(14)
