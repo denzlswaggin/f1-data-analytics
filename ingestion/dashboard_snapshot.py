@@ -982,13 +982,18 @@ def _copy_duckdb(source: Path, target: Path) -> dict[str, int]:
         # catalog name. Attach under that name, then materialize every relation so
         # the snapshot remains valid regardless of its eventual filename.
         connection.execute(f"ATTACH '{source_sql}' AS f1 (READ_ONLY)")
-        tables = connection.execute(
-            "select table_schema, table_name from information_schema.tables "
-            "where table_catalog = 'f1' and table_schema in (?, ?, ?) "
-            "order by table_schema, table_name",
-            list(DASHBOARD_SCHEMAS),
-        ).fetchall()
-        for schema, table in tables:
+        available = {
+            (str(schema), str(table))
+            for schema, table in connection.execute(
+                "select table_schema, table_name from information_schema.tables "
+                "where table_catalog = 'f1' and table_schema in (?, ?, ?)",
+                list(DASHBOARD_SCHEMAS),
+            ).fetchall()
+        }
+        missing = sorted(set(DASHBOARD_CONTRACT) - available)
+        if missing:
+            raise ValueError(f"warehouse is missing dashboard contract tables: {missing}")
+        for schema, table in sorted(DASHBOARD_CONTRACT):
             connection.execute(f"create schema if not exists {_quote(schema)}")
             qualified = f"{_quote(schema)}.{_quote(table)}"
             connection.execute(f"create table {qualified} as select * from f1.{qualified}")
@@ -1010,11 +1015,19 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
         with engine.connect() as source_connection:
             for schema in DASHBOARD_SCHEMAS:
                 target_connection.execute(f"create schema if not exists {_quote(schema)}")
-                names = sorted(
+                available = set(
                     set(inspector.get_table_names(schema=schema))
                     | set(inspector.get_view_names(schema=schema))
                 )
-                for table_name in names:
+                required = sorted(
+                    table for table_schema, table in DASHBOARD_CONTRACT if table_schema == schema
+                )
+                missing = sorted(set(required) - available)
+                if missing:
+                    raise ValueError(
+                        f"warehouse is missing dashboard contract tables in {schema}: {missing}"
+                    )
+                for table_name in required:
                     qualified = f"{_quote(schema)}.{_quote(table_name)}"
                     count = 0
                     first = True

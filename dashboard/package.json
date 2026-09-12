@@ -16,8 +16,8 @@
     "preview": "evidence preview"
   },
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=18.0.0"
+    "npm": ">=11 <12",
+    "node": ">=24 <25"
   },
   "type": "module",
   "dependencies": {

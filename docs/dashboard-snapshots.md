@@ -2,9 +2,15 @@
 
 The public Evidence site never reads the mutable operational warehouse. After
 Dagster's persistent round refresh finishes, `Publish Dashboard Snapshot` exports the
-`staging`, `intermediate`, and `marts` relations into an immutable DuckDB file,
-validates it, calculates SHA-256, and publishes both database and manifest to
-object storage.
+the explicit `DASHBOARD_CONTRACT` allowlist into an immutable DuckDB file,
+validates it, calculates SHA-256, and can publish both database and manifest to
+object storage. Raw tables that are not queried by the product, notably
+`staging.stg_positions`, never enter the serving artifact.
+
+On the September 2026 development snapshot this allowlist reduced the DuckDB
+artifact from 1.05 GB to 124 MB (about 88%) without removing a dashboard source.
+The exact size varies with replay coverage; the contract test verifies the
+included table set rather than relying on that historical size.
 
 Object layout:
 
@@ -20,6 +26,10 @@ Object layout:
 workflow downloads that exact object, verifies its hash and structure, then runs
 the dashboard data contract before Evidence starts. A failed export therefore
 cannot replace the last known-good database.
+
+The manifest records the source type, Git commit, pinned package versions,
+methodology versions, row counts and checksum. Run `make data-audit` for a
+read-only integrity, provenance and freshness report.
 
 ## Local workflow
 
@@ -85,14 +95,12 @@ needs read-only Postgres credentials. Versioning and retention are configured on
 the bucket by the production infrastructure; the workflow itself never deletes
 an older snapshot.
 
-Dagster is the only ingestion scheduler. The previous GitHub Actions workflow
-used an ephemeral DuckDB and discarded its data, so it was removed instead of
-leaving a second scheduler that could race or imply durability. Snapshot export
-runs at 08:00 UTC, two hours after Dagster's Monday refresh, and fails closed if
-the persistent warehouse or its required marts are unavailable. A successful
-snapshot workflow then triggers the Pages deployment, so a scheduled deployment
-can never race the export or publish the previous snapshot by mistake. Pages can
-still be deployed manually when an already-published snapshot needs rebuilding.
+Dagster is the only ingestion scheduler. Snapshot publication and Pages deploys
+are intentionally manual while this remains a student project: both workflows
+use `workflow_dispatch` and no successful snapshot run triggers a release. The
+publisher fails closed if the persistent warehouse or required marts are
+unavailable. Re-enable an automated release policy only after explicitly
+deciding that the project is ready to operate as a public service.
 
 To roll back, replace `latest.json` with a prior version's manifest. Consumers
 will verify the referenced database before installing it.

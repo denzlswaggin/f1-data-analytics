@@ -11,11 +11,11 @@ import argparse
 from pathlib import Path
 
 import duckdb
+from ingestion.dashboard_snapshot import DASHBOARD_CONTRACT
 
 SCHEMAS = ("staging", "intermediate", "marts")
 DEFAULT_SEASON = 2026
 DEFAULT_ROUND = 12
-SCHEMA_ONLY_TABLES = {("staging", "stg_positions"), ("staging", "stg_telemetry")}
 
 
 def _quote(identifier: str) -> str:
@@ -36,13 +36,18 @@ def build_fixture(source: Path, output: Path, *, season: int, round_number: int)
         for schema in SCHEMAS:
             connection.execute(f"create schema {_quote(schema)}")
 
-        relations = connection.execute(
-            "select table_schema, table_name from information_schema.tables "
-            "where table_catalog = 'source_snapshot' and table_schema in (?, ?, ?) "
-            "order by table_schema, table_name",
-            list(SCHEMAS),
-        ).fetchall()
-        for schema, table in relations:
+        available = {
+            (str(schema), str(table))
+            for schema, table in connection.execute(
+                "select table_schema, table_name from information_schema.tables "
+                "where table_catalog = 'source_snapshot' and table_schema in (?, ?, ?)",
+                list(SCHEMAS),
+            ).fetchall()
+        }
+        missing = sorted(set(DASHBOARD_CONTRACT) - available)
+        if missing:
+            raise ValueError(f"source snapshot is missing dashboard contract tables: {missing}")
+        for schema, table in sorted(DASHBOARD_CONTRACT):
             columns = {
                 str(row[0])
                 for row in connection.execute(
@@ -53,12 +58,9 @@ def build_fixture(source: Path, output: Path, *, season: int, round_number: int)
             }
             qualified = f"{_quote(schema)}.{_quote(table)}"
             source_qualified = f"source_snapshot.{qualified}"
-            if (schema, table) in SCHEMA_ONLY_TABLES:
-                predicate = "false"
-                parameters: list[int] = []
-            elif {"season", "round"}.issubset(columns):
+            if {"season", "round"}.issubset(columns):
                 predicate = "season = ? and round = ?"
-                parameters = [season, round_number]
+                parameters: list[int] = [season, round_number]
             elif "season" in columns:
                 predicate = "season = ?"
                 parameters = [season]

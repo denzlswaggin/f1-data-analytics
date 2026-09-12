@@ -27,8 +27,8 @@ jobs:
 
       - name: Install (dev + orchestration test dependencies)
         run: |
-          pip install -e ".[dev]"
-          pip install -e ".[orchestration]"
+          pip install -r requirements-ci.lock
+          pip install -e . --no-deps
 
       - name: Ruff lint
         run: ruff check .

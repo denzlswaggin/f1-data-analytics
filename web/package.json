@@ -3,6 +3,10 @@
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
+	"engines": {
+		"node": ">=24 <25",
+		"npm": ">=11 <12"
+	},
 	"scripts": {
 		"data": "node ../scripts/run_python.mjs scripts/export_web_data.py --snapshot data/dashboard/latest.duckdb --output web/static/data",
 		"dev": "vite dev",
