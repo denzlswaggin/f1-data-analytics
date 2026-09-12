@@ -38,6 +38,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_driver_ratings_v3,
+    build_driver_track_insights,
     build_pace_consistency,
     build_pit_lap_context_incremental,
     build_pit_timing_sensitivity,
@@ -352,6 +353,18 @@ def driver_dna_validate(
         )
     for row in result.negative_control.itertuples(index=False):
         typer.echo(f"  {row.metric}: observed/null separation {row.signal_to_null_ratio:.2f}x")
+
+
+@app.command("driver-track")
+def driver_track() -> None:
+    """Build circuit archetypes and teammate-relative driver-track summaries."""
+    configure_logging()
+    result = build_driver_track_insights()
+    typer.echo(
+        f"Built driver-track insights: {len(result.archetypes)} races, "
+        f"{len(result.driver_fit)} driver/archetype rows and "
+        f"{len(result.dna_stability)} stability diagnostics."
+    )
 
 
 @app.command()

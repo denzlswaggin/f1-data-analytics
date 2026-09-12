@@ -23,6 +23,7 @@ from analytics.pipeline import (
     build_driver_ratings,
     build_driver_ratings_v2,
     build_driver_ratings_v3,
+    build_driver_track_insights,
     build_race_overtakes_season,
     build_race_replays,
 )
@@ -363,6 +364,23 @@ def driver_dna() -> MaterializeResult:
             "profiles": len(result.profile),
             "directed_microsectors": len(result.microsectors),
             "from_season": PACE_PROFILE_FROM_SEASON,
+        }
+    )
+
+
+@asset(
+    deps=[AssetKey(["driver_dna"])],
+    group_name="analytics",
+    compute_kind="python",
+)
+def driver_track_insights() -> MaterializeResult:
+    """Materialise circuit archetypes and Driver DNA stability diagnostics."""
+    result = build_driver_track_insights()
+    return MaterializeResult(
+        metadata={
+            "races": len(result.archetypes),
+            "driver_archetype_rows": len(result.driver_fit),
+            "stability_rows": len(result.dna_stability),
         }
     )
 

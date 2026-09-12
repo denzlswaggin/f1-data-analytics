@@ -9,6 +9,7 @@
                 { label: 'Overview', path: '' },
                 { label: 'Race cockpit', path: 'race-cockpit' },
                 { label: 'Driver DNA', path: 'driver-dna' },
+                { label: 'Track fit & stability', path: 'driver-track-insights' },
                 { label: 'Methodology', path: 'methodology' }
             ]
         },
@@ -34,6 +35,7 @@
             items: [
                 { label: 'Driver ratings', path: 'driver-ratings' },
                 { label: 'Compare drivers', path: 'driver-comparison' },
+                { label: 'Track fit & stability', path: 'driver-track-insights' },
                 { label: 'Pace consistency', path: 'pace-consistency' },
                 { label: 'Racecraft battles', path: 'racecraft-battles' },
                 { label: 'Saturday vs Sunday', path: 'saturday-vs-sunday' }

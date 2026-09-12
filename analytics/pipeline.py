@@ -19,6 +19,7 @@ from analytics.driver_dna_validation import (
     DriverDNAValidationResult,
     validate_driver_dna_stability,
 )
+from analytics.driver_track import DriverTrackResult, analyse_driver_track, validate_driver_track
 from analytics.overtakes import detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
@@ -187,6 +188,42 @@ def build_driver_dna_validation(
         n_permutations=n_permutations,
         seed=seed,
     )
+
+
+def build_driver_track_insights(
+    settings: Settings | None = None,
+) -> DriverTrackResult:
+    """Materialise circuit archetypes, driver-track fit and DNA stability marts."""
+    settings = settings or get_settings()
+    evidence = read_query("select * from marts.driver_dna_evidence", settings)
+    microsectors = read_query("select * from marts.driver_dna_microsectors", settings)
+    result = analyse_driver_track(evidence, microsectors)
+    validate_driver_track(result)
+    replace_table(
+        result.archetypes,
+        schema="marts",
+        table="driver_track_archetypes",
+        settings=settings,
+    )
+    replace_table(
+        result.driver_fit,
+        schema="marts",
+        table="driver_track_fit",
+        settings=settings,
+    )
+    replace_table(
+        result.dna_stability,
+        schema="marts",
+        table="driver_dna_stability",
+        settings=settings,
+    )
+    log.info(
+        "driver_track.materialised",
+        races=len(result.archetypes),
+        fit_rows=len(result.driver_fit),
+        stability_rows=len(result.dna_stability),
+    )
+    return result
 
 
 def _read_existing_driver_dna_evidence(settings: Settings) -> pd.DataFrame:

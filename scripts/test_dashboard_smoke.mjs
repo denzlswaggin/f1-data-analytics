@@ -22,6 +22,7 @@ const routes = [
 	'driver-ratings',
 	'driver-comparison',
 	'driver-dna',
+	'driver-track-insights',
 	'pace-consistency',
 	'racecraft-battles',
 	'saturday-vs-sunday',
