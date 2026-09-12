@@ -1,5 +1,6 @@
 ---
 title: Race-Control Impact
+hide_title: true
 max_width: 1600
 ---
 

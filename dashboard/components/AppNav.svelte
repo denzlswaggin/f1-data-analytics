@@ -3,9 +3,18 @@
 
     const basePath = '/f1-data-analytics';
     const groups = [
-        { label: 'Overview', items: [{ label: 'Dashboard', path: '' }] },
         {
-            label: 'Race analysis',
+            label: 'Start here',
+            items: [
+                { label: 'Overview', path: '' },
+                { label: 'Race cockpit', path: 'race-cockpit' },
+                { label: 'Driver DNA', path: 'driver-dna' },
+                { label: 'Track fit & stability', path: 'driver-track-insights' },
+                { label: 'Methodology', path: 'methodology' }
+            ]
+        },
+        {
+            label: 'All race analyses',
             items: [
                 { label: 'Latest race', path: 'latest-race' },
                 { label: 'Race replay', path: 'race-replay' },
@@ -26,13 +35,12 @@
             items: [
                 { label: 'Driver ratings', path: 'driver-ratings' },
                 { label: 'Compare drivers', path: 'driver-comparison' },
-                { label: 'Driver DNA', path: 'driver-dna' },
+                { label: 'Track fit & stability', path: 'driver-track-insights' },
                 { label: 'Pace consistency', path: 'pace-consistency' },
                 { label: 'Racecraft battles', path: 'racecraft-battles' },
                 { label: 'Saturday vs Sunday', path: 'saturday-vs-sunday' }
             ]
-        },
-        { label: 'Data', items: [{ label: 'Methodology & trust', path: 'methodology' }] }
+        }
     ];
 
     let current = '';

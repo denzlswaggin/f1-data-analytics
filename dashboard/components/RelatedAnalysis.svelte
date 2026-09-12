@@ -7,6 +7,7 @@
     const basePath = '/f1-data-analytics';
     const groups = {
         race: [
+            ['Race cockpit', 'race-cockpit'],
             ['Race story', 'latest-race'],
             ['Race replay', 'race-replay'],
             ['Race pace', 'race-pace'],
@@ -24,6 +25,7 @@
             ['Driver ratings', 'driver-ratings'],
             ['Compare drivers', 'driver-comparison'],
             ['Driver DNA', 'driver-dna'],
+            ['Track fit & stability', 'driver-track-insights'],
             ['Pace consistency', 'pace-consistency'],
             ['Racecraft battles', 'racecraft-battles'],
             ['Saturday vs Sunday', 'saturday-vs-sunday']

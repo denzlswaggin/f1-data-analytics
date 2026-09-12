@@ -169,7 +169,7 @@ in the product rather than hidden.
 ### Requirements
 
 - 64-bit Python 3.12
-- Node.js 20+
+- Node.js 24 and npm 11 (see `.nvmrc`)
 - GNU Make
 - Docker only for the persistent Postgres/Dagster deployment
 
@@ -178,8 +178,8 @@ in the product rather than hidden.
 ```bash
 py -3.12 -m venv .venv
 .venv\Scripts\activate
-python -m pip install -e ".[dev]"
-python -m pip install -e ".[dbt]"
+python -m pip install -r requirements-ci.lock
+python -m pip install -e . --no-deps
 copy .env.example .env
 
 # Quick smoke dataset
@@ -198,7 +198,7 @@ make check
 This is enough to exercise the core ingestion, transformation and rating pipeline.
 The complete dashboard also expects the heavier lap, telemetry and replay sources
 below. If you already have a prepared `data/dashboard/latest.duckdb` snapshot, run
-`npm ci` and `npm run dev` inside `dashboard/`.
+`make setup` once and then `make dashboard-dev`.
 
 ### Add telemetry and race replay
 

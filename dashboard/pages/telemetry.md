@@ -1,5 +1,6 @@
 ---
 title: Where Does Each Driver Gain Time?
+hide_title: true
 max_width: 1600
 ---
 
@@ -41,12 +42,8 @@ order by round
 ```sql telemetry_coverage
 select * from f1.data_coverage
 where section = 'telemetry'
-    and race_label = (
-        select race_label
-        from f1.telemetry_fastest_lap
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={telemetry_coverage} sampleLabel="fastest-lap selections" entityLabel="Drivers" method="descriptive fastest-lap sample" />

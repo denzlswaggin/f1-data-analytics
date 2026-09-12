@@ -1,6 +1,6 @@
--- Compact live-timing context for the replay. Tyre and lap attributes change only
--- once per lap, so keep them out of the million-row positional feed and join them
--- in TrackMap after the selected race has loaded.
+-- Compact lap-level replay context retained for coverage and diagnostics. The
+-- full positional feed is served by the dedicated SvelteKit replay as per-race
+-- Arrow bundles; do not duplicate it as a monolithic Evidence source.
 with race_window as (
     select season, round, min(lap_start_sec) as race_start_sec
     from staging.stg_laps

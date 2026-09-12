@@ -425,10 +425,6 @@ def export_web_data(
             race["bundle_url"] = f"races/{race['key']}/bundle.json"
             race["positions_url"] = f"races/{race['key']}/positions.arrow"
 
-    representative = next(
-        (race for race in races if race["radio_count"] and race["overtake_count"]),
-        races[0],
-    )
     manifest = {
         "schema_version": 1,
         "snapshot": {
@@ -436,7 +432,7 @@ def export_web_data(
             "generated_at": source_manifest.get("generated_at"),
             "sha256": source_manifest.get("sha256"),
         },
-        "default_race": representative["key"],
+        "default_race": races[0]["key"],
         "races": races,
     }
     _write_json(staging / "manifest.json", manifest)

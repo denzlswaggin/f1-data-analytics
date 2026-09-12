@@ -33,10 +33,12 @@ from analytics.pipeline import (
     build_all_traffic_adjusted_pace,
     build_all_tyre_warmup,
     build_driver_dna,
+    build_driver_dna_validation,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
     build_driver_ratings_v3,
+    build_driver_track_insights,
     build_pace_consistency,
     build_pit_lap_context_incremental,
     build_pit_timing_sensitivity,
@@ -322,6 +324,46 @@ def driver_dna(
         f"Built Driver DNA: {eligible // 2} eligible teammate pairs, "
         f"{len(result.profile)} publishable profiles and "
         f"{len(result.microsectors)} directed microsectors."
+    )
+
+
+@app.command("driver-dna-validate")
+def driver_dna_validate(
+    from_season: Annotated[int, typer.Option("--from-season")] = 2024,
+    to_season: Annotated[int | None, typer.Option("--to-season")] = None,
+    permutations: Annotated[int, typer.Option(help="Negative-control permutations.")] = 200,
+    seed: Annotated[int, typer.Option(help="Deterministic random seed.")] = 0,
+) -> None:
+    """Run Driver DNA split-sample, leave-one-out and tolerance diagnostics."""
+    configure_logging()
+    result = build_driver_dna_validation(
+        from_season=from_season,
+        to_season=to_season,
+        n_permutations=permutations,
+        seed=seed,
+    )
+    stable = int(result.stability["stable"].sum()) if not result.stability.empty else 0
+    typer.echo(
+        f"Driver DNA validation: {stable}/{len(result.stability)} driver-metric profiles stable."
+    )
+    for row in result.tolerance_sensitivity.itertuples(index=False):
+        typer.echo(
+            f"  tolerance ±{row.max_lap_gap} laps / ±{row.max_tyre_life_gap} tyre laps: "
+            f"{row.eligible_pairs} pairs, {row.drivers} drivers, {row.races} races"
+        )
+    for row in result.negative_control.itertuples(index=False):
+        typer.echo(f"  {row.metric}: observed/null separation {row.signal_to_null_ratio:.2f}x")
+
+
+@app.command("driver-track")
+def driver_track() -> None:
+    """Build circuit archetypes and teammate-relative driver-track summaries."""
+    configure_logging()
+    result = build_driver_track_insights()
+    typer.echo(
+        f"Built driver-track insights: {len(result.archetypes)} races, "
+        f"{len(result.driver_fit)} driver/archetype rows and "
+        f"{len(result.dna_stability)} stability diagnostics."
     )
 
 

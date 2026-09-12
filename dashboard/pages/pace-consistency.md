@@ -1,5 +1,6 @@
 ---
 title: Driver Pace Consistency
+hide_title: true
 max_width: 1600
 ---
 
@@ -43,12 +44,8 @@ order by round
 ```sql coverage
 select * from f1.data_coverage
 where section = 'pace_consistency'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.pace_consistency
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={coverage} sampleLabel="candidate clean-air laps" entityLabel="Drivers" method="stint-level Theil–Sen trend; robust residual spread" />

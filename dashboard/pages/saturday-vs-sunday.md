@@ -1,5 +1,6 @@
 ---
 title: Who Gains on Sunday?
+hide_title: true
 max_width: 1600
 ---
 

@@ -1,19 +1,89 @@
 {
-  "database_file": "f1-dashboard-20260912-driver-dna.duckdb",
-  "generated_at": "2026-09-12T10:27:21+00:00",
+  "database_file": "f1-dashboard-20260912-insights-v2.duckdb",
+  "generated_at": "2026-09-12T15:23:15.785996+00:00",
+  "git_sha": "2942fe106cecc92f773e3e528e3099ada3c9e0c4",
   "latest_event_date": "2026-08-23",
-  "sha256": "b43f54bb3273d796b745a6a28b178217edce82a8cc7a36a8affc82e0bb687fb0",
-  "size_bytes": 1051209728,
+  "methodology_versions": {
+    "marts.driver_dna_evidence": [
+      "driver-dna-v2-joint-pairing"
+    ],
+    "marts.driver_dna_microsectors": [
+      "driver-dna-v2-joint-pairing"
+    ],
+    "marts.driver_dna_profile": [
+      "driver-dna-v2-joint-pairing"
+    ],
+    "marts.driver_dna_stability": [
+      "driver-dna-v2-joint-pairing"
+    ],
+    "marts.driver_track_archetypes": [
+      "driver-track-v1-descriptive"
+    ],
+    "marts.driver_track_fit": [
+      "driver-track-v1-descriptive"
+    ],
+    "marts.pace_consistency": [
+      "pace-consistency-v3-robust-peers"
+    ],
+    "marts.pace_consistency_laps": [
+      "pace-consistency-v3-robust-peers"
+    ],
+    "marts.pit_timing_scenarios": [
+      "pit-timing-sensitivity-v3"
+    ],
+    "marts.pit_timing_sensitivity": [
+      "pit-timing-sensitivity-v3"
+    ],
+    "marts.pit_window_effectiveness": [
+      "pit-window-v2"
+    ],
+    "marts.race_control_events": [
+      "race-control-impact-v2"
+    ],
+    "marts.race_control_impact": [
+      "race-control-impact-v2"
+    ],
+    "marts.racecraft_battles": [
+      "racecraft-v3-continuity"
+    ],
+    "marts.racecraft_driver_summary": [
+      "racecraft-v3-continuity"
+    ],
+    "marts.traffic_adjusted_pace": [
+      "traffic-v4-robust-peers"
+    ],
+    "marts.tyre_warmup": [
+      "tyre-warmup-v4-robust-peers"
+    ],
+    "marts.tyre_warmup_laps": [
+      "tyre-warmup-v4-robust-peers"
+    ]
+  },
+  "package_versions": {
+    "dagster": "1.13.19",
+    "dbt-core": "1.11.14",
+    "duckdb": "1.5.5",
+    "f1-data-analytics": "0.1.0",
+    "fastf1": "3.8.3",
+    "pandas": "2.3.3",
+    "pyarrow": "25.0.1"
+  },
+  "schema_version": 2,
+  "sha256": "0aa33ce3971c58f99c96831e954c3ef0960a1cfa7bbceb7693ac6b24e160b8a9",
+  "size_bytes": 125841408,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
     "intermediate.int_teammate_race_gaps": 784,
-    "marts.driver_pace_profile": 15,
     "marts.driver_dna_evidence": 698,
-    "marts.driver_dna_microsectors": 6182,
-    "marts.driver_dna_profile": 80,
+    "marts.driver_dna_microsectors": 3522,
+    "marts.driver_dna_profile": 36,
+    "marts.driver_dna_stability": 135,
+    "marts.driver_pace_profile": 15,
     "marts.driver_ratings": 101,
     "marts.driver_ratings_v2": 490,
+    "marts.driver_track_archetypes": 28,
+    "marts.driver_track_fit": 74,
     "marts.mart_adjusted_stint_degradation": 2684,
     "marts.mart_driver_season_pace": 494,
     "marts.mart_lap_telemetry": 613680,
@@ -21,7 +91,6 @@
     "marts.mart_pit_strategy": 2145,
     "marts.mart_race_story": 1170,
     "marts.mart_speed_trap": 1178,
-    "marts.mart_stint_degradation": 2794,
     "marts.mart_stint_strategy": 3351,
     "marts.mart_tyre_degradation": 166,
     "marts.mart_weather_degradation": 166,
@@ -42,20 +111,13 @@
     "marts.tyre_warmup": 2142,
     "marts.tyre_warmup_laps": 21658,
     "staging.constructor_colors": 20,
-    "staging.stg_constructors": 33,
     "staging.stg_driver_codes": 494,
-    "staging.stg_drivers": 103,
-    "staging.stg_ergast_laps": 29152,
     "staging.stg_laps": 67388,
-    "staging.stg_pitstops": 3260,
-    "staging.stg_positions": 36716317,
-    "staging.stg_qualifying": 8630,
     "staging.stg_race_control": 6528,
     "staging.stg_races": 422,
     "staging.stg_results": 8653,
     "staging.stg_team_radio": 1486,
-    "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260912-driver-dna"
+  "version": "20260912-insights-v2"
 }

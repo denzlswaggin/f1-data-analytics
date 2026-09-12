@@ -28,6 +28,8 @@ fastest_telemetry_laps as (
 coverage as (
     select
         'driver_rating' as section,
+        cast(null as integer) as season,
+        cast(null as integer) as round,
         cast(null as varchar) as race_label,
         count(*) as sample_rows,
         count(distinct driver_id) as entity_count,
@@ -40,14 +42,14 @@ coverage as (
     union all
 
     select
-        'pace_profile', null, count(*), count(distinct driver_id),
+        'pace_profile', null, null, null, count(*), count(distinct driver_id),
         count(distinct race_key), sum(n_laps), min(season), max(season)
     from intermediate.int_teammate_race_gaps
 
     union all
 
     select
-        'race_pace', cast(season as varchar) || ' ' || race_name,
+        'race_pace', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1, count(*), season, season
     from marts.mart_lap_times
     group by season, round, race_name
@@ -55,7 +57,7 @@ coverage as (
     union all
 
     select
-        'race_story', cast(season as varchar) || ' ' || race_name,
+        'race_story', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1, sum(pace_samples), season, season
     from marts.mart_race_story
     group by season, round, race_name
@@ -63,7 +65,7 @@ coverage as (
     union all
 
     select
-        'pit_cycle', cast(season as varchar) || ' ' || race_name,
+        'pit_cycle', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_id), 1, count(positions_gained), season, season
     from marts.mart_pit_strategy
     group by season, round, race_name
@@ -71,7 +73,7 @@ coverage as (
     union all
 
     select
-        'tyre_strategy', cast(season as varchar) || ' ' || race_name,
+        'tyre_strategy', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1, count(deg_sec_per_lap), season, season
     from marts.mart_stint_strategy
     group by season, round, race_name
@@ -79,7 +81,7 @@ coverage as (
     union all
 
     select
-        'weather_slope', null, count(*), count(distinct compound),
+        'weather_slope', null, null, null, count(*), count(distinct compound),
         count(distinct case when weather_bucket is not null then cast(season as varchar) || '-' || cast(round as varchar) end),
         count(case when weather_bucket is not null then 1 end), min(season), max(season)
     from marts.mart_weather_degradation
@@ -87,7 +89,7 @@ coverage as (
     union all
 
     select
-        'speed_trap', cast(season as varchar) || ' ' || race_name,
+        'speed_trap', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1, sum(n_laps), season, season
     from marts.mart_speed_trap
     group by season, round, race_name
@@ -95,7 +97,7 @@ coverage as (
     union all
 
     select
-        'telemetry', cast(f.season as varchar) || ' ' || r.race_name,
+        'telemetry', f.season, f.round, cast(f.season as varchar) || ' ' || r.race_name,
         count(*), count(distinct f.driver_code), 1, count(*), f.season, f.season
     from fastest_telemetry_laps f
     join races r on r.season = f.season and r.round = f.round
@@ -104,7 +106,7 @@ coverage as (
     union all
 
     select
-        'race_replay', cast(rr.season as varchar) || ' ' || r.race_name,
+        'race_replay', rr.season, rr.round, cast(rr.season as varchar) || ' ' || r.race_name,
         count(*), count(distinct rr.driver_code), 1,
         cast(max(rr.t_s) - min(rr.t_s) as bigint), rr.season, rr.season
     from marts.race_replay rr
@@ -114,7 +116,7 @@ coverage as (
     union all
 
     select
-        'traffic_pace', cast(season as varchar) || ' ' || race_name,
+        'traffic_pace', season, round, cast(season as varchar) || ' ' || race_name,
         sum(eligible_laps), count(distinct driver_code), 1,
         sum(clean_air_laps + traffic_laps), season, season
     from marts.traffic_adjusted_pace
@@ -123,7 +125,7 @@ coverage as (
     union all
 
     select
-        'pace_consistency', cast(season as varchar) || ' ' || race_name,
+        'pace_consistency', season, round, cast(season as varchar) || ' ' || race_name,
         sum(candidate_laps), count(distinct driver_code), 1,
         sum(modelled_laps), season, season
     from marts.pace_consistency
@@ -132,7 +134,7 @@ coverage as (
     union all
 
     select
-        'tyre_warmup', cast(season as varchar) || ' ' || race_name,
+        'tyre_warmup', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1,
         count(*) filter (where warmup_eligible), season, season
     from marts.tyre_warmup
@@ -141,7 +143,7 @@ coverage as (
     union all
 
     select
-        'pit_timing', cast(season as varchar) || ' ' || race_name,
+        'pit_timing', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct driver_code), 1,
         count(*) filter (where eligible), season, season
     from marts.pit_timing_sensitivity
@@ -150,7 +152,7 @@ coverage as (
     union all
 
     select
-        'pit_window', cast(season as varchar) || ' ' || race_name,
+        'pit_window', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(*), 1,
         count(*) filter (where eligible), season, season
     from marts.pit_window_effectiveness
@@ -159,7 +161,7 @@ coverage as (
     union all
 
     select
-        'race_control', cast(season as varchar) || ' ' || race_name,
+        'race_control', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct event_id), 1,
         sum(eligible_driver_count), season, season
     from marts.race_control_events
@@ -168,7 +170,7 @@ coverage as (
     union all
 
     select
-        'racecraft', cast(season as varchar) || ' ' || race_name,
+        'racecraft', season, round, cast(season as varchar) || ' ' || race_name,
         count(*), count(distinct attacker_code), 1,
         count(*) filter (where eligible), season, season
     from marts.racecraft_battles
@@ -180,8 +182,7 @@ select
     max(races.race_date) as latest_event_date
 from coverage
 left join races
-    on races.season between coverage.first_season and coverage.last_season
-    and (coverage.race_label is null
-        or coverage.race_label = cast(races.season as varchar) || ' ' || races.race_name)
+    on (coverage.season is null and races.season between coverage.first_season and coverage.last_season)
+    or (races.season = coverage.season and races.round = coverage.round)
 group by all
 order by section, race_label

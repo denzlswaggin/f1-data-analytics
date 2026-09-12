@@ -1,5 +1,6 @@
 ---
 title: Racecraft Battle Conversion
+hide_title: true
 max_width: 1600
 ---
 
@@ -43,12 +44,8 @@ order by round
 ```sql coverage
 select * from f1.data_coverage
 where section = 'racecraft'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.racecraft_driver_summary
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={coverage} sampleLabel="observed battle episodes" entityLabel="Attackers" method="direct-ahead replay gaps; confirmed overtake matching" />
@@ -145,6 +142,7 @@ The chart deliberately keeps attack and defence separate. It does not combine
 them into an arbitrary racecraft score, and drivers without five opportunities
 on both axes are omitted.
 
+{#if two_way_evidence.length > 0}
 <ScatterPlot
     data={two_way_evidence}
     x=attack_conversion_pct
@@ -156,6 +154,12 @@ on both axes are omitted.
     pointSize=30
     chartAreaHeight=390
 />
+{:else}
+<KeyInsight label="No two-way profile for this race">
+No driver reached five resolved opportunities in both attack and defence. The
+role-specific evidence and raw episodes remain available below.
+</KeyInsight>
+{/if}
 
 <DataTable data={race_drivers} rows=25 search=true download=true>
     <Column id=driver_code title="Driver" />

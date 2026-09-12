@@ -70,6 +70,28 @@ def test_load_only_replaces_its_own_season(tmp_path: Path) -> None:
     assert counts == {2023: 2, 2024: 5}
 
 
+def test_failed_duckdb_load_rolls_back_data_and_audit(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    initial = _frame(2024, 2)
+    load_dataframe(initial, "pitstops", 2024, settings)
+    before_audit = read_query(
+        "select load_id, row_count from raw.ingestion_partitions where resource = 'pitstops'",
+        settings,
+    )
+
+    incompatible = _frame(2024, 3).assign(unexpected_column="schema drift")
+    with pytest.raises(duckdb.BinderException, match="unexpected_column"):
+        load_dataframe(incompatible, "pitstops", 2024, settings)
+
+    rows = read_query("select season, round, val from raw.pitstops order by round", settings)
+    after_audit = read_query(
+        "select load_id, row_count from raw.ingestion_partitions where resource = 'pitstops'",
+        settings,
+    )
+    assert rows.to_dict("records") == initial.to_dict("records")
+    pd.testing.assert_frame_equal(after_audit, before_audit)
+
+
 def test_replace_rounds_appends_new_rounds(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     load_dataframe(_round_frame(2024, [1, 2]), "laps", 2024, settings, replace_rounds=True)

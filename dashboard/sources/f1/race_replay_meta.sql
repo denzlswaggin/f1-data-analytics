@@ -46,7 +46,7 @@ left join staging.stg_results results
 left join staging.stg_races rc
     on rc.season = d.season and rc.round = d.round
 
--- See race_replay.sql: prevent Evidence from emitting an invalid empty Parquet.
+-- Prevent Evidence from emitting an invalid empty Parquet before replay data exists.
 union all
 select
     0,

@@ -1,5 +1,6 @@
 ---
 title: Pit Timing Sensitivity
+hide_title: true
 max_width: 1600
 ---
 
@@ -101,11 +102,12 @@ select * from ${race_stops} where eligible
 ```
 
 ```sql largest_supported_gain
-select stop_label, estimated_gain_vs_actual_sec
+select
+    arg_max(stop_label, estimated_gain_vs_actual_sec)
+        filter (where timing_signal <> 'No meaningful directional signal') as stop_label,
+    max(estimated_gain_vs_actual_sec)
+        filter (where timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
 from ${supported_stops}
-where timing_signal <> 'No meaningful directional signal'
-order by estimated_gain_vs_actual_sec desc
-limit 1
 ```
 
 ```sql evidence_summary

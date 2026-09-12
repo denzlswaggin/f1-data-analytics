@@ -2,14 +2,21 @@ name: CI
 
 on:
   push:
-    branches:
-      - "**"
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +27,8 @@ jobs:
 
       - name: Install (dev + orchestration test dependencies)
         run: |
-          pip install -e ".[dev]"
-          pip install -e ".[orchestration]"
+          pip install -r requirements-ci.lock
+          pip install -e . --no-deps
 
       - name: Ruff lint
         run: ruff check .
@@ -30,7 +37,7 @@ jobs:
         run: ruff format --check .
 
       - name: Mypy
-        run: mypy ingestion analytics tests
+        run: mypy ingestion analytics orchestration tests
 
       - name: Pytest
         run: pytest -q
@@ -43,6 +50,7 @@ jobs:
   web-quality:
     name: Web quality
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: web
@@ -70,6 +78,60 @@ jobs:
       - name: Build
         run: npm run build
 
+  dashboard-quality:
+    name: Dashboard quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: |
+            dashboard/package-lock.json
+            web/package-lock.json
+
+      - name: Install dashboard validation dependencies
+        run: |
+          pip install -e "."
+          npm --prefix dashboard ci
+          npm --prefix web ci
+
+      - name: Prepare compact dashboard snapshot
+        run: |
+          mkdir -p data/dashboard
+          cp tests/fixtures/dashboard-ci.duckdb data/dashboard/latest.duckdb
+
+      - name: Validate Evidence sources and build
+        run: |
+          python scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb
+          npm --prefix dashboard run sources:strict
+          npm --prefix dashboard run build:strict
+          python scripts/check_dashboard_bundle.py dashboard/build --max-total-mb 275
+
+      - name: Test dependent dashboard filters
+        run: node --conditions=browser --test scripts/test_race_event_dropdown.mjs
+
+      - name: Install browser
+        run: npm --prefix web exec playwright install --with-deps chromium
+
+      - name: Browser smoke test
+        run: |
+          mkdir -p "$RUNNER_TEMP/dashboard-preview/f1-data-analytics"
+          cp -R dashboard/build/. "$RUNNER_TEMP/dashboard-preview/f1-data-analytics/"
+          python -m http.server 4174 --bind 127.0.0.1 --directory "$RUNNER_TEMP/dashboard-preview" \
+            >"$RUNNER_TEMP/dashboard-preview.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          node scripts/test_dashboard_smoke.mjs http://127.0.0.1:4174/f1-data-analytics
+
   dbt:
     # Build the whole dbt DAG and run the data tests against committed CI seed
     # fixtures (a 2024 Bahrain slice, gated behind `load_ci_seeds`), on BOTH
@@ -77,6 +139,7 @@ jobs:
     # tests into a real per-PR gate and exercises cross-dialect SQL.
     name: dbt (${{ matrix.target }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     continue-on-error: false
     strategy:
       fail-fast: false
@@ -178,6 +241,7 @@ jobs:
   orchestration:
     name: orchestration
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 

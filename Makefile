@@ -1,4 +1,4 @@
-.PHONY: help install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dashboard-prepare dashboard-dev dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
+.PHONY: help setup install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dashboard-prepare dashboard-check dashboard-dev data-audit dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
 
 # Prefer the repository virtual environment without requiring it. CI and
 # containers deliberately fall back to the Python found on PATH. Callers may
@@ -15,11 +15,18 @@ help: ## List available targets
 install: ## Install package with dev dependencies
 	$(PIP) install -e ".[dev]"
 
+setup: install ## Install Python and both dashboard workspaces from their locks
+	npm --prefix dashboard ci
+	npm --prefix web ci
+
 install-dbt: ## Install package with dbt dependencies
 	$(PIP) install -e ".[dbt]"
 
-lock: ## Recompile requirements.lock (pinned core deps) from pyproject.toml
+lock: ## Recompile pinned Python environments from pyproject.toml
 	$(PYTHON) -m piptools compile --strip-extras --no-emit-index-url --output-file=requirements.lock pyproject.toml
+	$(PYTHON) -m piptools compile --extra dev --extra orchestration --strip-extras --no-emit-index-url --output-file=requirements-ci.lock pyproject.toml
+	$(PYTHON) -m piptools compile --extra dbt --strip-extras --no-emit-index-url --output-file=requirements-dbt.lock pyproject.toml
+	$(PYTHON) -m piptools compile --extra telemetry --strip-extras --no-emit-index-url --output-file=requirements-telemetry.lock pyproject.toml
 
 lint: ## Run ruff lint and format checks
 	$(PYTHON) -m ruff check .
@@ -54,6 +61,14 @@ dashboard-prepare: ## Validate marts, export the snapshot and refresh Evidence s
 	$(PYTHON) scripts/check_dashboard_data.py
 	$(MAKE) dashboard-snapshot
 	cd dashboard && npm run sources:strict
+
+dashboard-check: ## Validate the current snapshot, Evidence build and dependent filters
+	$(PYTHON) scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb
+	cd dashboard && npm run sources:strict && npm run build:strict && npm run test:dropdown
+	$(PYTHON) scripts/check_dashboard_bundle.py dashboard/build --max-total-mb 275
+
+data-audit: ## Audit snapshot provenance, checksum, coverage and freshness
+	$(PYTHON) scripts/data_audit.py --strict
 
 dashboard-dev: dashboard-prepare ## Prepare data and launch Evidence with the replay app
 	cd dashboard && npm run dev

@@ -1,5 +1,6 @@
 ---
 title: Which Pit Cycles Changed the Race?
+hide_title: true
 max_width: 1600
 ---
 

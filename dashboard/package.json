@@ -10,13 +10,14 @@
     "dev": "npm --prefix ../web run dev:all",
     "dev:evidence": "evidence dev --open /",
     "test": "evidence build",
+    "test:dropdown": "node --conditions=browser --test ../scripts/test_race_event_dropdown.mjs",
     "sources": "evidence sources",
     "sources:strict": "evidence sources --strict",
     "preview": "evidence preview"
   },
   "engines": {
-    "npm": ">=7.0.0",
-    "node": ">=18.0.0"
+    "npm": ">=11 <12",
+    "node": ">=24 <25"
   },
   "type": "module",
   "dependencies": {
