@@ -1,7 +1,6 @@
 from pathlib import Path
 
 ROOT = Path(__file__).parents[1]
-REPLAY_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay.sql"
 REPLAY_LAPS_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_laps.sql"
 OVERTAKE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_overtakes.sql"
 META_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_meta.sql"
@@ -20,9 +19,11 @@ def test_replay_serving_contract_includes_live_timing_context() -> None:
         assert field in source
         assert field in exporter
 
-    positional_source = REPLAY_SOURCE.read_text(encoding="utf-8")
-    assert "r.compound" not in positional_source
-    assert "r.tyre_life" not in positional_source
+    # The positional feed is exported as per-race Arrow bundles for the
+    # dedicated SvelteKit replay. It must not also be materialised as one giant
+    # Evidence source, which previously added hundreds of MB to the static site.
+    assert not (ROOT / "dashboard" / "sources" / "f1" / "race_replay.sql").exists()
+    assert 'race_dir / "positions.arrow"' in exporter
     assert "lap_start_t_s" in model
     assert "tyreLife" in model
 
