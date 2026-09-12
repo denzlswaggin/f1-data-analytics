@@ -23,6 +23,7 @@
         drivers: [
             ['Driver ratings', 'driver-ratings'],
             ['Compare drivers', 'driver-comparison'],
+            ['Driver DNA', 'driver-dna'],
             ['Pace consistency', 'pace-consistency'],
             ['Racecraft battles', 'racecraft-battles'],
             ['Saturday vs Sunday', 'saturday-vs-sunday']
