@@ -9,6 +9,7 @@ import pytest
 from ingestion.config import Settings
 from ingestion.dashboard_snapshot import (
     DASHBOARD_CONTRACT,
+    SnapshotManifest,
     build_dashboard_snapshot,
     fetch_dashboard_snapshot,
 )
@@ -283,6 +284,9 @@ def test_builds_versioned_snapshot_and_latest_copy(tmp_path: Path) -> None:
 
     assert manifest.version == "test-v1"
     assert manifest.latest_event_date == "2026-08-30"
+    assert manifest.schema_version == 2
+    assert manifest.git_sha
+    assert manifest.package_versions["duckdb"]
     assert manifest.table_rows["marts.driver_ratings"] == 1
     assert (tmp_path / "snapshots/f1-dashboard-test-v1.duckdb").is_file()
     assert (tmp_path / "snapshots/latest.duckdb").is_file()
@@ -290,9 +294,33 @@ def test_builds_versioned_snapshot_and_latest_copy(tmp_path: Path) -> None:
     assert payload["sha256"] == manifest.sha256
     with duckdb.connect(str(tmp_path / "snapshots/latest.duckdb"), read_only=True) as connection:
         metadata = connection.execute(
-            "select version, source, latest_event_date from dashboard.snapshot_metadata"
+            "select version, source, latest_event_date, schema_version, git_sha "
+            "from dashboard.snapshot_metadata"
         ).fetchone()
-    assert metadata == ("test-v1", "duckdb", dt.date(2026, 8, 30))
+    assert metadata == (
+        "test-v1",
+        "duckdb",
+        dt.date(2026, 8, 30),
+        2,
+        manifest.git_sha,
+    )
+
+
+def test_legacy_snapshot_manifest_remains_loadable() -> None:
+    manifest = SnapshotManifest(
+        version="legacy",
+        generated_at="2026-01-01T00:00:00+00:00",
+        source="duckdb",
+        database_file="legacy.duckdb",
+        sha256="abc",
+        size_bytes=123,
+        latest_event_date=None,
+        table_rows={},
+    )
+
+    assert manifest.schema_version == 2
+    assert manifest.git_sha is None
+    assert manifest.package_versions == {}
 
 
 def test_fetch_verifies_checksum(tmp_path: Path) -> None:

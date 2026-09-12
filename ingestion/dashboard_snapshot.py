@@ -10,11 +10,13 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import importlib.metadata
 import json
 import os
 import shutil
+import subprocess
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -891,6 +893,10 @@ class SnapshotManifest:
     size_bytes: int
     latest_event_date: str | None
     table_rows: dict[str, int]
+    schema_version: int = 2
+    git_sha: str | None = None
+    package_versions: dict[str, str] = field(default_factory=dict)
+    methodology_versions: dict[str, list[str]] = field(default_factory=dict)
 
 
 def _quote(identifier: str) -> str:
@@ -907,6 +913,62 @@ def _scalar(connection: duckdb.DuckDBPyConnection, query: str) -> Any:
 def _version(now: dt.datetime) -> str:
     revision = os.getenv("GITHUB_SHA", "local")[:8]
     return f"{now:%Y%m%dT%H%M%SZ}-{revision}"
+
+
+def _git_sha() -> str | None:
+    configured = os.getenv("GITHUB_SHA")
+    if configured:
+        return configured
+    try:
+        return subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+
+
+def _package_versions() -> dict[str, str]:
+    packages = (
+        "f1-data-analytics",
+        "duckdb",
+        "pandas",
+        "pyarrow",
+        "fastf1",
+        "dbt-core",
+        "dagster",
+    )
+    versions: dict[str, str] = {}
+    for package in packages:
+        try:
+            versions[package] = importlib.metadata.version(package)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+    return versions
+
+
+def _methodology_versions(path: Path) -> dict[str, list[str]]:
+    connection = duckdb.connect(str(path), read_only=True)
+    try:
+        relations = connection.execute(
+            "select table_schema, table_name from information_schema.columns "
+            "where column_name = 'methodology_version' "
+            "and table_schema in (?, ?, ?) order by table_schema, table_name",
+            list(DASHBOARD_SCHEMAS),
+        ).fetchall()
+        result: dict[str, list[str]] = {}
+        for schema, table in relations:
+            qualified = f"{_quote(str(schema))}.{_quote(str(table))}"
+            values = connection.execute(
+                f"select distinct methodology_version from {qualified} "
+                "where methodology_version is not null order by methodology_version"
+            ).fetchall()
+            result[f"{schema}.{table}"] = [str(row[0]) for row in values]
+        return result
+    finally:
+        connection.close()
 
 
 def _copy_duckdb(source: Path, target: Path) -> dict[str, int]:
@@ -1030,6 +1092,9 @@ def _write_snapshot_metadata(
     generated_at: dt.datetime,
     source: str,
     latest_event_date: str | None,
+    git_sha: str | None,
+    package_versions: dict[str, str],
+    methodology_versions: dict[str, list[str]],
 ) -> None:
     connection = duckdb.connect(str(path))
     try:
@@ -1037,8 +1102,18 @@ def _write_snapshot_metadata(
         connection.execute(
             "create table dashboard.snapshot_metadata as "
             "select ?::varchar as version, ?::timestamptz as generated_at, "
-            "?::varchar as source, ?::date as latest_event_date",
-            [version, generated_at, source, latest_event_date],
+            "?::varchar as source, ?::date as latest_event_date, "
+            "2::integer as schema_version, ?::varchar as git_sha, "
+            "?::json as package_versions, ?::json as methodology_versions",
+            [
+                version,
+                generated_at,
+                source,
+                latest_event_date,
+                git_sha,
+                json.dumps(package_versions, sort_keys=True),
+                json.dumps(methodology_versions, sort_keys=True),
+            ],
         )
     finally:
         connection.close()
@@ -1113,12 +1188,18 @@ def build_dashboard_snapshot(
             else _copy_postgres(settings, temporary)
         )
         latest_event_date = validate_dashboard_snapshot(temporary)
+        git_sha = _git_sha()
+        package_versions = _package_versions()
+        methodology_versions = _methodology_versions(temporary)
         _write_snapshot_metadata(
             temporary,
             version=version,
             generated_at=now,
             source=settings.warehouse,
             latest_event_date=latest_event_date,
+            git_sha=git_sha,
+            package_versions=package_versions,
+            methodology_versions=methodology_versions,
         )
         os.replace(temporary, final_path)
     finally:
@@ -1133,6 +1214,9 @@ def build_dashboard_snapshot(
         size_bytes=final_path.stat().st_size,
         latest_event_date=latest_event_date,
         table_rows=table_rows,
+        git_sha=git_sha,
+        package_versions=package_versions,
+        methodology_versions=methodology_versions,
     )
     manifest_path = output_dir / f"f1-dashboard-{version}.json"
     _write_json(asdict(manifest), manifest_path)
