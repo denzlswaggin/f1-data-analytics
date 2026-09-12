@@ -4,6 +4,7 @@ ROOT = Path(__file__).parents[1]
 REPLAY_LAPS_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_laps.sql"
 OVERTAKE_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_overtakes.sql"
 META_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_replay_meta.sql"
+TEAM_RADIO_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "team_radio.sql"
 TRACK_MAP = ROOT / "dashboard" / "components" / "TrackMap.svelte"
 EVENT_TIMELINE = ROOT / "dashboard" / "components" / "replay" / "EventTimeline.svelte"
 WEB_EXPORTER = ROOT / "scripts" / "export_web_data.py"
@@ -38,6 +39,13 @@ def test_overtakes_expose_detector_confidence() -> None:
     assert "o.reason" in source
     assert "confidence, evidence, reason" in exporter
     assert "row.confidence" in model
+
+
+def test_optional_team_radio_source_preserves_schema_when_empty() -> None:
+    source = TEAM_RADIO_SOURCE.read_text(encoding="utf-8")
+
+    assert "'__NO_DATA__'" in source
+    assert "where not exists (select 1 from radio)" in source
 
 
 def test_replay_uses_separate_broadcast_ui_components() -> None:
