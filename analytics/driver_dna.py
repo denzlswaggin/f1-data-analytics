@@ -38,6 +38,59 @@ class DriverDNAResult:
     microsectors: pd.DataFrame
 
 
+def validate_driver_dna(result: DriverDNAResult) -> None:
+    """Raise when a Driver DNA result violates its publication contract."""
+    eligible = result.evidence[result.evidence["eligible"].fillna(False)]
+    if not eligible.empty:
+        if (eligible["common_points"] < MIN_COMMON_POINTS).any():
+            raise ValueError("eligible Driver DNA evidence has fewer than 100 common points")
+        if (eligible["valid_coverage_pct"] < MIN_VALID_COVERAGE_PCT).any():
+            raise ValueError("eligible Driver DNA evidence has invalid coverage below 95%")
+        numeric = [
+            *[f"{metric}_delta" for metric in METRICS],
+            *[f"{metric}_z" for metric in METRICS],
+        ]
+        if not np.isfinite(eligible[numeric].to_numpy(dtype=float)).all():
+            raise ValueError("eligible Driver DNA evidence contains non-finite metrics")
+        lookup = eligible.set_index(["season", "round", "driver_code", "teammate_code"])
+        for row in eligible.itertuples(index=False):
+            reverse_key = (row.season, row.round, row.teammate_code, row.driver_code)
+            if reverse_key not in lookup.index:
+                raise ValueError("Driver DNA evidence is missing an antisymmetric reverse row")
+            reverse = lookup.loc[reverse_key]
+            for metric in METRICS:
+                if not np.isclose(
+                    float(getattr(row, f"{metric}_delta")),
+                    -float(reverse[f"{metric}_delta"]),
+                    atol=1e-10,
+                ):
+                    raise ValueError(f"Driver DNA {metric} delta is not antisymmetric")
+    if not result.profile.empty:
+        if (result.profile["n_comparisons"] < 5).any():
+            raise ValueError("Driver DNA profile published below the five-race minimum")
+        profile_metrics = [
+            name
+            for metric in METRICS
+            for name in (metric, f"{metric}_lo", f"{metric}_hi")
+        ]
+        if not np.isfinite(result.profile[profile_metrics].to_numpy(dtype=float)).all():
+            raise ValueError("Driver DNA profile contains non-finite estimates")
+    if not result.microsectors.empty:
+        micro_metrics = [
+            "segment_delta_sec",
+            "driver_speed_kph",
+            "teammate_speed_kph",
+            "driver_throttle",
+            "teammate_throttle",
+            "driver_brake_share",
+            "teammate_brake_share",
+            "x",
+            "y",
+        ]
+        if not np.isfinite(result.microsectors[micro_metrics].to_numpy(dtype=float)).all():
+            raise ValueError("Driver DNA microsectors contain non-finite values")
+
+
 EVIDENCE_COLUMNS = [
     "season",
     "round",
@@ -67,6 +120,8 @@ EVIDENCE_COLUMNS = [
 ]
 
 PROFILE_COLUMNS = [
+    "from_season",
+    "to_season",
     "driver_code",
     "driver_name",
     "n_comparisons",
@@ -335,19 +390,22 @@ def bootstrap_profile(
     """Race-cluster bootstrap medians with deterministic 90% intervals."""
     if values.empty:
         return {metric: (float("nan"), float("nan"), float("nan")) for metric in METRICS}
-    race_keys = values[["season", "round"]].drop_duplicates().itertuples(index=False, name=None)
-    race_keys = list(race_keys)
+    if n_boot <= 0:
+        return {
+            metric: (float(values[f"{metric}_z"].median()), float("nan"), float("nan"))
+            for metric in METRICS
+        }
+    race_values = values.groupby(["season", "round"], as_index=False)[
+        [f"{metric}_z" for metric in METRICS]
+    ].median()
     rng = np.random.default_rng(seed)
-    samples: dict[str, list[float]] = {metric: [] for metric in METRICS}
-    for _ in range(n_boot):
-        chosen = [race_keys[index] for index in rng.integers(0, len(race_keys), len(race_keys))]
-        chunks = [
-            values[(values["season"] == season) & (values["round"] == rnd)]
-            for season, rnd in chosen
-        ]
-        sample = pd.concat(chunks, ignore_index=True)
-        for metric in METRICS:
-            samples[metric].append(float(sample[f"{metric}_z"].median()))
+    chosen = rng.integers(0, len(race_values), size=(n_boot, len(race_values)))
+    samples: dict[str, np.ndarray] = {
+        metric: np.nanmedian(
+            race_values[f"{metric}_z"].to_numpy(dtype=float)[chosen], axis=1
+        )
+        for metric in METRICS
+    }
     return {
         metric: (
             float(values[f"{metric}_z"].median()),
@@ -375,6 +433,8 @@ def build_profiles(
         count = len(group)
         confidence = "strong" if count >= 12 else "moderate" if count >= 8 else "limited"
         row: dict[str, object] = {
+            "from_season": int(group["season"].min()),
+            "to_season": int(group["season"].max()),
             "driver_code": driver_code,
             "driver_name": group["driver_name"].dropna().iloc[0],
             "n_comparisons": count,
@@ -392,6 +452,29 @@ def build_profiles(
             row[f"{metric}_hi"] = high
         rows.append(row)
     return pd.DataFrame(rows, columns=PROFILE_COLUMNS)
+
+
+def build_profile_windows(
+    evidence: pd.DataFrame,
+    *,
+    n_boot: int = 1000,
+    seed: int = 0,
+) -> pd.DataFrame:
+    """Publish every contiguous season window so dashboard filters stay honest."""
+    eligible = evidence[evidence["eligible"].fillna(False)]
+    seasons = sorted(int(season) for season in eligible["season"].dropna().unique())
+    frames: list[pd.DataFrame] = []
+    window_offset = 0
+    for start_index, from_season in enumerate(seasons):
+        for to_season in seasons[start_index:]:
+            scoped = evidence[evidence["season"].between(from_season, to_season)]
+            profile = build_profiles(scoped, n_boot=n_boot, seed=seed + window_offset * 100)
+            if not profile.empty:
+                profile["from_season"] = from_season
+                profile["to_season"] = to_season
+                frames.append(profile)
+            window_offset += 1
+    return pd.concat(frames, ignore_index=True) if frames else _empty(PROFILE_COLUMNS)
 
 
 def _selected_laps(telemetry: pd.DataFrame, laps: pd.DataFrame) -> pd.DataFrame:
@@ -597,7 +680,7 @@ def analyse_driver_dna(
         evidence = evidence[EVIDENCE_COLUMNS].sort_values(
             ["season", "round", "team", "driver_code", "teammate_code"]
         )
-    profile = build_profiles(evidence, n_boot=n_boot, seed=seed)
+    profile = build_profile_windows(evidence, n_boot=n_boot, seed=seed)
     microsectors = (
         pd.concat(microsector_frames, ignore_index=True)
         if microsector_frames

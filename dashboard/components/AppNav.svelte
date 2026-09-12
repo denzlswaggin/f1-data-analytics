@@ -26,6 +26,7 @@
             items: [
                 { label: 'Driver ratings', path: 'driver-ratings' },
                 { label: 'Compare drivers', path: 'driver-comparison' },
+                { label: 'Driver DNA', path: 'driver-dna' },
                 { label: 'Pace consistency', path: 'pace-consistency' },
                 { label: 'Racecraft battles', path: 'racecraft-battles' },
                 { label: 'Saturday vs Sunday', path: 'saturday-vs-sunday' }

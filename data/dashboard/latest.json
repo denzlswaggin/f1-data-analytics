@@ -1,14 +1,17 @@
 {
-  "database_file": "f1-dashboard-20260911-pit-timing-history-2024-2026.duckdb",
-  "generated_at": "2026-09-11T13:31:37.536228+00:00",
+  "database_file": "f1-dashboard-20260912-driver-dna.duckdb",
+  "generated_at": "2026-09-12T10:27:21+00:00",
   "latest_event_date": "2026-08-23",
-  "sha256": "6d72d8d547921a3272372edff37e50d62f473ed830198eb77e97ae0ca2d116be",
+  "sha256": "b43f54bb3273d796b745a6a28b178217edce82a8cc7a36a8affc82e0bb687fb0",
   "size_bytes": 1051209728,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
     "intermediate.int_teammate_race_gaps": 784,
     "marts.driver_pace_profile": 15,
+    "marts.driver_dna_evidence": 698,
+    "marts.driver_dna_microsectors": 6182,
+    "marts.driver_dna_profile": 80,
     "marts.driver_ratings": 101,
     "marts.driver_ratings_v2": 490,
     "marts.mart_adjusted_stint_degradation": 2684,
@@ -54,5 +57,5 @@
     "staging.stg_telemetry": 613680,
     "staging.stg_weather": 5879
   },
-  "version": "20260911-pit-timing-history-2024-2026"
+  "version": "20260912-driver-dna"
 }

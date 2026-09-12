@@ -11,8 +11,9 @@ from analytics.driver_dna import (
     EVIDENCE_COLUMNS,
     DriverDNAResult,
     analyse_driver_dna,
-    build_profiles,
+    build_profile_windows,
     robust_standardize,
+    validate_driver_dna,
 )
 from analytics.overtakes import detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
@@ -137,6 +138,7 @@ def build_driver_dna(
         settings, from_season=from_season, to_season=to_season, rnd=None
     )
     result = analyse_driver_dna(telemetry, laps, n_boot=n_boot, seed=seed)
+    validate_driver_dna(result)
     _replace_driver_dna(result, settings)
     log.info(
         "driver_dna.materialised",
@@ -182,7 +184,8 @@ def build_driver_dna_incremental(
     ].copy()
     combined = pd.concat([outside, race_result.evidence], ignore_index=True)
     combined = robust_standardize(combined)[EVIDENCE_COLUMNS]
-    profiles = build_profiles(combined, n_boot=n_boot, seed=seed)
+    profiles = build_profile_windows(combined, n_boot=n_boot, seed=seed)
+    validate_driver_dna(DriverDNAResult(combined, profiles, race_result.microsectors))
     replace_table(combined, schema="marts", table="driver_dna_evidence", settings=settings)
     replace_table_partition(
         race_result.microsectors,

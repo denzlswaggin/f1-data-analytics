@@ -14,6 +14,7 @@ from analytics.driver_dna import (
     confirmed_brake_onsets,
     distance_weighted_share,
     integrate_segment_time,
+    validate_driver_dna,
 )
 from analytics.pipeline import build_driver_dna, build_driver_dna_incremental
 from ingestion.config import Settings
@@ -255,3 +256,11 @@ def test_incremental_refresh_replaces_one_race_and_preserves_others(tmp_path) ->
     pd.testing.assert_frame_equal(after_untouched, untouched, check_dtype=False)
     assert set(persisted["round"]) == {1, 2}
     assert micro_rounds == [1, 2]
+
+
+def test_publication_validation_rejects_non_finite_eligible_metric() -> None:
+    telemetry = pd.concat([_telemetry("AAA"), _telemetry("BBB")], ignore_index=True)
+    result = analyse_driver_dna(telemetry, _laps(), n_boot=10)
+    result.evidence.loc[0, "low_speed_kph_delta"] = np.nan
+    with pytest.raises(ValueError, match="non-finite"):
+        validate_driver_dna(result)
