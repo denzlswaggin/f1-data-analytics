@@ -112,6 +112,7 @@ def _load_duckdb(
     con = duckdb.connect(str(settings.duckdb_path))
     try:
         con.register("incoming", df)
+        con.execute("BEGIN TRANSACTION")
         con.execute("CREATE SCHEMA IF NOT EXISTS raw")
         # Create the table from the incoming shape if it doesn't exist yet.
         con.execute(
@@ -152,6 +153,10 @@ def _load_duckdb(
                     load.row_count,
                 ],
             )
+        con.execute("COMMIT")
+    except Exception:
+        con.execute("ROLLBACK")
+        raise
     finally:
         con.unregister("incoming")
         con.close()
