@@ -148,9 +148,10 @@ def audit_dashboard_data(
             "order by table_schema, table_name"
         ).fetchall():
             qualified = f'"{schema}"."{table}"'
-            table_rows[f"{schema}.{table}"] = int(
-                connection.execute(f"select count(*) from {qualified}").fetchone()[0]
-            )
+            count_row = connection.execute(f"select count(*) from {qualified}").fetchone()
+            if count_row is None:
+                raise ValueError(f"could not count {schema}.{table}")
+            table_rows[f"{schema}.{table}"] = int(count_row[0])
         row = connection.execute(
             "select max(race_date) from staging.stg_races where race_date < ?",
             [today],
