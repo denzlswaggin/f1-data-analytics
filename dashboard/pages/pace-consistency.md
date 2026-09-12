@@ -1,5 +1,6 @@
 ---
 title: Driver Pace Consistency
+hide_title: true
 max_width: 1600
 ---
 

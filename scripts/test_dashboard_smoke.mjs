@@ -7,6 +7,7 @@ const { chromium } = require('playwright');
 const origin = process.argv[2] ?? 'http://127.0.0.1:4174/f1-data-analytics';
 const routes = [
 	'',
+	'race-cockpit',
 	'latest-race',
 	'race-pace',
 	'traffic-adjusted-pace',
@@ -62,10 +63,23 @@ try {
 			assert.equal(response?.status(), 200, `${route || 'home'} should return 200`);
 			assert.equal(await page.locator('h1').count(), 1, `${route || 'home'} should have one h1`);
 			assert.equal(errors.length, 0, `${route || 'home'} browser errors: ${errors.join('; ')}`);
-			const overflow = await page.evaluate(
-				() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
+			const overflow = await page.evaluate(() => ({
+				overflows: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+				width: document.documentElement.scrollWidth,
+				viewport: document.documentElement.clientWidth,
+				offenders: [...document.querySelectorAll('body *')]
+					.filter((element) => {
+						const bounds = element.getBoundingClientRect();
+						return bounds.right > document.documentElement.clientWidth + 1 || bounds.left < -1;
+					})
+					.slice(0, 5)
+					.map((element) => `${element.tagName.toLowerCase()}.${element.className}`)
+			}));
+			assert.equal(
+				overflow.overflows,
+				false,
+				`${route || 'home'} horizontal overflow ${overflow.width}/${overflow.viewport}: ${overflow.offenders.join(', ')}`
 			);
-			assert.equal(overflow, false, `${route || 'home'} should not overflow horizontally`);
 			page.off('pageerror', onPageError);
 			page.off('console', onConsole);
 		}

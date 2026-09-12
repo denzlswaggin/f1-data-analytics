@@ -1,5 +1,6 @@
 ---
 title: Can I Trust This Result?
+hide_title: true
 max_width: 1600
 ---
 

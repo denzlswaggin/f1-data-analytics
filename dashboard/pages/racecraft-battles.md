@@ -1,5 +1,6 @@
 ---
 title: Racecraft Battle Conversion
+hide_title: true
 max_width: 1600
 ---
 
@@ -141,6 +142,7 @@ The chart deliberately keeps attack and defence separate. It does not combine
 them into an arbitrary racecraft score, and drivers without five opportunities
 on both axes are omitted.
 
+{#if two_way_evidence.length > 0}
 <ScatterPlot
     data={two_way_evidence}
     x=attack_conversion_pct
@@ -152,6 +154,12 @@ on both axes are omitted.
     pointSize=30
     chartAreaHeight=390
 />
+{:else}
+<KeyInsight label="No two-way profile for this race">
+No driver reached five resolved opportunities in both attack and defence. The
+role-specific evidence and raw episodes remain available below.
+</KeyInsight>
+{/if}
 
 <DataTable data={race_drivers} rows=25 search=true download=true>
     <Column id=driver_code title="Driver" />

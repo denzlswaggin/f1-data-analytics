@@ -1,5 +1,6 @@
 ---
 title: Where Was the Race Won?
+hide_title: true
 max_width: 1600
 ---
 

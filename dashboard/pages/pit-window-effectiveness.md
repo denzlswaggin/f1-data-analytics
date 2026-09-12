@@ -1,5 +1,6 @@
 ---
 title: Who Won the Pit Window?
+hide_title: true
 max_width: 1600
 ---
 
@@ -147,6 +148,7 @@ where on_track_gain_sec is not null
 
 ## Pairwise evidence
 
+{#if eligible_matchups.length > 0}
 <DataTable data={eligible_matchups} rows=30 search=true download=true>
     <Column id=matchup title="Early → late" />
     <Column id=stop_number title="Stop" />
@@ -164,18 +166,28 @@ where on_track_gain_sec is not null
     <Column id=outcome_label title="Outcome" />
     <Column id=confidence title="Evidence" />
 </DataTable>
+{:else}
+<KeyInsight label="No eligible pairwise window">
+This race has no nearby rivals with a complete green-flag timing window under
+the selected method. Excluded candidates remain available below.
+</KeyInsight>
+{/if}
 
 ```sql excluded_matchups
 select * from ${race_matchups} where not eligible
 ```
 
 <ExpandableSection title="See excluded windows and the v1 method">
+{#if excluded_matchups.length > 0}
 <DataTable data={excluded_matchups} rows=30 search=true>
     <Column id=matchup title="Early → late" />
     <Column id=early_pit_lap title="Early lap" />
     <Column id=late_pit_lap title="Late lap" />
     <Column id=exclusion_reason title="Why excluded" />
 </DataTable>
+{:else}
+No candidate windows were excluded for this race.
+{/if}
 
 Candidates must be adjacent before the first stop, within five seconds, and pit
 one to three laps apart. Both cars need a complete timing window with only green

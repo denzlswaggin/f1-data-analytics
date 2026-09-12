@@ -1,5 +1,6 @@
 ---
 title: Who Is Fastest Beyond the Car?
+hide_title: true
 max_width: 1600
 ---
 

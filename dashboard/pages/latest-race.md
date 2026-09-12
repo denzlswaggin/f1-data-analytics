@@ -1,5 +1,6 @@
 ---
 title: How the Latest Race Unfolded
+hide_title: true
 max_width: 1600
 ---
 

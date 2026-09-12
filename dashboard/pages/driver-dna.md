@@ -1,5 +1,6 @@
 ---
 title: Driver DNA
+hide_title: true
 max_width: 1600
 ---
 

@@ -1,13 +1,19 @@
 <script>
     export let data = [];
 
+    const formatDate = (value) => {
+        if (value == null) return 'unknown';
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime())
+            ? String(value)
+            : parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    };
+
     $: row = data?.[0] || {};
     $: status = row.freshness_status || 'unknown';
     $: stale = status === 'stale';
-    $: dataThrough = row.latest_event_date == null ? 'unknown' : String(row.latest_event_date);
-    $: calendarThrough = row.latest_completed_event_date == null
-        ? 'unknown'
-        : String(row.latest_completed_event_date);
+    $: dataThrough = formatDate(row.latest_event_date);
+    $: calendarThrough = formatDate(row.latest_completed_event_date);
     $: lag = Number(row.freshness_lag_days || 0);
 </script>
 
@@ -54,7 +60,7 @@
         background: #f7c948;
         box-shadow: 0 0 0 4px rgba(247, 201, 72, 0.12);
     }
-    div { display: flex; flex-direction: column; min-width: max-content; }
+    div { display: flex; flex-direction: column; min-width: 0; }
     strong { font-size: 0.86rem; }
     span, p { font-size: 0.78rem; }
     div span { color: #aab7b1; }

@@ -1,5 +1,6 @@
 ---
 title: Which Tyres Faded?
+hide_title: true
 max_width: 1600
 ---
 

@@ -7,6 +7,7 @@
     const basePath = '/f1-data-analytics';
     const groups = {
         race: [
+            ['Race cockpit', 'race-cockpit'],
             ['Race story', 'latest-race'],
             ['Race replay', 'race-replay'],
             ['Race pace', 'race-pace'],

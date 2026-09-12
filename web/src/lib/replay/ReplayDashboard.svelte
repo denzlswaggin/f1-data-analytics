@@ -32,6 +32,7 @@
 	const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
 	const PAD = 44;
 	let manifest = $state<ReplayManifest | null>(null);
+	let cockpitHref = $state('https://denzlswaggin.github.io/f1-data-analytics/race-cockpit/');
 	let selectedSeason = $state(0),
 		selectedRaceKey = $state('');
 	let loaded = $state<LoadedRace | null>(null),
@@ -144,6 +145,9 @@
 	);
 
 	onMount(() => {
+		if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+			cockpitHref = `${window.location.protocol}//${window.location.hostname}:3000/f1-data-analytics/race-cockpit/`;
+		}
 		resizeObserver = new ResizeObserver(resizeCanvas);
 		window.addEventListener('keydown', onKeyDown);
 		animationFrame = requestAnimationFrame(loop);
@@ -655,7 +659,9 @@
 				><strong>F1</strong> ANALYTICS</span
 			></a
 		>
-		<nav aria-label="Primary navigation"><a href="#replay">Race replay</a></nav>
+		<nav aria-label="Primary navigation">
+			<a href={cockpitHref}>Race cockpit</a><a href="#replay">Race replay</a>
+		</nav>
 		<div class="snapshot">
 			<span></span> Snapshot · {formatDate(manifest?.snapshot.generated_at)}
 		</div>

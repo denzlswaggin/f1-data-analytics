@@ -1,5 +1,6 @@
 ---
 title: Where Does Each Driver Gain Time?
+hide_title: true
 max_width: 1600
 ---
 

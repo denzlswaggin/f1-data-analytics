@@ -1,5 +1,6 @@
 ---
 title: Who Was Fast in Clean Air?
+hide_title: true
 max_width: 1600
 ---
 

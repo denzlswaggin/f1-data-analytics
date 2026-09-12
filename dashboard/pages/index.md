@@ -1,5 +1,6 @@
 ---
 title: F1 Analytics — See Beyond the Result
+hide_title: true
 max_width: 1600
 ---
 
@@ -11,7 +12,7 @@ max_width: 1600
     description="Race pace, strategy, telemetry and teammate-normalised ratings — one evidence-led view of why a Grand Prix unfolded the way it did."
 >
     <div slot="actions">
-        <a href="/f1-data-analytics/latest-race/">Latest race</a>
+        <a href="/f1-data-analytics/race-cockpit/">Open race cockpit</a>
         <a href="/f1-data-analytics/race-replay/">Open replay</a>
     </div>
 </PageHeader>
@@ -49,7 +50,8 @@ limit 1
 <BigValue data={latest_race} value=overtakes title="Detected passes" />
 </div>
 
-[Open the complete race story](latest-race) or [watch the replay](race-replay).
+[Open the unified race cockpit](race-cockpit), [read the latest race story](latest-race)
+or [watch the replay](race-replay).
 
 ## Explore by question
 
