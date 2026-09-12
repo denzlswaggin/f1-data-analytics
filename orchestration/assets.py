@@ -693,3 +693,19 @@ def driver_pace_profile_is_sane() -> AssetCheckResult:
             "max_delta_error": err,
         },
     )
+
+
+@asset_check(asset=driver_dna, name="evidence_is_comparable", blocking=True)
+def driver_dna_evidence_is_comparable() -> AssetCheckResult:
+    """Published DNA pairs must satisfy joint lap and tyre-age tolerances."""
+    df = read_query(
+        "select count(*) as n, "
+        "count(*) filter (where eligible) as eligible, "
+        "count(*) filter (where eligible and (lap_number_gap > 3 or tyre_life_gap > 3)) as bad, "
+        "count(*) filter (where eligible and methodology_version <> "
+        "'driver-dna-v2-joint-pairing') as legacy "
+        "from marts.driver_dna_evidence"
+    )
+    row = df.iloc[0]
+    passed = int(row["eligible"]) >= 10 and int(row["bad"]) == 0 and int(row["legacy"]) == 0
+    return AssetCheckResult(passed=passed, metadata=row.to_dict())

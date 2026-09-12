@@ -16,6 +16,7 @@ from analytics.driver_dna import (
     confirmed_brake_onsets,
     distance_weighted_share,
     integrate_segment_time,
+    select_representative_pair,
     validate_driver_dna,
 )
 from analytics.pipeline import build_driver_dna, build_driver_dna_incremental
@@ -153,8 +154,8 @@ def test_analysis_is_directed_antisymmetric_and_eligible() -> None:
         ({"1__compound": "WET"}, "non-dry compound"),
         ({"1__compound": "SOFT"}, "different compound"),
         ({"1__track_status": "4"}, "non-green track status"),
-        ({"1__lap_number": 30}, "lap-number gap above 10"),
-        ({"1__tyre_life": 30}, "tyre-life gap above 10"),
+        ({"1__lap_number": 30}, "lap-number gap above 3"),
+        ({"1__tyre_life": 30}, "tyre-life gap above 3"),
     ],
 )
 def test_eligibility_exclusions(overrides: dict[str, object], reason: str) -> None:
@@ -170,6 +171,50 @@ def test_incomplete_common_distance_is_rejected() -> None:
     telemetry = pd.concat([_telemetry("AAA"), _telemetry("BBB").iloc[:90]], ignore_index=True)
     result = analyse_driver_dna(telemetry, _laps(), n_boot=10)
     assert set(result.evidence["exclusion_reason"]) == {"fewer than 100 common telemetry points"}
+
+
+def test_joint_pairing_prefers_comparable_laps_over_independent_fastest() -> None:
+    candidates_a = pd.DataFrame(
+        [
+            {
+                "lap_number": 10,
+                "lap_time_sec": 90.0,
+                "compound": "SOFT",
+                "tyre_life": 4,
+                "track_status": "1",
+            },
+            {
+                "lap_number": 11,
+                "lap_time_sec": 90.2,
+                "compound": "MEDIUM",
+                "tyre_life": 8,
+                "track_status": "1",
+            },
+        ]
+    )
+    candidates_b = pd.DataFrame(
+        [
+            {
+                "lap_number": 20,
+                "lap_time_sec": 90.1,
+                "compound": "SOFT",
+                "tyre_life": 14,
+                "track_status": "1",
+            },
+            {
+                "lap_number": 12,
+                "lap_time_sec": 90.4,
+                "compound": "MEDIUM",
+                "tyre_life": 9,
+                "track_status": "1",
+            },
+        ]
+    )
+
+    driver, teammate, score = select_representative_pair(candidates_a, candidates_b)
+
+    assert (driver["lap_number"], teammate["lap_number"]) == (11, 12)
+    assert score < 1
 
 
 def test_bootstrap_is_deterministic_and_profiles_require_five_comparisons() -> None:

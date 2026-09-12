@@ -15,6 +15,10 @@ from analytics.driver_dna import (
     robust_standardize,
     validate_driver_dna,
 )
+from analytics.driver_dna_validation import (
+    DriverDNAValidationResult,
+    validate_driver_dna_stability,
+)
 from analytics.overtakes import detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
@@ -154,9 +158,44 @@ def build_driver_dna(
     return result
 
 
+def build_driver_dna_validation(
+    from_season: int = 2024,
+    to_season: int | None = None,
+    settings: Settings | None = None,
+    *,
+    n_permutations: int = 200,
+    seed: int = 0,
+) -> DriverDNAValidationResult:
+    """Evaluate the persisted Driver DNA evidence against its source laps."""
+    settings = settings or get_settings()
+    telemetry, laps = _driver_dna_sources(
+        settings, from_season=from_season, to_season=to_season, rnd=None
+    )
+    try:
+        evidence = read_query(
+            "select * from marts.driver_dna_evidence "
+            f"where season >= {int(from_season)}"
+            + (f" and season <= {int(to_season)}" if to_season is not None else ""),
+            settings,
+        )
+    except Exception:
+        evidence = analyse_driver_dna(telemetry, laps, n_boot=0, seed=seed).evidence
+    return validate_driver_dna_stability(
+        evidence,
+        telemetry,
+        laps,
+        n_permutations=n_permutations,
+        seed=seed,
+    )
+
+
 def _read_existing_driver_dna_evidence(settings: Settings) -> pd.DataFrame:
     try:
-        return read_query("select * from marts.driver_dna_evidence", settings)
+        evidence = read_query("select * from marts.driver_dna_evidence", settings)
+        for column in EVIDENCE_COLUMNS:
+            if column not in evidence:
+                evidence[column] = pd.NA
+        return evidence[EVIDENCE_COLUMNS]
     except Exception:
         return pd.DataFrame(columns=EVIDENCE_COLUMNS)
 

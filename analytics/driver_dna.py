@@ -23,10 +23,12 @@ METRICS = (
     "low_speed_kph",
 )
 DRY_COMPOUNDS = {"SOFT", "MEDIUM", "HARD"}
-METHODOLOGY_VERSION = "driver-dna-v1"
+METHODOLOGY_VERSION = "driver-dna-v2-joint-pairing"
 MIN_COMMON_POINTS = 100
 MIN_VALID_COVERAGE_PCT = 95.0
 MICROSECTOR_LENGTH_M = 200.0
+DEFAULT_MAX_LAP_GAP = 3
+DEFAULT_MAX_TYRE_LIFE_GAP = 3
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,9 @@ EVIDENCE_COLUMNS = [
     "teammate_tyre_life",
     "driver_track_status",
     "teammate_track_status",
+    "lap_number_gap",
+    "tyre_life_gap",
+    "pair_selection_score",
     "common_points",
     "valid_coverage_pct",
     "throttle_corrections",
@@ -475,7 +480,7 @@ def build_profile_windows(
     return pd.concat(frames, ignore_index=True) if frames else _empty(PROFILE_COLUMNS)
 
 
-def _selected_laps(telemetry: pd.DataFrame, laps: pd.DataFrame) -> pd.DataFrame:
+def _candidate_laps(telemetry: pd.DataFrame, laps: pd.DataFrame) -> pd.DataFrame:
     available = telemetry[["season", "round", "driver_code", "lap_number"]].drop_duplicates()
     metadata = laps.copy()
     if "session" in metadata:
@@ -487,14 +492,19 @@ def _selected_laps(telemetry: pd.DataFrame, laps: pd.DataFrame) -> pd.DataFrame:
         suffixes=("", "_lap"),
     )
     joined["lap_time_sec"] = pd.to_numeric(joined["lap_time_sec"], errors="coerce")
-    joined = joined.sort_values(
+    return joined.sort_values(
         ["season", "round", "driver_code", "lap_time_sec", "lap_number"],
         na_position="last",
-    )
-    return joined.drop_duplicates(["season", "round", "driver_code"], keep="first")
+    ).drop_duplicates(["season", "round", "driver_code", "lap_number"], keep="first")
 
 
-def _exclusion_reason(a: pd.Series, b: pd.Series) -> str | None:
+def _exclusion_reason(
+    a: pd.Series,
+    b: pd.Series,
+    *,
+    max_lap_gap: int = DEFAULT_MAX_LAP_GAP,
+    max_tyre_life_gap: int = DEFAULT_MAX_TYRE_LIFE_GAP,
+) -> str | None:
     if pd.isna(a.get("compound")) or pd.isna(b.get("compound")):
         return "missing compound"
     compound_a = str(a.get("compound", "")).upper()
@@ -511,11 +521,51 @@ def _exclusion_reason(a: pd.Series, b: pd.Series) -> str | None:
     tyre_b = pd.to_numeric(b.get("tyre_life"), errors="coerce")
     if pd.isna(tyre_a) or pd.isna(tyre_b):
         return "missing tyre life"
-    if abs(float(a["lap_number"]) - float(b["lap_number"])) > 10:
-        return "lap-number gap above 10"
-    if abs(float(tyre_a) - float(tyre_b)) > 10:
-        return "tyre-life gap above 10"
+    if abs(float(a["lap_number"]) - float(b["lap_number"])) > max_lap_gap:
+        return f"lap-number gap above {max_lap_gap}"
+    if abs(float(tyre_a) - float(tyre_b)) > max_tyre_life_gap:
+        return f"tyre-life gap above {max_tyre_life_gap}"
     return None
+
+
+def select_representative_pair(
+    driver_laps: pd.DataFrame,
+    teammate_laps: pd.DataFrame,
+    *,
+    max_lap_gap: int = DEFAULT_MAX_LAP_GAP,
+    max_tyre_life_gap: int = DEFAULT_MAX_TYRE_LIFE_GAP,
+) -> tuple[pd.Series, pd.Series, float]:
+    """Select the fastest jointly comparable teammate lap pair."""
+    if driver_laps.empty or teammate_laps.empty:
+        raise ValueError("both drivers need at least one telemetry-backed lap")
+    fastest_a = pd.to_numeric(driver_laps["lap_time_sec"], errors="coerce").min()
+    fastest_b = pd.to_numeric(teammate_laps["lap_time_sec"], errors="coerce").min()
+    candidates: list[tuple[tuple[float, ...], pd.Series, pd.Series, float]] = []
+    for _, a in driver_laps.iterrows():
+        for _, b in teammate_laps.iterrows():
+            lap_gap = abs(float(a["lap_number"]) - float(b["lap_number"]))
+            tyre_a = pd.to_numeric(a.get("tyre_life"), errors="coerce")
+            tyre_b = pd.to_numeric(b.get("tyre_life"), errors="coerce")
+            tyre_gap = (
+                abs(float(tyre_a) - float(tyre_b))
+                if pd.notna(tyre_a) and pd.notna(tyre_b)
+                else float("inf")
+            )
+            time_a = pd.to_numeric(a.get("lap_time_sec"), errors="coerce")
+            time_b = pd.to_numeric(b.get("lap_time_sec"), errors="coerce")
+            deficit_a = float(time_a - fastest_a) if pd.notna(time_a) else 1_000.0
+            deficit_b = float(time_b - fastest_b) if pd.notna(time_b) else 1_000.0
+            score = deficit_a + deficit_b + 0.03 * lap_gap + 0.03 * tyre_gap
+            reason = _exclusion_reason(
+                a,
+                b,
+                max_lap_gap=max_lap_gap,
+                max_tyre_life_gap=max_tyre_life_gap,
+            )
+            sort_key = (float(reason is not None), score, lap_gap, tyre_gap)
+            candidates.append((sort_key, a, b, score))
+    _, selected_a, selected_b, score = min(candidates, key=lambda candidate: candidate[0])
+    return selected_a, selected_b, float(score)
 
 
 def analyse_driver_dna(
@@ -524,21 +574,31 @@ def analyse_driver_dna(
     *,
     n_boot: int = 1000,
     seed: int = 0,
+    max_lap_gap: int = DEFAULT_MAX_LAP_GAP,
+    max_tyre_life_gap: int = DEFAULT_MAX_TYRE_LIFE_GAP,
 ) -> DriverDNAResult:
     """Build evidence, profile and microsector frames from telemetry-backed laps."""
     if telemetry.empty or laps.empty:
         return DriverDNAResult(
             _empty(EVIDENCE_COLUMNS), _empty(PROFILE_COLUMNS), _empty(MICROSECTOR_COLUMNS)
         )
-    selected = _selected_laps(telemetry, laps)
+    candidates = _candidate_laps(telemetry, laps)
     evidence_rows: list[dict[str, object]] = []
     microsector_frames: list[pd.DataFrame] = []
     group_columns = ["season", "round", "team"]
-    for (season, rnd, team), team_laps in selected.groupby(group_columns, dropna=False, sort=True):
-        if pd.isna(team) or len(team_laps) < 2:
+    for (season, rnd, team), team_laps in candidates.groupby(
+        group_columns, dropna=False, sort=True
+    ):
+        driver_codes = sorted(str(code) for code in team_laps["driver_code"].dropna().unique())
+        if pd.isna(team) or len(driver_codes) < 2:
             continue
-        for (_, a), (_, b) in combinations(team_laps.iterrows(), 2):
-            code_a, code_b = str(a["driver_code"]), str(b["driver_code"])
+        for code_a, code_b in combinations(driver_codes, 2):
+            a, b, pair_score = select_representative_pair(
+                team_laps[team_laps["driver_code"].astype(str) == code_a],
+                team_laps[team_laps["driver_code"].astype(str) == code_b],
+                max_lap_gap=max_lap_gap,
+                max_tyre_life_gap=max_tyre_life_gap,
+            )
             raw_a = telemetry[
                 (telemetry["season"] == season)
                 & (telemetry["round"] == rnd)
@@ -561,7 +621,12 @@ def analyse_driver_dna(
                 float(audit_b["valid_coverage_pct"]),
                 common_coverage,
             )
-            reason = _exclusion_reason(a, b)
+            reason = _exclusion_reason(
+                a,
+                b,
+                max_lap_gap=max_lap_gap,
+                max_tyre_life_gap=max_tyre_life_gap,
+            )
             if reason is None and common_points < MIN_COMMON_POINTS:
                 reason = "fewer than 100 common telemetry points"
             if reason is None and valid_coverage < MIN_VALID_COVERAGE_PCT:
@@ -608,6 +673,9 @@ def analyse_driver_dna(
                 "race_name": a.get("race_name", b.get("race_name")),
                 "team": team,
                 "compound": str(a.get("compound", "")).upper(),
+                "lap_number_gap": abs(int(a["lap_number"]) - int(b["lap_number"])),
+                "tyre_life_gap": abs(float(a["tyre_life"]) - float(b["tyre_life"])),
+                "pair_selection_score": pair_score,
                 "common_points": common_points,
                 "valid_coverage_pct": valid_coverage,
                 "throttle_corrections": int(audit_a["throttle_corrections"])

@@ -111,6 +111,18 @@ CHECKS = (
         "Saturday vs Sunday profile",
         "select count(*) from marts.driver_pace_profile where n_race_comparisons >= 10",
     ),
+    Check(
+        "Driver DNA eligible evidence",
+        "select count(*) from marts.driver_dna_evidence where eligible",
+        10,
+    ),
+    Check(
+        "Driver DNA comparable pairs",
+        "select count(*) from marts.driver_dna_evidence where eligible "
+        "and (lap_number_gap > 3 or tyre_life_gap > 3)",
+        minimum=0,
+        maximum=0,
+    ),
     recent_season_coverage_check("race pace recent-season coverage", "marts.mart_lap_times"),
     latest_completed_race_coverage_check("latest completed race laps", "marts.mart_lap_times"),
     latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
