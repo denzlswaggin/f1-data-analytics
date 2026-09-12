@@ -674,7 +674,11 @@ def analyse_driver_dna(
                 "team": team,
                 "compound": str(a.get("compound", "")).upper(),
                 "lap_number_gap": abs(int(a["lap_number"]) - int(b["lap_number"])),
-                "tyre_life_gap": abs(float(a["tyre_life"]) - float(b["tyre_life"])),
+                "tyre_life_gap": (
+                    abs(float(a["tyre_life"]) - float(b["tyre_life"]))
+                    if pd.notna(a.get("tyre_life")) and pd.notna(b.get("tyre_life"))
+                    else float("nan")
+                ),
                 "pair_selection_score": pair_score,
                 "common_points": common_points,
                 "valid_coverage_pct": valid_coverage,

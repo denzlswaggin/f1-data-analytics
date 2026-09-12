@@ -154,6 +154,7 @@ def test_analysis_is_directed_antisymmetric_and_eligible() -> None:
         ({"1__compound": "WET"}, "non-dry compound"),
         ({"1__compound": "SOFT"}, "different compound"),
         ({"1__track_status": "4"}, "non-green track status"),
+        ({"1__tyre_life": None}, "missing tyre life"),
         ({"1__lap_number": 30}, "lap-number gap above 3"),
         ({"1__tyre_life": 30}, "tyre-life gap above 3"),
     ],
