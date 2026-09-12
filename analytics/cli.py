@@ -32,6 +32,7 @@ from analytics.pipeline import (
     build_all_replays,
     build_all_traffic_adjusted_pace,
     build_all_tyre_warmup,
+    build_driver_dna,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -293,6 +294,35 @@ def pace_profile(
             f"Top {top} qualifying specialists (lose most on Sunday)",
             shown.tail(top).iloc[::-1],
         )
+
+
+@app.command("driver-dna")
+def driver_dna(
+    from_season: Annotated[
+        int, typer.Option("--from-season", help="First telemetry season to include.")
+    ] = 2024,
+    to_season: Annotated[
+        int | None, typer.Option("--to-season", help="Last telemetry season to include.")
+    ] = None,
+    n_boot: Annotated[
+        int, typer.Option(help="Deterministic race-cluster bootstrap resamples.")
+    ] = 1000,
+    seed: Annotated[int, typer.Option(help="Deterministic bootstrap seed.")] = 0,
+) -> None:
+    """Build teammate-normalised fast-race-lap technique profiles."""
+    configure_logging()
+    result = build_driver_dna(
+        from_season=from_season,
+        to_season=to_season,
+        n_boot=n_boot,
+        seed=seed,
+    )
+    eligible = int(result.evidence["eligible"].sum()) if not result.evidence.empty else 0
+    typer.echo(
+        f"Built Driver DNA: {eligible // 2} eligible teammate pairs, "
+        f"{len(result.profile)} publishable profiles and "
+        f"{len(result.microsectors)} directed microsectors."
+    )
 
 
 @app.command()

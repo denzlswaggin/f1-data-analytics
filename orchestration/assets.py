@@ -18,6 +18,7 @@ from analytics.pipeline import (
     build_all_racecraft_battles,
     build_all_traffic_adjusted_pace,
     build_all_tyre_warmup,
+    build_driver_dna,
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
@@ -338,6 +339,30 @@ def driver_pace_profile() -> MaterializeResult:
             "drivers": len(df),
             "from_season": PACE_PROFILE_FROM_SEASON,
             "biggest_racer": f"{racer['driver_name']} ({racer['delta']:+.3f})",
+        }
+    )
+
+
+@asset(
+    deps=[
+        AssetKey(["mart_lap_telemetry"]),
+        AssetKey(["stg_laps"]),
+        AssetKey(["stg_driver_codes"]),
+        AssetKey(["stg_races"]),
+    ],
+    group_name="analytics",
+    compute_kind="python",
+)
+def driver_dna() -> MaterializeResult:
+    """Materialise teammate-normalised representative fast-lap technique evidence."""
+    result = build_driver_dna(from_season=PACE_PROFILE_FROM_SEASON)
+    eligible = int(result.evidence["eligible"].sum()) if not result.evidence.empty else 0
+    return MaterializeResult(
+        metadata={
+            "eligible_pairs": eligible // 2,
+            "profiles": len(result.profile),
+            "directed_microsectors": len(result.microsectors),
+            "from_season": PACE_PROFILE_FROM_SEASON,
         }
     )
 
