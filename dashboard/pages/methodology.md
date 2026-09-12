@@ -16,6 +16,12 @@ max_width: 1600
 The dashboard publishes immutable, checksum-verified snapshots and exposes sample coverage. Results still describe the available data rather than proving causality.
 </KeyInsight>
 
+```sql snapshot
+select * from f1.snapshot_metadata
+```
+
+<SnapshotStatus data={snapshot} />
+
 ## Validation status — exploratory, not certified
 
 The first external reference panel checks 16 selected cases from the 2025
@@ -80,10 +86,6 @@ driver rows as independent observations.
 
 ## Published data contract
 
-```sql snapshot
-select * from f1.snapshot_metadata
-```
-
 <DataTable data={snapshot} rows=1>
     <Column id=version />
     <Column id=generated_at title="Published at" />
@@ -92,7 +94,7 @@ select * from f1.snapshot_metadata
 </DataTable>
 
 ```sql coverage
-select section, race_label, sample_rows, entity_count, race_count, usable_samples,
+select section, season, round, race_label, sample_rows, entity_count, race_count, usable_samples,
        first_season, last_season, latest_event_date
 from f1.data_coverage
 order by section, race_label desc

@@ -24,6 +24,8 @@ select * from f1.latest_race
     </div>
 </PageHeader>
 
+<SnapshotStatus data={snapshot} />
+
 <div class="metric-grid">
 <BigValue data={race} value=drivers title="Drivers" />
 <BigValue data={race} value=fastest_driver title="Fastest lap" />
@@ -33,7 +35,9 @@ select * from f1.latest_race
 
 ```sql story_coverage
 select * from f1.data_coverage
-where section = 'race_story' and race_label = (select race_label from ${race})
+where section = 'race_story'
+    and season = (select cast(season as integer) from ${race})
+    and round = (select cast(round as integer) from ${race})
 ```
 
 <DataTrust data={story_coverage} sampleLabel="driver summaries" entityLabel="Drivers" method="same-lap, same-compound controlled pace" />

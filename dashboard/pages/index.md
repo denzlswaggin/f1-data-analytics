@@ -20,6 +20,8 @@ max_width: 1600
 select * from f1.snapshot_metadata
 ```
 
+<SnapshotStatus data={snapshot} />
+
 ```sql latest_race
 select * from f1.latest_race
 ```

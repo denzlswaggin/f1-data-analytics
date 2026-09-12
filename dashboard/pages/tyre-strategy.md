@@ -41,12 +41,8 @@ order by round
 ```sql tyre_coverage
 select * from f1.data_coverage
 where section = 'tyre_strategy'
-    and race_label = (
-        select race_label
-        from f1.stint_strategy
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={tyre_coverage} sampleLabel="stints" entityLabel="Drivers" method="descriptive, unadjusted slope" />

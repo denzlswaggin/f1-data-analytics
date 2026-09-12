@@ -43,12 +43,8 @@ order by round
 ```sql coverage
 select * from f1.data_coverage
 where section = 'pit_window'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.pit_window_effectiveness
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={coverage} sampleLabel="candidate windows" entityLabel="Matchups" method="descriptive pairwise cycle; green-flag only" />

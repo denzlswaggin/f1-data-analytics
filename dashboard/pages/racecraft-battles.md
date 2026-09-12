@@ -43,12 +43,8 @@ order by round
 ```sql coverage
 select * from f1.data_coverage
 where section = 'racecraft'
-    and race_label = (
-        select cast(season as varchar) || ' ' || race_name
-        from f1.racecraft_driver_summary
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={coverage} sampleLabel="observed battle episodes" entityLabel="Attackers" method="direct-ahead replay gaps; confirmed overtake matching" />

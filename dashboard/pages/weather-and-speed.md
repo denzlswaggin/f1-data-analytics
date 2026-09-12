@@ -41,12 +41,8 @@ order by round
 ```sql speed_coverage
 select * from f1.data_coverage
 where section = 'speed_trap'
-    and race_label = (
-        select race_label
-        from f1.speed_trap
-        where season = ${inputs.season.value} and round = ${inputs.race.value}
-        limit 1
-    )
+    and season = cast(${inputs.season.value} as integer)
+    and round = cast(${inputs.race.value} as integer)
 ```
 
 <DataTrust data={speed_coverage} sampleLabel="driver summaries" entityLabel="Drivers" method="descriptive speed-trap sample" />
