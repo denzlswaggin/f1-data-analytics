@@ -1,10 +1,9 @@
 name: Publish Dashboard Snapshot
 
 on:
-  schedule:
-    # Dagster refreshes the latest completed round at 06:00 UTC. Export only
-    # after that persistent job and its blocking checks have had time to finish.
-    - cron: "0 8 * * 1"
+  # Publishing stays deliberately manual while the project is developed and
+  # evaluated privately. Restore a schedule only when releases are explicitly
+  # enabled and the persistent data source has been verified.
   workflow_dispatch:
 
 permissions:
