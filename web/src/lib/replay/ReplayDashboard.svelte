@@ -15,6 +15,14 @@
 		weatherAtTime
 	} from './model';
 	import { loadManifest, loadRace } from './data';
+	import {
+		compassDirection,
+		compoundCode,
+		formatClock,
+		formatDate,
+		formatGap,
+		formatWeather
+	} from './format';
 	import { latestRaceForSeason } from './selection';
 	import type {
 		LoadedRace,
@@ -32,7 +40,7 @@
 	const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
 	const PAD = 44;
 	let manifest = $state<ReplayManifest | null>(null);
-	let cockpitHref = $state('https://denzlswaggin.github.io/f1-data-analytics/race-cockpit/');
+	let cockpitLink: HTMLAnchorElement;
 	let selectedSeason = $state(0),
 		selectedRaceKey = $state('');
 	let loaded = $state<LoadedRace | null>(null),
@@ -146,7 +154,7 @@
 
 	onMount(() => {
 		if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
-			cockpitHref = `${window.location.protocol}//${window.location.hostname}:3000/f1-data-analytics/race-cockpit/`;
+			cockpitLink.href = `${window.location.protocol}//${window.location.hostname}:3000/f1-data-analytics/race-cockpit/`;
 		}
 		resizeObserver = new ResizeObserver(resizeCanvas);
 		window.addEventListener('keydown', onKeyDown);
@@ -603,15 +611,6 @@
 		radioCurrentTime = 0;
 		radioDuration = 0;
 	}
-	function formatClock(seconds: number) {
-		const value = Math.max(0, Math.floor(seconds || 0)),
-			hours = Math.floor(value / 3600),
-			minutes = Math.floor((value % 3600) / 60),
-			secs = value % 60;
-		return hours
-			? `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
-			: `${minutes}:${String(secs).padStart(2, '0')}`;
-	}
 	function timelinePosition(time: number) {
 		return duration ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0;
 	}
@@ -620,35 +619,11 @@
 		if (phase === 'post-race') return `T+${formatClock(Math.max(0, event.time - duration))}`;
 		return formatClock(event.time);
 	}
-	function formatGap(value: number | null, leader = false) {
-		if (value == null) return '—';
-		if (value <= 0) return leader ? 'LEADER' : '—';
-		return `+${value.toFixed(3)}`;
-	}
-	function compoundCode(value: string | null) {
-		return value ? value[0].toUpperCase() : '—';
-	}
 	function currentLapTime(driver: TimingRow | null) {
 		if (!driver || !loaded) return null;
 		return loaded.bundle.laps.find(
 			(lap) => lap.driver_code === driver.code && lap.lap_number === driver.lap
 		)?.lap_time_sec;
-	}
-	function formatDate(value: string | null | undefined) {
-		if (!value) return 'unknown';
-		return new Intl.DateTimeFormat('en-GB', {
-			day: '2-digit',
-			month: 'short',
-			year: 'numeric'
-		}).format(new Date(value));
-	}
-	function formatWeather(value: number | null, unit: string, digits = 1) {
-		return value == null ? '—' : `${value.toFixed(digits)}${unit}`;
-	}
-	function compassDirection(value: number | null) {
-		if (value == null) return '—';
-		const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-		return directions[Math.round((((value % 360) + 360) % 360) / 45) % directions.length];
 	}
 </script>
 
@@ -660,7 +635,10 @@
 			></a
 		>
 		<nav aria-label="Primary navigation">
-			<a href={cockpitHref}>Race cockpit</a><a href="#replay">Race replay</a>
+			<a
+				bind:this={cockpitLink}
+				href="https://denzlswaggin.github.io/f1-data-analytics/race-cockpit/">Race cockpit</a
+			><a href="#replay">Race replay</a>
 		</nav>
 		<div class="snapshot">
 			<span></span> Snapshot · {formatDate(manifest?.snapshot.generated_at)}
