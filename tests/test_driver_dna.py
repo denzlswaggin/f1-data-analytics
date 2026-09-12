@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import duckdb
 import numpy as np
 import pandas as pd
@@ -22,7 +24,7 @@ from ingestion.config import Settings
 
 def _telemetry(driver: str, *, season: int = 2025, rnd: int = 1) -> pd.DataFrame:
     distance = np.arange(0.0, 3025.0, 25.0)
-    brake = (((distance >= 500) & (distance <= 575)) | ((distance >= 1800) & (distance <= 1875)))
+    brake = ((distance >= 500) & (distance <= 575)) | ((distance >= 1800) & (distance <= 1875))
     phase = 0.0 if driver == "AAA" else 0.3
     return pd.DataFrame(
         {
@@ -99,9 +101,7 @@ def test_confirmed_brake_onset_requires_quiet_and_sustained_distance() -> None:
 
 
 def test_microsector_trapezoid_integration_and_sign() -> None:
-    assert integrate_segment_time(np.array([0, 100]), np.array([100, 100]))[0] == pytest.approx(
-        3.6
-    )
+    assert integrate_segment_time(np.array([0, 100]), np.array([100, 100]))[0] == pytest.approx(3.6)
     driver = pd.DataFrame(
         {
             "distance_m": [0, 100, 200],
@@ -141,9 +141,9 @@ def test_analysis_is_directed_antisymmetric_and_eligible() -> None:
     for metric in METRICS:
         assert forward[f"{metric}_delta"] == pytest.approx(-reverse[f"{metric}_delta"])
         assert forward[f"{metric}_z"] == pytest.approx(-reverse[f"{metric}_z"])
-    assert result.microsectors.groupby("driver_code")["segment_delta_sec"].sum().sum() == pytest.approx(
-        0
-    )
+    assert result.microsectors.groupby("driver_code")[
+        "segment_delta_sec"
+    ].sum().sum() == pytest.approx(0)
 
 
 @pytest.mark.parametrize(
@@ -160,22 +160,16 @@ def test_analysis_is_directed_antisymmetric_and_eligible() -> None:
 def test_eligibility_exclusions(overrides: dict[str, object], reason: str) -> None:
     telemetry = pd.concat([_telemetry("AAA"), _telemetry("BBB")], ignore_index=True)
     if "1__lap_number" in overrides:
-        telemetry.loc[telemetry["driver_code"] == "BBB", "lap_number"] = overrides[
-            "1__lap_number"
-        ]
+        telemetry.loc[telemetry["driver_code"] == "BBB", "lap_number"] = overrides["1__lap_number"]
     result = analyse_driver_dna(telemetry, _laps(**overrides), n_boot=10)
     assert not result.evidence["eligible"].any()
     assert set(result.evidence["exclusion_reason"]) == {reason}
 
 
 def test_incomplete_common_distance_is_rejected() -> None:
-    telemetry = pd.concat(
-        [_telemetry("AAA"), _telemetry("BBB").iloc[:90]], ignore_index=True
-    )
+    telemetry = pd.concat([_telemetry("AAA"), _telemetry("BBB").iloc[:90]], ignore_index=True)
     result = analyse_driver_dna(telemetry, _laps(), n_boot=10)
-    assert set(result.evidence["exclusion_reason"]) == {
-        "fewer than 100 common telemetry points"
-    }
+    assert set(result.evidence["exclusion_reason"]) == {"fewer than 100 common telemetry points"}
 
 
 def test_bootstrap_is_deterministic_and_profiles_require_five_comparisons() -> None:
@@ -201,14 +195,10 @@ def test_bootstrap_is_deterministic_and_profiles_require_five_comparisons() -> N
     assert profile.loc[0, "confidence"] == "limited"
 
 
-def test_incremental_refresh_replaces_one_race_and_preserves_others(tmp_path) -> None:
+def test_incremental_refresh_replaces_one_race_and_preserves_others(tmp_path: Path) -> None:
     database = tmp_path / "driver-dna.duckdb"
     telemetry = pd.concat(
-        [
-            _telemetry(driver, rnd=rnd)
-            for rnd in (1, 2)
-            for driver in ("AAA", "BBB")
-        ],
+        [_telemetry(driver, rnd=rnd) for rnd in (1, 2) for driver in ("AAA", "BBB")],
         ignore_index=True,
     )
     laps = pd.concat(
@@ -249,9 +239,13 @@ def test_incremental_refresh_replaces_one_race_and_preserves_others(tmp_path) ->
         persisted = connection.execute(
             "select * from marts.driver_dna_evidence order by round, driver_code"
         ).fetchdf()
-        micro_rounds = connection.execute(
-            "select distinct round from marts.driver_dna_microsectors order by round"
-        ).fetchdf()["round"].tolist()
+        micro_rounds = (
+            connection.execute(
+                "select distinct round from marts.driver_dna_microsectors order by round"
+            )
+            .fetchdf()["round"]
+            .tolist()
+        )
     after_untouched = persisted[persisted["round"] == 2][untouched.columns].reset_index(drop=True)
     pd.testing.assert_frame_equal(after_untouched, untouched, check_dtype=False)
     assert set(persisted["round"]) == {1, 2}

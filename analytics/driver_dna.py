@@ -69,9 +69,7 @@ def validate_driver_dna(result: DriverDNAResult) -> None:
         if (result.profile["n_comparisons"] < 5).any():
             raise ValueError("Driver DNA profile published below the five-race minimum")
         profile_metrics = [
-            name
-            for metric in METRICS
-            for name in (metric, f"{metric}_lo", f"{metric}_hi")
+            name for metric in METRICS for name in (metric, f"{metric}_lo", f"{metric}_hi")
         ]
         if not np.isfinite(result.profile[profile_metrics].to_numpy(dtype=float)).all():
             raise ValueError("Driver DNA profile contains non-finite estimates")
@@ -254,7 +252,9 @@ def clean_telemetry(telemetry: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, fl
     }
 
 
-def lap_metrics(telemetry: pd.DataFrame, reference_speed: pd.Series | np.ndarray) -> dict[str, float]:
+def lap_metrics(
+    telemetry: pd.DataFrame, reference_speed: pd.Series | np.ndarray
+) -> dict[str, float]:
     """Calculate the five distance-weighted Driver DNA technique metrics."""
     distance = telemetry["distance_m"].to_numpy(dtype=float)
     speed = telemetry["speed_kph"].to_numpy(dtype=float)
@@ -401,9 +401,7 @@ def bootstrap_profile(
     rng = np.random.default_rng(seed)
     chosen = rng.integers(0, len(race_values), size=(n_boot, len(race_values)))
     samples: dict[str, np.ndarray] = {
-        metric: np.nanmedian(
-            race_values[f"{metric}_z"].to_numpy(dtype=float)[chosen], axis=1
-        )
+        metric: np.nanmedian(race_values[f"{metric}_z"].to_numpy(dtype=float)[chosen], axis=1)
         for metric in METRICS
     }
     return {
@@ -614,8 +612,7 @@ def analyse_driver_dna(
                 "valid_coverage_pct": valid_coverage,
                 "throttle_corrections": int(audit_a["throttle_corrections"])
                 + int(audit_b["throttle_corrections"]),
-                "gear_anomalies": int(audit_a["gear_anomalies"])
-                + int(audit_b["gear_anomalies"]),
+                "gear_anomalies": int(audit_a["gear_anomalies"]) + int(audit_b["gear_anomalies"]),
                 "eligible": eligible,
                 "exclusion_reason": reason,
                 "methodology_version": METHODOLOGY_VERSION,
@@ -627,9 +624,7 @@ def analyse_driver_dna(
                     "driver_code": driver_row["driver_code"],
                     "driver_name": driver_row.get("driver_name", driver_row["driver_code"]),
                     "teammate_code": teammate_row["driver_code"],
-                    "teammate_name": teammate_row.get(
-                        "driver_name", teammate_row["driver_code"]
-                    ),
+                    "teammate_name": teammate_row.get("driver_name", teammate_row["driver_code"]),
                     "driver_lap_number": int(driver_row["lap_number"]),
                     "teammate_lap_number": int(teammate_row["lap_number"]),
                     "driver_tyre_life": driver_row.get("tyre_life"),
@@ -662,9 +657,7 @@ def analyse_driver_dna(
                         driver_code=driver_row["driver_code"],
                         driver_name=driver_row.get("driver_name", driver_row["driver_code"]),
                         teammate_code=teammate_row["driver_code"],
-                        teammate_name=teammate_row.get(
-                            "driver_name", teammate_row["driver_code"]
-                        ),
+                        teammate_name=teammate_row.get("driver_name", teammate_row["driver_code"]),
                         driver_lap_number=int(driver_row["lap_number"]),
                         teammate_lap_number=int(teammate_row["lap_number"]),
                         compound=common["compound"],

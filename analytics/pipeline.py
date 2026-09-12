@@ -82,9 +82,11 @@ def _driver_dna_sources(
     rnd: int | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     where = _driver_dna_where(from_season, to_season, rnd, alias="laps")
-    telemetry_where = _driver_dna_where(from_season, to_season, rnd).replace(
-        "session = 'R' and ", ""
-    ).replace("session = 'R'", "1 = 1")
+    telemetry_where = (
+        _driver_dna_where(from_season, to_season, rnd)
+        .replace("session = 'R' and ", "")
+        .replace("session = 'R'", "1 = 1")
+    )
     telemetry = read_query(
         f"""
         select season, round, driver_code, lap_number, distance_m, speed_kph,
@@ -174,14 +176,10 @@ def build_driver_dna_incremental(
     rebuilt or discarded.
     """
     settings = settings or get_settings()
-    telemetry, laps = _driver_dna_sources(
-        settings, from_season=season, to_season=season, rnd=rnd
-    )
+    telemetry, laps = _driver_dna_sources(settings, from_season=season, to_season=season, rnd=rnd)
     race_result = analyse_driver_dna(telemetry, laps, n_boot=0, seed=seed)
     existing = _read_existing_driver_dna_evidence(settings)
-    outside = existing[
-        ~((existing["season"] == season) & (existing["round"] == rnd))
-    ].copy()
+    outside = existing[~((existing["season"] == season) & (existing["round"] == rnd))].copy()
     combined = pd.concat([outside, race_result.evidence], ignore_index=True)
     combined = robust_standardize(combined)[EVIDENCE_COLUMNS]
     profiles = build_profile_windows(combined, n_boot=n_boot, seed=seed)

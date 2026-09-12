@@ -30,8 +30,8 @@ order by driver_name
 ```
 
 <FilterBar title="Compare technique profiles" description="The default 2025–2026 window balances recency with enough teammate evidence.">
-    <Dropdown data={seasons} name=from_season value=season title="From season" defaultValue="2025" />
-    <Dropdown data={seasons} name=to_season value=season title="To season" defaultValue="2026" />
+    <Dropdown data={seasons} name=from_season value=season title="From season" defaultValue={2025} />
+    <Dropdown data={seasons} name=to_season value=season title="To season" defaultValue={2026} />
     <Dropdown data={drivers} name=driver_a value=driver_code label=driver_name title="Driver A" defaultValue="VER" />
     <Dropdown data={drivers} name=driver_b value=driver_code label=driver_name title="Driver B" defaultValue="NOR" />
 </FilterBar>
@@ -102,7 +102,8 @@ select * from (values
 
 ```sql race_heatmap
 select
-    cast(season as varchar) || ' R' || lpad(cast(round as varchar), 2, '0') as race_label,
+    cast(cast(season as integer) as varchar) || ' R'
+        || lpad(cast(cast(round as integer) as varchar), 2, '0') as race_label,
     driver_name,
     teammate_name,
     case '${inputs.technique.value}'
@@ -137,8 +138,10 @@ Select one of Driver A's eligible races. Their real teammate and representative 
 select distinct
     season,
     round,
-    cast(season as varchar) || '-' || cast(round as varchar) as race_key,
-    cast(season as varchar) || ' R' || lpad(cast(round as varchar), 2, '0') || ' · '
+    cast(cast(season as integer) as varchar) || '-'
+        || cast(cast(round as integer) as varchar) as race_key,
+    cast(cast(season as integer) as varchar) || ' R'
+        || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') || ' vs ' || teammate_name as race_label
 from f1.driver_dna_evidence
 where eligible
@@ -156,7 +159,8 @@ order by season desc, round desc
 select *
 from f1.driver_dna_microsectors
 where driver_code = '${inputs.driver_a.value}'
-    and cast(season as varchar) || '-' || cast(round as varchar) = '${inputs.dna_race.value}'
+    and cast(cast(season as integer) as varchar) || '-'
+        || cast(cast(round as integer) as varchar) = '${inputs.dna_race.value}'
 order by segment_number
 ```
 

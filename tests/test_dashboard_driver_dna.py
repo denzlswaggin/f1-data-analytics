@@ -12,8 +12,8 @@ def test_driver_dna_page_exposes_driver_season_and_race_filters() -> None:
 
     assert "name=from_season" in page
     assert "name=to_season" in page
-    assert 'defaultValue="2025"' in page
-    assert 'defaultValue="2026"' in page
+    assert "defaultValue={2025}" in page
+    assert "defaultValue={2026}" in page
     assert "name=driver_a" in page
     assert "name=driver_b" in page
     assert "name=dna_race" in page
