@@ -74,6 +74,17 @@ def race_partition_coverage_check(name: str, expected_table: str, covered_table:
 
 CHECKS = (
     Check(
+        "racecraft driver coverage",
+        "select count(*) from ("
+        "select distinct season, round, driver_code from marts.race_replay "
+        "where driver_code is not null and running_order is not null "
+        "and t_s is not null "
+        "except select season, round, driver_code from marts.racecraft_driver_summary"
+        ") missing",
+        minimum=0,
+        maximum=0,
+    ),
+    Check(
         "driver ratings",
         "select count(*) from marts.driver_ratings where n_comparisons >= 40",
         15,

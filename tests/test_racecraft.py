@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 from analytics.pipeline import (
     build_all_racecraft_battles,
+    build_racecraft_battles,
     build_racecraft_battles_incremental,
 )
 from analytics.racecraft import RacecraftResult, analyse_racecraft_battles
@@ -359,7 +360,7 @@ def _seed_warehouse(path: Path) -> Settings:
     lap_rows = (
         replay[["season", "round", "driver_code", "lap_number", "stint", "team", "track_status"]]
         .drop_duplicates(["season", "round", "driver_code", "lap_number"])
-        .assign(session="R")
+        .assign(session="R", compound="MEDIUM", tyre_life=5)
     )
     races = pd.DataFrame(
         [
@@ -391,6 +392,7 @@ def test_pipeline_materialises_all_and_replaces_one_partition(tmp_path: Path) ->
     settings = _seed_warehouse(tmp_path / "racecraft.duckdb")
 
     all_result = build_all_racecraft_battles(settings)
+    build_racecraft_battles(2026, 1, settings)
     incremental = build_racecraft_battles_incremental(2026, 1, settings)
     persisted = read_query(
         "select season, round, outcome from marts.racecraft_battles order by round",
@@ -407,3 +409,114 @@ def test_pipeline_materialises_all_and_replaces_one_partition(tmp_path: Path) ->
         all_result.battles.loc[all_result.battles["round"].eq(1)].reset_index(drop=True),
         incremental.battles.reset_index(drop=True),
     )
+
+
+def _source_sql(name: str) -> str:
+    return (Path(__file__).parents[1] / "dashboard/sources/f1" / f"{name}.sql").read_text(
+        encoding="utf-8"
+    )
+
+
+def test_season_profiles_pool_counts_pressure_opponents_and_intervals(tmp_path: Path) -> None:
+    from analytics.racecraft import _wilson
+    from ingestion.loaders.warehouse import replace_table
+
+    settings = _seed_warehouse(tmp_path / "profiles.duckdb")
+    result = build_all_racecraft_battles(settings)
+    template = result.battles.iloc[0].to_dict()
+    rows = []
+    # One success in round 1, two successes and three holds in round 2.
+    # The season is 3/6, not the unweighted mean of 100% and 40%.
+    for index in range(7):
+        success = index < 3
+        rows.append(
+            {
+                **template,
+                "battle_id": f"battle-{index}",
+                "round": 1 if index == 0 else 2,
+                "converted": success,
+                "defender_retained": not success and index < 6,
+                "outcome": "Converted" if success else "Defended" if index < 6 else "Interrupted",
+                "eligible": index < 6,
+                "pressure_seconds": 12.0,
+                "time_to_pass_s": [100.0, 10.0, 20.0][index] if success else float("nan"),
+            }
+        )
+    replace_table(pd.DataFrame(rows), "marts", "racecraft_battles", settings)
+    profiles = read_query(_source_sql("racecraft_profiles"), settings)
+    season = profiles.loc[(profiles["round"] == 0) & (profiles["driver_code"] == "A")].iloc[0]
+    assert season["attacking_opportunities"] == 6
+    assert season["converted_opportunities"] == 3
+    assert season["attack_conversion_pct"] == 50
+    lower, upper = _wilson(3, 6)
+    assert season["attack_conversion_p05_pct"] == pytest.approx(lower)
+    assert season["attack_conversion_p95_pct"] == pytest.approx(upper)
+    assert season["observed_attack_pressure_s"] == 84
+    assert season["observed_attacks"] == 7
+    assert season["distinct_defenders"] == 1
+    assert season["median_time_to_pass_s"] == 20
+    assert season["races_covered"] == 2
+    round_one = profiles.loc[(profiles["round"] == 1) & (profiles["driver_code"] == "A")].iloc[0]
+    assert not round_one["offense_eligible"]
+    assert pd.isna(round_one["attack_conversion_pct"])
+    round_two = profiles.loc[(profiles["round"] == 2) & (profiles["driver_code"] == "A")].iloc[0]
+    assert round_two["offense_eligible"]
+    assert round_two["attack_conversion_pct"] == 40
+    defender = profiles.loc[(profiles["round"] == 0) & (profiles["driver_code"] == "B")].iloc[0]
+    assert defender["defensive_opportunities"] == 6
+    assert defender["defences_held"] == 3
+    assert defender["interrupted_defences"] == 1
+    zero = profiles.loc[(profiles["round"] == 0) & (profiles["driver_code"] == "C")].iloc[0]
+    assert zero["observed_attacks"] == 0
+    assert zero["observed_defensive_pressure_s"] == 0
+    assert pd.isna(zero["defence_hold_pct"])
+
+
+def test_export_uses_each_drivers_start_lap_and_never_duplicates_episodes(tmp_path: Path) -> None:
+    settings = _seed_warehouse(tmp_path / "tyres.duckdb")
+    build_all_racecraft_battles(settings)
+    with duckdb.connect(str(settings.duckdb_path)) as connection:
+        connection.execute("update staging.stg_laps set tyre_life=10 where driver_code='A'")
+        # The leading car has crossed the timing line before the attacker.
+        connection.execute("update marts.race_replay set lap_number=3 where driver_code='B'")
+        connection.execute(
+            "update staging.stg_laps set lap_number=3, tyre_life=4, compound='HARD' where driver_code='B'"
+        )
+        exported = connection.execute(_source_sql("racecraft_battles")).fetchdf()
+        assert len(exported) == 2
+        assert exported["attacker_tyre_age_laps"].tolist() == [10, 10]
+        assert exported["defender_compound"].tolist() == ["HARD", "HARD"]
+        assert exported["tyre_age_delta_laps"].tolist() == [6, 6]
+        connection.execute(
+            "insert into staging.stg_laps select * from staging.stg_laps where driver_code='A'"
+        )
+        connection.execute("delete from staging.stg_laps where driver_code='B'")
+        ambiguous = connection.execute(_source_sql("racecraft_battles")).fetchdf()
+        assert len(ambiguous) == 2
+        assert ambiguous["attacker_compound"].isna().all()
+        assert ambiguous["defender_tyre_age_laps"].isna().all()
+        assert ambiguous["tyre_age_delta_laps"].isna().all()
+
+
+def test_coverage_distinguishes_zero_battles_missing_processing_and_missing_order(
+    tmp_path: Path,
+) -> None:
+    from scripts.check_dashboard_data import CHECKS
+
+    settings = _seed_warehouse(tmp_path / "coverage.duckdb")
+    build_all_racecraft_battles(settings)
+    check = next(check for check in CHECKS if check.name == "racecraft driver coverage")
+    with duckdb.connect(str(settings.duckdb_path)) as connection:
+        assert connection.execute(check.query).fetchone()[0] == 0
+        connection.execute("delete from marts.racecraft_battles where round=1")
+        connection.execute("delete from marts.racecraft_driver_summary where round=2")
+        coverage = connection.execute(_source_sql("racecraft_coverage")).fetchdf()
+        assert coverage["coverage_status"].tolist() == [
+            "Processed: no observed battles",
+            "Incomplete racecraft processing",
+        ]
+        assert connection.execute(check.query).fetchone()[0] == 3
+        connection.execute("update marts.race_replay set running_order=null where driver_code='C'")
+        assert connection.execute(check.query).fetchone()[0] == 2
+        coverage = connection.execute(_source_sql("racecraft_coverage")).fetchdf()
+        assert coverage["drivers_without_running_order"].tolist() == [1, 1]
