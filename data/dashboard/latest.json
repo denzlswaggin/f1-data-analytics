@@ -1,7 +1,7 @@
 {
-  "database_file": "f1-dashboard-20260914-racecraft-integrity.duckdb",
-  "generated_at": "2026-09-13T22:17:29.704042+00:00",
-  "git_sha": "aa8f8babafd9112260ebd4c1d3f2e4c15701a435",
+  "database_file": "f1-dashboard-20260914-peer-coverage.duckdb",
+  "generated_at": "2026-09-13T23:51:00.788308+00:00",
+  "git_sha": "dc33b53b9618b2d083ddd1f378be2759990f6bf1",
   "latest_event_date": "2026-08-23",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -72,8 +72,8 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
-  "size_bytes": 125841408,
+  "sha256": "4b6a0eb4f683cc47c7e95f44b3c258d850d72e77881ec76981cbd5c08d1f632f",
+  "size_bytes": 128200704,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -97,8 +97,8 @@
     "marts.mart_stint_strategy": 3351,
     "marts.mart_tyre_degradation": 166,
     "marts.mart_weather_degradation": 166,
-    "marts.pace_consistency": 764,
-    "marts.pace_consistency_laps": 33136,
+    "marts.pace_consistency": 1147,
+    "marts.pace_consistency_laps": 51084,
     "marts.pit_lap_context": 67388,
     "marts.pit_timing_scenarios": 14994,
     "marts.pit_timing_sensitivity": 2142,
@@ -110,8 +110,8 @@
     "marts.racecraft_battles": 9117,
     "marts.racecraft_driver_summary": 1163,
     "marts.racecraft_processing": 59,
-    "marts.traffic_adjusted_laps": 33136,
-    "marts.traffic_adjusted_pace": 764,
+    "marts.traffic_adjusted_laps": 51084,
+    "marts.traffic_adjusted_pace": 1147,
     "marts.tyre_warmup": 2142,
     "marts.tyre_warmup_laps": 21658,
     "staging.constructor_colors": 20,
@@ -123,5 +123,5 @@
     "staging.stg_team_radio": 1486,
     "staging.stg_weather": 5879
   },
-  "version": "20260914-racecraft-integrity"
+  "version": "20260914-peer-coverage"
 }

@@ -44,6 +44,37 @@ The serving SQL changes do not rewrite immutable snapshot marts. The legacy
 corrected dashboard model. Its upstream dbt implementation and broader downstream
 coverage need a later coordinated rebuild. This is not platform-wide validation.
 
+## Coverage rebuild
+
+The subsequent `20260914-peer-coverage` snapshot (SHA-256
+`4b6a0eb4f683cc47c7e95f44b3c258d850d72e77881ec76981cbd5c08d1f632f`) rebuilds traffic pace, pace
+consistency and tyre settling together from a separate copy of the operational
+warehouse. The snapshot publication base preserves all other existing analytical
+tables, including the Racecraft processing receipts and Driver DNA tables.
+
+| Evidence | Before | After |
+| --- | ---: | ---: |
+| Traffic/consistency races | 39 | 59 |
+| Comparable lap evidence | 33,136 | 51,084 |
+| Driver/race summaries | 764 | 1,147 |
+| 2024 covered races | 4 | 24 |
+| Story rows lacking publishable pace | 470 | 90 |
+| Complete pace fields | 15 | 25 |
+
+All 1,222 result rows remain visible. The remaining 90 missing pace estimates
+are not filled with model fallback. No additional timing observations were
+invented and no peer/sample thresholds were relaxed. Monaco 2025 Russell lap 62
+remains excluded. The three standard checks (`check_pit_context.py`,
+`check_robust_estimates.py`, `check_metric_evidence.py`) report zero violations.
+Racecraft receipt validation also passes on the publication candidate.
+
+Reproduce the analytical dependency order on an isolated warehouse using
+`build_all_traffic_adjusted_pace`, `build_all_pace_consistency`, then
+`build_all_tyre_warmup` from `analytics.pipeline`, with the same explicit
+`Settings(duckdb_path=...)`. Keep the copy's database filename `f1.duckdb`:
+existing dbt views refer to that catalog name. Run the checks before promoting
+the six resulting tables and exporting a new immutable snapshot version.
+
 ## Verification
 
 `tests/test_race_story_evidence.py` executes the actual serving SQL against missing
