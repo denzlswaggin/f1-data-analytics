@@ -25,6 +25,8 @@ An eligible battle needs at least ten seconds of uninterrupted, sample-supported
 
 <KeyInsight label="Experimental event reconstruction">
 Passes and gap releases are detected from reconstructed timing data. The processing
+uses lap-timing interpolation for running order; brief within-lap position exchanges
+can be missing even when replay samples are continuous. The integrity
 checks verify that inputs and outputs belong together, not that every event matches
 race footage. Evidence labels are rule-based, not probabilities of correctness.
 External validation is limited; use these views to inspect episodes, not rank driver skill.

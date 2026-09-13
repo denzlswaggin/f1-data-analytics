@@ -1,0 +1,77 @@
+{
+  "protocol_sha256": "a9ea6471f30d01c371b296b76b11e7bf1863f0174682a872c87e4ab69d128196",
+  "review_sha256": [
+    "fb4297321bed2e8b95f0ca3d030b5ff6d636a19f78820db415cbc7bdf68b6dd7",
+    "fb4297321bed2e8b95f0ca3d030b5ff6d636a19f78820db415cbc7bdf68b6dd7"
+  ],
+  "scored_windows": 0,
+  "total_windows": 3,
+  "counts": null,
+  "selected_window_precision": null,
+  "selected_window_recall": null,
+  "population_accuracy": null,
+  "limitations": "Self-declared reviewer identity, independence and exhaustive footage coverage are not authenticated. Counts apply only to covered agreed windows and exact anchor-lap sequence matching. Unscored windows are not negatives. No population accuracy, false-positive rate, calibrated confidence or competitive-skill claim.",
+  "windows": [
+    {
+      "id": "austria-2025-mclaren-lap11",
+      "scored": false,
+      "reason": "two_independent_reviews_required",
+      "counts": null,
+      "coverage": {
+        "NOR": {
+          "samples": 71,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "PIA": {
+          "samples": 71,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      }
+    },
+    {
+      "id": "monza-2025-lead-return-laps2-4",
+      "scored": false,
+      "reason": "two_independent_reviews_required",
+      "counts": null,
+      "coverage": {
+        "VER": {
+          "samples": 252,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "NOR": {
+          "samples": 252,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      }
+    },
+    {
+      "id": "spa-2025-verstappen-leclerc-laps5-44",
+      "scored": false,
+      "reason": "two_independent_reviews_required",
+      "counts": null,
+      "coverage": {
+        "VER": {
+          "samples": 4505,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "LEC": {
+          "samples": 4505,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      }
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260914-racecraft-integrity",
+      "2026-09-14 00:17:29.704042+02:00"
+    ]
+  ],
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664"
+}

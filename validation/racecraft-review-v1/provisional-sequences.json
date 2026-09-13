@@ -1,0 +1,171 @@
+{
+  "annotated_windows": 3,
+  "covered_windows": 3,
+  "precision": null,
+  "population_recall": null,
+  "limitations": "Provisional report sequences, not adjudicated exhaustive footage. Unmatched detections require review, not false-positive labels. Anchor-lap assignment and <=3-second pair gaps are operational coverage checks. Short lead exchanges may not satisfy production persistence. No calibrated accuracy or causal skill claims.",
+  "windows": [
+    {
+      "id": "austria-2025-mclaren-lap11",
+      "pair": [
+        "NOR",
+        "PIA"
+      ],
+      "anchor_driver": "NOR",
+      "lap_min": 11,
+      "lap_max": 11,
+      "covered": true,
+      "coverage": {
+        "NOR": {
+          "samples": 71,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "PIA": {
+          "samples": 71,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      },
+      "missing_anchor_laps": [],
+      "unscored_reasons": [],
+      "start_t_s": 805.0,
+      "end_t_s": 875.0,
+      "expected": [
+        {
+          "passer_code": "PIA",
+          "passed_code": "NOR",
+          "lap_number": 11
+        },
+        {
+          "passer_code": "NOR",
+          "passed_code": "PIA",
+          "lap_number": 11
+        }
+      ],
+      "observed": [],
+      "matching": {
+        "matches": [],
+        "unmatched_expected_indices": [
+          0,
+          1
+        ],
+        "unmatched_observed_indices": []
+      },
+      "precision": null,
+      "false_positive_count": null
+    },
+    {
+      "id": "monza-2025-lead-return-laps2-4",
+      "pair": [
+        "VER",
+        "NOR"
+      ],
+      "anchor_driver": "VER",
+      "lap_min": 2,
+      "lap_max": 4,
+      "covered": true,
+      "coverage": {
+        "VER": {
+          "samples": 252,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "NOR": {
+          "samples": 252,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      },
+      "missing_anchor_laps": [],
+      "unscored_reasons": [],
+      "start_t_s": 88.0,
+      "end_t_s": 339.0,
+      "expected": [
+        {
+          "passer_code": "NOR",
+          "passed_code": "VER",
+          "lap_number": 2
+        },
+        {
+          "passer_code": "VER",
+          "passed_code": "NOR",
+          "lap_number": 4
+        }
+      ],
+      "observed": [
+        {
+          "t_s": 111.0,
+          "lap_number": 2,
+          "passer_code": "NOR",
+          "passed_code": "VER"
+        },
+        {
+          "t_s": 285.0,
+          "lap_number": 4,
+          "passer_code": "VER",
+          "passed_code": "NOR"
+        }
+      ],
+      "matching": {
+        "matches": [
+          {
+            "expected_index": 0,
+            "observed_index": 0
+          },
+          {
+            "expected_index": 1,
+            "observed_index": 1
+          }
+        ],
+        "unmatched_expected_indices": [],
+        "unmatched_observed_indices": []
+      },
+      "precision": null,
+      "false_positive_count": null
+    },
+    {
+      "id": "spa-2025-verstappen-leclerc-laps5-44",
+      "pair": [
+        "VER",
+        "LEC"
+      ],
+      "anchor_driver": "LEC",
+      "lap_min": 5,
+      "lap_max": 44,
+      "covered": true,
+      "coverage": {
+        "VER": {
+          "samples": 4505,
+          "max_gap_s": 1.0,
+          "covered": true
+        },
+        "LEC": {
+          "samples": 4505,
+          "max_gap_s": 1.0,
+          "covered": true
+        }
+      },
+      "missing_anchor_laps": [],
+      "unscored_reasons": [],
+      "start_t_s": 715.0,
+      "end_t_s": 5219.0,
+      "expected": [],
+      "observed": [],
+      "matching": {
+        "matches": [],
+        "unmatched_expected_indices": [],
+        "unmatched_observed_indices": []
+      },
+      "precision": null,
+      "false_positive_count": null
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260914-racecraft-integrity",
+      "2026-09-14 00:17:29.704042+02:00"
+    ]
+  ],
+  "reference_sha256": "014500672952853d40baecdee71d504844ecea12def84bc1dd242196f0dc2cd5"
+}
