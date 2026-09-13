@@ -2,7 +2,7 @@
   "methodology": "source-pair-audit-v1",
   "window_id": "austria-2025-mclaren-lap11",
   "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
-  "capture_manifest_sha256": "46f0faf58fca660fb6041ad85994921cd9763d898d1ecd3691d71d7ce0467870",
+  "capture_manifest_sha256": "454ac6ca134388de27006be6ea9682a039c259509aeb48ca2369f8a90157e196",
   "clock_alignment": {
     "utc_minus_replay_s": 1751203081.239,
     "spread_s": 0.15899991989135742,

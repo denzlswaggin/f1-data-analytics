@@ -117,6 +117,10 @@ and a minimal snapshot slice; CI needs no OpenF1 credentials or network access.
 
 ## What this enables next
 
+The first [source-order and interval adapter](racecraft-source-order.md) now
+audits all three windows with frozen interval responses. It retains observation
+ages and rejects stale or mismatched gaps; production promotion remains disabled.
+
 Use recorded position changes as a candidate input to an experimental replay,
 then evaluate it on separately frozen scopes. Do not simply overwrite
 `running_order`: leader and ahead gaps currently come from the same lap-progress

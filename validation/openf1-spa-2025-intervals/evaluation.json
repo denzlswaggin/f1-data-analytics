@@ -2,7 +2,7 @@
   "methodology": "source-pair-audit-v1",
   "window_id": "spa-2025-verstappen-leclerc-laps5-44",
   "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
-  "capture_manifest_sha256": "6746b39542aa7f0e1ec3efa2eba0edd45de1094a24a6cf98a73d4260ab274990",
+  "capture_manifest_sha256": "920ed490c1f0164ea9fc3b1f7f759989c17d5d380ea3fd9935775927e7a9394b",
   "clock_alignment": {
     "utc_minus_replay_s": 1753626000.2455,
     "spread_s": 0.23200011253356934,

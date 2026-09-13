@@ -2,7 +2,7 @@
   "methodology": "source-pair-audit-v1",
   "window_id": "monza-2025-lead-return-laps2-4",
   "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
-  "capture_manifest_sha256": "5dac2e1072c1c537665f2ee370e70acf79c73ab9987ae6e08583ccb90888b6a2",
+  "capture_manifest_sha256": "bb99709fd50d6b0a27fae00ec0c4243569a1c81282cef85798f1ba7732f2eae8",
   "clock_alignment": {
     "utc_minus_replay_s": 1757250214.9295,
     "spread_s": 0.23199987411499023,

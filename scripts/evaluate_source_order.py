@@ -46,7 +46,7 @@ def evaluate(capture: Path, snapshot: Path, window: dict[str, Any]) -> dict[str,
         "window_id": window["id"],
         "snapshot_sha256": snapshot_hash,
         "capture_manifest_sha256": hashlib.sha256(
-            (capture / "manifest.json").read_bytes()
+            (capture / "manifest.json").read_text(encoding="utf-8").encode()
         ).hexdigest(),
         "clock_alignment": comparison["clock_alignment"],
         "max_interval_age_s": MAX_INTERVAL_AGE_S,
