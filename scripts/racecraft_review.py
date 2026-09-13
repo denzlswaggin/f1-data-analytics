@@ -10,6 +10,8 @@ import argparse
 import copy
 import hashlib
 import json
+import math
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -100,14 +102,19 @@ def _reviewed_events(review: dict[str, Any], window: dict[str, Any]) -> list[dic
         raise ValueError("missing_footage")
     start: Any = review.get("footage_start_s")
     end: Any = review.get("footage_end_s")
-    if any(type(value) not in (int, float) for value in (start, end)) or not 0 <= start < end:
+    if (
+        any(type(value) not in (int, float) or not math.isfinite(value) for value in (start, end))
+        or not 0 <= start < end
+    ):
         raise ValueError("invalid_footage_bounds")
     if not isinstance(review.get("reviewed_at"), str) or not review["reviewed_at"].strip():
         raise ValueError("missing_review_date")
+    datetime.fromisoformat(review["reviewed_at"])
     events = review.get("events")
     if not isinstance(events, list):
         raise ValueError("invalid_events")
     previous = start - 1
+    previous_hold = start
     result: list[dict[str, Any]] = []
     for event in events:
         lap, when, held = (
@@ -120,14 +127,19 @@ def _reviewed_events(review: dict[str, Any], window: dict[str, Any]) -> list[dic
         if {event.get("passer_code"), event.get("passed_code")} != set(window["pair"]):
             raise ValueError("invalid_event_direction")
         if (
-            any(type(value) not in (int, float) for value in (when, held))
+            any(
+                type(value) not in (int, float) or not math.isfinite(value)
+                for value in (when, held)
+            )
             or not start <= when < held <= end
             or when <= previous
+            or when < previous_hold
         ):
             raise ValueError("invalid_event_timing")
         if held - when < DEFINITION["minimum_hold_seconds"]:
             raise ValueError("insufficient_hold_evidence")
         previous = when
+        previous_hold = held
         if result and result[-1]["passer_code"] == event["passer_code"]:
             raise ValueError("nonalternating_pair_sequence")
         result.append({key: event[key] for key in ("lap_number", "passer_code", "passed_code")})
@@ -178,12 +190,33 @@ def score(
         except ValueError as exc:
             reasons[window["id"]] = str(exc)
     diagnostics = evaluate_windows(connection, reference)
+    order_available = "running_order" in {
+        row[0] for row in connection.execute("describe marts.race_replay").fetchall()
+    }
     totals = {"true_positive": 0, "false_positive": 0, "false_negative": 0}
     results = []
     for window in diagnostics["windows"]:
         reason = reasons.get(window["id"])
         if not window["covered"]:
             reason = reason or "incomplete_replay_coverage"
+        if not order_available:
+            reason = reason or "missing_order_evidence"
+        elif window["covered"]:
+            scope = next(row for row in reference["windows"] if row["id"] == window["id"])
+            invalid = connection.execute(
+                "select count(*) from marts.race_replay where season=? and round=? "
+                "and driver_code in (?,?) and t_s between ? and ? "
+                "and (running_order is null or not isfinite(running_order) or running_order < 1)",
+                [
+                    scope["season"],
+                    scope["round"],
+                    *scope["pair"],
+                    window["start_t_s"],
+                    window["end_t_s"],
+                ],
+            ).fetchone()
+            if invalid and invalid[0]:
+                reason = reason or "missing_order_evidence"
         counts = None
         if reason is None:
             matching = window["matching"]

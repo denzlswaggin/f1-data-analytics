@@ -49,7 +49,7 @@ def panel() -> Any:
     with duckdb.connect() as connection:
         connection.execute("create schema marts")
         connection.execute(
-            "create table marts.race_replay as select 2025 season, 1 round, driver_code, t_s, 1 lap_number from (values ('A'),('B')) d(driver_code), range(51) t(t_s)"
+            "create table marts.race_replay as select 2025 season, 1 round, driver_code, t_s, 1 lap_number, case when driver_code='A' then 1 else 2 end running_order from (values ('A'),('B')) d(driver_code), range(51) t(t_s)"
         )
         connection.execute(
             "create table marts.race_overtakes as select 2025 season, 1 round, 10.0 t_s, 'B' passer_code, 'A' passed_code"
@@ -135,6 +135,23 @@ def test_missing_partner_remains_unscored_despite_agreement(panel: Any) -> None:
     connection, packet, reviews = panel
     connection.execute("delete from marts.race_replay where driver_code='B'")
     assert score(connection, packet, reviews)["scored_windows"] == 0
+
+
+def test_unknown_order_does_not_become_a_missed_pass(panel: Any) -> None:
+    connection, packet, reviews = panel
+    connection.execute(
+        "update marts.race_replay set running_order=null where driver_code='B' and t_s=10"
+    )
+    result = score(connection, packet, reviews)
+    assert result["counts"] is None
+    assert result["windows"][0]["reason"] == "missing_order_evidence"
+
+
+def test_nonfinite_footage_bounds_are_not_accepted(panel: Any) -> None:
+    connection, packet, reviews = panel
+    reviews[0]["windows"][0]["footage_end_s"] = float("inf")
+    with pytest.raises(ValueError):
+        score(connection, packet, reviews)
 
 
 def test_same_reviewer_cannot_supply_both_votes(panel: Any) -> None:
