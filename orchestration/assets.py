@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from analytics.pipeline import (
+    build_all_overtakes,
     build_all_pace_consistency,
     build_all_pit_lap_context,
     build_all_pit_timing_sensitivity,
@@ -24,7 +25,6 @@ from analytics.pipeline import (
     build_driver_ratings_v2,
     build_driver_ratings_v3,
     build_driver_track_insights,
-    build_race_overtakes_season,
     build_race_replays,
 )
 from dagster import (
@@ -565,9 +565,9 @@ def race_control_impact() -> MaterializeResult:
 )
 def race_overtakes() -> MaterializeResult:
     # Detect on-track overtakes from the replay mart (every round built above).
-    df = build_race_overtakes_season(CURRENT_SEASON)
-    races = int(df["round"].nunique()) if not df.empty else 0
-    return MaterializeResult(metadata={"passes": len(df), "races": races, "season": CURRENT_SEASON})
+    df = build_all_overtakes()
+    races = len(df[["season", "round"]].drop_duplicates()) if not df.empty else 0
+    return MaterializeResult(metadata={"passes": len(df), "races_with_passes": races})
 
 
 @asset(

@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pandas as pd
 from ingestion.config import Settings, get_settings
-from ingestion.loaders.warehouse import read_query, replace_table, replace_table_partition
+from ingestion.loaders.warehouse import (
+    read_query,
+    replace_mart_bundle,
+    replace_table,
+    replace_table_partition,
+)
 from ingestion.logging import get_logger
 
 from analytics.overtakes import detect_overtakes
@@ -24,7 +29,9 @@ from analytics.pit_context import attach_pit_lap_context, build_pit_lap_context
 from analytics.pit_timing import PitTimingSensitivityResult, analyse_pit_timing_sensitivity
 from analytics.pit_window import analyse_pit_windows
 from analytics.race_control_impact import RaceControlImpactResult, analyse_race_control_impact
+from analytics.racecraft import METHODOLOGY_VERSION as RACECRAFT_VERSION
 from analytics.racecraft import RacecraftResult, analyse_racecraft_battles
+from analytics.racecraft_integrity import partition_query, receipt
 from analytics.ratings import compute_ratings
 from analytics.ratings_v2 import cluster_bootstrap_dynamic_ratings, compute_dynamic_ratings
 from analytics.ratings_v3 import V3ExperimentResult, evaluate_v3_experiment
@@ -1293,17 +1300,8 @@ def _build_one_overtakes(season: int, rnd: int, settings: Settings) -> pd.DataFr
 
 
 def build_race_overtakes(season: int, rnd: int, settings: Settings | None = None) -> pd.DataFrame:
-    """Build the overtakes mart for a single race, replacing ``marts.race_overtakes``.
-
-    Like ``build_race_replay`` this *replaces* the whole mart with just this race —
-    use ``build_race_overtakes_season`` / ``build_all_overtakes`` to keep several
-    races for the dashboard. Returns the frame.
-    """
-    settings = settings or get_settings()
-    passes = _build_one_overtakes(season, rnd, settings)
-    replace_table(passes, schema="marts", table="race_overtakes", settings=settings)
-    log.info("overtakes.materialised", season=season, round=rnd, passes=len(passes))
-    return passes
+    """Refresh one race's passes without erasing other races or seasons."""
+    return build_race_overtakes_incremental(season, rnd, settings)
 
 
 def build_race_overtakes_incremental(
@@ -1328,7 +1326,7 @@ def build_race_overtakes_season(season: int, settings: Settings | None = None) -
 
     Reads the rounds that actually exist in ``marts.race_replay`` for the season
     (overtakes depend on the replay having been built), detects each, and replaces
-    ``marts.race_overtakes`` with their union. Returns the combined frame.
+    only that season in ``marts.race_overtakes``. Returns the combined frame.
     """
     settings = settings or get_settings()
     rounds = read_query(
@@ -1343,7 +1341,13 @@ def build_race_overtakes_season(season: int, settings: Settings | None = None) -
         if non_empty
         else (frames[0] if frames else _build_one_overtakes(season, 0, settings))
     )
-    replace_table(combined, schema="marts", table="race_overtakes", settings=settings)
+    replace_table_partition(
+        combined,
+        schema="marts",
+        table="race_overtakes",
+        partition={"season": season},
+        settings=settings,
+    )
     log.info(
         "overtakes.materialised_season",
         season=season,
@@ -1437,41 +1441,49 @@ def _racecraft_replay_query(season: int | None, rnd: int | None) -> str:
     """
 
 
-def _racecraft_overtakes_query(season: int | None, rnd: int | None) -> str:
-    scope = _race_control_scope_clause("passes", season, rnd)
-    return f"""
-        select
-            passes.season,
-            passes.round,
-            passes.t_s,
-            passes.passer_code,
-            passes.passed_code,
-            passes.confidence,
-            passes.reason
-        from marts.race_overtakes as passes
-        where true{scope}
-    """
-
-
 def _build_racecraft_scope(
-    season: int | None,
-    rnd: int | None,
+    season: int,
+    rnd: int,
     settings: Settings,
-) -> RacecraftResult:
+) -> dict[str, pd.DataFrame]:
+    raw_replay = read_query(partition_query("marts.race_replay", season, rnd), settings)
+    laps = read_query(partition_query("staging.stg_laps", season, rnd), settings)
+    parameters = {
+        "battle_gap_s": settings.overtake_battle_gap_s,
+        "persist_s": settings.overtake_persist_s,
+        "start_guard_s": settings.overtake_start_guard_s,
+        "proximity_frac": settings.overtake_proximity_frac,
+    }
+    # A missing event partition is not proof of zero passes. Always detect from
+    # the same replay scope before classifying any attack/defence outcomes.
+    overtakes = detect_overtakes(raw_replay, **parameters)
+    overtakes.insert(0, "season", season)
+    overtakes.insert(1, "round", rnd)
+    pit_context = _build_pit_context_scope(season, rnd, settings)
     replay = read_query(_racecraft_replay_query(season, rnd), settings)
-    replay = attach_pit_lap_context(replay, _build_pit_context_scope(season, rnd, settings))
-    overtakes = read_query(_racecraft_overtakes_query(season, rnd), settings)
-    return analyse_racecraft_battles(replay, overtakes)
-
-
-def _replace_racecraft_tables(result: RacecraftResult, settings: Settings) -> None:
-    replace_table(result.battles, schema="marts", table="racecraft_battles", settings=settings)
-    replace_table(
-        result.summary,
-        schema="marts",
-        table="racecraft_driver_summary",
-        settings=settings,
+    replay = attach_pit_lap_context(replay, pit_context)
+    result = analyse_racecraft_battles(replay, overtakes)
+    processing = receipt(
+        season,
+        rnd,
+        {
+            "replay": raw_replay,
+            "laps": laps,
+            "pit_context": pit_context,
+            "overtakes": overtakes,
+            "battles": result.battles,
+            "summary": result.summary,
+        },
+        parameters,
+        RACECRAFT_VERSION,
     )
+    return {
+        "race_overtakes": overtakes,
+        "pit_lap_context": pit_context,
+        "racecraft_battles": result.battles,
+        "racecraft_driver_summary": result.summary,
+        "racecraft_processing": processing,
+    }
 
 
 def build_racecraft_battles(
@@ -1533,22 +1545,12 @@ def build_racecraft_battles_incremental(
 ) -> RacecraftResult:
     """Recalculate one race while preserving every other racecraft partition."""
     settings = settings or get_settings()
-    result = _build_racecraft_scope(season, rnd, settings)
+    frames = _build_racecraft_scope(season, rnd, settings)
+    result = RacecraftResult(frames["racecraft_battles"], frames["racecraft_driver_summary"])
     partition: dict[str, object] = {"season": season, "round": rnd}
-    replace_table_partition(
-        result.battles,
-        schema="marts",
-        table="racecraft_battles",
-        partition=partition,
-        settings=settings,
-    )
-    replace_table_partition(
-        result.summary,
-        schema="marts",
-        table="racecraft_driver_summary",
-        partition=partition,
-        settings=settings,
-    )
+    if frames["racecraft_processing"].iloc[0]["replay_rows"] == 0:
+        frames["racecraft_processing"] = frames["racecraft_processing"].iloc[0:0]
+    replace_mart_bundle(frames, settings, partition)
     log.info(
         "racecraft.materialised_partition",
         season=season,
@@ -1570,7 +1572,7 @@ def build_all_racecraft_battles(
         "select distinct season, round from marts.race_replay order by season, round",
         settings,
     )
-    results: list[RacecraftResult] = []
+    results: list[dict[str, pd.DataFrame]] = []
     for scope in scopes.itertuples(index=False):
         race = _build_racecraft_scope(int(scope.season), int(scope.round), settings)
         results.append(race)
@@ -1578,18 +1580,23 @@ def build_all_racecraft_battles(
             "racecraft.computed",
             season=int(scope.season),
             round=int(scope.round),
-            battles=len(race.battles),
-            drivers=len(race.summary),
+            battles=len(race["racecraft_battles"]),
+            drivers=len(race["racecraft_driver_summary"]),
         )
-    result = (
-        RacecraftResult(
-            battles=pd.concat([race.battles for race in results], ignore_index=True),
-            summary=pd.concat([race.summary for race in results], ignore_index=True),
-        )
-        if results
-        else _build_racecraft_scope(None, None, settings)
-    )
-    _replace_racecraft_tables(result, settings)
+    if results:
+        frames = {
+            table: pd.concat([race[table] for race in results], ignore_index=True)
+            for table in results[0]
+        }
+    else:
+        frames = {
+            table: frame.iloc[0:0]
+            for table, frame in _build_racecraft_scope(0, 0, settings).items()
+        }
+    # Keep shared pit context for lap-covered races without replay as well.
+    frames["pit_lap_context"] = _build_pit_context_scope(None, None, settings)
+    replace_mart_bundle(frames, settings)
+    result = RacecraftResult(frames["racecraft_battles"], frames["racecraft_driver_summary"])
     races = result.summary[["season", "round"]].drop_duplicates().shape[0]
     log.info(
         "racecraft.materialised_all",

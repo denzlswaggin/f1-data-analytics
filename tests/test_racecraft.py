@@ -357,6 +357,8 @@ def _seed_warehouse(path: Path) -> Settings:
     replay = _replay(85, gap=lambda t: 0.8 if t < 70 else 2.5)
     second = replay.assign(round=2, race_name="Second Grand Prix")
     replay = pd.concat([replay, second], ignore_index=True)
+    replay["x"] = replay["t_s"]
+    replay["y"] = 0.0
     lap_rows = (
         replay[["season", "round", "driver_code", "lap_number", "stint", "team", "track_status"]]
         .drop_duplicates(["season", "round", "driver_code", "lap_number"])
@@ -526,3 +528,91 @@ def test_coverage_distinguishes_zero_battles_missing_processing_and_missing_orde
         assert missing_count() == 2
         coverage = connection.execute(_source_sql("racecraft_coverage")).fetchdf()
         assert coverage["drivers_without_running_order"].tolist() == [1, 1]
+
+
+def test_racecraft_rebuilds_passes_and_receipts_including_zero_event_races(tmp_path: Path) -> None:
+    from analytics.racecraft_integrity import validate_snapshot_processing
+
+    settings = _seed_warehouse(tmp_path / "processing.duckdb")
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        c.execute("""update marts.race_replay set running_order =
+            case when driver_code = 'A' then 1 when driver_code = 'B' then 2 else 3 end,
+            gap_to_ahead_s = case when driver_code = 'A' then null when driver_code = 'B' then 0.8 else 4 end
+            where round = 1 and t_s >= 70""")
+    result = build_all_racecraft_battles(settings)
+    assert result.battles["converted"].sum() == 1
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        validate_snapshot_processing(c)
+        assert c.execute(
+            "select round, overtake_rows from marts.racecraft_processing order by round"
+        ).fetchall() == [(1, 1), (2, 0)]
+        c.execute("delete from marts.race_overtakes where round = 1")
+        with pytest.raises(ValueError, match="Stale Racecraft overtakes"):
+            validate_snapshot_processing(c)
+    build_racecraft_battles(2026, 1, settings)
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        validate_snapshot_processing(c)
+        c.execute("delete from marts.racecraft_processing where round = 2")
+        with pytest.raises(ValueError, match="coverage mismatch"):
+            validate_snapshot_processing(c)
+
+
+@pytest.mark.parametrize(
+    "mutation,part",
+    [
+        ("update marts.race_replay set x=x+1 where round=1", "replay"),
+        ("update staging.stg_laps set track_status='2' where round=1", "laps"),
+        ("update marts.pit_lap_context set is_pit_boundary=true where round=1", "pit_context"),
+        ("update marts.racecraft_battles set confidence='low' where round=1", "battles"),
+        (
+            "update marts.racecraft_driver_summary set attacking_opportunities=99 where round=1",
+            "summary",
+        ),
+    ],
+)
+def test_receipts_reject_changed_inputs_and_outputs(
+    tmp_path: Path, mutation: str, part: str
+) -> None:
+    from analytics.racecraft_integrity import validate_snapshot_processing
+
+    settings = _seed_warehouse(tmp_path / "stale.duckdb")
+    build_all_racecraft_battles(settings)
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        validate_snapshot_processing(c)
+        c.execute(mutation)
+        with pytest.raises(ValueError, match=f"Stale Racecraft {part}"):
+            validate_snapshot_processing(c)
+
+
+def test_bundle_rolls_back_every_table_on_partition_failure(tmp_path: Path) -> None:
+    from analytics.racecraft_integrity import validate_snapshot_processing
+    from ingestion.loaders.warehouse import replace_mart_bundle
+
+    settings = _seed_warehouse(tmp_path / "rollback.duckdb")
+    build_all_racecraft_battles(settings)
+    battles = read_query("select * from marts.racecraft_battles where round=1", settings)
+    summaries = read_query("select * from marts.racecraft_driver_summary where round=1", settings)
+    with pytest.raises(duckdb.Error):
+        replace_mart_bundle(
+            {
+                "racecraft_battles": battles.iloc[0:0],
+                "racecraft_driver_summary": summaries.rename(
+                    columns={"driver_code": "invalid_column"}
+                ),
+            },
+            settings,
+            {"season": 2026, "round": 1},
+        )
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        validate_snapshot_processing(c)
+
+
+def test_fingerprints_ignore_order_and_numeric_storage_but_detect_value_changes() -> None:
+    from analytics.racecraft_integrity import fingerprint
+
+    a = pd.DataFrame({"driver": ["A", "B"], "n": pd.Series([1, None], dtype="Int64")})
+    b = a.iloc[::-1].assign(n=lambda frame: frame.n.astype("float64"))
+    assert fingerprint(a) == fingerprint(b)
+    assert fingerprint(a) == fingerprint(a.astype({"n": object}))
+    b.loc[0, "n"] = 1.1
+    assert fingerprint(a) != fingerprint(b)

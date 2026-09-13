@@ -11,6 +11,7 @@ so the same ingestion code serves dev (DuckDB) and prod (Postgres).
 from __future__ import annotations
 
 import datetime as dt
+from collections.abc import Mapping
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -421,3 +422,70 @@ def replace_table_partition(
         rows=len(df),
     )
     return len(df)
+
+
+def replace_mart_bundle(
+    frames: Mapping[str, pd.DataFrame],
+    settings: Settings,
+    partition: dict[str, object] | None = None,
+) -> None:
+    """Commit dependent marts and their processing receipts in one transaction."""
+    for table, frame in frames.items():
+        if not table.isidentifier():
+            raise ValueError(f"Invalid internal mart name: {table}")
+        for key, value in (partition or {}).items():
+            if key not in frame or (
+                not frame.empty and not frame[key].eq(value).fillna(False).all()
+            ):
+                raise ValueError(f"Invalid {table} partition: {key}")
+    if settings.warehouse == "duckdb":
+        with duckdb.connect(str(settings.duckdb_path)) as connection:
+            connection.execute("begin transaction")
+            try:
+                connection.execute("create schema if not exists marts")
+                for table, frame in frames.items():
+                    connection.register("bundle_frame", frame)
+                    if partition is None:
+                        connection.execute(
+                            f'create or replace table marts."{table}" as select * from bundle_frame'
+                        )
+                    else:
+                        connection.execute(
+                            f'create table if not exists marts."{table}" as select * from bundle_frame where false'
+                        )
+                        predicate = " and ".join(f'"{key}" = ?' for key in partition)
+                        connection.execute(
+                            f'delete from marts."{table}" where {predicate}',
+                            list(partition.values()),
+                        )
+                        connection.execute(
+                            f'insert into marts."{table}" by name select * from bundle_frame'
+                        )
+                    connection.unregister("bundle_frame")
+                connection.execute("commit")
+            except Exception:
+                connection.execute("rollback")
+                raise
+    else:
+        engine = create_engine(settings.pg_dsn)
+        try:
+            with engine.begin() as connection:
+                connection.exec_driver_sql("create schema if not exists marts")
+                for table, frame in frames.items():
+                    if partition is None:
+                        frame.to_sql(
+                            table, connection, schema="marts", if_exists="replace", index=False
+                        )
+                    else:
+                        frame.head(0).to_sql(
+                            table, connection, schema="marts", if_exists="append", index=False
+                        )
+                        predicate = " and ".join(f'"{key}" = :{key}' for key in partition)
+                        connection.execute(
+                            text(f'delete from marts."{table}" where {predicate}'), partition
+                        )
+                        frame.to_sql(
+                            table, connection, schema="marts", if_exists="append", index=False
+                        )
+        finally:
+            engine.dispose()
