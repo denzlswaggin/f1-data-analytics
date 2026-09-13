@@ -17,6 +17,13 @@ max_width: 1600
 An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a confirmed order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
 </KeyInsight>
 
+<KeyInsight label="Experimental event reconstruction">
+Passes and gap releases are detected from reconstructed timing data. The processing
+checks verify that inputs and outputs belong together, not that every event matches
+race footage. Evidence labels are rule-based, not probabilities of correctness.
+External validation is limited; use these views to inspect episodes, not rank driver skill.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.racecraft_coverage
@@ -73,6 +80,8 @@ from ${coverage_details}
     <Column id=drivers_without_running_order title="Without usable running order" />
     <Column id=analysed_drivers title="Analysed drivers" />
     <Column id=observed_battles title="Episodes" />
+    <Column id=detected_passes title="Upstream detected passes" />
+    <Column id=processed_at title="Processing completed (UTC)" />
     <Column id=coverage_status title="Coverage" />
 </DataTable>
 Drivers whose replay has no usable running order cannot be assigned an opponent.

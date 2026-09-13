@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import duckdb
+from analytics.racecraft_integrity import validate_snapshot_processing
 
 
 @dataclass(frozen=True)
@@ -236,6 +237,11 @@ def main() -> None:
     failures: list[str] = []
 
     with duckdb.connect(str(warehouse), read_only=True) as connection:
+        try:
+            validate_snapshot_processing(connection)
+            print("PASS Racecraft processing integrity")
+        except (ValueError, duckdb.Error) as exc:
+            failures.append(f"Racecraft processing integrity: {exc}")
         for check in CHECKS:
             try:
                 row = connection.execute(check.query).fetchone()
