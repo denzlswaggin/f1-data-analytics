@@ -9,7 +9,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Race cockpit"
     title="What happened — and where the result came from."
-    description="One race-level view joining controlled pace, execution, strategy, race control and on-track passing."
+    description="Recorded results alongside pace comparisons, strategy context and experimental pass detections."
     accent="race"
 >
     <div slot="actions">
@@ -56,6 +56,11 @@ select * from f1.race_story
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
+```sql evidence_counts
+select count(*) as result_drivers, count(pace_rank) as pace_drivers,
+    count(passes_made) as pass_drivers from ${story}
+```
+
 ```sql winner
 select driver_name, grid_position, pace_rank, passes_made
 from ${story} where finish_position = 1
@@ -63,39 +68,54 @@ from ${story} where finish_position = 1
 
 ```sql pace_leader
 select driver_name, controlled_pace_delta_sec
-from ${story} order by pace_rank limit 1
+from ${story} where pace_rank is not null order by pace_rank limit 1
 ```
 
 ```sql execution_leader
 select driver_name, outcome_vs_pace
-from ${story} where is_classified
+from ${story} where is_classified and outcome_vs_pace is not null
 order by outcome_vs_pace desc, finish_position limit 1
 ```
 
 ```sql pass_leader
 select driver_name, passes_made
-from ${story} order by passes_made desc, finish_position limit 1
+from ${story} where passes_made is not null order by passes_made desc, finish_position limit 1
 ```
 
 ## What happened
 
 <Grid cols=4>
     <BigValue data={winner} value=driver_name comparison=grid_position comparisonFmt="Grid P0" title="Winner" />
-    <BigValue data={pace_leader} value=driver_name title="Strongest controlled pace" />
-    <BigValue data={execution_leader} value=driver_name comparison=outcome_vs_pace comparisonFmt="+0;-0 vs pace" title="Best conversion" />
-    <BigValue data={pass_leader} value=driver_name comparison=passes_made comparisonFmt="0 passes" title="Most on-track passes" />
+{#if pace_leader.length > 0}
+    <BigValue data={pace_leader} value=driver_name title="Lowest observed peer delta" />
+{:else}
+<p>No supported pace comparison in this race.</p>
+{/if}
+{#if execution_leader.length > 0}
+    <BigValue data={execution_leader} value=driver_name comparison=outcome_vs_pace comparisonFmt="+0;-0 vs pace" title="Largest finish/model difference" />
+{:else}
+<p>Finish/model comparison unavailable: incomplete pace field.</p>
+{/if}
+{#if pass_leader.length > 0}
+    <BigValue data={pass_leader} value=driver_name comparison=passes_made comparisonFmt="0 passes" title="Most model-detected passes" />
+{:else}
+<p>Pass analysis unavailable for this race.</p>
+{/if}
 </Grid>
 
-<KeyInsight label="Race in one sentence">
-<Value data={winner} column=driver_name /> won from grid position
-<Value data={winner} column=grid_position />, while controlled pace favoured
-<Value data={pace_leader} column=driver_name />. <Value data={execution_leader} column=driver_name />
-finished <Value data={execution_leader} column=outcome_vs_pace fmt="+0;-0" /> places versus
-their pace rank, and <Value data={pass_leader} column=driver_name /> made
-<Value data={pass_leader} column=passes_made /> detected passes.
+<KeyInsight label="Reading the evidence">
+Pace covers <Value data={evidence_counts} column=pace_drivers /> of
+<Value data={evidence_counts} column=result_drivers /> result drivers; pass
+analysis is available for <Value data={evidence_counts} column=pass_drivers />.
+Pace is the median lap-time difference from at least three other drivers on the
+same lap and compound, after shared pit-lap exclusions. At least five comparable
+laps are required. Ranks cover eligible drivers only; finish/rank differences
+are shown only when the entire result field has a pace estimate. These are
+observed comparisons, not measurements of driver skill or execution. Pass counts
+come from experimental timing reconstruction; missing analysis stays blank.
 </KeyInsight>
 
-## How pace became the result
+## Pace comparison and recorded finish
 
 ```sql outcome_flow
 select driver_name, grid_position, pace_rank, finish_position, outcome_vs_pace
@@ -106,7 +126,7 @@ order by finish_position
 
 <RaceOutcomeFlow data={outcome_flow} />
 
-The middle position is based on same-lap, same-compound controlled pace. The
+The middle position is a rank of observed peer-relative pace. The
 last step also contains reliability, penalties, pit timing, traffic and race
 incidents, so the flow is diagnostic rather than causal.
 
@@ -173,7 +193,7 @@ group by event_type order by events desc
     <Column id=outcome_vs_pace title="vs pace" fmt="+0;-0" />
     <Column id=passes_made title="Passes made" />
     <Column id=passes_lost title="Passes lost" />
-    <Column id=stops />
+    <Column id=stops title="Recorded pit visits" />
     <Column id=story_label title="Interpretation" />
 </DataTable>
 </ExpandableSection>
