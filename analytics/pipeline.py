@@ -1479,18 +1479,8 @@ def build_racecraft_battles(
     rnd: int,
     settings: Settings | None = None,
 ) -> RacecraftResult:
-    """Build one race's racecraft evidence, replacing both full marts."""
-    settings = settings or get_settings()
-    result = _build_racecraft_scope(season, rnd, settings)
-    _replace_racecraft_tables(result, settings)
-    log.info(
-        "racecraft.materialised",
-        season=season,
-        round=rnd,
-        battles=len(result.battles),
-        drivers=len(result.summary),
-    )
-    return result
+    """Build one race while preserving all other racecraft partitions."""
+    return build_racecraft_battles_incremental(season, rnd, settings)
 
 
 def _build_pit_context_scope(
@@ -1574,7 +1564,31 @@ def build_all_racecraft_battles(
 ) -> RacecraftResult:
     """Build racecraft evidence for every race currently present in replay."""
     settings = settings or get_settings()
-    result = _build_racecraft_scope(None, None, settings)
+    # Bound replay memory to one race; only the small episode/summary frames
+    # accumulate. Publish after every race has been computed successfully.
+    scopes = read_query(
+        "select distinct season, round from marts.race_replay order by season, round",
+        settings,
+    )
+    results: list[RacecraftResult] = []
+    for scope in scopes.itertuples(index=False):
+        race = _build_racecraft_scope(int(scope.season), int(scope.round), settings)
+        results.append(race)
+        log.info(
+            "racecraft.computed",
+            season=int(scope.season),
+            round=int(scope.round),
+            battles=len(race.battles),
+            drivers=len(race.summary),
+        )
+    result = (
+        RacecraftResult(
+            battles=pd.concat([race.battles for race in results], ignore_index=True),
+            summary=pd.concat([race.summary for race in results], ignore_index=True),
+        )
+        if results
+        else _build_racecraft_scope(None, None, settings)
+    )
     _replace_racecraft_tables(result, settings)
     races = result.summary[["season", "round"]].drop_duplicates().shape[0]
     log.info(

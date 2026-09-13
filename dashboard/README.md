@@ -28,6 +28,8 @@ python -m analytics.cli pace-profile
 make dashboard-dev
 ```
 
-For an already prepared snapshot, `npm run dev` performs a fast contract check
-and then starts Evidence. A missing snapshot fails with a direct recovery command
+For an already prepared snapshot, `npm run dev` checks the snapshot contract,
+refreshes the Evidence source cache, and starts Evidence alongside the replay app.
+`npm run dev:evidence` also checks and refreshes sources before starting Evidence.
+A missing snapshot fails with a direct recovery command
 instead of rendering SQL errors and `undefined` values in the browser.

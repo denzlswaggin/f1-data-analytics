@@ -14,6 +14,20 @@ def main() -> None:
     parser.add_argument("path", type=Path, nargs="?", default=Path("data/dashboard/latest.duckdb"))
     args = parser.parse_args()
     queries = {
+        "missing_driver_summaries": """select count(*) from (
+                select distinct season, round, driver_code from marts.race_replay
+                where driver_code is not null and running_order is not null
+                    and t_s is not null and isfinite(t_s)
+                except select season, round, driver_code from marts.racecraft_driver_summary
+            ) expected""",
+        "duplicate_driver_summaries": """select count(*) from (
+                select season, round, driver_code from marts.racecraft_driver_summary
+                group by all having count(*) > 1
+            ) duplicates""",
+        "duplicate_episode_ids": """select count(*) from (
+                select season, round, battle_id from marts.racecraft_battles
+                group by all having count(*) > 1
+            ) duplicates""",
         "invalid_pressure_runs": """select count(*) from marts.racecraft_battles
             where longest_pressure_run_s is null or longest_pressure_run_s < 0
                 or longest_pressure_run_s > pressure_seconds + 0.000001

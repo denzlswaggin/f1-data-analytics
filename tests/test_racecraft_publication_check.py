@@ -18,10 +18,14 @@ def _snapshot(path: Path, mutation: str = "") -> None:
                 20.0 as longest_pressure_run_s, 20.0 as pressure_seconds,
                 10.0 as minimum_pressure_s, true as eligible, 'high' as confidence,
                 'Defended' as outcome, 15.0 as release_run_s, true as defender_retained,
-                false as converted, false as quick_reversal
+                false as converted, false as quick_reversal, 'battle-1' as battle_id
             union all
             select 2025, 4, 'A', 'B', 20.0, 20.0, 10.0, true, 'high', 'Converted',
-                0.0, false, true, true""")
+                0.0, false, true, true, 'battle-2'""")
+        connection.execute("""create table marts.race_replay as
+            select 2025 as season, 4 as round, 'A' as driver_code,
+                1 as running_order, 100.0 as t_s
+            union all select 2025, 4, 'B', 2, 100.0""")
         connection.execute("""create table marts.racecraft_driver_summary as
             select 2025 as season, 4 as round, 'A' as driver_code,
                 0 as quick_reversals_made, 1 as quick_reversals_conceded,
@@ -56,6 +60,9 @@ def test_accepts_consistent_publication(tmp_path: Path, monkeypatch: pytest.Monk
         "update marts.racecraft_driver_summary set quick_reversals_conceded = 0",
         "update marts.racecraft_driver_summary set attacking_opportunities = 0",
         "delete from marts.racecraft_driver_summary where driver_code = 'B'",
+        "insert into marts.race_replay values (2025, 4, 'C', 3, 100.0)",
+        "insert into marts.racecraft_driver_summary select * from marts.racecraft_driver_summary",
+        "update marts.racecraft_battles set battle_id = 'duplicate'",
     ],
 )
 def test_rejects_inconsistent_publication(

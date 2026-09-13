@@ -8,6 +8,7 @@
     "build": "evidence build",
     "build:strict": "evidence build:strict",
     "dev": "npm --prefix ../web run dev:all",
+    "predev:evidence": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb && npm run sources:strict",
     "dev:evidence": "evidence dev --open /",
     "test": "evidence build",
     "test:dropdown": "node --conditions=browser --test ../scripts/test_race_event_dropdown.mjs",
