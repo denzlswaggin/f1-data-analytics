@@ -41,6 +41,11 @@ passes as (
     group by season, round
 ),
 
+processing as (
+    select season, round from marts.racecraft_processing
+    group by season, round having count(*) = 1
+),
+
 weather as (
     select
         season,
@@ -65,7 +70,7 @@ select
     coalesce(stints.compounds, 0) as compounds,
     coalesce(replay.replay_ticks, 0) as replay_ticks,
     coalesce(replay.replay_duration_sec, 0) as replay_duration_sec,
-    coalesce(passes.overtakes, 0) as overtakes,
+    case when processing.season is not null then coalesce(passes.overtakes, 0) end as overtakes,
     weather.air_temp,
     weather.track_temp
 from latest
@@ -73,4 +78,5 @@ join laps using (season, round)
 left join stints using (season, round)
 left join replay using (season, round)
 left join passes using (season, round)
+left join processing using (season, round)
 left join weather using (season, round)

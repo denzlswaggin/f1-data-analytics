@@ -57,10 +57,14 @@ coverage as (
     union all
 
     select
-        'race_story', season, round, cast(season as varchar) || ' ' || race_name,
-        count(*), count(distinct driver_code), 1, sum(pace_samples), season, season
-    from marts.mart_race_story
-    group by season, round, race_name
+        'race_story', result.season, result.round,
+        cast(result.season as varchar) || ' ' || races.race_name,
+        count(*), count(distinct result.driver_code), 1,
+        coalesce(sum(pace.eligible_laps), 0), result.season, result.season
+    from staging.stg_results as result
+    join races using (season, round)
+    left join marts.traffic_adjusted_pace as pace using (season, round, driver_code)
+    group by result.season, result.round, races.race_name
 
     union all
 
