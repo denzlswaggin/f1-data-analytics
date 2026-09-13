@@ -112,6 +112,7 @@ jobs:
       - name: Validate Evidence sources and build
         run: |
           python scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb
+          python scripts/check_racecraft_battles.py data/dashboard/latest.duckdb
           npm --prefix dashboard run sources:strict
           npm --prefix dashboard run build:strict
           python scripts/check_dashboard_bundle.py dashboard/build --max-total-mb 275

@@ -9,12 +9,25 @@ max_width: 1600
 <PageHeader
     eyebrow="Driver intelligence"
     title="Who converted pressure—and who held position?"
-    description="Trace sustained green-flag close running against the car directly ahead, then separate confirmed passes, clean defences and interrupted battles."
+    description="Trace sustained green-flag close running against the car directly ahead, then separate detected passes, held positions and interrupted battles."
     accent="drivers"
 />
 
+```sql snapshot
+select * from f1.snapshot_metadata
+```
+
+<SnapshotStatus data={snapshot} />
+
 <KeyInsight label="Observed racecraft, not a driver-skill score">
-An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a confirmed order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
+An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a detected order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
+</KeyInsight>
+
+<KeyInsight label="Experimental event reconstruction">
+Passes and gap releases are detected from reconstructed timing data. The processing
+checks verify that inputs and outputs belong together, not that every event matches
+race footage. Evidence labels are rule-based, not probabilities of correctness.
+External validation is limited; use these views to inspect episodes, not rank driver skill.
 </KeyInsight>
 
 ```sql seasons
@@ -73,6 +86,8 @@ from ${coverage_details}
     <Column id=drivers_without_running_order title="Without usable running order" />
     <Column id=analysed_drivers title="Analysed drivers" />
     <Column id=observed_battles title="Episodes" />
+    <Column id=detected_passes title="Upstream detected passes" />
+    <Column id=processed_at title="Processing completed (UTC)" />
     <Column id=coverage_status title="Coverage" />
 </DataTable>
 Drivers whose replay has no usable running order cannot be assigned an opponent.
@@ -110,8 +125,8 @@ from ${race_battles}
 <Grid cols=4>
     <BigValue data={race_totals} value=observed_battles title="Observed battles" />
     <BigValue data={race_totals} value=eligible_battles title="Resolved denominator" />
-    <BigValue data={race_totals} value=conversions title="Confirmed conversions" />
-    <BigValue data={race_totals} value=defences title="Clean defences" />
+    <BigValue data={race_totals} value=conversions title="Detected conversions" />
+    <BigValue data={race_totals} value=defences title="Position held" />
 </Grid>
 
 <Grid cols=3>
@@ -280,7 +295,7 @@ order by episodes desc, pair
     <Column id=races title="Races" />
     <Column id=episodes title="Episodes" />
     <Column id=confirmed_passes title="Eligible passes" />
-    <Column id=clean_defences title="Clean defences" />
+    <Column id=clean_defences title="Position held" />
     <Column id=interrupted title="Interrupted" />
     <Column id=unresolved title="Unresolved" />
     <Column id=insufficient_resolved title="Insufficient resolved" />
@@ -418,7 +433,7 @@ duration is sample-supported: ten consecutive one-second replay samples count
 as ten seconds, not nine seconds between their timestamps. Total pressure may
 include separate runs and is diagnostic only; eligibility uses the longest
 uninterrupted run. High-confidence episodes need at least 20 seconds in that run,
-alongside the other coverage and evidence requirements. A confirmed directional
+alongside the other coverage and evidence requirements. A detected directional
 pass can arrive up to three seconds after that close-running segment. A defence
 requires the original order to remain while the gap exceeds 2.0 seconds for 15
 measured elapsed seconds. The release timer resets at any gap of 2.0 seconds or
@@ -426,12 +441,12 @@ less (including the 1.5–2.0-second neutral band), a missing or invalid gap,
 an incomparable lap deficit, or a missed expected replay sample. Pressure runs
 also reset on gaps above 1.0 second or missing expected samples.
 Pit-boundary laps and neutralisations interrupt rather than resolve the episode.
-Without a matching confirmed pass, a third car entering the pair also interrupts
+Without a matching detected pass, a third car entering the pair also interrupts
 it, while feed gaps and race-end boundaries remain unresolved.
 
-A quick reversal is a confirmed pass back within 60 seconds. The original
+A quick reversal is a detected pass back within 60 seconds. The original
 defender receives the re-pass made; the original attacker receives the re-pass
-conceded. It does not erase the initial confirmed conversion.
+conceded. It does not erase the initial detected conversion.
 
 Replay gaps are reconstructed at one-second resolution and are not official DRS
 eligibility. Results are descriptive: car and tyre performance, fuel, damage,

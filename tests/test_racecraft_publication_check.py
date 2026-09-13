@@ -8,6 +8,7 @@ from pathlib import Path
 
 import duckdb
 import pytest
+from analytics.racecraft_integrity import INPUT_TABLES, OUTPUT_TABLES, receipt
 
 
 def _snapshot(path: Path, mutation: str = "") -> None:
@@ -32,6 +33,23 @@ def _snapshot(path: Path, mutation: str = "") -> None:
                 2 as attacking_opportunities, 0 as defensive_opportunities,
                 1 as converted_opportunities, 0 as defences_held
             union all select 2025, 4, 'B', 1, 0, 0, 2, 0, 1""")
+        connection.execute("create schema staging")
+        connection.execute(
+            "create table staging.stg_laps as select season, round, 'R' as session from marts.race_replay"
+        )
+        connection.execute(
+            "create table marts.pit_lap_context as select season, round, driver_code from marts.race_replay"
+        )
+        connection.execute(
+            "create table marts.race_overtakes as select season, round, attacker_code from marts.racecraft_battles where converted"
+        )
+        frames = {
+            name: connection.execute(f"select * from {table}").fetchdf()
+            for name, table in {**INPUT_TABLES, **OUTPUT_TABLES}.items()
+        }
+        processing = receipt(2025, 4, frames, {}, "racecraft-v3-continuity")
+        connection.register("processing", processing)
+        connection.execute("create table marts.racecraft_processing as select * from processing")
         if mutation:
             connection.execute(mutation)
 
@@ -63,6 +81,8 @@ def test_accepts_consistent_publication(tmp_path: Path, monkeypatch: pytest.Monk
         "insert into marts.race_replay values (2025, 4, 'C', 3, 100.0)",
         "insert into marts.racecraft_driver_summary select * from marts.racecraft_driver_summary",
         "update marts.racecraft_battles set battle_id = 'duplicate'",
+        "delete from marts.racecraft_processing",
+        "delete from marts.race_overtakes",
     ],
 )
 def test_rejects_inconsistent_publication(

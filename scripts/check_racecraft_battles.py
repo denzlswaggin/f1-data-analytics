@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import duckdb
+from analytics.racecraft_integrity import validate_snapshot_processing
 
 
 def main() -> None:
@@ -76,6 +77,12 @@ def main() -> None:
     }
     with duckdb.connect(str(args.path), read_only=True) as connection:
         violations = {}
+        try:
+            validate_snapshot_processing(connection)
+            violations["processing_integrity"] = 0
+        except (ValueError, duckdb.Error) as exc:
+            print(f"Racecraft processing integrity: {exc}")
+            violations["processing_integrity"] = 1
         for name, query in queries.items():
             row = connection.execute(query).fetchone()
             assert row is not None

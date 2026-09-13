@@ -22,6 +22,7 @@ from typing import Any
 
 import duckdb
 import pandas as pd
+from analytics.racecraft_integrity import RECEIPT_COLUMNS, validate_snapshot_processing
 from sqlalchemy import create_engine, inspect, text
 
 from ingestion.config import Settings, get_settings
@@ -33,6 +34,7 @@ DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 # database. Optional datasets still materialise an empty table with the declared
 # columns, so their absence is always a broken pipeline rather than "no data".
 DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
+    ("marts", "racecraft_processing"): RECEIPT_COLUMNS,
     ("marts", "pit_lap_context"): {
         "season",
         "round",
@@ -1123,6 +1125,7 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
             raise ValueError(
                 "dashboard snapshot has incompatible columns: " + "; ".join(broken_columns)
             )
+        validate_snapshot_processing(connection)
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
         value = _scalar(
