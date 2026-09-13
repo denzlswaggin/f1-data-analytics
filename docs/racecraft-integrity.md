@@ -97,3 +97,11 @@ snapshot export. The CI fixture is regenerated from this snapshot.
 Regression checks cover missing passes, zero-event races, changed inputs and
 outputs, transaction rollback and race/season partition preservation, alongside
 the existing continuity, exclusion, denominator and presentation checks.
+Empty pass tables retain their column types, so a later refresh can insert a
+detected pass after an initially empty publication; this transition is tested.
+
+The full snapshot and regenerated CI fixture pass the publication checks. Strict
+Evidence source extraction and production build pass; the clean bundle is
+97.6 MB against the 275 MB budget. Ruff, formatting, mypy and the four dependent
+filter tests pass. Interactive browser verification is delegated to the existing
+CI desktop/mobile smoke suite because no in-app browser is connected locally.

@@ -288,4 +288,18 @@ def detect_overtakes(
 
 
 def _empty_overtakes() -> pd.DataFrame:
-    return pd.DataFrame(columns=_COLUMNS)
+    # Preserve SQL types when a newly processed race has no passes. Otherwise
+    # DuckDB infers empty object columns as integers and rejects later drivers.
+    strings = {"passer_code", "passed_code", "evidence", "reason"}
+    return pd.DataFrame(
+        {
+            column: pd.Series(
+                dtype="string"
+                if column in strings
+                else "Int64"
+                if column == "for_position"
+                else "float64"
+            )
+            for column in _COLUMNS
+        }
+    )

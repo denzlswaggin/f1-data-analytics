@@ -635,3 +635,20 @@ def test_public_overtake_refreshes_preserve_other_races_and_seasons(tmp_path: Pa
     build_race_overtakes_season(2026, settings)
     with duckdb.connect(str(settings.duckdb_path)) as c:
         assert c.sql("select season, round from marts.race_overtakes").fetchall() == [(2025, 1)]
+
+
+def test_zero_pass_publication_accepts_a_later_detected_pass(tmp_path: Path) -> None:
+    from analytics.racecraft_integrity import validate_snapshot_processing
+
+    settings = _seed_warehouse(tmp_path / "zero_then_pass.duckdb")
+    build_all_racecraft_battles(settings)
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        assert c.sql("select count(*) from marts.race_overtakes").fetchone() == (0,)
+        c.execute("""update marts.race_replay set running_order =
+            case when driver_code = 'A' then 1 when driver_code = 'B' then 2 else 3 end,
+            gap_to_ahead_s = case when driver_code = 'A' then null when driver_code = 'B' then 0.8 else 4 end
+            where round = 1 and t_s >= 70""")
+    result = build_racecraft_battles(2026, 1, settings)
+    assert result.battles["converted"].sum() == 1
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        validate_snapshot_processing(c)
