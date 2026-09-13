@@ -85,18 +85,24 @@ def austria() -> Any:
             "create table staging.stg_races as select 2025 season,11 round,date '2025-06-29' race_date"
         )
         connection.execute(
-            "create table staging.stg_laps(season int,round int,session varchar,driver_code varchar,driver_number int,lap_number int,lap_start_sec double)"
+            "create table staging.stg_laps(season int,round int,session varchar,driver_code varchar,driver_number int,lap_number int,lap_start_sec double,lap_time_sec double)"
         )
         for code, number in [("NOR", 4), ("PIA", 81)]:
             connection.execute(
-                "insert into staging.stg_laps values (2025,11,'R',?,?,1,?)",
+                "insert into staging.stg_laps values (2025,11,'R',?,?,1,?,null)",
                 [code, number, diagnostic["race_origin_session_s"]],
             )
             for row in diagnostic["lap_inputs"]:
                 if row["driver_code"] == code:
                     connection.execute(
-                        "insert into staging.stg_laps values (2025,11,'R',?,?,?,?)",
-                        [code, number, row["lap_number"], row["lap_start_sec"]],
+                        "insert into staging.stg_laps values (2025,11,'R',?,?,?,?,?)",
+                        [
+                            code,
+                            number,
+                            row["lap_number"],
+                            row["lap_start_sec"],
+                            row["lap_time_sec"],
+                        ],
                     )
         connection.execute(
             "create table marts.race_replay as select 2025 season,11 round,driver_code,t_s,running_order from (values ('NOR',1),('PIA',2)) d(driver_code,running_order),range(805,876) t(t_s)"
@@ -115,6 +121,30 @@ def test_austria_source_reversal_is_present_but_not_video_truth(austria: Any) ->
     assert result["clock_alignment"]["spread_s"] == pytest.approx(0.159, abs=0.00001)
     assert result["accuracy"] is None
     assert result["independent_video_validation"] is False
+
+
+@pytest.mark.parametrize("missing_duration", [False, True])
+def test_final_lap_requires_recorded_finish_support(austria: Any, missing_duration: bool) -> None:
+    connection, manifest, original, window = austria
+    data = copy.deepcopy(original)
+    connection.execute("delete from staging.stg_laps where lap_number>11")
+    for number in manifest["drivers"]:
+        data[f"laps-{number}.json"] = [
+            row for row in data[f"laps-{number}.json"] if row["lap_number"] <= 11
+        ]
+    if missing_duration:
+        data["laps-81.json"][-1]["lap_duration"] = None
+        with pytest.raises(ValueError, match="recorded durations"):
+            compare(connection, manifest, data, window)
+    else:
+        result = compare(connection, manifest, data, window)
+        assert [row["boundary"] for row in result["clock_alignment"]["anchors"]] == [
+            "lap_start",
+            "recorded_lap_end",
+            "lap_start",
+            "recorded_lap_end",
+        ]
+        assert result["replay_end_t_s"] == pytest.approx(875.238)
 
 
 @pytest.mark.parametrize("failure", ["clock_drift", "missing_anchor", "wrong_race"])

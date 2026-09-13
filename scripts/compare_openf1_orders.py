@@ -11,7 +11,7 @@ import hashlib
 import json
 import math
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -141,7 +141,7 @@ def position_timeline(
 def clock_alignment(anchors: list[dict[str, Any]]) -> dict[str, Any]:
     if len(anchors) != 4:
         raise ValueError("Four bracketing driver/lap anchors are required")
-    offsets = [utc_seconds(row["source_date_start"]) - row["replay_lap_start_s"] for row in anchors]
+    offsets = [utc_seconds(row["source_timestamp"]) - row["replay_t_s"] for row in anchors]
     if not all(math.isfinite(value) for value in offsets):
         raise ValueError("Nonfinite clock alignment")
     spread = max(offsets) - min(offsets)
@@ -175,7 +175,7 @@ def compare(
     if len(dates) != 1 or str(dates[0][0]) != sessions[0]["date_start"][:10]:
         raise ValueError("Captured session date does not match snapshot race")
     laps = connection.execute(
-        "select driver_code,driver_number,lap_number,lap_start_sec from staging.stg_laps where season=? and round=? and session='R'",
+        "select driver_code,driver_number,lap_number,lap_start_sec,lap_time_sec from staging.stg_laps where season=? and round=? and session='R'",
         [window["season"], window["round"]],
     ).fetchdf()
     origin = float(laps.lap_start_sec.min())
@@ -188,29 +188,55 @@ def compare(
         number = int(numbers[0])
         driver_map[number] = code
         for lap in (window["lap_min"], window["lap_max"] + 1):
+            boundary = "lap_start"
             local = laps.loc[laps.driver_code.eq(code) & laps.lap_number.eq(lap)]
             source = [
                 row
                 for row in data[f"laps-{number}.json"]
                 if row["lap_number"] == lap and row.get("date_start")
             ]
+            if lap == window["lap_max"] + 1 and local.empty and not source:
+                # Only a recorded final-lap finish can replace a next-lap start.
+                # Missing interior laps must still fail closed.
+                local_last = laps.loc[laps.driver_code.eq(code), "lap_number"].max()
+                source_last = max(
+                    (row["lap_number"] for row in data[f"laps-{number}.json"]), default=0
+                )
+                if local_last == window["lap_max"] and source_last == window["lap_max"]:
+                    lap -= 1
+                    boundary = "recorded_lap_end"
+                    local = laps.loc[laps.driver_code.eq(code) & laps.lap_number.eq(lap)]
+                    source = [
+                        row
+                        for row in data[f"laps-{number}.json"]
+                        if row["lap_number"] == lap and row.get("date_start")
+                    ]
             if len(local) != 1 or len(source) != 1:
                 raise ValueError("Missing or duplicate bracketing lap anchor")
+            source_time = source[0]["date_start"]
+            local_time = float(local.iloc[0].lap_start_sec) - origin
+            if boundary == "recorded_lap_end":
+                durations = [local.iloc[0].lap_time_sec, source[0].get("lap_duration")]
+                if any(
+                    value is None or not math.isfinite(value) or value <= 0 for value in durations
+                ):
+                    raise ValueError("Final-lap anchor needs both recorded durations")
+                local_time += float(durations[0])
+                source_time = (
+                    datetime.fromisoformat(source_time) + timedelta(seconds=float(durations[1]))
+                ).isoformat()
             anchors.append(
                 {
                     "driver_code": code,
                     "driver_number": number,
                     "lap_number": lap,
-                    "source_date_start": source[0]["date_start"],
-                    "replay_lap_start_s": float(local.iloc[0].lap_start_sec) - origin,
+                    "boundary": boundary,
+                    "source_timestamp": source_time,
+                    "replay_t_s": local_time,
                 }
             )
     alignment = clock_alignment(anchors)
-    bounds = [
-        row["replay_lap_start_s"]
-        for row in anchors
-        if row["driver_code"] == window["anchor_driver"]
-    ]
+    bounds = [row["replay_t_s"] for row in anchors if row["driver_code"] == window["anchor_driver"]]
     start, end = bounds
     offset = alignment["utc_minus_replay_s"]
     timeline = position_timeline(

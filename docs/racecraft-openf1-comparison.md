@@ -31,7 +31,7 @@ Snapshot: `20260914-racecraft-integrity`, SHA-256
 `ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664`.
 
 The comparison uses lap-start timestamps for laps 11 and 12 for both drivers.
-The four UTC-to-replay offsets span 0.159 seconds, within the preselected
+The four UTC-to-replay offsets span 0.159 seconds, within the fixed
 one-second diagnostic limit. Missing/duplicate anchors, another race or a larger
 spread abort comparison. This limit is not calibrated measurement uncertainty.
 The mapped window is the anchor driver's lap 11, replay seconds 804.292–875.238.
@@ -68,6 +68,35 @@ verified: no browser was connected, and the page's public embed endpoint returne
 HTTP 403. No account, subscription or access restriction was bypassed. Page
 descriptions were not substituted for visual annotations. Both human review
 templates remain pending; no video reviewer was invented.
+
+## Comparison windows beyond Austria
+
+The same frozen protocol windows were also captured for Monza (session 9912,
+drivers 1/4) and Spa (session 9939, drivers 1/16). The captures and comparisons
+live in `validation/openf1-monza-2025` and `validation/openf1-spa-2025`.
+
+| Window | Position-stream exchanges | Overtake endpoint rows | Snapshot pair detections | Clock spread |
+| --- | ---: | ---: | ---: | ---: |
+| Austria NOR/PIA, lap 11 | 2 | 2 | 0 | 0.159 s |
+| Monza VER/NOR, laps 2–4 | 2 | 2 | 2 | 0.232 s |
+| Spa VER/LEC, laps 5–44 | 0 | 0 | 0 | 0.232 s |
+
+Monza retains the reported position return followed by the reverse exchange,
+but agreement on counts/direction does not imply timing accuracy. The aligned
+source events are at replay seconds 95.2965 and 266.2335, while the detector emits
+111 and 285: differences of 15.7035 and 18.7665 seconds respectively. This is much
+larger than the 0.232-second spread between its four clock anchors. These are
+feed-to-model differences, not certified physical timing errors. The events are
+not automatically competitive-skill evidence. The Spa feeds
+contain no pair exchange in the inspected window. Zero observed changes is not
+proof of exhaustive negative footage coverage. None of these rows is scored as
+TP/FP/FN, and they do not provide a population accuracy percentage.
+
+Spa ends on the final recorded lap. When both sources end on that same lap, a
+recorded lap-start plus a finite positive lap duration supplies the end anchor.
+It is explicitly marked `recorded_lap_end`. This fallback cannot bridge a
+missing interior lap or replace a missing duration; those cases still fail.
+All four boundary clocks must still meet the unchanged one-second spread limit.
 
 ## Reproduce
 
