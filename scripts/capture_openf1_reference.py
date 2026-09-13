@@ -19,7 +19,9 @@ import requests
 BASE_URL = "https://api.openf1.org/v1"
 
 
-def capture(session_key: int, drivers: list[int], output: Path) -> dict[str, Any]:
+def capture(
+    session_key: int, drivers: list[int], output: Path, *, include_intervals: bool = False
+) -> dict[str, Any]:
     if session_key < 1 or len(drivers) != 2 or len(set(drivers)) != 2 or min(drivers) < 1:
         raise ValueError("A session and two distinct driver numbers are required")
     output.mkdir(parents=True, exist_ok=False)
@@ -29,7 +31,9 @@ def capture(session_key: int, drivers: list[int], output: Path) -> dict[str, Any
     ]
     queries.extend(
         (endpoint, {"session_key": session_key, "driver_number": driver})
-        for endpoint in ("position", "laps")
+        for endpoint in (
+            ("position", "laps", "intervals") if include_intervals else ("position", "laps")
+        )
         for driver in drivers
     )
     files: list[dict[str, Any]] = []
@@ -63,7 +67,7 @@ def capture(session_key: int, drivers: list[int], output: Path) -> dict[str, Any
                 }
             )
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2 if include_intervals else 1,
         "session_key": session_key,
         "drivers": drivers,
         "documentation_url": "https://openf1.org/docs/",
@@ -79,8 +83,16 @@ def main() -> None:
     parser.add_argument("--session", type=int, required=True)
     parser.add_argument("--drivers", type=int, nargs=2, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--include-intervals", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(capture(args.session, args.drivers, args.output), indent=2))
+    print(
+        json.dumps(
+            capture(
+                args.session, args.drivers, args.output, include_intervals=args.include_intervals
+            ),
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

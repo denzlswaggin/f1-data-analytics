@@ -30,7 +30,7 @@ def utc_seconds(value: str) -> float:
 
 def load_capture(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
-    if manifest["schema_version"] != 1:
+    if manifest["schema_version"] not in (1, 2):
         raise ValueError("Unsupported capture schema")
     drivers = manifest["drivers"]
     if len(drivers) != 2 or len(set(drivers)) != 2:
@@ -40,6 +40,8 @@ def load_capture(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         "overtakes.json",
         *(f"{endpoint}-{driver}.json" for endpoint in ("laps", "position") for driver in drivers),
     }
+    if manifest["schema_version"] == 2:
+        expected.update(f"intervals-{driver}.json" for driver in drivers)
     files = manifest["files"]
     if {item["file"] for item in files} != expected or len(files) != len(expected):
         raise ValueError("Incomplete or duplicate source capture")

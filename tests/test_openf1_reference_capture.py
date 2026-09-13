@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 from scripts.capture_openf1_reference import capture
+from scripts.compare_openf1_orders import load_capture
 
 
 def fake_client(monkeypatch: pytest.MonkeyPatch, failure: str | None = None) -> None:
@@ -60,3 +61,17 @@ def test_failed_capture_never_publishes_a_complete_manifest(
     with pytest.raises((requests.HTTPError, ValueError)):
         capture(123, [4, 81], output)
     assert not (output / "manifest.json").exists()
+
+
+def test_interval_capture_requires_both_hashed_streams(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_client(monkeypatch)
+    output = tmp_path / "capture"
+    capture(123, [4, 81], output, include_intervals=True)
+    manifest, data = load_capture(output)
+    assert manifest["schema_version"] == 2
+    assert len(data) == 8
+    (output / "intervals-4.json").write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="integrity"):
+        load_capture(output)
