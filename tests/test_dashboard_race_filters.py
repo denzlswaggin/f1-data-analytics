@@ -53,7 +53,12 @@ def test_all_race_dependent_inputs_use_the_shared_reset() -> None:
         for tag in re.findall(r"<DependentDropdown[^>]+>", content):
             assert "season={inputs.season.value}" in tag
             if "name=race " not in tag:
-                assert "round={inputs.race.value}" in tag
+                expected_scope = (
+                    "round={inputs.view.value === 'season' ? 0 : inputs.race.value}"
+                    if page_name == "racecraft-battles.md"
+                    else "round={inputs.race.value}"
+                )
+                assert expected_scope in tag
 
 
 def test_race_replay_redirects_to_the_dedicated_app() -> None:
