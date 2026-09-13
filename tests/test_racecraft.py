@@ -507,7 +507,13 @@ def test_coverage_distinguishes_zero_battles_missing_processing_and_missing_orde
     build_all_racecraft_battles(settings)
     check = next(check for check in CHECKS if check.name == "racecraft driver coverage")
     with duckdb.connect(str(settings.duckdb_path)) as connection:
-        assert connection.execute(check.query).fetchone()[0] == 0
+
+        def missing_count() -> int:
+            row = connection.execute(check.query).fetchone()
+            assert row is not None
+            return int(row[0])
+
+        assert missing_count() == 0
         connection.execute("delete from marts.racecraft_battles where round=1")
         connection.execute("delete from marts.racecraft_driver_summary where round=2")
         coverage = connection.execute(_source_sql("racecraft_coverage")).fetchdf()
@@ -515,8 +521,8 @@ def test_coverage_distinguishes_zero_battles_missing_processing_and_missing_orde
             "Processed: no observed battles",
             "Incomplete racecraft processing",
         ]
-        assert connection.execute(check.query).fetchone()[0] == 3
+        assert missing_count() == 3
         connection.execute("update marts.race_replay set running_order=null where driver_code='C'")
-        assert connection.execute(check.query).fetchone()[0] == 2
+        assert missing_count() == 2
         coverage = connection.execute(_source_sql("racecraft_coverage")).fetchdf()
         assert coverage["drivers_without_running_order"].tolist() == [1, 1]
