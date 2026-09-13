@@ -5,6 +5,10 @@ accuracy. Three previously inspected pair windows are prepared for review:
 Austria 2025 NOR/PIA lap 11, Monza 2025 VER/NOR laps 2–4, and Spa 2025 VER/LEC
 laps 5–44. They are diagnostic cases, not complete races or untouched holdouts.
 
+Follow-up: [the public OpenF1 comparison](racecraft-openf1-comparison.md) now
+reproduces both Austria exchanges in timestamped source order. This additional
+feed evidence does not fill in or approve the pending video reviews.
+
 ## Frozen definition and review workflow
 
 `validation/racecraft-review-v1/packet.json` freezes the scope, anchor driver,

@@ -1,5 +1,9 @@
 # Directed pass-sequence review
 
+Follow-up: [timestamped OpenF1 source order](racecraft-openf1-comparison.md)
+contains the Austria exchanges absent from the replay interpolation. This
+narrows the disagreement without completing independent footage adjudication.
+
 Package 6 follow-up after PR #75. This adds order-aware matching and paired
 replay coverage, but **does not claim exhaustive, adjudicated pass windows**.
 Articles cannot establish the absence of every short-lived exchange. No
