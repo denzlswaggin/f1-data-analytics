@@ -1,0 +1,451 @@
+{
+  "methodology": "source-pair-audit-v1",
+  "window_id": "monza-2025-lead-return-laps2-4",
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
+  "capture_manifest_sha256": "5dac2e1072c1c537665f2ee370e70acf79c73ab9987ae6e08583ccb90888b6a2",
+  "clock_alignment": {
+    "utc_minus_replay_s": 1757250214.9295,
+    "spread_s": 0.23199987411499023,
+    "maximum_spread_s": 1.0,
+    "anchors": [
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 2,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:05:02.302000+00:00",
+        "replay_t_s": 87.37800000000016
+      },
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:09:13.857000+00:00",
+        "replay_t_s": 339.01099999999997
+      },
+      {
+        "driver_code": "NOR",
+        "driver_number": 4,
+        "lap_number": 2,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:05:02.727000+00:00",
+        "replay_t_s": 87.64899999999989
+      },
+      {
+        "driver_code": "NOR",
+        "driver_number": 4,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:09:14.966000+00:00",
+        "replay_t_s": 340.03099999999995
+      }
+    ]
+  },
+  "max_interval_age_s": 4.0,
+  "ticks": 252,
+  "driver_samples": 504,
+  "gap_status_counts": {
+    "no_observed_pair_ahead": 252,
+    "available": 221,
+    "stale_interval": 31
+  },
+  "distinct_usable_interval_observations": 65,
+  "transition_contexts": [
+    {
+      "source_event": {
+        "utc_s": 1757250310.226,
+        "overtaking_driver_number": 4,
+        "overtaken_driver_number": 1,
+        "inferred_state_duration_s": 170.937,
+        "right_censored": false,
+        "replay_t_s": 95.29649996757507,
+        "snapshot_order_near_transition": {
+          "VER": {
+            "t_s": 95.0,
+            "running_order": 1
+          },
+          "NOR": {
+            "t_s": 95.0,
+            "running_order": 2
+          }
+        }
+      },
+      "samples": [
+        {
+          "utc_s": 1757250309.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250302.152,
+          "interval_age_s": 7.777500152587891,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 95.0
+        },
+        {
+          "utc_s": 1757250309.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": 0.074,
+          "interval_observed_utc_s": 1757250306.379,
+          "interval_age_s": 3.5505001544952393,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 95.0
+        },
+        {
+          "utc_s": 1757250310.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.115,
+          "interval_observed_utc_s": 1757250310.415,
+          "interval_age_s": 0.5145001411437988,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 96.0
+        },
+        {
+          "utc_s": 1757250310.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 0.7035000324249268,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 96.0
+        },
+        {
+          "utc_s": 1757250311.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.115,
+          "interval_observed_utc_s": 1757250310.415,
+          "interval_age_s": 1.5145001411437988,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 97.0
+        },
+        {
+          "utc_s": 1757250311.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 1.7035000324249268,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 97.0
+        },
+        {
+          "utc_s": 1757250312.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.115,
+          "interval_observed_utc_s": 1757250310.415,
+          "interval_age_s": 2.514500141143799,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 98.0
+        },
+        {
+          "utc_s": 1757250312.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 2.7035000324249268,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 98.0
+        },
+        {
+          "utc_s": 1757250313.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.115,
+          "interval_observed_utc_s": 1757250310.415,
+          "interval_age_s": 3.514500141143799,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 99.0
+        },
+        {
+          "utc_s": 1757250313.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 3.7035000324249268,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 99.0
+        },
+        {
+          "utc_s": 1757250314.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.245,
+          "interval_observed_utc_s": 1757250313.942,
+          "interval_age_s": 0.9875001907348633,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 100.0
+        },
+        {
+          "utc_s": 1757250314.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 4.703500032424927,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 100.0
+        },
+        {
+          "utc_s": 1757250315.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.245,
+          "interval_observed_utc_s": 1757250313.942,
+          "interval_age_s": 1.9875001907348633,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 101.0
+        },
+        {
+          "utc_s": 1757250315.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250310.226,
+          "interval_age_s": 5.703500032424927,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 101.0
+        }
+      ]
+    },
+    {
+      "source_event": {
+        "utc_s": 1757250481.163,
+        "overtaking_driver_number": 1,
+        "overtaken_driver_number": 4,
+        "inferred_state_duration_s": 72.7775,
+        "right_censored": true,
+        "replay_t_s": 266.2335000038147,
+        "snapshot_order_near_transition": {
+          "VER": {
+            "t_s": 266.0,
+            "running_order": 2
+          },
+          "NOR": {
+            "t_s": 266.0,
+            "running_order": 1
+          }
+        }
+      },
+      "samples": [
+        {
+          "utc_s": 1757250480.9295,
+          "driver_number": 1,
+          "running_order": 2,
+          "ahead_driver_number": 4,
+          "gap_to_ahead_s": 0.094,
+          "interval_observed_utc_s": 1757250478.179,
+          "interval_age_s": 2.750500202178955,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 266.0
+        },
+        {
+          "utc_s": 1757250480.9295,
+          "driver_number": 4,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250470.069,
+          "interval_age_s": 10.86050009727478,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 266.0
+        },
+        {
+          "utc_s": 1757250481.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 0.7664999961853027,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 267.0
+        },
+        {
+          "utc_s": 1757250481.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": 0.193,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 0.5325000286102295,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 267.0
+        },
+        {
+          "utc_s": 1757250482.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 1.7664999961853027,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 268.0
+        },
+        {
+          "utc_s": 1757250482.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": 0.193,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 1.5325000286102295,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 268.0
+        },
+        {
+          "utc_s": 1757250483.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 2.7664999961853027,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 269.0
+        },
+        {
+          "utc_s": 1757250483.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": 0.193,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 2.5325000286102295,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 269.0
+        },
+        {
+          "utc_s": 1757250484.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 3.7664999961853027,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 270.0
+        },
+        {
+          "utc_s": 1757250484.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": 0.193,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 3.5325000286102295,
+          "gap_status": "available",
+          "pressure_eligible": false,
+          "replay_t_s": 270.0
+        },
+        {
+          "utc_s": 1757250485.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 4.766499996185303,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 271.0
+        },
+        {
+          "utc_s": 1757250485.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 4.5325000286102295,
+          "gap_status": "stale_interval",
+          "pressure_eligible": false,
+          "replay_t_s": 271.0
+        },
+        {
+          "utc_s": 1757250486.9295,
+          "driver_number": 1,
+          "running_order": 1,
+          "ahead_driver_number": null,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.163,
+          "interval_age_s": 5.766499996185303,
+          "gap_status": "no_observed_pair_ahead",
+          "pressure_eligible": false,
+          "replay_t_s": 272.0
+        },
+        {
+          "utc_s": 1757250486.9295,
+          "driver_number": 4,
+          "running_order": 2,
+          "ahead_driver_number": 1,
+          "gap_to_ahead_s": null,
+          "interval_observed_utc_s": 1757250481.397,
+          "interval_age_s": 5.5325000286102295,
+          "gap_status": "stale_interval",
+          "pressure_eligible": false,
+          "replay_t_s": 272.0
+        }
+      ]
+    }
+  ],
+  "snapshot_detected_pair_events": [
+    {
+      "t_s": 111.0,
+      "passer_code": "NOR",
+      "passed_code": "VER"
+    },
+    {
+      "t_s": 285.0,
+      "passer_code": "VER",
+      "passed_code": "NOR"
+    }
+  ],
+  "production_promotion": false,
+  "accuracy": null,
+  "limitations": "Development windows, not holdout accuracy. Pair ranks must not overwrite a full field. Held gaps are not independent pressure observations. Missing position updates cannot be detected without a heartbeat. Same source does not guarantee synchronized order and gaps. No physical-event or independent video verification."
+}
