@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "lap_tolerance": 1,
+  "selection": "Four explicitly reported passes in three newly processed 2024 races; annotations recorded before inspecting those detector outputs. Purposive single-reviewer report checks, not exhaustive footage validation or estimates of population precision/recall. These labels establish passes, not the ten-second pressure requirement for eligible Racecraft conversion.",
+  "annotated_at": "2026-09-14",
+  "sources": {
+    "fia-china-2024": "https://www.fia.com/news/f1-verstappen-wins-action-packed-chinese-grand-prix-ahead-norris-perez",
+    "fia-spain-2024": "https://api.fia.com/news/f1-verstappen-holds-norris-charge-win-spanish-gp-hamilton-takes-first-podium-year",
+    "f1-spain-2024": "https://www.formula1.com/en/latest/article/verstappen-holds-of-norris-challenge-to-seal-victory-at-the-spanish-grand.7a5UhXMAtkhbslSDNiPVes",
+    "fia-netherlands-2024": "https://www.fia.com/news/f1-norris-takes-dominant-dutch-grand-prix-win-ahead-verstappen-and-leclerc"
+  },
+  "cases": [
+    {"id": "china-2024-perez-leclerc", "kind": "overtake", "season": 2024, "round": 5, "driver": "PER", "other": "LEC", "lap_min": 39, "lap_max": 39, "expected": true, "source_id": "fia-china-2024", "note": "Perez passes Leclerc at Turn 6."},
+    {"id": "spain-2024-norris-hamilton", "kind": "overtake", "season": 2024, "round": 10, "driver": "NOR", "other": "HAM", "lap_min": 32, "lap_max": 32, "expected": true, "source_id": "f1-spain-2024", "note": "Norris passes Hamilton after his first stop."},
+    {"id": "spain-2024-norris-russell", "kind": "overtake", "season": 2024, "round": 10, "driver": "NOR", "other": "RUS", "lap_min": 35, "lap_max": 35, "expected": true, "source_id": "fia-spain-2024", "note": "Norris takes second after a prolonged side-by-side exchange."},
+    {"id": "netherlands-2024-norris-verstappen", "kind": "overtake", "season": 2024, "round": 15, "driver": "NOR", "other": "VER", "lap_min": 18, "lap_max": 18, "expected": true, "source_id": "fia-netherlands-2024", "note": "Norris retakes the lead using DRS."}
+  ]
+}

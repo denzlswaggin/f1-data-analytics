@@ -1,5 +1,9 @@
 # Racecraft coverage and season profiles
 
+> Historical report: the September 14 [input-integrity correction](racecraft-integrity.md)
+> supersedes the resolved counts below. This refresh did not establish complete
+> upstream overtake processing for the expanded 2024 coverage.
+
 The September 13, 2026 refresh reprocessed every race present in the existing
 replay mart. It did not download additional timing data or relax the v3 battle
 thresholds.
