@@ -616,3 +616,22 @@ def test_fingerprints_ignore_order_and_numeric_storage_but_detect_value_changes(
     assert fingerprint(a) == fingerprint(a.astype({"n": object}))
     b.loc[0, "n"] = 1.1
     assert fingerprint(a) != fingerprint(b)
+
+
+def test_public_overtake_refreshes_preserve_other_races_and_seasons(tmp_path: Path) -> None:
+    from analytics.pipeline import build_race_overtakes, build_race_overtakes_season
+
+    settings = _seed_warehouse(tmp_path / "passes.duckdb")
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        c.execute("""create or replace table marts.race_overtakes as
+            select 2025 as season, 1 as round, 70.0 as t_s, 'A' as passer_code,
+                'B' as passed_code, 'high' as confidence, 'test' as reason
+            union all select 2026, 2, 70.0, 'A', 'B', 'high', 'test'""")
+    build_race_overtakes(2026, 1, settings)
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        assert c.sql(
+            "select season, round from marts.race_overtakes order by season"
+        ).fetchall() == [(2025, 1), (2026, 2)]
+    build_race_overtakes_season(2026, settings)
+    with duckdb.connect(str(settings.duckdb_path)) as c:
+        assert c.sql("select season, round from marts.race_overtakes").fetchall() == [(2025, 1)]
