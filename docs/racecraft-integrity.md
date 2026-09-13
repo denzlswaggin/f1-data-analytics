@@ -45,6 +45,16 @@ The dashboard calls outcomes detected conversions and held positions, explains
 that evidence labels are heuristic, and shows processing time and upstream pass
 counts alongside coverage.
 
+Freshness is separate: this snapshot contains race data through August 23, 2026.
+The stored calendar includes September 6 and 13 events without corresponding
+loaded results/replay. Reprocessing existing data does not backfill these races.
+The Racecraft page now displays the shared snapshot freshness banner, just like
+the dashboard home page. The broader operational `check_dashboard_data.py`
+freshness checks therefore fail on this historical snapshot; its qualifying
+check also targets a staging table outside the dashboard serving contract.
+The Racecraft integrity and publication checks pass. Do not interpret them as
+proof that the snapshot includes the latest completed event.
+
 ## Independent spot checks
 
 Four positive annotations were recorded before inspecting these detector outputs,

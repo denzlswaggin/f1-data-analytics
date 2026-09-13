@@ -13,6 +13,12 @@ max_width: 1600
     accent="drivers"
 />
 
+```sql snapshot
+select * from f1.snapshot_metadata
+```
+
+<SnapshotStatus data={snapshot} />
+
 <KeyInsight label="Observed racecraft, not a driver-skill score">
 An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a detected order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
 </KeyInsight>
