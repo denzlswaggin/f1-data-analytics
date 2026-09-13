@@ -32,7 +32,7 @@ def capture(session_key: int, drivers: list[int], output: Path) -> dict[str, Any
         for endpoint in ("position", "laps")
         for driver in drivers
     )
-    files = []
+    files: list[dict[str, Any]] = []
     with requests.Session() as client:
         for endpoint, parameters in queries:
             if files:
