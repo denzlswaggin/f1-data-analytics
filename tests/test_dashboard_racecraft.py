@@ -89,3 +89,39 @@ def test_headline_counts_partition_all_observed_battles() -> None:
     assert row["eligible_battles"] == row["conversions"] + row["defences"] == 2
     assert row["excluded_resolved"] == 2
     assert row["interrupted_battles"] == row["unresolved_battles"] == 1
+
+
+def test_pair_scope_combines_directions_and_filters_episode_drilldown() -> None:
+    import duckdb
+
+    page = PAGE.read_text(encoding="utf-8")
+    pair_query = page.split("```sql battle_pairs\n", 1)[1].split("```", 1)[0]
+    pair_query = pair_query.replace("${race_battles}", "battles")
+    pair_query = pair_query.replace("${inputs.race.value}", "1")
+    detail = page.split("```sql pair_battles\n", 1)[1].split("```", 1)[0]
+    detail = detail.replace("${race_battles}", "battles").replace("${inputs.pair.value}", "A / B")
+    with duckdb.connect() as connection:
+        connection.execute("""create table battles as select * from (values
+            (2026, 1, 'A', 'B', true, true, false, 'Converted', 10.0, 100.0),
+            (2026, 2, 'B', 'A', true, false, true, 'Defended', 20.0, 200.0),
+            (2026, 2, 'A', 'C', false, false, false, 'Interrupted', 5.0, 300.0),
+            (2026, 2, 'A', 'B', false, false, false, 'Unresolved', 15.0, 400.0)
+            ) t(season, round, attacker_code, defender_code, eligible, converted,
+                defender_retained, outcome, pressure_seconds, start_t_s)""")
+        season = connection.execute(pair_query.replace("${inputs.view.value}", "season")).fetchdf()
+        pair = season.loc[season["pair"].eq("A / B")].iloc[0]
+        assert pair["round"] == 0
+        assert pair["episodes"] == 3
+        assert pair["races"] == 2
+        assert pair["confirmed_passes"] == pair["clean_defences"] == 1
+        assert pair["unresolved"] == 1
+        assert pair["pressure_seconds"] == 45
+        episodes = connection.execute(detail).fetchdf()
+        assert episodes["attacker_code"].tolist() == ["A", "B", "A"]
+        assert episodes["round"].tolist() == [1, 2, 2]
+        # Race-scoped input is already filtered by the page's race_battles query.
+        connection.execute("delete from battles where round != 1")
+        race = connection.execute(pair_query.replace("${inputs.view.value}", "race")).fetchdf()
+        assert len(race) == 1
+        assert race.iloc[0]["round"] == 1
+        assert race.iloc[0]["episodes"] == race.iloc[0]["races"] == 1

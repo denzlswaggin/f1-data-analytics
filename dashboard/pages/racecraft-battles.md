@@ -19,9 +19,14 @@ An eligible battle needs at least ten seconds of uninterrupted, sample-supported
 
 ```sql seasons
 select distinct season
-from f1.racecraft_driver_summary
+from f1.racecraft_coverage
 where season > 0
 order by season desc
+```
+
+```sql view_modes
+select 'season' as view, 'Season' as label
+union all select 'race', 'Race'
 ```
 
 ```sql races
@@ -31,37 +36,63 @@ select distinct
     race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') as race_label
-from f1.racecraft_driver_summary
+from f1.racecraft_coverage
 where season = ${inputs.season.value}
 order by round
 ```
 
-<FilterBar title="Choose a race" description="Races are ordered by championship round; every replay-covered driver remains in the summary even with zero eligible battles.">
+<FilterBar title="Choose your scope" description="Season combines the covered races. The race selection applies in Race view; drivers with zero eligible battles remain visible.">
+    <Dropdown data={view_modes} name=view value=view label=label title="View" defaultValue="season" />
     <Dropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
-```sql coverage
-select * from f1.data_coverage
-where section = 'racecraft'
-    and season = cast(${inputs.season.value} as integer)
-    and round = cast(${inputs.race.value} as integer)
+```sql coverage_details
+select * from f1.racecraft_coverage
+where season = ${inputs.season.value}
+    and ('${inputs.view.value}' = 'season' or round = ${inputs.race.value})
+order by round
 ```
 
-<DataTrust data={coverage} sampleLabel="observed battle episodes" entityLabel="Attackers" method="direct-ahead replay gaps; confirmed overtake matching" />
+```sql scope_coverage
+select count(*) as available_races,
+    count(*) filter (where coverage_status in ('Processed', 'Processed: no observed battles')) as processed_races
+from ${coverage_details}
+```
+
+<Grid cols=2>
+    <BigValue data={scope_coverage} value=processed_races title="Races with battle analysis" />
+    <BigValue data={scope_coverage} value=available_races title="Races in available timing data" />
+</Grid>
+
+<ExpandableSection title="Race coverage and missing inputs">
+<DataTable data={coverage_details} rows=30>
+    <Column id=round title="Round" />
+    <Column id=race_name title="Race" />
+    <Column id=replay_drivers title="Replay drivers" />
+    <Column id=drivers_without_running_order title="Without usable running order" />
+    <Column id=analysed_drivers title="Analysed drivers" />
+    <Column id=observed_battles title="Episodes" />
+    <Column id=coverage_status title="Coverage" />
+</DataTable>
+Drivers whose replay has no usable running order cannot be assigned an opponent.
+They are listed in the missing-order count rather than treated as zero-opportunity profiles.
+</ExpandableSection>
 
 ```sql race_drivers
 select *
-from f1.racecraft_driver_summary
-where season = ${inputs.season.value} and round = ${inputs.race.value}
+from f1.racecraft_profiles
+where season = ${inputs.season.value}
+    and round = case when '${inputs.view.value}' = 'season' then 0 else ${inputs.race.value} end
 order by greatest(attacking_opportunities, defensive_opportunities) desc, driver_code
 ```
 
 ```sql race_battles
 select *
 from f1.racecraft_battles
-where season = ${inputs.season.value} and round = ${inputs.race.value}
-order by start_t_s, battle_number
+where season = ${inputs.season.value}
+    and ('${inputs.view.value}' = 'season' or round = ${inputs.race.value})
+order by round, start_t_s, battle_number
 ```
 
 ```sql race_totals
@@ -94,10 +125,12 @@ unresolved and insufficient-evidence episodes are excluded, not counted as faile
 attacks or successful defences. These counts partition all observed episodes.
 Conversion is therefore not the probability of passing after any close approach.
 
-## Attack and defence rates — {inputs.season.value} {inputs.race.label}
+## Attack and defence rates — {inputs.season.value} · {inputs.view.value === 'season' ? 'Season' : inputs.race.label}
 
 Rates appear only after five eligible resolved opportunities in the relevant
 role: attack rate is conversions / attack n; defence rate is holds / defence n.
+Season rates pool the underlying episodes, not the percentages from each race.
+Counts remain visible below five opportunities; a blank percentage means insufficient evidence.
 The 90% Wilson interval describes binomial sampling uncertainty within this
 selected subset. It does not cover event-detection errors, dependence between
 repeated battles, or selection from interrupted and unresolved episodes.
@@ -120,6 +153,7 @@ from ${race_drivers}
 where defense_eligible
 ```
 
+{#if role_rates.length > 0}
 <BarChart
     data={role_rates}
     x=driver_code
@@ -130,6 +164,12 @@ where defense_eligible
     sort=false
     chartAreaHeight=390
 />
+{:else}
+<KeyInsight label="More resolved opportunities needed">
+No driver reached five resolved opportunities in either role in this scope.
+Observed pressure and episode counts remain available below.
+</KeyInsight>
+{/if}
 
 ```sql two_way_evidence
 select * from ${race_drivers}
@@ -155,7 +195,7 @@ on both axes are omitted.
     chartAreaHeight=390
 />
 {:else}
-<KeyInsight label="No two-way profile for this race">
+<KeyInsight label="No two-way profile for this scope">
 No driver reached five resolved opportunities in both attack and defence. The
 role-specific evidence and raw episodes remain available below.
 </KeyInsight>
@@ -164,6 +204,7 @@ role-specific evidence and raw episodes remain available below.
 <DataTable data={race_drivers} rows=25 search=true download=true>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
+    <Column id=races_covered title="Races" />
     <Column id=attacking_opportunities title="Attack n" />
     <Column id=converted_opportunities title="Converted" />
     <Column id=attack_conversion_pct title="Attack (%)" fmt="0.0" />
@@ -180,6 +221,104 @@ role-specific evidence and raw episodes remain available below.
     <Column id=defense_confidence title="Defence evidence" />
 </DataTable>
 
+## Observed pressure and opponents
+
+These totals include interrupted, unresolved and short episodes. They describe
+sample-supported close running; they do not turn interruptions into successful
+defences. Attack and defence are two views of the same episodes and must not be
+added together as a count of unique battles.
+
+```sql pressure_roles
+select driver_code, 'Applying pressure' as role, observed_attack_pressure_s / 60 as pressure_minutes
+from ${race_drivers}
+union all
+select driver_code, 'Under pressure', observed_defensive_pressure_s / 60
+from ${race_drivers}
+```
+
+{#if race_drivers.length > 0}
+<BarChart data={pressure_roles} x=driver_code y=pressure_minutes series=role yAxisTitle="Observed pressure (minutes)" sort=false />
+{/if}
+
+<DataTable data={race_drivers} rows=25 search=true download=true>
+    <Column id=driver_code title="Driver" />
+    <Column id=races_covered title="Races" />
+    <Column id=observed_attacks title="Attack episodes" />
+    <Column id=observed_defences title="Defence episodes" />
+    <Column id=observed_attack_pressure_s title="Applying pressure" fmt="0 s" />
+    <Column id=observed_defensive_pressure_s title="Under pressure" fmt="0 s" />
+    <Column id=distinct_defenders title="Defenders faced" />
+    <Column id=distinct_attackers title="Attackers faced" />
+    <Column id=median_time_to_pass_s title="Median time to eligible pass" fmt="0 s" />
+</DataTable>
+
+## Repeated matchups
+
+Each pair appears once with both directions combined. Repeated episodes can be
+separate segments of one encounter; they are not independent attempts.
+
+```sql battle_pairs
+select b.season,
+    case when '${inputs.view.value}' = 'season' then 0 else b.round end as round,
+    least(attacker_code, defender_code) || ' / ' || greatest(attacker_code, defender_code) as pair,
+    count(*) as episodes,
+    count(distinct b.round) as races,
+    count(*) filter (where eligible and converted) as confirmed_passes,
+    count(*) filter (where eligible and defender_retained) as clean_defences,
+    count(*) filter (where outcome = 'Interrupted') as interrupted,
+    count(*) filter (where outcome = 'Unresolved') as unresolved,
+    count(*) filter (where not eligible and outcome in ('Converted', 'Defended')) as insufficient_resolved,
+    sum(pressure_seconds) as pressure_seconds
+from ${race_battles} b
+group by b.season, case when '${inputs.view.value}' = 'season' then 0 else b.round end,
+    least(attacker_code, defender_code) || ' / ' || greatest(attacker_code, defender_code)
+order by episodes desc, pair
+```
+
+<DataTable data={battle_pairs} rows=20 search=true download=true>
+    <Column id=pair title="Pair" />
+    <Column id=races title="Races" />
+    <Column id=episodes title="Episodes" />
+    <Column id=confirmed_passes title="Eligible passes" />
+    <Column id=clean_defences title="Clean defences" />
+    <Column id=interrupted title="Interrupted" />
+    <Column id=unresolved title="Unresolved" />
+    <Column id=insufficient_resolved title="Insufficient resolved" />
+    <Column id=pressure_seconds title="Observed pressure" fmt="0 s" />
+</DataTable>
+
+{#if battle_pairs.length > 0}
+<DependentDropdown data={battle_pairs} name=pair value=pair title="Inspect a pair" season={inputs.season.value} round={inputs.view.value === 'season' ? 0 : inputs.race.value} />
+
+```sql pair_battles
+select * from ${race_battles}
+where least(attacker_code, defender_code) || ' / ' || greatest(attacker_code, defender_code) = '${inputs.pair.value}'
+order by round, start_t_s
+```
+
+<DataTable data={pair_battles} rows=20 search=true download=true>
+    <Column id=race_label title="Race" />
+    <Column id=attacker_code title="Attacker" />
+    <Column id=defender_code title="Defender" />
+    <Column id=start_lap title="Start lap" />
+    <Column id=pressure_seconds title="Pressure" fmt="0 s" />
+    <Column id=outcome title="Outcome" />
+    <Column id=eligible title="Eligible result" />
+    <Column id=attacker_compound title="Attacker tyre" />
+    <Column id=attacker_tyre_age_laps title="Attacker tyre age" />
+    <Column id=defender_compound title="Defender tyre" />
+    <Column id=defender_tyre_age_laps title="Defender tyre age" />
+    <Column id=tyre_age_delta_laps title="Age delta (attacker − defender)" />
+</DataTable>
+
+Tyre context is measured at the start of each episode. A positive age delta
+means the attacker's tyres were older. Blank values mean unavailable context.
+This is descriptive context, not a tyre-adjusted estimate of driver ability.
+
+{:else}
+<KeyInsight label="No observed matchups">No battle episodes are available in this scope. Check the coverage table above.</KeyInsight>
+{/if}
+
 ### Episodes outside the resolved denominator
 
 Counts below retain every interrupted or unresolved episode, including short
@@ -195,6 +334,8 @@ insufficient evidence remain available in the excluded-episodes table below.
     <Column id=unresolved_defences title="Unresolved defences" />
 </DataTable>
 
+{#if race_drivers.length > 0}
+
 ```sql drivers
 select season, round, driver_code
 from ${race_drivers}
@@ -202,7 +343,7 @@ order by driver_code
 ```
 
 <FilterBar title="Inspect one driver's battles" description="Both attacking and defending episodes are shown chronologically; interrupted and unresolved evidence remains visible.">
-    <DependentDropdown data={drivers} name=driver value=driver_code title="Driver" season={inputs.season.value} round={inputs.race.value} />
+    <DependentDropdown data={drivers} name=driver value=driver_code title="Driver" season={inputs.season.value} round={inputs.view.value === 'season' ? 0 : inputs.race.value} />
 </FilterBar>
 
 ```sql driver_battles
@@ -220,13 +361,14 @@ select
     end as driver_outcome
 from ${race_battles}
 where attacker_code = '${inputs.driver.value}' or defender_code = '${inputs.driver.value}'
-order by start_t_s
+order by round, start_t_s
 ```
 
 ## Episode evidence — {inputs.driver.value}
 
 <DataTable data={driver_battles} rows=60 search=true download=true>
     <Column id=battle_number title="#" />
+    <Column id=race_label title="Race" />
     <Column id=role title="Role" />
     <Column id=opponent title="Opponent" />
     <Column id=start_lap title="Start lap" />
@@ -241,8 +383,17 @@ order by start_t_s
     <Column id=confidence title="Evidence" />
 </DataTable>
 
+{:else}
+<KeyInsight label="No driver profiles in this scope">
+There is no usable Racecraft driver summary for this selection. Choose Season
+to inspect covered races, or check the coverage table for the missing inputs.
+</KeyInsight>
+{/if}
+
 ```sql excluded_battles
 select
+    round,
+    race_label,
     battle_number,
     attacker_code,
     defender_code,
@@ -255,7 +406,7 @@ select
     exclusion_reason
 from ${race_battles}
 where not eligible
-order by start_t_s
+order by round, start_t_s
 ```
 
 <ExpandableSection title="See excluded episodes and the v3 continuity method">
