@@ -15,7 +15,8 @@ def connection() -> duckdb.DuckDBPyConnection:
         create table staging.stg_results as
         select 2025 season, 1 as round, code driver_code, code driver_id,
             code driver_name, 'team' constructor_id, grid grid_position,
-            finish finish_position, 'Finished' status, true is_classified
+            finish finish_position, cast(finish as varchar) position_text,
+            'Finished' status, true is_classified
         from (values ('AAA',1,1), ('BBB',0,2), ('CCC',3,3)) t(code,grid,finish);
         create table staging.stg_races as select 2025 season, 1 as round, 'Race' race_name;
         create table marts.mart_lap_times as select 2025 season, 1 as round;

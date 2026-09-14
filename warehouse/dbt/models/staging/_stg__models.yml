@@ -29,6 +29,10 @@ models:
       - name: driver_id
         data_tests: [not_null]
       - name: is_classified
+        description: >-
+          Source classification from position_text, independently of finishing status.
+          A matching positive numeric position is classified; R/D/W/F is not.
+          Missing, unrecognised or conflicting position evidence remains null.
         data_tests:
           - accepted_values:
               values: [true, false]

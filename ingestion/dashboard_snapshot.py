@@ -63,6 +63,7 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "constructor_id",
         "grid_position",
         "finish_position",
+        "position_text",
         "status",
         "is_classified",
     },
@@ -1101,6 +1102,17 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
 
 def validate_recorded_story(connection: duckdb.DuckDBPyConnection) -> None:
     """Reject the retired analytical story even when its schema still compiles."""
+    classification = connection.execute("""
+        select count(*) from staging.stg_results
+        where is_classified is distinct from case
+            when finish_position > 0
+                and trim(position_text) = cast(finish_position as varchar) then true
+            when trim(position_text) in ('R', 'D', 'W', 'F') then false
+            else null end
+    """).fetchone()
+    assert classification is not None
+    if classification[0]:
+        raise ValueError("Result classification disagrees with source position_text")
     violations = connection.execute("""
         select count(*) from marts.mart_race_story
         where methodology_version is distinct from 'recorded-results-v1'
