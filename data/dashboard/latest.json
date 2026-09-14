@@ -1,7 +1,7 @@
 {
-  "database_file": "f1-dashboard-20260914-recorded-results.duckdb",
-  "generated_at": "2026-09-14T00:02:58.042526+00:00",
-  "git_sha": "8f49227676dde3e24ff5eb00e19c54666f5c7eaa",
+  "database_file": "f1-dashboard-20260914-observed-persistence.duckdb",
+  "generated_at": "2026-09-14T00:35:59.783510+00:00",
+  "git_sha": "60c1b730334d2de6cae78ef74314af3351cc491d",
   "latest_event_date": "2026-08-23",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -75,8 +75,8 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "0bf672b6a642d60745d56f57f0e938fbc3b4df3aada026aa523401b2d6b6aebd",
-  "size_bytes": 129511424,
+  "sha256": "2181dc0c8db07c1da503b83f10eb0c32f73ad2d0f8a0d26c082393d8a0d1ab2e",
+  "size_bytes": 128200704,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -108,7 +108,7 @@
     "marts.pit_window_effectiveness": 385,
     "marts.race_control_events": 83,
     "marts.race_control_impact": 1468,
-    "marts.race_overtakes": 2446,
+    "marts.race_overtakes": 2445,
     "marts.race_replay": 6147810,
     "marts.racecraft_battles": 9117,
     "marts.racecraft_driver_summary": 1163,
@@ -126,5 +126,5 @@
     "staging.stg_team_radio": 1486,
     "staging.stg_weather": 5879
   },
-  "version": "20260914-recorded-results"
+  "version": "20260914-observed-persistence"
 }
