@@ -11,6 +11,18 @@ import duckdb
 
 def check(connection: duckdb.DuckDBPyConnection) -> dict[str, int]:
     queries = {
+        "traffic_context_integrity": """select count(*) from marts.traffic_adjusted_laps
+            where context_samples is null or context_samples <= 0
+                or valid_context_samples is null or valid_context_samples < 0
+                or valid_context_samples > context_samples
+                or traffic_samples is null or traffic_samples < 0
+                or traffic_samples > valid_context_samples
+                or (median_gap_to_ahead_s is not null and not isfinite(median_gap_to_ahead_s))
+                or coalesce(upper(trim(compound)), '') in ('', 'UNKNOWN', 'NONE', 'NAN', '<NA>', 'NAT')
+                or (air_state in ('traffic', 'clean_air') and (
+                    replay_coverage_pct is null or not isfinite(replay_coverage_pct)
+                    or replay_coverage_pct * valid_context_samples / nullif(context_samples, 0) < 80
+                ))""",
         "traffic_eligibility": """select count(*) from marts.traffic_adjusted_pace
             where clean_air_eligible is distinct from (clean_air_laps >= 5)
                 or traffic_association_eligible is distinct from

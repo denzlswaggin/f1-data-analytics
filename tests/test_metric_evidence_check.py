@@ -11,6 +11,10 @@ import pytest
 
 def _seed(connection: duckdb.DuckDBPyConnection) -> None:
     connection.execute("create schema marts")
+    connection.execute("""create table marts.traffic_adjusted_laps as
+        select 100 as context_samples, 100 as valid_context_samples, 0 as traffic_samples,
+            4.0::double as median_gap_to_ahead_s, 'MEDIUM' as compound,
+            'clean_air' as air_state, 100.0 as replay_coverage_pct""")
     connection.execute("""create table marts.traffic_adjusted_pace as
         select 8 as clean_air_laps, 0 as matched_traffic_laps,
             true as clean_air_eligible, false as traffic_association_eligible,
@@ -41,6 +45,10 @@ def _seed(connection: duckdb.DuckDBPyConnection) -> None:
     "mutation",
     [
         "",
+        "update marts.traffic_adjusted_laps set valid_context_samples = 10",
+        "update marts.traffic_adjusted_laps set traffic_samples = 101",
+        "update marts.traffic_adjusted_laps set median_gap_to_ahead_s = 'Infinity'::double",
+        "update marts.traffic_adjusted_laps set compound = 'None'",
         "update marts.traffic_adjusted_pace set clean_air_confidence = 'insufficient'",
         "update marts.traffic_adjusted_pace set traffic_association_eligible = true",
         "update marts.traffic_adjusted_pace set traffic_adjusted_pace_delta_sec = null",
