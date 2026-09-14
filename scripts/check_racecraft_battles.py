@@ -15,6 +15,28 @@ def main() -> None:
     parser.add_argument("path", type=Path, nargs="?", default=Path("data/dashboard/latest.duckdb"))
     args = parser.parse_args()
     queries = {
+        "passes_inside_observed_pit_intervals": """with origins as (
+                select season, round, min(lap_start_sec) as origin
+                from staging.stg_laps where session = 'R' group by all
+            ), boundaries as (
+                select season, round, driver_code, pit_in_time_sec as time, 'in' as kind
+                from staging.stg_laps where session = 'R' and pit_in_time_sec is not null
+                union all
+                select season, round, driver_code, pit_out_time_sec, 'out'
+                from staging.stg_laps where session = 'R' and pit_out_time_sec is not null
+            ), paired as (
+                select *, lead(time) over w as next_time, lead(kind) over w as next_kind
+                from boundaries window w as (partition by season, round, driver_code order by time)
+            ), intervals as (
+                select season, round, driver_code, time - origin as entry, next_time - origin as exit
+                from paired join origins using (season, round)
+                where kind = 'in' and next_kind = 'out' and next_time > time
+            )
+            select count(*) from marts.race_overtakes p where exists (
+                select 1 from intervals i where i.season = p.season and i.round = p.round
+                    and i.driver_code in (p.passer_code, p.passed_code)
+                    and p.t_s between i.entry and i.exit
+            )""",
         "missing_driver_summaries": """select count(*) from (
                 select distinct season, round, driver_code from marts.race_replay
                 where driver_code is not null and running_order is not null

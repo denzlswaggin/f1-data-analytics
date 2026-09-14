@@ -35,13 +35,17 @@ def _snapshot(path: Path, mutation: str = "") -> None:
             union all select 2025, 4, 'B', 1, 0, 0, 2, 0, 1""")
         connection.execute("create schema staging")
         connection.execute(
-            "create table staging.stg_laps as select season, round, 'R' as session from marts.race_replay"
+            """create table staging.stg_laps as select season, round, driver_code,
+                'R' as session, 1000.0 as lap_start_sec, null::double as pit_in_time_sec,
+                null::double as pit_out_time_sec from marts.race_replay"""
         )
         connection.execute(
             "create table marts.pit_lap_context as select season, round, driver_code from marts.race_replay"
         )
         connection.execute(
-            "create table marts.race_overtakes as select season, round, attacker_code from marts.racecraft_battles where converted"
+            """create table marts.race_overtakes as select season, round,
+                attacker_code as passer_code, defender_code as passed_code, 100.0 as t_s
+                from marts.racecraft_battles where converted"""
         )
         frames = {
             name: connection.execute(f"select * from {table}").fetchdf()
@@ -64,6 +68,29 @@ def test_accepts_consistent_publication(tmp_path: Path, monkeypatch: pytest.Monk
     path = tmp_path / "snapshot.duckdb"
     _snapshot(path)
     _run(path, monkeypatch)
+
+
+def test_pit_overlap_is_rejected_even_with_matching_receipts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    path = tmp_path / "snapshot.duckdb"
+    _snapshot(path)
+    with duckdb.connect(str(path)) as connection:
+        connection.execute("""update staging.stg_laps set pit_in_time_sec=1099.0,
+            pit_out_time_sec=1101.0 where driver_code='B'""")
+        frames = {
+            name: connection.execute(f"select * from {table}").fetchdf()
+            for name, table in {**INPUT_TABLES, **OUTPUT_TABLES}.items()
+        }
+        connection.register(
+            "fresh_receipt", receipt(2025, 4, frames, {}, "racecraft-v3-continuity")
+        )
+        connection.execute(
+            "create or replace table marts.racecraft_processing as select * from fresh_receipt"
+        )
+    with pytest.raises(SystemExit, match="FAIL: racecraft publication rules"):
+        _run(path, monkeypatch)
+    assert '"passes_inside_observed_pit_intervals": 1' in capsys.readouterr().out
 
 
 @pytest.mark.parametrize(
