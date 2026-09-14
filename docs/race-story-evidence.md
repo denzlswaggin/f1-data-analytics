@@ -39,10 +39,9 @@ Evaluated on snapshot `20260914-racecraft-integrity` (SHA-256
   eleven in 2026. Rebuilding missing analytical coverage remains necessary;
   the source does not silently fall back to the old model for uncovered races.
 
-The serving SQL changes do not rewrite immutable snapshot marts. The legacy
-`mart_race_story` remains inside the snapshot and must not be interpreted as the
-corrected dashboard model. Its upstream dbt implementation and broader downstream
-coverage need a later coordinated rebuild. This is not platform-wide validation.
+The initial serving correction did not rewrite the legacy snapshot mart. The
+subsequent recorded-results migration below removes that remaining stale model.
+This is not platform-wide validation.
 
 ## Coverage rebuild
 
@@ -74,6 +73,28 @@ Reproduce the analytical dependency order on an isolated warehouse using
 `Settings(duckdb_path=...)`. Keep the copy's database filename `f1.duckdb`:
 existing dbt views refer to that catalog name. Run the checks before promoting
 the six resulting tables and exporting a new immutable snapshot version.
+
+## Recorded-results migration
+
+`mart_race_story` is now a compatibility table of recorded results, not a second
+pace model. dbt builds all result rows in loaded lap scopes and counts recorded
+pit visits. Its legacy pace, pace-rank and outcome/rank fields are null, its
+pace-sample count is zero, and its methodology is `recorded-results-v1`.
+Consumers needing the analytical story must use the corrected serving analysis;
+the old columns must not be coalesced to zero or ranked. The dashboard's robust
+peer-pace calculation and coverage remain intact.
+
+The snapshot contract requires the new marker and the result identity columns
+used by serving SQL. Validation rejects non-null retired estimates, old labels,
+missing or extra result rows, duplicate result keys, and mismatches in finish or
+classification against staging. These checks establish consistency with the
+recorded source, not independent physical truth. The `20260914-recorded-results`
+snapshot migrates all 1,222 compatibility rows while retaining the peer-coverage
+rebuild and other analytical tables. Historical version files remain immutable.
+
+Eight dbt data tests pass on the rebuilt operational copy. The executable SQL
+regression preserves pit-lane grid semantics and stop counts; mutation tests
+demonstrate rejection of a changed finish and a restored legacy pace rank.
 
 ## Verification
 

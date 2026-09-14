@@ -1,7 +1,7 @@
 {
-  "database_file": "f1-dashboard-20260914-peer-coverage.duckdb",
-  "generated_at": "2026-09-13T23:51:00.788308+00:00",
-  "git_sha": "dc33b53b9618b2d083ddd1f378be2759990f6bf1",
+  "database_file": "f1-dashboard-20260914-recorded-results.duckdb",
+  "generated_at": "2026-09-14T00:02:58.042526+00:00",
+  "git_sha": "8f49227676dde3e24ff5eb00e19c54666f5c7eaa",
   "latest_event_date": "2026-08-23",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -21,6 +21,9 @@
     ],
     "marts.driver_track_fit": [
       "driver-track-v1-descriptive"
+    ],
+    "marts.mart_race_story": [
+      "recorded-results-v1"
     ],
     "marts.pace_consistency": [
       "pace-consistency-v3-robust-peers"
@@ -72,8 +75,8 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "4b6a0eb4f683cc47c7e95f44b3c258d850d72e77881ec76981cbd5c08d1f632f",
-  "size_bytes": 128200704,
+  "sha256": "0bf672b6a642d60745d56f57f0e938fbc3b4df3aada026aa523401b2d6b6aebd",
+  "size_bytes": 129511424,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -92,7 +95,7 @@
     "marts.mart_lap_telemetry": 613680,
     "marts.mart_lap_times": 60541,
     "marts.mart_pit_strategy": 2145,
-    "marts.mart_race_story": 1170,
+    "marts.mart_race_story": 1222,
     "marts.mart_speed_trap": 1178,
     "marts.mart_stint_strategy": 3351,
     "marts.mart_tyre_degradation": 166,
@@ -123,5 +126,5 @@
     "staging.stg_team_radio": 1486,
     "staging.stg_weather": 5879
   },
-  "version": "20260914-peer-coverage"
+  "version": "20260914-recorded-results"
 }
