@@ -370,7 +370,14 @@ def classify_representative_lap_air(
     pace = pace.dropna(
         subset=["lap_number", "stint", "tyre_life", "lap_time_sec", "driver_code", "compound"]
     )
-    pace = pace.loc[pace["lap_time_sec"].gt(0) & np.isfinite(pace["lap_time_sec"])]
+    numeric_laps = ["lap_number", "stint", "tyre_life", "lap_time_sec"]
+    counters = ["lap_number", "stint", "tyre_life"]
+    pace = pace.loc[
+        np.isfinite(pace[numeric_laps]).all(axis=1)
+        & pace["lap_time_sec"].gt(0)
+        & pace[counters].gt(0).all(axis=1)
+        & pace[counters].mod(1).eq(0).all(axis=1)
+    ]
     pace = _exclude_non_representative_laps(pace, replay)
 
     lap_durations = pace.loc[:, [*_LAP_KEYS, "lap_time_sec"]].drop_duplicates(_LAP_KEYS)
@@ -519,8 +526,14 @@ def analyse_traffic_adjusted_pace(
     drivers by default. This cutoff is a heuristic, not an externally validated
     guarantee of precision; two-peer sensitivity runs are explicitly opt-in.
     """
-    if tyre_age_window < 0 or min_publish_laps < 1:
+    if not np.isfinite(tyre_age_window) or tyre_age_window < 0:
         raise ValueError("matching thresholds must be non-negative")
+    if (
+        isinstance(min_publish_laps, bool)
+        or not isinstance(min_publish_laps, (int, np.integer))
+        or min_publish_laps < 1
+    ):
+        raise ValueError("min_publish_laps must be a positive integer")
     _validate_peer_minimum(min_peer_drivers)
     pace = classify_representative_lap_air(
         laps,
