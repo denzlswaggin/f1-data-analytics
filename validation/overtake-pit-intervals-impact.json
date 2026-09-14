@@ -1,0 +1,20 @@
+{
+  "race_overtakes": {
+    "before": 2445,
+    "after": 2398,
+    "removed": 47,
+    "added": 0
+  },
+  "racecraft_battles": {
+    "before": 9019,
+    "after": 9019,
+    "removed": 0,
+    "added": 0
+  },
+  "racecraft_driver_summary": {
+    "before": 1163,
+    "after": 1163,
+    "removed": 0,
+    "added": 0
+  }
+}

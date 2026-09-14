@@ -26,6 +26,13 @@ race lap scope. Missing initial entries and final exits remain unpaired. Repeate
 boundary kinds, simultaneous boundaries, mixed race scopes and invalid clocks
 reject processing rather than inventing an interval.
 
+The complete 59-race rebuild retains 2,398 events, removing exactly the 47
+recorded conflicts and adding none. All 9,019 Racecraft episodes and 1,163 driver
+summaries remain identical because their pit-lap exclusion already removes these
+opportunities. `validation/overtake-pit-intervals-impact.json` records this
+comparison; pass identity/value comparisons exclude the newly appended pit-check
+evidence string.
+
 The `racecraft-inputs-v3-observed-pit-intervals` receipt requires a fresh rebuild
 with the current method. The publication checker separately reconstructs paired
 intervals in SQL and rejects overlapping accepted events even if their receipts
