@@ -1,0 +1,5670 @@
+{
+  "method": "jolpica-position-text-v1",
+  "source_sha256": "0a56b87e5efd43e0adc13ab79692a7880b9c746468b685a79c6f5e8f3e9323ea",
+  "candidate_sha256": "6a0e4f12954513bb62aa5861a0e62199b0d1136aa12d0b4df9634eb157806149",
+  "changed_results": 566,
+  "unchanged_non_classification_relations": 46,
+  "corrections": [
+    {
+      "season": 2006,
+      "round": 6,
+      "driver_code": "LIU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Hydraulics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 7,
+      "driver_code": "TRU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Hydraulics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 9,
+      "driver_code": "SAT",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 10,
+      "driver_code": "SCH",
+      "finish_position": 10,
+      "position_text": "R",
+      "status": "+11 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2006,
+      "round": 13,
+      "driver_code": "MSC",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Track rod",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 13,
+      "driver_code": "TRU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 14,
+      "driver_code": "COU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 14,
+      "driver_code": "SAT",
+      "finish_position": 17,
+      "position_text": "R",
+      "status": "+17 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2006,
+      "round": 17,
+      "driver_code": "SPE",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Steering",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2006,
+      "round": 18,
+      "driver_code": "HEI",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 3,
+      "driver_code": "DAV",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 5,
+      "driver_code": "ALB",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Driveshaft",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 5,
+      "driver_code": "KOV",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 7,
+      "driver_code": "LIU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Water pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 7,
+      "driver_code": "ROS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 9,
+      "driver_code": "LIU",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 12,
+      "driver_code": "SUT",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Fuel pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 15,
+      "driver_code": "BUT",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 15,
+      "driver_code": "HEI",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Technical",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2007,
+      "round": 15,
+      "driver_code": "SAT",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 1,
+      "driver_code": "BOU",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 1,
+      "driver_code": "RAI",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 11,
+      "driver_code": "MAS",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 13,
+      "driver_code": "KOV",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 13,
+      "driver_code": "RAI",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Spun off",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2008,
+      "round": 15,
+      "driver_code": "RAI",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 1,
+      "driver_code": "KUB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 1,
+      "driver_code": "RAI",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Differential",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 1,
+      "driver_code": "VET",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 2,
+      "driver_code": "BUE",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Spun off",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 2,
+      "driver_code": "FIS",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Spun off",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 2,
+      "driver_code": "VET",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Spun off",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 3,
+      "driver_code": "SUT",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Spun off",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 6,
+      "driver_code": "NAK",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2009,
+      "round": 13,
+      "driver_code": "HAM",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 1,
+      "driver_code": "BUE",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Electrical",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 1,
+      "driver_code": "TRU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Hydraulics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 3,
+      "driver_code": "ALO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 3,
+      "driver_code": "KOV",
+      "finish_position": 18,
+      "position_text": "R",
+      "status": "+10 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2010,
+      "round": 5,
+      "driver_code": "HAM",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Puncture",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 5,
+      "driver_code": "LIU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 6,
+      "driver_code": "CHA",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 6,
+      "driver_code": "PET",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 6,
+      "driver_code": "TRU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 7,
+      "driver_code": "CHA",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Fuel pump",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 15,
+      "driver_code": "KOV",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2010,
+      "round": 18,
+      "driver_code": "DIG",
+      "finish_position": 23,
+      "position_text": "R",
+      "status": "+9 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2010,
+      "round": 19,
+      "driver_code": "TRU",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Rear wing",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2011,
+      "round": 1,
+      "driver_code": "GLO",
+      "finish_position": 15,
+      "position_text": "R",
+      "status": "+9 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2011,
+      "round": 2,
+      "driver_code": "KAR",
+      "finish_position": 23,
+      "position_text": "R",
+      "status": "+42 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2011,
+      "round": 2,
+      "driver_code": "LIU",
+      "finish_position": 18,
+      "position_text": "R",
+      "status": "+10 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2011,
+      "round": 2,
+      "driver_code": "PET",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2011,
+      "round": 6,
+      "driver_code": "MAL",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2011,
+      "round": 7,
+      "driver_code": "DIR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2011,
+      "round": 13,
+      "driver_code": "RIC",
+      "finish_position": 16,
+      "position_text": "R",
+      "status": "+14 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2011,
+      "round": 14,
+      "driver_code": "ALG",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 1,
+      "driver_code": "MAL",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 1,
+      "driver_code": "SEN",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 2,
+      "driver_code": "MAL",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 4,
+      "driver_code": "BUT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Exhaust",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 4,
+      "driver_code": "SEN",
+      "finish_position": 22,
+      "position_text": "22",
+      "status": "Vibrations",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 6,
+      "driver_code": "BUT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 7,
+      "driver_code": "GLO",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 8,
+      "driver_code": "HAM",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 11,
+      "driver_code": "MSC",
+      "finish_position": 24,
+      "position_text": "R",
+      "status": "+11 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2012,
+      "round": 13,
+      "driver_code": "HUL",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 13,
+      "driver_code": "VET",
+      "finish_position": 22,
+      "position_text": "22",
+      "status": "Alternator",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 13,
+      "driver_code": "WEB",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Vibrations",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 14,
+      "driver_code": "SEN",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 17,
+      "driver_code": "MSC",
+      "finish_position": 22,
+      "position_text": "22",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2012,
+      "round": 20,
+      "driver_code": "DIR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 2,
+      "driver_code": "BUT",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Withdrew",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 2,
+      "driver_code": "RIC",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 5,
+      "driver_code": "GRO",
+      "finish_position": 22,
+      "position_text": "22",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 5,
+      "driver_code": "VDG",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Wheel",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 5,
+      "driver_code": "VER",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 6,
+      "driver_code": "PER",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 7,
+      "driver_code": "GUT",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 8,
+      "driver_code": "GRO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 8,
+      "driver_code": "PER",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Wheel",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 10,
+      "driver_code": "DIR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Hydraulics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 10,
+      "driver_code": "ROS",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 13,
+      "driver_code": "DIR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 13,
+      "driver_code": "WEB",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Water pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 14,
+      "driver_code": "SUT",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2013,
+      "round": 16,
+      "driver_code": "HUL",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Mechanical",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 1,
+      "driver_code": "BIA",
+      "finish_position": 14,
+      "position_text": "R",
+      "status": "+8 Laps",
+      "previous_is_classified": true,
+      "source_is_classified": false
+    },
+    {
+      "season": 2014,
+      "round": 3,
+      "driver_code": "BUT",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Clutch",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 7,
+      "driver_code": "GUT",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "ERS",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 7,
+      "driver_code": "MAS",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 7,
+      "driver_code": "PER",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 12,
+      "driver_code": "BIA",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 15,
+      "driver_code": "BIA",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2014,
+      "round": 15,
+      "driver_code": "SUT",
+      "finish_position": 21,
+      "position_text": "21",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 3,
+      "driver_code": "VER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Transmission",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 11,
+      "driver_code": "BOT",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Power Unit",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 11,
+      "driver_code": "VET",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Tyre",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 13,
+      "driver_code": "GRO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Tyre",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 15,
+      "driver_code": "BOT",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2015,
+      "round": 15,
+      "driver_code": "RIC",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2016,
+      "round": 9,
+      "driver_code": "ALO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Battery",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2016,
+      "round": 9,
+      "driver_code": "HUL",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2016,
+      "round": 9,
+      "driver_code": "MAS",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2016,
+      "round": 9,
+      "driver_code": "PER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2016,
+      "round": 10,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 3,
+      "driver_code": "ALO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Power Unit",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 6,
+      "driver_code": "KVY",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 6,
+      "driver_code": "STR",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 7,
+      "driver_code": "ALO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Power Unit",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 8,
+      "driver_code": "RAI",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Water pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 11,
+      "driver_code": "HUL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 12,
+      "driver_code": "PER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 13,
+      "driver_code": "ALO",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2017,
+      "round": 13,
+      "driver_code": "ERI",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2018,
+      "round": 3,
+      "driver_code": "HAR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2018,
+      "round": 8,
+      "driver_code": "ALO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Wheel",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2018,
+      "round": 8,
+      "driver_code": "STR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Puncture",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2018,
+      "round": 9,
+      "driver_code": "VAN",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2018,
+      "round": 11,
+      "driver_code": "ALO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 3,
+      "driver_code": "NOR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 8,
+      "driver_code": "GRO",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 11,
+      "driver_code": "GAS",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 13,
+      "driver_code": "GIO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 13,
+      "driver_code": "NOR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 19,
+      "driver_code": "GAS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 19,
+      "driver_code": "MAG",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Brakes",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 20,
+      "driver_code": "LEC",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 20,
+      "driver_code": "STR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2019,
+      "round": 20,
+      "driver_code": "VET",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2020,
+      "round": 1,
+      "driver_code": "ALB",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Electronics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2020,
+      "round": 1,
+      "driver_code": "KVY",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Suspension",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2020,
+      "round": 14,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Withdrew",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2020,
+      "round": 15,
+      "driver_code": "PER",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 1,
+      "driver_code": "GAS",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 1,
+      "driver_code": "LAT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 2,
+      "driver_code": "VET",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 9,
+      "driver_code": "VET",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 13,
+      "driver_code": "RUS",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Gearbox",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 15,
+      "driver_code": "LAT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Accident",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2021,
+      "round": 22,
+      "driver_code": "PER",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 1,
+      "driver_code": "PER",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Fuel pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 1,
+      "driver_code": "VER",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Fuel pressure",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 2,
+      "driver_code": "ALB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 5,
+      "driver_code": "MAG",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Front wing",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 5,
+      "driver_code": "VET",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Collision",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 8,
+      "driver_code": "STR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Vibrations",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 13,
+      "driver_code": "BOT",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Power Unit",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 20,
+      "driver_code": "ALO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Engine",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 22,
+      "driver_code": "HAM",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Hydraulics",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2022,
+      "round": 22,
+      "driver_code": "LAT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "DEV",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "HUL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "MAG",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "NOR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "SAR",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 1,
+      "driver_code": "ZHO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 2,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 3,
+      "driver_code": "DEV",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 3,
+      "driver_code": "GAS",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 3,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 3,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 3,
+      "driver_code": "SAR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 4,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 4,
+      "driver_code": "HUL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 5,
+      "driver_code": "PIA",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 5,
+      "driver_code": "SAR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "ALB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "BOT",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "DEV",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "HUL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "MAG",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "NOR",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "PER",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "PIA",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "SAR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "TSU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 6,
+      "driver_code": "ZHO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "ALB",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "BOT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "DEV",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "HUL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "MAG",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "NOR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "PIA",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 7,
+      "driver_code": "SAR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 8,
+      "driver_code": "DEV",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 8,
+      "driver_code": "HUL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 8,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 8,
+      "driver_code": "ZHO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "BOT",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "DEV",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "MAG",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "PIA",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "SAR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "TSU",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 9,
+      "driver_code": "ZHO",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 10,
+      "driver_code": "GAS",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "ALB",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "BOT",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "HUL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "RIC",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "SAR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "STR",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "TSU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 11,
+      "driver_code": "ZHO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 14,
+      "driver_code": "HUL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 14,
+      "driver_code": "MAG",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 15,
+      "driver_code": "RUS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 16,
+      "driver_code": "HUL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 16,
+      "driver_code": "LAW",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 16,
+      "driver_code": "MAG",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 16,
+      "driver_code": "TSU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 16,
+      "driver_code": "ZHO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 17,
+      "driver_code": "HUL",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 17,
+      "driver_code": "LAW",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 17,
+      "driver_code": "MAG",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 17,
+      "driver_code": "TSU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "driver_code": "HAM",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Disqualified",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "driver_code": "LEC",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Disqualified",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "driver_code": "MAG",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "driver_code": "RIC",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 18,
+      "driver_code": "ZHO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 19,
+      "driver_code": "SAR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 19,
+      "driver_code": "STR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Collision damage",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 20,
+      "driver_code": "HUL",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 20,
+      "driver_code": "OCO",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 20,
+      "driver_code": "PIA",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 20,
+      "driver_code": "RIC",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 20,
+      "driver_code": "SAR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 21,
+      "driver_code": "HUL",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 21,
+      "driver_code": "TSU",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 22,
+      "driver_code": "BOT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 22,
+      "driver_code": "MAG",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2023,
+      "round": 22,
+      "driver_code": "SAI",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "ALB",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "BOT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "GAS",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "HUL",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "MAG",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "OCO",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "RIC",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "SAR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "TSU",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 1,
+      "driver_code": "ZHO",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "BOT",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "OCO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "RIC",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "SAR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "TSU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "driver_code": "ZHO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "ALB",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "BOT",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "GAS",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "MAG",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "OCO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "RIC",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "RUS",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "driver_code": "ZHO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "BOT",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "GAS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "HUL",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "MAG",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "OCO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "SAR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "STR",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "driver_code": "TSU",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "ALO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "GAS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "HUL",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "MAG",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "RIC",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "SAR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "TSU",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "driver_code": "ZHO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "ALB",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "ALO",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "BOT",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "GAS",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "RIC",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "SAR",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "TSU",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "driver_code": "ZHO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 9,
+      "driver_code": "ZHO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "ALB",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "ALO",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "MAG",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "RIC",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "SAR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "TSU",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "driver_code": "ZHO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "ALB",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "ALO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "NOR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "SAR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "STR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "TSU",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "driver_code": "ZHO",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "BOT",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "LEC",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "OCO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "PER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "RIC",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "driver_code": "ZHO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "ALB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "HUL",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "MAG",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "OCO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "RIC",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "SAR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "driver_code": "ZHO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 14,
+      "driver_code": "RUS",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Disqualified",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "ALB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "ALO",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "BOT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "GAS",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "HUL",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "MAG",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "OCO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "RIC",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "SAR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "STR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "TSU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "driver_code": "ZHO",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "GAS",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "HUL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "STR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "driver_code": "ZHO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "driver_code": "OCO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "driver_code": "PER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "driver_code": "SAI",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "driver_code": "STR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "ALO",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "COL",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "GAS",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "HUL",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "MAG",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "OCO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "PER",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "RIC",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "TSU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "driver_code": "ZHO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "ALB",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "ALO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "BOT",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "OCO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "STR",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "TSU",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "driver_code": "ZHO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "BOT",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "COL",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "GAS",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "HUL",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "LAW",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "OCO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "PER",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "STR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "driver_code": "ZHO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 22,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 22,
+      "driver_code": "OCO",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 23,
+      "driver_code": "ALB",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "ALB",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "DOO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "LAW",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "MAG",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "TSU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "driver_code": "ZHO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 2,
+      "driver_code": "BOR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 2,
+      "driver_code": "HUL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 2,
+      "driver_code": "TSU",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 3,
+      "driver_code": "STR",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "driver_code": "BOR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "driver_code": "DOO",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "driver_code": "HUL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "driver_code": "STR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "driver_code": "ALO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "driver_code": "HUL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "driver_code": "STR",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "ALB",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "ANT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "BEA",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "BOR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "COL",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "HAD",
+      "finish_position": 6,
+      "position_text": "6",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "HUL",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "LAW",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "OCO",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "RUS",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "SAI",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "STR",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "driver_code": "TSU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "BEA",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "BOR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "COL",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "GAS",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "HAD",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "NOR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "OCO",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "SAI",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "STR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "driver_code": "TSU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "ALO",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "BEA",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "BOR",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "COL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "GAS",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "HAD",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "HUL",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "OCO",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "driver_code": "TSU",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 12,
+      "driver_code": "TSU",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 13,
+      "driver_code": "HAD",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "ALB",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "ANT",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "COL",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "GAS",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "HAD",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "HAM",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "HUL",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "OCO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "SAI",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "driver_code": "TSU",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 15,
+      "driver_code": "NOR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "driver_code": "COL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "driver_code": "GAS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "driver_code": "OCO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "driver_code": "STR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 17,
+      "driver_code": "COL",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 17,
+      "driver_code": "GAS",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "ALB",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "BOR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "COL",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "GAS",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "HAD",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "HUL",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "LAW",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "OCO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "SAI",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "STR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "driver_code": "TSU",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 19,
+      "driver_code": "BOR",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 19,
+      "driver_code": "COL",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 19,
+      "driver_code": "GAS",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "ALB",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "COL",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "GAS",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "HAD",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "SAI",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "driver_code": "STR",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 22,
+      "driver_code": "COL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 22,
+      "driver_code": "LAW",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "driver_code": "COL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "driver_code": "GAS",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "driver_code": "HAD",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "driver_code": "OCO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "driver_code": "STR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "driver_code": "COL",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "driver_code": "GAS",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "driver_code": "HAD",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "driver_code": "LAW",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "ALB",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "BEA",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "BOR",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "COL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "GAS",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "LAW",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "LIN",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "OCO",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "PER",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "driver_code": "SAI",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "BOT",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "COL",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "HUL",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "LIN",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "PER",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "driver_code": "SAI",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 3,
+      "driver_code": "ALB",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 3,
+      "driver_code": "ALO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 3,
+      "driver_code": "BOT",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "ALO",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "BEA",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "BOR",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "LIN",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "OCO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "PER",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "driver_code": "STR",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "BEA",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "BOR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "BOT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "COL",
+      "finish_position": 6,
+      "position_text": "6",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "GAS",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "HAD",
+      "finish_position": 5,
+      "position_text": "5",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "HUL",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "LAW",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "OCO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "PIA",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "SAI",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "driver_code": "STR",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 6,
+      "driver_code": "SAI",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "ANT",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "BEA",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "BOR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "COL",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "GAS",
+      "finish_position": 7,
+      "position_text": "7",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "HAD",
+      "finish_position": 6,
+      "position_text": "6",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "LAW",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "LEC",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "LIN",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "OCO",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "PER",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "driver_code": "SAI",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "ALB",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "ALO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "BEA",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "BOR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "COL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "GAS",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "HUL",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "LAW",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "LIN",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "driver_code": "OCO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "driver_code": "ALO",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "driver_code": "SAI",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "driver_code": "STR",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "driver_code": "VER",
+      "finish_position": 20,
+      "position_text": "20",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 10,
+      "driver_code": "ALO",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 10,
+      "driver_code": "BOT",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "ALB",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "ALO",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "BEA",
+      "finish_position": 19,
+      "position_text": "19",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "BOR",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "COL",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "GAS",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "HUL",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "LAW",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "LIN",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "OCO",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "SAI",
+      "finish_position": 18,
+      "position_text": "18",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "driver_code": "STR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "ALB",
+      "finish_position": 17,
+      "position_text": "17",
+      "status": "Retired",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "ALO",
+      "finish_position": 9,
+      "position_text": "9",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "BOR",
+      "finish_position": 13,
+      "position_text": "13",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "COL",
+      "finish_position": 14,
+      "position_text": "14",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "GAS",
+      "finish_position": 10,
+      "position_text": "10",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "HUL",
+      "finish_position": 8,
+      "position_text": "8",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "LIN",
+      "finish_position": 12,
+      "position_text": "12",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "PER",
+      "finish_position": 15,
+      "position_text": "15",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "SAI",
+      "finish_position": 16,
+      "position_text": "16",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "driver_code": "TSU",
+      "finish_position": 11,
+      "position_text": "11",
+      "status": "Lapped",
+      "previous_is_classified": false,
+      "source_is_classified": true
+    }
+  ],
+  "limitations": "Source classification, not an independent review of every result."
+}

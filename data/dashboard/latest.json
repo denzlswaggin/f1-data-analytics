@@ -1,7 +1,7 @@
 {
-  "database_file": "f1-dashboard-20260914-pit-interval-gate.duckdb",
-  "generated_at": "2026-09-14T01:22:17.770669+00:00",
-  "git_sha": "faa0a74fa9dbe42d0c0a2f6662ea79ec9fa5638c",
+  "database_file": "f1-dashboard-20260914-source-classification.duckdb",
+  "generated_at": "2026-09-14T02:15:37.548420+00:00",
+  "git_sha": "ac8b98685b3230004078df047d312cf1e75f8078",
   "latest_event_date": "2026-08-23",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -75,8 +75,8 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "0a56b87e5efd43e0adc13ab79692a7880b9c746468b685a79c6f5e8f3e9323ea",
-  "size_bytes": 127676416,
+  "sha256": "bd21e91a4785072c6efb0a5a41f8712180fcc3b6bba98ab15c846e4a5e62d8c9",
+  "size_bytes": 128462848,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8424,
@@ -126,5 +126,5 @@
     "staging.stg_team_radio": 1486,
     "staging.stg_weather": 5879
   },
-  "version": "20260914-pit-interval-gate"
+  "version": "20260914-source-classification"
 }
