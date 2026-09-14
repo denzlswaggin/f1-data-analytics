@@ -623,8 +623,8 @@ export function buildEvents(
 			time: row.t_s,
 			type: 'overtake',
 			subtype: 'overtake',
-			label: `${row.passer_code} passes ${row.passed_code}`,
-			meta: `${row.for_position == null ? 'Detected pass' : `For P${row.for_position}`}${row.confidence == null ? '' : ` · ${Math.round(row.confidence * 100)}% confidence`}`,
+			label: `${row.passer_code} → ${row.passed_code} · model-detected pass`,
+			meta: `${row.for_position == null ? 'Position unavailable' : `For P${row.for_position}`} · event accuracy unverified`,
 			participants: [row.passer_code, row.passed_code],
 			raw: row
 		});

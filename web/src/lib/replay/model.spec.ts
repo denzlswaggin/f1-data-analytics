@@ -268,6 +268,10 @@ describe('replay model', () => {
 		expect(filterEvents(events, 'NOR').map((event) => event.type)).toEqual(['overtake', 'radio']);
 		expect(filterEvents(events, 'VER').map((event) => event.type)).toEqual(['overtake']);
 		expect(filterEvents(events, '', 'control')).toHaveLength(1);
+		const pass = events.find((event) => event.type === 'overtake');
+		expect(pass?.label).toContain('model-detected pass');
+		expect(pass?.meta).toContain('event accuracy unverified');
+		expect(pass?.meta).not.toContain('%');
 	});
 
 	it('keeps live timeline events inside the replay duration', () => {
