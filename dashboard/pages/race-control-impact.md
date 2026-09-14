@@ -8,13 +8,13 @@ max_width: 1600
 
 <PageHeader
     eyebrow="Race intelligence"
-    title="Who gained when the race was neutralised?"
-    description="Follow every Safety Car, VSC and red flag from deployment through two complete recovery laps, with position, pit-stop and relative-gap evidence."
+    title="How did race control reshape a driver's race?"
+    description="Inspect the exact intervention timeline, pit opportunity, position, gaps, tyres and recovery separately—with facts kept distinct from counterfactual estimates."
     accent="race"
 />
 
-<KeyInsight label="Observed impact, not causality">
-Position comparison starts at the official deployment message and ends after two complete green reference-leader laps, between the first and third crossings following the end signal. Incidents, field compression, pit timing, restarts and retirements can all shape the result, so this page describes what happened across the window rather than what race control caused.
+<KeyInsight label="Evidence first">
+Observed timing and positions are facts from the loaded feeds. A VSC pit saving is a same-race green-stop estimate with a 90% uncertainty interval, never a claim that race control caused the final result. If a component fails its own evidence rules, its number is withheld while the remaining facts stay visible.
 </KeyInsight>
 
 ```sql seasons
@@ -25,10 +25,7 @@ order by season desc
 ```
 
 ```sql races
-select distinct
-    season,
-    round,
-    race_name,
+select distinct season, round, race_name,
     'R' || lpad(cast(round as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') as race_label
 from f1.race_control_races
@@ -36,7 +33,7 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<FilterBar title="Choose a race" description="All loaded races from 2024–2026, including races without a recorded neutralisation. Only official, exactly paired intervention messages are analysed.">
+<FilterBar title="Choose a race" description="Completed races remain selectable even when no intervention or publishable estimate is available.">
     <Dropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
@@ -53,11 +50,10 @@ select message_count as sample_rows, event_count as entity_count,
 from ${selected_race}
 ```
 
-<DataTrust data={coverage} sampleLabel="race-control messages" entityLabel="Neutralisations" method="exact message pairs; two-lap recovery" />
+<DataTrust data={coverage} sampleLabel="race-control messages" entityLabel="Neutralisations" method="component-level facts and same-race pit counterfactual" />
 
 ```sql race_events
-select
-    *,
+select *,
     '#' || cast(event_number as varchar) || ' · ' || event_type
         || ' · lap ' || cast(deployment_lap as varchar) as event_label
 from f1.race_control_events
@@ -67,7 +63,7 @@ order by event_number
 
 {#if race_events.length > 0}
 
-<FilterBar title="Choose an intervention" description="Incomplete events remain selectable so the missing evidence stays visible.">
+<FilterBar title="Choose an intervention" description="Each impact component has independent availability; an unavailable gap model no longer hides valid pit evidence.">
     <RaceEventDropdown data={race_events} season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
@@ -77,173 +73,173 @@ where event_id = '${inputs.event.value}'
     and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
-```sql event_driver_total
-select eligible_driver_count as drivers
-from ${selected_event}
-```
-
-```sql event_stops
-select intervention_stop_count as stops
-from ${selected_event}
-```
-
-```sql event_gainers
-select position_gainer_count as gainers
-from ${selected_event}
+```sql driver_evidence
+select *,
+    case pit_timing_class
+        when 'during_neutralisation' then 'Stopped during neutralisation'
+        when 'after_end' then 'Stopped after the end signal'
+        when 'unresolved' then 'Stop inferred; exact timing unavailable'
+        else 'No stop observed in the event window'
+    end as pit_context,
+    driver_code || ' · ' || driver_name as driver_label
+from f1.race_control_impact
+where event_id = '${inputs.event.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
+order by focus_rank, position_before
 ```
 
 <Grid cols=4>
     <BigValue data={selected_event} value=event_type comparison=duration_s comparisonFmt="0 s" title="Intervention" />
-    <BigValue data={event_driver_total} value=drivers title="Position-comparable drivers" />
-    <BigValue data={event_stops} value=stops title="Stops under intervention" />
-    <BigValue data={event_gainers} value=gainers title="Position gainers" />
+    <BigValue data={selected_event} value=pit_status title="Pit opportunity" />
+    <BigValue data={selected_event} value=gap_status title="Gap evidence" />
+    <BigValue data={selected_event} value=restart_status title="Recovery evidence" />
 </Grid>
 
-```sql driver_evidence
-select
-    *,
-    case
-        when pitted_during_intervention then 'Stopped under intervention'
-        when pitted_during_recovery then 'Stopped during recovery'
-        when tyre_changed_during_suspension then 'Changed tyres under red flag'
-        else 'Stayed out'
-    end as pit_context
-from f1.race_control_impact
-where event_id = '${inputs.event.value}'
+<FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable.">
+    <DependentDropdown data={driver_evidence} name=driver value=driver_code label=driver_label order="focus_rank asc" title="Driver" season={inputs.season.value} round={inputs.race.value} scopeKey={inputs.event.value} defaultValue={selected_event[0]?.focus_driver_code} />
+</FilterBar>
+
+```sql focus_driver
+select * from ${driver_evidence}
+where driver_code = '${inputs.driver.value}'
+```
+
+```sql focus_effects
+select *
+from f1.race_control_effects
+where event_id = '${inputs.event.value}' and driver_code = '${inputs.driver.value}'
     and season = ${inputs.season.value} and round = ${inputs.race.value}
-order by position_before
+order by effect_scope, effect_type
 ```
 
-```sql eligible_drivers
-select * from ${driver_evidence} where eligible
+```sql pit_saving
+select value, lower_bound, upper_bound, confidence, sample_size
+from ${focus_effects}
+where effect_type = 'estimated_vsc_pit_saving' and eligible
 ```
 
-## Position change after the two-lap recovery
+```sql pit_unavailable
+select exclusion_reason
+from ${focus_effects}
+where effect_type = 'estimated_vsc_pit_saving' and not eligible
+```
 
-Positive bars are positions gained between deployment and the shared post-event checkpoint. Drivers without reliable timing remain in the excluded evidence below.
+## {inputs.driver.value}'s intervention story
 
-<BarChart
-    data={eligible_drivers}
-    x=driver_code
-    y=positions_gained
-    series=pit_context
-    yAxisTitle="positions gained (+) / lost (−)"
-    labels=true
-    sort=false
->
+<Grid cols=4>
+    <BigValue data={focus_driver} value=position_before comparison=position_after comparisonFmt="P0 after recovery" title="Position at deployment" />
+    <BigValue data={focus_driver} value=pit_context comparison=pit_duration_sec comparisonFmt="0.000 s pit lane" title="Pit timing" />
+    <BigValue data={pit_saving} value=value fmt="0.00 s" comparison=confidence title="Estimated VSC pit saving" />
+    <BigValue data={focus_driver} value=compound_before comparison=compound_after title="Tyres before / after" />
+</Grid>
+
+<KeyInsight label="Final result is context only">
+{inputs.driver.value} finished P<Value data={focus_driver} column=finish_position />. This is shown to complete the race story, but no finishing position is attributed to the intervention: everything after the measured checkpoints remains residual and unmodelled.
+</KeyInsight>
+
+{#if pit_saving.length > 0}
+<KeyInsight label="Estimated pit opportunity—not race-result causality">
+Against supported clean green-flag stops from this race, the stop saved an estimated <Value data={pit_saving} column=value fmt="0.00" /> s. The 90% interval is <Value data={pit_saving} column=lower_bound fmt="0.00" /> to <Value data={pit_saving} column=upper_bound fmt="0.00" /> s and includes a one-second timing-resolution allowance. Later racing remains unattributed.
+</KeyInsight>
+{:else}
+<DataTable data={pit_unavailable} rows=3>
+    <Column id=exclusion_reason title="Why no pit-saving estimate is published" />
+</DataTable>
+{/if}
+
+```sql focus_checkpoints
+select *,
+    case checkpoint_type
+        when 'pre_deploy' then 'Deployment'
+        when 'pit_in' then 'Pit entry'
+        when 'pit_out' then 'Pit exit'
+        when 'control_end' then 'End signal'
+        when 'green_lap_1' then 'After 1 green lap'
+        when 'green_lap_3' then 'After 3 leader crossings'
+        else checkpoint_type
+    end as checkpoint_label
+from f1.race_control_checkpoints
+where event_id = '${inputs.event.value}' and driver_code = '${inputs.driver.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
+order by checkpoint_order
+```
+
+### Audit timeline
+
+<DataTable data={focus_checkpoints} rows=12>
+    <Column id=checkpoint_label title="Checkpoint" />
+    <Column id=checkpoint_t_s title="Race clock (s)" fmt="0.000" />
+    <Column id=running_order title="Position" />
+    <Column id=gap_to_leader_s title="Gap to leader (s)" fmt="0.00" />
+    <Column id=lap_number title="Lap" />
+    <Column id=compound title="Tyre" />
+    <Column id=tyre_life title="Tyre age" />
+    <Column id=capture_offset_s title="Timing resolution (s)" fmt="0.000" />
+    <Column id=source title="Source" />
+    <Column id=exclusion_reason title="Evidence gap" />
+</DataTable>
+
+### Component verdicts
+
+<DataTable data={focus_effects} rows=30 download=true>
+    <Column id=effect_type title="Effect" />
+    <Column id=effect_scope title="Window" />
+    <Column id=value title="Value" fmt="0.00" />
+    <Column id=lower_bound title="90% low" fmt="0.00" />
+    <Column id=upper_bound title="90% high" fmt="0.00" />
+    <Column id=unit title="Unit" />
+    <Column id=evidence_class title="Evidence class" />
+    <Column id=confidence title="Confidence" />
+    <Column id=sample_size title="Sample" />
+    <Column id=exclusion_reason title="Why unavailable" />
+</DataTable>
+
+```sql position_drivers
+select * from ${driver_evidence} where position_eligible
+```
+
+## Field context
+
+<BarChart data={position_drivers} x=driver_code y=positions_gained series=pit_context yAxisTitle="positions gained (+) / lost (−)" labels=true sort=false>
     <ReferenceLine y=0 label="position held" />
 </BarChart>
 
-## Relative-time movement against the event median
-
-For Safety Car and VSC periods, the raw gap change is centred on the median of time-comparable drivers. This is a descriptive comparison within the measured cohort, not proof that field-wide compression has been removed. At least five time-comparable drivers are required to publish the centred result; this is a publication rule, not statistical validation. Red flags publish positions only.
-
-<BigValue data={selected_event} value=time_comparable_driver_count title="Time-comparable drivers (minimum 5)" />
-
-```sql time_unavailable
-select time_exclusion_reason
-from ${selected_event}
-where not time_eligible
-```
-
-<DataTable data={time_unavailable} rows=5>
-    <Column id=time_exclusion_reason title="Why the relative-time chart is unavailable" />
-</DataTable>
-
 ```sql time_movers
-select * from ${eligible_drivers}
-where time_eligible and field_adjusted_gap_gain_s is not null
+select * from ${driver_evidence}
+where gap_eligible and field_adjusted_gap_gain_s is not null
 order by abs(field_adjusted_gap_gain_s) desc
-limit 18
 ```
 
-<BarChart
-    data={time_movers}
-    x=driver_code
-    y=field_adjusted_gap_gain_s
-    series=pit_context
-    yAxisTitle="median-centred relative gap gain (s)"
-    swapXY=true
-    labels=true
-    sort=false
->
+<BarChart data={time_movers} x=driver_code y=field_adjusted_gap_gain_s series=pit_context yAxisTitle="median-centred relative gap gain (s)" swapXY=true labels=true sort=false>
     <ReferenceLine y=0 label="event median" />
 </BarChart>
 
-## Driver evidence
-
-<DataTable data={eligible_drivers} rows=30 search=true download=true>
+<ExpandableSection title="All drivers and unavailable components">
+<DataTable data={driver_evidence} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
-    <Column id=team title="Team" />
     <Column id=position_before title="Before" />
     <Column id=position_after title="After" />
     <Column id=positions_gained title="Position Δ" fmt="+0;-0" />
-    <Column id=raw_gap_gain_s title="Raw gap gain (s)" fmt="+0.00;-0.00" />
-    <Column id=field_adjusted_gap_gain_s title="Median-centred gain (s)" fmt="+0.00;-0.00" />
-    <Column id=time_eligible title="Time eligible" />
-    <Column id=time_exclusion_reason title="Why time is excluded" />
+    <Column id=field_adjusted_gap_gain_s title="Field-adjusted gap Δ" fmt="+0.00;-0.00" />
+    <Column id=pit_context title="Pit context" />
+    <Column id=pit_duration_sec title="Pit lane (s)" fmt="0.000" />
+    <Column id=finish_position title="Finish" />
+    <Column id=result_status title="Result status" />
     <Column id=compound_before title="Tyre before" />
     <Column id=compound_after title="Tyre after" />
-    <Column id=pit_context title="Pit context" />
-    <Column id=outcome_label title="Observed outcome" />
-    <Column id=confidence title="Evidence" />
+    <Column id=time_exclusion_reason title="Gap evidence gap" />
+    <Column id=exclusion_reason title="Legacy window exclusion" />
 </DataTable>
 
-## All interventions in this race
-
-<DataTable data={race_events} rows=20>
-    <Column id=event_number title="#" />
-    <Column id=event_type title="Type" />
-    <Column id=deployment_lap title="Deployed" />
-    <Column id=end_lap title="End signal" />
-    <Column id=post_checkpoint_lap title="Measured after" />
-    <Column id=duration_s title="Duration (s)" fmt="0" />
-    <Column id=eligible_driver_count title="Drivers" />
-    <Column id=time_comparable_driver_count title="Time-comparable drivers" />
-    <Column id=time_exclusion_reason title="Time exclusion" />
-    <Column id=intervention_stop_count title="Stops" />
-    <Column id=event_status title="Status" />
-    <Column id=confidence title="Evidence" />
-</DataTable>
-
-```sql excluded_drivers
-select * from ${driver_evidence} where not eligible
-```
-
-```sql excluded_events
-select * from ${race_events} where not eligible
-```
-
-<ExpandableSection title="See exclusions and the v2 method">
-<DataTable data={excluded_events} rows=20>
-    <Column id=event_label title="Event" />
-    <Column id=event_status title="Status" />
-    <Column id=exclusion_reason title="Why excluded" />
-</DataTable>
-
-<DataTable data={excluded_drivers} rows=30 search=true>
-    <Column id=driver_code title="Driver" />
-    <Column id=position_before title="Position before" />
-    <Column id=exclusion_reason title="Why excluded" />
-</DataTable>
-
-The parser accepts only exact official deployment and end messages. A valid event needs a replay baseline, at least 12 cars and two complete, timed, contiguous green laps by the reference leader between the first and third crossings after the end signal. The same driver must lead at both ends of this fixed window. Another neutralisation interrupts recovery. Driver snapshots must be within three seconds of the shared clock.
-
-Other recorded laps wholly contained in that timestamp interval must have green status; non-green or missing status rejects the recovery. An incomplete lap starting inside the interval with an unknown end also rejects it. Laps straddling a window boundary cannot localise their recorded flags to the recovery interval, so their lap-level status alone does not establish contamination. This check does not prove that the entire field stayed green or that field-wide coverage is complete.
-
-Lap deficit is estimated from continuous lap distance (lap number minus one plus lap progress) at identical timestamps, not from integer lap counters alone. Estimates close to a whole-lap boundary are uncertain and suppress time metrics, as do changed estimated deficits or missing comparable timing. These estimates are not confirmation of physical lapping. Position eligibility is separate from time eligibility, so a driver can retain position evidence while their time comparison is blank. Red flags publish position movement only.
+`race-control-impact-v3` pairs exact official intervention messages and evaluates position, gap, pit, tyre and recovery evidence independently. Gap publication still requires at least five comparable drivers and verified green recovery. Pit estimates instead require exact pit timestamps, at least one stable non-pitting peer, five clean same-race green stops from at least four drivers, and a stable reference distribution. Red flags suppress gap estimates across the suspension.
 </ExpandableSection>
 
 {:else}
 
 {#if selected_race[0]?.message_count > 0}
-<KeyInsight label="No recorded neutralisation">
-The loaded race-control messages contain no recognised Safety Car, VSC or red-flag intervention for this race. There is no intervention impact to compare.
-</KeyInsight>
+<KeyInsight label="No recorded neutralisation">The loaded messages contain no recognised, exactly paired Safety Car, VSC or red-flag intervention.</KeyInsight>
 {:else}
-<KeyInsight label="Race-control data unavailable">
-Official race-control messages have not been loaded for this race. Missing messages do not establish that the race had no neutralisation.
-</KeyInsight>
+<KeyInsight label="Race-control data unavailable">Missing messages do not establish that the race had no neutralisation.</KeyInsight>
 {/if}
 
 {/if}

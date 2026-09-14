@@ -26,6 +26,12 @@ select
     recovery_stop_count,
     position_gainer_count,
     position_loser_count,
+    position_status,
+    gap_status,
+    pit_status,
+    restart_status,
+    tyre_status,
+    focus_driver_code,
     eligible,
     exclusion_reason,
     confidence,
@@ -41,6 +47,7 @@ select
     cast(null as integer), cast(null as integer), cast(null as integer),
     cast(null as double), 'unavailable', false,
     0, 0, 0, 0, false, 'No data', 0, 0, 0, 0,
-    false, 'No data', 'Low', 'race-control-impact-v2'
+    'unavailable', 'unavailable', 'unavailable', 'unavailable', 'unavailable', '__NO_DATA__',
+    false, 'No data', 'Low', 'race-control-impact-v3'
 where not exists (select 1 from marts.race_control_events)
 order by season, round, event_number
