@@ -1,3 +1,7 @@
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -95,3 +99,26 @@ def test_staging_unknown_compound_matches_missing_source_without_replacing_it() 
     result = recover_pit_timestamps(original, donor)
     assert result.loc[10, "compound"] == "UNKNOWN"
     assert result.loc[10, "pit_in_time_sec"] == 5080
+
+
+def test_frozen_all_race_recovery_preserves_source_hashes_and_reproduces_candidates() -> None:
+    root = Path(__file__).resolve().parents[1] / "validation/pit-recovery-20260914"
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["complete"] and len(manifest["races"]) == 60
+    assert (
+        hashlib.sha256((root / "initial-manifest.json").read_bytes()).hexdigest()
+        == manifest["source_capture_sha256"]
+    )
+    for race in manifest["races"]:
+        assert race["status"] == "reconciled"
+        for kind in ("source", "candidate"):
+            assert (
+                hashlib.sha256((root / race[f"{kind}_file"]).read_bytes()).hexdigest()
+                == race[f"{kind}_sha256"]
+            )
+        donor = pd.read_parquet(root / race["source_file"])
+        candidate = pd.read_parquet(root / race["candidate_file"])
+        baseline = candidate.copy()
+        baseline[["pit_in_time_sec", "pit_out_time_sec"]] = np.nan
+        actual = recover_pit_timestamps(baseline, donor)
+        pd.testing.assert_frame_equal(actual, candidate)
