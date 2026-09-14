@@ -1287,12 +1287,14 @@ def _build_one_overtakes(season: int, rnd: int, settings: Settings) -> pd.DataFr
     has no replay rows or no clean passes are found.
     """
     replay = read_query(_overtakes_query(season, rnd), settings)
+    laps = read_query(partition_query("staging.stg_laps", season, rnd), settings)
     passes = detect_overtakes(
         replay,
         battle_gap_s=settings.overtake_battle_gap_s,
         persist_s=settings.overtake_persist_s,
         start_guard_s=settings.overtake_start_guard_s,
         proximity_frac=settings.overtake_proximity_frac,
+        pit_laps=laps,
     )
     passes.insert(0, "season", season)
     passes.insert(1, "round", rnd)
@@ -1457,7 +1459,7 @@ def _build_racecraft_scope(
     }
     # A missing event partition is not proof of zero passes. Always detect from
     # the same replay scope before classifying any attack/defence outcomes.
-    overtakes = detect_overtakes(raw_replay, **parameters)
+    overtakes = detect_overtakes(raw_replay, pit_laps=laps, **parameters)
     overtakes.insert(0, "season", season)
     overtakes.insert(1, "round", rnd)
     pit_context = _build_pit_context_scope(season, rnd, settings)

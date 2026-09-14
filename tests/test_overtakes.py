@@ -199,6 +199,11 @@ def _seed_replay(db_path: Path) -> None:
         con.execute("create schema marts")
         con.register("replay", frame)
         con.execute("create table marts.race_replay as select * from replay")
+        con.execute("create schema staging")
+        con.execute("""create table staging.stg_laps as
+            select distinct season, round, driver_code, 'R' as session,
+                1000.0 as lap_start_sec, null::double as pit_in_time_sec,
+                null::double as pit_out_time_sec from replay""")
     finally:
         con.unregister("replay")
         con.close()
@@ -219,3 +224,43 @@ def test_build_race_overtakes_materialises_mart(tmp_path: Path) -> None:
     persisted = read_query("select * from marts.race_overtakes", settings)
     assert len(persisted) == 1
     assert persisted.iloc[0]["passed_code"] == "A"
+
+
+@pytest.mark.parametrize("driver", ["A", "B"])
+@pytest.mark.parametrize("entry,exit", [(1004.0, 1006.0), (1005.0, 1006.0), (1004.0, 1005.0)])
+def test_observed_pit_interval_blocks_nearby_swap(driver: str, entry: float, exit: float) -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10)
+    laps = pd.DataFrame(
+        {
+            "driver_code": [driver, driver],
+            "lap_start_sec": [1000.0, 1005.0],
+            "pit_in_time_sec": [entry, np.nan],
+            "pit_out_time_sec": [np.nan, exit],
+        }
+    )
+    assert len(detect_overtakes(frame)) == 1
+    assert detect_overtakes(frame, pit_laps=laps).empty
+
+
+def test_pass_outside_observed_pit_interval_remains_unverified_model_event() -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10)
+    laps = pd.DataFrame(
+        {
+            "driver_code": ["A", "A"],
+            "lap_start_sec": [1000.0, 1003.0],
+            "pit_in_time_sec": [1001.0, np.nan],
+            "pit_out_time_sec": [np.nan, 1004.0],
+        }
+    )
+    result = detect_overtakes(frame, pit_laps=laps)
+    assert len(result) == 1
+    assert "pit_interval_check=no_observed_overlap" in result.iloc[0].evidence
+
+
+def test_standalone_builder_uses_pit_observations(tmp_path: Path) -> None:
+    path = tmp_path / "f1.duckdb"
+    _seed_replay(path)
+    with duckdb.connect(str(path)) as connection:
+        connection.execute("""update staging.stg_laps set
+            pit_in_time_sec=1004.0, pit_out_time_sec=1006.0 where driver_code='A'""")
+    assert build_race_overtakes(2026, 1, Settings(duckdb_path=path)).empty

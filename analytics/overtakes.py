@@ -2,10 +2,9 @@
 
 The replay mart (``analytics.replay``) already ranks the whole field every tick
 (``running_order``, a dense 1..N) and carries each car's x/y and its interval to
-the car ahead. An **on-track overtake** is a clean, single-position swap between
-two cars that are *physically next to each other*: the car directly behind takes
-the position and holds it. Reading from the already-built ``marts.race_replay``
-means the detected passes line up exactly with what the animation shows.
+the car ahead. The detector finds modelled single-position swaps with nearby
+coordinates and observed persistence. Reading from ``marts.race_replay`` aligns
+these events with the animation, not necessarily the physical pass time.
 
 An important ambiguity is an on-track pass versus a **pit-cycle** position change.
 The gap here is projected from *lap progress*, so when a car pits its progress
@@ -25,6 +24,8 @@ import numpy as np
 import pandas as pd
 from ingestion.logging import get_logger
 
+from analytics.pit_intervals import observed_pit_intervals
+
 log = get_logger(__name__)
 
 # Secondary time gate: the interval between the two cars just after the pass must
@@ -38,9 +39,7 @@ MAX_PERSISTENCE_GAP_S = 1.0
 # (all cars share lap-progress 0 and are ordered by a tie-break), so ignore it.
 _START_GUARD_S = 3.0
 # Physical-proximity gate as a fraction of the circuit's bounding-box diagonal.
-# Two cars closer than this at the completion tick count as an on-track pass; a
-# pitting car is displaced well beyond it. Circuit-relative so it travels between
-# tracks; ~2% of the extent is a few tens of metres.
+# Circuit-relative proximity is heuristic: nearby pit lanes can pass this gate.
 _PROXIMITY_FRAC = 0.02
 # A ranking update can briefly omit one of the two cars while timing data catches
 # up. Look through that short incomplete interval instead of requiring both sides
@@ -161,8 +160,9 @@ def detect_overtakes(
     proximity_frac: float = _PROXIMITY_FRAC,
     transition_s: float = _TRANSITION_S,
     max_persistence_gap_s: float = MAX_PERSISTENCE_GAP_S,
+    pit_laps: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    """Detect on-track overtakes from one race's replay frame.
+    """Detect modelled adjacent order exchanges from one race's replay frame.
 
     ``replay`` needs ``driver_code``, ``t_s``, ``running_order``,
     ``gap_to_ahead_s``, ``x`` and ``y`` (one row per car per tick, as materialised
@@ -176,12 +176,18 @@ def detect_overtakes(
     pair can be traced back to the opposite adjacent order within ``transition_s``.
     An intermediate tick may omit one of the pair, but neither car may occupy a
     finite position outside the two contested places. The cars must also be close
-    at completion (the pit-cycle discriminator), have an interval under
+    at completion, have an interval under
     ``battle_gap_s`` and remain swapped for ``persist_s``. Both orders must be
     observed through the deadline, with no sample gap larger than
     ``max_persistence_gap_s`` (one second by default). Missing follow-up,
     retirement or a truncated recording cannot confirm persistence. Ticks before
     ``start_guard_s`` are skipped.
+
+    When ``pit_laps`` is provided, a completion timestamp inside either driver's
+    fully observed pit entry/exit interval is excluded (inclusive boundaries).
+    The complete race lap scope is required for the shared replay clock origin.
+    Missing boundary observations do not certify that remaining events occurred
+    on track; the order and event time themselves are still reconstructed.
     """
     required = {"driver_code", "t_s", "running_order", "gap_to_ahead_s", "x", "y"}
     missing = required - set(replay.columns)
@@ -191,6 +197,13 @@ def detect_overtakes(
         raise ValueError("persist_s must be finite and nonnegative")
     if not np.isfinite(max_persistence_gap_s) or max_persistence_gap_s <= 0:
         raise ValueError("max_persistence_gap_s must be finite and positive")
+    pit_windows: dict[str, np.ndarray] = {}
+    if pit_laps is not None:
+        intervals = observed_pit_intervals(pit_laps)
+        pit_windows = {
+            str(driver): group[["entry_t_s", "exit_t_s"]].to_numpy(dtype=float)
+            for driver, group in intervals.groupby("driver_code")
+        }
 
     df = replay.copy()
     df["t_s"] = pd.to_numeric(df["t_s"], errors="coerce")
@@ -263,7 +276,13 @@ def detect_overtakes(
             )
             if anchor is None:
                 continue
-            # Physical proximity at the completion tick — the pit-cycle discriminator.
+            if any(
+                np.any((windows[:, 0] <= t_now) & (t_now <= windows[:, 1]))
+                for driver in (passer, passed)
+                if (windows := pit_windows.get(driver)) is not None
+            ):
+                continue
+            # Physical proximity alone does not discriminate nearby pit lanes.
             dx = x_a[passer][i] - x_a[passed][i]
             dy = y_a[passer][i] - y_a[passed][i]
             distance = float(np.hypot(dx, dy))
@@ -284,6 +303,11 @@ def detect_overtakes(
                 battle_gap_s=battle_gap_s,
                 transition_s=transition_duration,
                 consecutive=anchor == i - 1,
+            )
+            evidence += (
+                ";pit_interval_check=no_observed_overlap"
+                if pit_laps is not None
+                else ";pit_interval_check=unavailable"
             )
             rows.append(
                 (
