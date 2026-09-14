@@ -1174,14 +1174,33 @@ def _race_control_laps_query(season: int | None, rnd: int | None) -> str:
     scope = _race_control_scope_clause("laps", season, rnd)
     return f"""
         select laps.season, laps.round, laps.driver_code, laps.lap_number, laps.track_status,
+            laps.stint, laps.compound, laps.tyre_life,
             laps.lap_start_sec - windows.race_start_sec as lap_start_t_s,
-            laps.lap_start_sec + laps.lap_time_sec - windows.race_start_sec as lap_end_t_s
+            laps.lap_start_sec + laps.lap_time_sec - windows.race_start_sec as lap_end_t_s,
+            laps.pit_in_time_sec - windows.race_start_sec as pit_in_t_s,
+            laps.pit_out_time_sec - windows.race_start_sec as pit_out_t_s
         from staging.stg_laps as laps
         inner join (
             select season, round, min(lap_start_sec) as race_start_sec
             from staging.stg_laps where session = 'R' group by season, round
         ) as windows on windows.season = laps.season and windows.round = laps.round
         where laps.session = 'R'{scope}
+    """
+
+
+def _race_control_stops_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("stops", season, rnd)
+    return f"""
+        select
+            stops.season,
+            stops.round,
+            codes.driver_code,
+            stops.pit_lap,
+            stops.duration_sec
+        from staging.stg_pitstops as stops
+        inner join staging.stg_driver_codes as codes
+            on codes.season = stops.season and codes.driver_id = stops.driver_id
+        where true{scope}
     """
 
 
@@ -1193,7 +1212,8 @@ def _build_race_control_impact_scope(
     replay = read_query(_race_control_replay_query(season, rnd), settings)
     messages = read_query(_race_control_messages_query(season, rnd), settings)
     laps = read_query(_race_control_laps_query(season, rnd), settings)
-    return analyse_race_control_impact(replay, messages, laps)
+    stops = read_query(_race_control_stops_query(season, rnd), settings)
+    return analyse_race_control_impact(replay, messages, laps, stops)
 
 
 def _replace_race_control_impact_tables(
@@ -1201,6 +1221,10 @@ def _replace_race_control_impact_tables(
 ) -> None:
     replace_table(result.events, schema="marts", table="race_control_events", settings=settings)
     replace_table(result.evidence, schema="marts", table="race_control_impact", settings=settings)
+    replace_table(
+        result.checkpoints, schema="marts", table="race_control_checkpoints", settings=settings
+    )
+    replace_table(result.effects, schema="marts", table="race_control_effects", settings=settings)
 
 
 def build_race_control_impact(
@@ -1218,6 +1242,8 @@ def build_race_control_impact(
         round=rnd,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 
@@ -1244,12 +1270,28 @@ def build_race_control_impact_incremental(
         partition={"season": season, "round": rnd},
         settings=settings,
     )
+    replace_table_partition(
+        result.checkpoints,
+        schema="marts",
+        table="race_control_checkpoints",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    replace_table_partition(
+        result.effects,
+        schema="marts",
+        table="race_control_effects",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
     log.info(
         "race_control_impact.materialised_partition",
         season=season,
         round=rnd,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 
@@ -1267,6 +1309,8 @@ def build_all_race_control_impact(
         races=races,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 
