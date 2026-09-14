@@ -1,0 +1,43 @@
+{
+  "protocol_sha256": "a9ea6471f30d01c371b296b76b11e7bf1863f0174682a872c87e4ab69d128196",
+  "reviewer_id": null,
+  "independent_of_detector": false,
+  "windows": [
+    {
+      "id": "austria-2025-mclaren-lap11",
+      "complete": false,
+      "footage_url": null,
+      "footage_start_s": null,
+      "footage_end_s": null,
+      "reviewed_at": null,
+      "events": [],
+      "uncertainties": [
+        "Not reviewed"
+      ]
+    },
+    {
+      "id": "monza-2025-lead-return-laps2-4",
+      "complete": false,
+      "footage_url": null,
+      "footage_start_s": null,
+      "footage_end_s": null,
+      "reviewed_at": null,
+      "events": [],
+      "uncertainties": [
+        "Not reviewed"
+      ]
+    },
+    {
+      "id": "spa-2025-verstappen-leclerc-laps5-44",
+      "complete": false,
+      "footage_url": null,
+      "footage_start_s": null,
+      "footage_end_s": null,
+      "reviewed_at": null,
+      "events": [],
+      "uncertainties": [
+        "Not reviewed"
+      ]
+    }
+  ]
+}

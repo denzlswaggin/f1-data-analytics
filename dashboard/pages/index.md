@@ -36,6 +36,7 @@ where race_label = (select race_label from ${latest_race})
 ```sql pace_leader
 select driver_name
 from ${latest_story}
+where pace_rank is not null
 order by pace_rank
 limit 1
 ```
@@ -45,8 +46,12 @@ limit 1
 ### {latest_race[0].race_label}
 
 <div class="metric-grid">
-<BigValue data={latest_race} value=fastest_driver title="Fastest lap" />
-<BigValue data={pace_leader} value=driver_name title="Strongest controlled pace" />
+<BigValue data={latest_race} value=fastest_driver title="Fastest loaded green lap" />
+{#if pace_leader.length > 0}
+<BigValue data={pace_leader} value=driver_name title="Lowest observed peer delta" />
+{:else}
+<p>No supported pace comparison in this race.</p>
+{/if}
 <BigValue data={latest_race} value=overtakes title="Detected passes" />
 </div>
 

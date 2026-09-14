@@ -32,7 +32,9 @@ const routes = [
 async function waitForServer(page) {
 	for (let attempt = 0; attempt < 30; attempt += 1) {
 		try {
-			const response = await page.goto(`${origin}/`, { waitUntil: 'domcontentloaded' });
+			const response = await page.goto(`${origin}/`, {
+				waitUntil: 'domcontentloaded'
+			});
 			if (response?.ok()) return;
 		} catch {
 			// The static server may still be starting.
@@ -63,6 +65,59 @@ try {
 			});
 			assert.equal(response?.status(), 200, `${route || 'home'} should return 200`);
 			assert.equal(await page.locator('h1').count(), 1, `${route || 'home'} should have one h1`);
+			if (route === 'methodology') {
+				assert.equal(
+					await page
+						.getByText('Independent footage review: 0 of 3 prepared windows scored.', {
+							exact: true
+						})
+						.count(),
+					1,
+					'the documented review batch must expose its unscored status'
+				);
+			}
+			if (route === 'racecraft-battles') {
+				assert.equal(
+					await page
+						.getByRole('heading', { level: 1, name: 'What does the racecraft model detect?' })
+						.count(),
+					1,
+					'racecraft must identify its model-derived evidence'
+				);
+			}
+			assert.equal(
+				await page
+					.locator('.data-trust summary')
+					.getByText('Data confidence', { exact: true })
+					.count(),
+				0,
+				'row availability must not be presented as confidence in accuracy'
+			);
+			if (route === 'traffic-adjusted-pace') {
+				assert.equal(
+					await page
+						.locator('.data-trust summary')
+						.getByText('Data coverage', { exact: true })
+						.count(),
+					1
+				);
+			}
+			if (route === 'driver-comparison') {
+				assert.equal(
+					await page.getByText('Model rating difference (A minus B)', { exact: true }).count(),
+					1,
+					'default driver IDs should produce a shared-season model comparison'
+				);
+				assert.equal(
+					await page
+						.getByText('Approx. probability Driver A is faster', {
+							exact: true
+						})
+						.count(),
+					0,
+					'marginal rating summaries must not publish a faster-driver probability'
+				);
+			}
 			assert.equal(errors.length, 0, `${route || 'home'} browser errors: ${errors.join('; ')}`);
 			const overflow = await page.evaluate(() => ({
 				overflows: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,

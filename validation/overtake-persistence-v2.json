@@ -1,0 +1,61 @@
+{
+  "baseline_version": "20260914-recorded-results",
+  "differences": {
+    "race_overtakes": {
+      "removed": 1,
+      "added": 0
+    },
+    "racecraft_battles": {
+      "removed": 0,
+      "added": 0
+    },
+    "racecraft_driver_summary": {
+      "removed": 0,
+      "added": 0
+    }
+  },
+  "removed_passes": [
+    {
+      "season": 2024,
+      "round": 11,
+      "t_s": 4605.0,
+      "for_position": 7,
+      "passer_code": "PER",
+      "passed_code": "NOR",
+      "gap_at_pass_s": 0.0,
+      "confidence": 0.862,
+      "evidence": "transition_s=1.00;distance=203.83;proximity_limit=295.63;gap_s=0.00;gap_limit_s=2.00;persistence=confirmed",
+      "reason": "clean_adjacent_swap"
+    }
+  ],
+  "baseline_sha256": "0bf672b6a642d60745d56f57f0e938fbc3b4df3aada026aa523401b2d6b6aebd",
+  "followup_observations": [
+    {
+      "driver_code": "NOR",
+      "t_s": 4605.0,
+      "running_order": 8
+    },
+    {
+      "driver_code": "PER",
+      "t_s": 4605.0,
+      "running_order": 7
+    },
+    {
+      "driver_code": "PER",
+      "t_s": 4606.0,
+      "running_order": 7
+    },
+    {
+      "driver_code": "PER",
+      "t_s": 4607.0,
+      "running_order": 7
+    },
+    {
+      "driver_code": "PER",
+      "t_s": 4608.0,
+      "running_order": 7
+    }
+  ],
+  "replacement_version": "20260914-observed-persistence",
+  "interpretation": "Unsupported persistence confirmation removed; not an independently adjudicated false positive."
+}

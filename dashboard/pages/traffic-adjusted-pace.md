@@ -204,7 +204,9 @@ order by lap_number
 
 Traffic is at least 50% of valid replay ticks within 1.5 seconds of a car ahead.
 Clean air is at least 80% leading or three seconds clear, with no more than 10%
-close traffic. Laps need 80% replay coverage; lap one, pit in/out laps, unknown
+close traffic. Classification needs 80% coverage by usable order/gap observations,
+not just replay rows. Missing or invalid values cannot establish clear air.
+Lap one, pit in/out laps, unknown
 compounds and tyre life below two are excluded. Gaps are reconstructed from lap
 timing and do not capture every lapped-car interaction, so this analysis must not
 be read as a causal counterfactual finish result.

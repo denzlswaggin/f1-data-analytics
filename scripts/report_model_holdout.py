@@ -1,6 +1,6 @@
 """Read-only temporal diagnostic, not independent race or causal validation.
 
-Refit an independent OLS benchmark on the first eight qualifying stint laps,
+Refit OLS or the production Theil-Sen fitting kernel on the first eight qualifying stint laps,
 then evaluate all later qualifying laps (at least three). Existing production
 fits and residuals are never inputs. Peer references remain contemporaneous;
 this is not a deployable pre-race forecast or a counterfactual pit-time test.
@@ -9,6 +9,7 @@ this is not a deployable pre-race forecast or a counterfactual pit-time test.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import Counter
 from pathlib import Path
@@ -17,6 +18,7 @@ from typing import Any
 import duckdb
 import numpy as np
 import pandas as pd
+from analytics.pit_timing import _fit
 
 KEYS = ["season", "round", "driver_code", "stint"]
 REQUIRED = [
@@ -29,8 +31,10 @@ REQUIRED = [
 ]
 
 
-def evaluate(laps: pd.DataFrame) -> dict[str, Any]:
+def evaluate(laps: pd.DataFrame, *, estimator: str = "ols") -> dict[str, Any]:
     """Return lap-weighted errors and auditable per-stint chronological splits."""
+    if estimator not in {"ols", "production_theil_sen"}:
+        raise ValueError("Unknown estimator")
     missing = set(REQUIRED) - set(laps.columns)
     if missing:
         raise ValueError(f"Missing columns: {sorted(missing)}")
@@ -68,8 +72,12 @@ def evaluate(laps: pd.DataFrame) -> dict[str, Any]:
             continue
         # Centring improves conditioning; neither holdout values nor ages enter fit.
         centre = float(x.mean())
-        design = np.column_stack([np.ones(len(x)), x - centre])
-        coefficients = np.linalg.lstsq(design, y, rcond=None)[0]
+        if estimator == "production_theil_sen":
+            slope, intercept, _ = _fit(x - centre, y)
+            coefficients = np.array([intercept, slope])
+        else:
+            design = np.column_stack([np.ones(len(x)), x - centre])
+            coefficients = np.linalg.lstsq(design, y, rcond=None)[0]
         prediction = coefficients[0] + coefficients[1] * (holdout.tyre_life.to_numpy() - centre)
         truth = holdout.controlled_pace_delta_sec.to_numpy(dtype=float)
         baseline = float(np.median(y))
@@ -98,6 +106,7 @@ def evaluate(laps: pd.DataFrame) -> dict[str, Any]:
         )
     return {
         "protocol": "first-8-clean-laps-train_remaining-minimum-3-holdout-v1",
+        "estimator": estimator,
         "input_laps": len(data),
         "qualifying_laps": len(selected),
         "excluded_input_laps": len(data) - len(selected),
@@ -111,8 +120,9 @@ def evaluate(laps: pd.DataFrame) -> dict[str, Any]:
         "stints": records,
         "limitations": (
             "Retrospective within-stint temporal diagnostic on previously inspected races, "
-            "not an unseen-race validation. Independent linear benchmark, not the production "
-            "robust estimator. Eligibility and peer references use contemporaneous observed "
+            "not an unseen-race validation. The selected fitting kernel is refitted under this "
+            "diagnostic's eligibility/split rules, not the complete production strategy model. "
+            "Eligibility and peer references use contemporaneous observed "
             "data. No causal driver-pace, calibrated interval, or counterfactual pit accuracy claim."
         ),
     }
@@ -121,14 +131,23 @@ def evaluate(laps: pd.DataFrame) -> dict[str, Any]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--snapshot", type=Path, default=Path("data/dashboard/latest.duckdb"))
+    parser.add_argument("--estimator", choices=["ols", "production_theil_sen"], default="ols")
     args = parser.parse_args()
+    snapshot_hash = hashlib.sha256(args.snapshot.read_bytes()).hexdigest()
     with duckdb.connect(str(args.snapshot), read_only=True) as connection:
         laps = connection.execute("select * from marts.traffic_adjusted_laps").fetchdf()
         metadata = connection.execute(
             "select version, generated_at from dashboard.snapshot_metadata"
         ).fetchall()
-    result = evaluate(laps)
+    result = evaluate(laps, estimator=args.estimator)
     result["snapshot_metadata"] = metadata
+    if hashlib.sha256(args.snapshot.read_bytes()).hexdigest() != snapshot_hash:
+        raise ValueError("Snapshot changed during evaluation")
+    result["snapshot_sha256"] = snapshot_hash
+    result["implementation_sha256"] = {
+        str(path): hashlib.sha256(path.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+        for path in (Path("scripts/report_model_holdout.py"), Path("analytics/pit_timing.py"))
+    }
     print(json.dumps(result, indent=2, allow_nan=False, default=str))
 
 

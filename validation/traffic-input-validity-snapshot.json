@@ -1,0 +1,16 @@
+{
+  "baseline_sha256": "0a56b87e5efd43e0adc13ab79692a7880b9c746468b685a79c6f5e8f3e9323ea",
+  "traffic_implementation_sha256": "405c2f80ebf9b6caaddc81e9c44a1f1ff8e3c10a6d799735eaed0819bccb5ba9",
+  "tables": {
+    "traffic_adjusted_laps": {
+      "rows": 51052,
+      "removed": 0,
+      "added": 0
+    },
+    "traffic_adjusted_pace": {
+      "rows": 1145,
+      "removed": 0,
+      "added": 0
+    }
+  }
+}

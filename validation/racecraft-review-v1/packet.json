@@ -1,0 +1,51 @@
+{
+  "protocol": {
+    "schema_version": 1,
+    "definition": {
+      "id": "sustained-pair-pass-v1",
+      "minimum_hold_seconds": 3,
+      "lap_tolerance": 0,
+      "scope": "Directed on-track position exchanges between the named pair, held continuously for at least three seconds. Include position returns; exclude pit-cycle changes, lapping and retirements. Annotate all events in both directions on the anchor driver's lap convention. This does not establish competitive intent or ten-second Racecraft pressure."
+    },
+    "selection": "Previously inspected diagnostic pair windows; not untouched races or a population sample.",
+    "windows": [
+      {
+        "id": "austria-2025-mclaren-lap11",
+        "season": 2025,
+        "round": 11,
+        "pair": [
+          "NOR",
+          "PIA"
+        ],
+        "anchor_driver": "NOR",
+        "lap_min": 11,
+        "lap_max": 11
+      },
+      {
+        "id": "monza-2025-lead-return-laps2-4",
+        "season": 2025,
+        "round": 16,
+        "pair": [
+          "VER",
+          "NOR"
+        ],
+        "anchor_driver": "VER",
+        "lap_min": 2,
+        "lap_max": 4
+      },
+      {
+        "id": "spa-2025-verstappen-leclerc-laps5-44",
+        "season": 2025,
+        "round": 13,
+        "pair": [
+          "VER",
+          "LEC"
+        ],
+        "anchor_driver": "LEC",
+        "lap_min": 5,
+        "lap_max": 44
+      }
+    ]
+  },
+  "protocol_sha256": "a9ea6471f30d01c371b296b76b11e7bf1863f0174682a872c87e4ab69d128196"
+}

@@ -1,0 +1,72 @@
+{
+  "window_id": "spa-2025-verstappen-leclerc-laps5-44",
+  "driver_mapping": {
+    "1": "VER",
+    "16": "LEC"
+  },
+  "replay_start_t_s": 714.4979999999996,
+  "replay_end_t_s": 5143.07,
+  "clock_alignment": {
+    "utc_minus_replay_s": 1753626000.2455,
+    "spread_s": 0.23200011253356934,
+    "maximum_spread_s": 1.0,
+    "anchors": [
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:55.071000+00:00",
+        "replay_t_s": 714.6890000000003
+      },
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:44.814000+00:00",
+        "replay_t_s": 5144.497
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:54.672000+00:00",
+        "replay_t_s": 714.4979999999996
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:43.220000+00:00",
+        "replay_t_s": 5143.07
+      }
+    ]
+  },
+  "source_position_timeline": {
+    "baseline_available": true,
+    "baseline_last_updates_utc_s": {
+      "1": 1753617933.453,
+      "16": 1753617933.453
+    },
+    "ambiguous_or_missing_intervals": [],
+    "transitions": [],
+    "complete_source_coverage": null,
+    "limitations": "Sparse change events are carried forward between updates. State duration is not a measured physical lead duration. Continuous source delivery cannot be inferred from this stream."
+  },
+  "source_overtake_endpoint_rows": [],
+  "snapshot_detected_pair_events": [],
+  "accuracy": null,
+  "independent_video_validation": false,
+  "limitations": "Feed comparison only. OpenF1 and FastF1 may share original timing, so agreement is not independent adjudication. Source timestamps are not physical pass times; pit cycles and penalties may change order. Counts are not TP/FP/FN. Mapping is rejected if four bracketing lap clocks disagree by >1 second; this tolerance is a diagnostic policy, not calibrated uncertainty.",
+  "snapshot_metadata": [
+    [
+      "20260914-racecraft-integrity",
+      "2026-09-14 00:17:29.704042+02:00"
+    ]
+  ],
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
+  "capture_manifest_sha256": "b96635cb660f37e6accdef5502977ba0c9bf6e42dcfdcbfdf3c417c616bd0e79"
+}

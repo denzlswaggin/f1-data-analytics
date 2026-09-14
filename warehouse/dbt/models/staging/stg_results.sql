@@ -23,10 +23,12 @@ renamed as (
         cast(laps as integer)                                                    as laps,
         status,
         cast(time_millis as bigint)                                              as time_millis,
-        -- "Finished" or "+n Lap(s)" count as classified finishers.
+        -- Jolpica positionText carries classification independently of status.
+        -- Classified drivers can retire; missing/unrecognised evidence stays unknown.
         case
-            when status = 'Finished' or status like '+%Lap%' then true
-            else false
+            when cast(position as integer) > 0
+                and trim(position_text) = cast(cast(position as integer) as varchar) then true
+            when trim(position_text) in ('R', 'D', 'W', 'F') then false
         end                                                                      as is_classified
     from source
 )

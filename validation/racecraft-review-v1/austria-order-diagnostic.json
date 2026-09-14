@@ -1,0 +1,80 @@
+{
+  "window_id": "austria-2025-mclaren-lap11",
+  "pair": [
+    "NOR",
+    "PIA"
+  ],
+  "start_t_s": 805.0,
+  "end_t_s": 875.0,
+  "race_origin_session_s": 4268.287,
+  "replay_order": {
+    "NOR": {
+      "samples": 71,
+      "running_orders": [
+        1
+      ]
+    },
+    "PIA": {
+      "samples": 71,
+      "running_orders": [
+        2
+      ]
+    }
+  },
+  "interpolation_knots_session_s": [
+    5073.287,
+    5143.287
+  ],
+  "first_minus_second_progress_laps": [
+    0.009106279913526194,
+    0.009967778430960195
+  ],
+  "first_always_ahead_in_interpolation": true,
+  "second_always_ahead_in_interpolation": false,
+  "lap_inputs": [
+    {
+      "driver_code": "NOR",
+      "lap_number": 10,
+      "lap_start_sec": 5002.627,
+      "lap_time_sec": 69.952
+    },
+    {
+      "driver_code": "NOR",
+      "lap_number": 11,
+      "lap_start_sec": 5072.579,
+      "lap_time_sec": 70.946
+    },
+    {
+      "driver_code": "NOR",
+      "lap_number": 12,
+      "lap_start_sec": 5143.525,
+      "lap_time_sec": 70.184
+    },
+    {
+      "driver_code": "PIA",
+      "lap_number": 10,
+      "lap_start_sec": 5003.376,
+      "lap_time_sec": 69.849
+    },
+    {
+      "driver_code": "PIA",
+      "lap_number": 11,
+      "lap_start_sec": 5073.225,
+      "lap_time_sec": 71.008
+    },
+    {
+      "driver_code": "PIA",
+      "lap_number": 12,
+      "lap_start_sec": 5144.233,
+      "lap_time_sec": 70.441
+    }
+  ],
+  "limitations": "Reproduces the current lap-interpolation model, not physical on-track order. A constant modeled lead cannot exclude a real within-lap exchange. Does not determine whether the three-second pass definition was met. X/Y affects activity and pass proximity but is not the running-order ranking variable.",
+  "snapshot_metadata": [
+    [
+      "20260914-racecraft-integrity",
+      "2026-09-14 00:17:29.704042+02:00"
+    ]
+  ],
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664"
+}

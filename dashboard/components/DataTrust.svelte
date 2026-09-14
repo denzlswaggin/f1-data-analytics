@@ -18,7 +18,7 @@
 <details class="data-trust">
     <summary>
         <span class="status" class:empty={!hasData} aria-hidden="true"></span>
-        <strong>{hasData ? 'Data confidence' : 'No published data'}</strong>
+        <strong>{hasData ? 'Data coverage' : 'No published data'}</strong>
         <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${sampleLabel}` : 'Try another selection'}</span>
     </summary>
     <div class="details" aria-label="Data coverage and method">
@@ -34,9 +34,9 @@
 <style>
     .data-trust {
         margin: 0.9rem 0 1.35rem;
-        border: 1px solid rgba(70, 211, 154, 0.22);
+        border: 1px solid rgba(148, 163, 184, 0.22);
         border-radius: 0.75rem;
-        background: linear-gradient(115deg, rgba(70, 211, 154, 0.075), rgba(255,255,255,.018));
+        background: linear-gradient(115deg, rgba(148, 163, 184, 0.075), rgba(255,255,255,.018));
         color: #dbe5ee;
         font-size: 0.88rem;
     }
@@ -49,10 +49,10 @@
         list-style: none;
     }
     summary::-webkit-details-marker { display: none; }
-    summary::after { content: 'View coverage'; margin-left: auto; color: #70dfb0; font-size: 0.8rem; font-weight: 700; }
+    summary::after { content: 'View coverage'; margin-left: auto; color: #aab6c6; font-size: 0.8rem; font-weight: 700; }
     summary:focus-visible { outline: 2px solid var(--color-primary, #2563eb); outline-offset: 2px; }
     summary > span:not(.status) { color: #9facbc; }
-    .status { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: var(--color-positive, #46d39a); box-shadow: 0 0 0 3px rgba(70,211,154,.14); }
+    .status { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: #94a3b8; }
     .status.empty { background: currentColor; box-shadow: none; opacity: 0.35; }
     .details {
         display: flex;

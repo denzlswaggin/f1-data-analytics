@@ -29,16 +29,14 @@ def test_replay_serving_contract_includes_live_timing_context() -> None:
     assert "tyreLife" in model
 
 
-def test_overtakes_expose_detector_confidence() -> None:
+def test_overtakes_keep_detector_evidence_available_for_audit() -> None:
     source = OVERTAKE_SOURCE.read_text(encoding="utf-8")
     exporter = WEB_EXPORTER.read_text(encoding="utf-8")
-    model = WEB_MODEL.read_text(encoding="utf-8")
 
     assert "o.confidence" in source
     assert "o.evidence" in source
     assert "o.reason" in source
     assert "confidence, evidence, reason" in exporter
-    assert "row.confidence" in model
 
 
 def test_optional_team_radio_source_preserves_schema_when_empty() -> None:

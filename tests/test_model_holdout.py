@@ -32,11 +32,12 @@ def test_linear_split_and_baseline() -> None:
     assert result["baseline_mae_sec"] > 0
 
 
-def test_holdout_values_do_not_change_fit() -> None:
+@pytest.mark.parametrize("estimator", ["ols", "production_theil_sen"])
+def test_holdout_values_do_not_change_fit(estimator: str) -> None:
     laps = fixture()
-    before = evaluate(laps)["stints"][0]
+    before = evaluate(laps, estimator=estimator)["stints"][0]
     laps.loc[8:, "controlled_pace_delta_sec"] += 100
-    after = evaluate(laps)["stints"][0]
+    after = evaluate(laps, estimator=estimator)["stints"][0]
     for field in (
         "slope_sec_per_tyre_lap",
         "intercept_at_train_centre_sec",
@@ -44,6 +45,22 @@ def test_holdout_values_do_not_change_fit() -> None:
     ):
         assert before[field] == after[field]
     assert after["model_mae_sec"] == pytest.approx(100)
+
+
+def test_production_kernel_resists_a_training_outlier() -> None:
+    laps = fixture()
+    laps.loc[7, "controlled_pace_delta_sec"] += 50
+    robust = evaluate(laps, estimator="production_theil_sen")
+    ordinary = evaluate(laps)
+    assert robust["model_mae_sec"] == pytest.approx(0, abs=1e-12)
+    assert ordinary["model_mae_sec"] > 10
+    assert robust["stints"][0]["train_laps"] == ordinary["stints"][0]["train_laps"]
+    assert robust["stints"][0]["holdout_laps"] == ordinary["stints"][0]["holdout_laps"]
+
+
+def test_unknown_estimator_fails_before_evaluation() -> None:
+    with pytest.raises(ValueError, match="Unknown estimator"):
+        evaluate(fixture(), estimator="unreviewed")
 
 
 def test_empty_and_insufficient() -> None:

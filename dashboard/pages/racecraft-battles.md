@@ -8,8 +8,8 @@ max_width: 1600
 
 <PageHeader
     eyebrow="Driver intelligence"
-    title="Who converted pressure—and who held position?"
-    description="Trace sustained green-flag close running against the car directly ahead, then separate detected passes, held positions and interrupted battles."
+    title="What does the racecraft model detect?"
+    description="Inspect reconstructed close-running episodes, model-detected passes and gap releases. Physical events have not been independently verified."
     accent="drivers"
 />
 
@@ -19,12 +19,14 @@ select * from f1.snapshot_metadata
 
 <SnapshotStatus data={snapshot} />
 
-<KeyInsight label="Observed racecraft, not a driver-skill score">
+<KeyInsight label="Modelled episodes, not a driver-skill score">
 An eligible battle needs at least ten seconds of uninterrupted, sample-supported pressure within one second of the car directly ahead. Conversion requires a detected order change; an unmatched episode only counts as a defence after an uninterrupted 15-second gap release. Car pace, tyres, fuel, damage, team orders and circuit layout remain part of every result.
 </KeyInsight>
 
 <KeyInsight label="Experimental event reconstruction">
 Passes and gap releases are detected from reconstructed timing data. The processing
+uses lap-timing interpolation for running order; brief within-lap position exchanges
+can be missing even when replay samples are continuous. The integrity
 checks verify that inputs and outputs belong together, not that every event matches
 race footage. Evidence labels are rule-based, not probabilities of correctness.
 External validation is limited; use these views to inspect episodes, not rank driver skill.
@@ -123,10 +125,10 @@ from ${race_battles}
 ```
 
 <Grid cols=4>
-    <BigValue data={race_totals} value=observed_battles title="Observed battles" />
+    <BigValue data={race_totals} value=observed_battles title="Modelled episodes" />
     <BigValue data={race_totals} value=eligible_battles title="Resolved denominator" />
     <BigValue data={race_totals} value=conversions title="Detected conversions" />
-    <BigValue data={race_totals} value=defences title="Position held" />
+    <BigValue data={race_totals} value=defences title="Modelled holds" />
 </Grid>
 
 <Grid cols=3>

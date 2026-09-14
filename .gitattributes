@@ -10,3 +10,4 @@
 *.duckdb binary
 data/dashboard/latest.duckdb filter=lfs diff=lfs merge=lfs -text
 *.png binary
+validation/pit-recovery-20260914/*manifest.json -text

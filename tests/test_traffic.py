@@ -157,6 +157,33 @@ def test_publishes_clean_air_pace_and_paired_traffic_association() -> None:
     ] == pytest.approx(2.0)
 
 
+def test_missing_driver_rows_cannot_redefine_the_shared_clock() -> None:
+    replay = _replay()
+    sparse = replay.loc[replay.driver_code.ne("A") | replay.t_s.mod(10).eq(0)]
+    result = analyse_traffic_adjusted_pace(_laps(), sparse)
+    evidence = result.evidence.loc[result.evidence.driver_code.eq("A")]
+    assert evidence.context_samples.eq(10).all()
+    assert evidence.replay_coverage_pct.le(10).all()
+    assert evidence.air_state.eq("mixed").all()
+    summary = result.summary.loc[result.summary.driver_code.eq("A")].iloc[0]
+    assert not summary.clean_air_eligible
+    assert pd.isna(summary.traffic_adjusted_pace_delta_sec)
+
+
+def test_shared_clock_is_scoped_to_race_and_supports_resampling() -> None:
+    second_laps = _laps().assign(round=2)
+    second_replay = _replay(tick_s=2).assign(round=2)
+    combined = analyse_traffic_adjusted_pace(
+        pd.concat([_laps(), second_laps], ignore_index=True),
+        pd.concat([_replay(), second_replay], ignore_index=True),
+    )
+    expected = analyse_traffic_adjusted_pace(second_laps, second_replay)
+    pd.testing.assert_frame_equal(
+        combined.evidence.loc[combined.evidence["round"].eq(2)].reset_index(drop=True),
+        expected.evidence,
+    )
+
+
 def test_leader_is_clean_but_zero_gap_follower_is_unknown() -> None:
     replay = _replay()
     zero_gap = (replay["driver_code"] == "A") & (replay["lap_number"] == 2)
@@ -169,6 +196,85 @@ def test_leader_is_clean_but_zero_gap_follower_is_unknown() -> None:
         "clean_air"
     }
     assert states.loc[("A", 2)] == "mixed"
+
+
+@pytest.mark.parametrize(
+    "column,value",
+    [("gap_to_ahead_s", np.inf), ("running_order", np.inf), ("running_order", 1.5)],
+)
+def test_invalid_gap_or_rank_cannot_establish_clean_air(column: str, value: float) -> None:
+    replay = _replay()
+    replay[column] = replay[column].astype(float)
+    selected = replay.driver_code.eq("A") & replay.lap_number.eq(2)
+    replay.loc[selected, column] = value
+    result = classify_representative_lap_air(_laps(), replay)
+    row = result.loc[result.driver_code.eq("A") & result.lap_number.eq(2)].iloc[0]
+    assert row.air_state == "mixed"
+    assert row.valid_context_samples == 0
+    assert pd.isna(row.median_gap_to_ahead_s)
+
+
+@pytest.mark.parametrize("column", ["running_order", "gap_to_ahead_s"])
+def test_sparse_usable_context_cannot_classify_an_entire_lap(column: str) -> None:
+    laps = _laps().query("lap_number == 2")
+    replay = _replay().query("lap_number == 2").copy()
+    missing = replay.driver_code.eq("A") & replay.t_s.mod(10).ne(0)
+    replay.loc[missing, column] = np.nan
+    result = classify_representative_lap_air(laps, replay)
+    row = result.loc[result.driver_code.eq("A")].iloc[0]
+    assert row.context_samples == 100
+    assert row.valid_context_samples == 10
+    assert row.replay_coverage_pct == 100
+    assert row.air_state == "mixed"
+
+
+def test_conflicting_replay_context_is_not_resolved_by_row_order() -> None:
+    replay = _replay()
+    conflict = replay.iloc[[400]].copy()
+    conflict["gap_to_ahead_s"] = 0.2
+    with pytest.raises(ValueError, match="Conflicting replay context"):
+        classify_representative_lap_air(_laps(), pd.concat([replay, conflict], ignore_index=True))
+
+
+@pytest.mark.parametrize("compound", ["none", " NaN ", "<NA>", "NaT", "UNKNOWN", ""])
+def test_textual_missing_compounds_are_not_representative(compound: str) -> None:
+    laps = _laps()
+    laps.loc[laps.driver_code.eq("A"), "compound"] = compound
+    result = classify_representative_lap_air(laps, _replay())
+    assert not result.driver_code.eq("A").any()
+
+
+@pytest.mark.parametrize(
+    "parameter,value",
+    [
+        ("traffic_gap_s", np.nan),
+        ("clean_air_gap_s", np.inf),
+        ("clean_air_lap_share", np.nan),
+        ("min_replay_coverage", np.nan),
+    ],
+)
+def test_nonfinite_context_thresholds_are_rejected(parameter: str, value: float) -> None:
+    with pytest.raises(ValueError):
+        classify_representative_lap_air(_laps(), _replay(), **{parameter: value})
+
+
+@pytest.mark.parametrize("column", ["lap_number", "stint", "tyre_life"])
+@pytest.mark.parametrize("value", [np.inf, 2.5])
+def test_invalid_lap_counters_are_not_used_as_observations(column: str, value: float) -> None:
+    laps = _laps()
+    laps[column] = laps[column].astype(float)
+    laps.loc[laps.driver_code.eq("A"), column] = value
+    # Avoid deliberately introducing duplicate keys while checking field validity.
+    if column == "lap_number":
+        laps = laps.drop_duplicates(["season", "round", "driver_code", "lap_number"])
+    result = classify_representative_lap_air(laps, _replay())
+    assert not result.driver_code.eq("A").any()
+
+
+@pytest.mark.parametrize("value", [np.nan, np.inf])
+def test_nonfinite_matching_window_is_rejected(value: float) -> None:
+    with pytest.raises(ValueError):
+        analyse_traffic_adjusted_pace(_laps(), _replay(), tyre_age_window=value)
 
 
 def test_clean_only_driver_has_publishable_clean_pace_without_association() -> None:

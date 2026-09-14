@@ -186,7 +186,7 @@ export type TimingRow = {
 	tyreLife: NullableNumber;
 	stops: NullableNumber;
 	positionChange: NullableNumber;
-	status: 'racing' | 'finished' | 'retired' | 'out';
+	status: 'racing' | 'classified' | 'not classified' | 'out';
 };
 
 export type ReplayEvent = {

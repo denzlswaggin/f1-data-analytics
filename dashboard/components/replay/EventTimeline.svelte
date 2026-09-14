@@ -88,7 +88,7 @@
                 driverCode: passer,
                 participants: [passer, passed].filter(Boolean),
                 label: `${passer || 'Driver'} passes ${passed || 'driver'}`,
-                meta: position == null ? 'Detected on-track pass' : `For P${position}`,
+                meta: `${position == null ? 'Position unavailable' : `For P${position}`} · Unverified model event`,
                 raw
             });
         }

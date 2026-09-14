@@ -308,31 +308,28 @@ models:
 
   - name: mart_race_story
     description: >
-      Per-driver race story combining actual result, same-lap/same-compound
-      controlled pace, strategy count, and detected on-track passes. The pace
-      rank is descriptive and is used to explain the result, not predict a
-      counterfactual finishing order.
+      Compatibility table of recorded race results and recorded pit visits.
+      Retired pace and execution fields are deliberately null; corrected peer
+      pace is supplied by the separate dashboard analysis. Keeping these fields
+      empty prevents a dbt rebuild from restoring the old pit-contaminated model.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, driver_code]
     columns:
       - name: driver_code
         data_tests: [not_null]
-      - name: pace_rank
-        data_tests: [not_null]
       - name: pace_samples
         data_tests:
-          - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
-              strictly: false
+          - accepted_values:
+              values: [0]
+              quote: false
+      - name: methodology_version
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [recorded-results-v1]
       - name: story_label
         data_tests:
           - not_null
           - accepted_values:
-              values:
-                - Pace-supported win
-                - Execution gain
-                - Missed conversion
-                - Comeback drive
-                - Representative finish
-                - Retirement / incident
+              values: ['Recorded result; pace supplied by separate analysis']

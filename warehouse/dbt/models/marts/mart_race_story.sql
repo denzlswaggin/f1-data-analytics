@@ -1,98 +1,45 @@
--- Insight-first race summary: controlled pace rank versus the actual result.
--- Each lap is compared with the field average on the same race lap and compound,
--- which controls fuel load and compound choice without pretending to be a causal
--- strategy model. At least three cars must share the comparison cell.
-with lap_context as (
-    select
-        *,
-        avg(lap_time_sec) over (
-            partition by season, round, lap_number, compound
-        ) as field_lap_avg_sec,
-        count(*) over (
-            partition by season, round, lap_number, compound
-        ) as field_lap_size
-    from {{ ref('mart_lap_times') }}
-    where lap_number > 1
-        and tyre_life >= 2
-        and compound not in ('UNKNOWN', 'None', 'nan')
-),
-
-pace as (
-    select
-        season,
-        round,
-        driver_code,
-        max(race_name) as race_name,
-        max(driver_id) as driver_id,
-        max(driver_name) as driver_name,
-        max(team) as team,
-        count(*) as pace_samples,
-        avg(lap_time_sec - field_lap_avg_sec) as controlled_pace_delta_sec
-    from lap_context
-    where field_lap_size >= 3
-    group by season, round, driver_code
-),
-
-pace_ranked as (
-    select
-        *,
-        rank() over (
-            partition by season, round order by controlled_pace_delta_sec
-        ) as pace_rank
-    from pace
+-- Compatibility result table. Pace belongs to the separately validated serving
+-- analysis; dbt must not recreate the retired pit-contaminated mean model.
+with scopes as (
+    select distinct season, round from {{ ref('mart_lap_times') }}
 ),
 
 stops as (
-    select
-        season,
-        round,
-        driver_code,
-        count(*) - 1 as stops
-    from {{ ref('mart_stint_strategy') }}
-    group by season, round, driver_code
+    select season, round, driver_id, count(*) as stops
+    from {{ ref('stg_pitstops') }}
+group by season, round, driver_id
 ),
 
-joined as (
-    select
-        pace_ranked.season,
-        pace_ranked.round,
-        pace_ranked.race_name,
-        pace_ranked.driver_code,
-        pace_ranked.driver_id,
-        pace_ranked.driver_name,
-        pace_ranked.team,
-        pace_ranked.pace_samples,
-        pace_ranked.controlled_pace_delta_sec,
-        results.grid_position,
-        results.finish_position,
-        results.status,
-        cast(pace_ranked.pace_rank as integer) as pace_rank,
-        case
-            when results.is_classified or results.status = 'Lapped' then true
-            else false
-        end as is_classified,
-        coalesce(stops.stops, 0) as stops
-    from pace_ranked
-    inner join {{ ref('stg_results') }} as results
-        on results.season = pace_ranked.season
-        and results.round = pace_ranked.round
-        and results.driver_code = pace_ranked.driver_code
-    left join stops
-        on stops.season = pace_ranked.season
-        and stops.round = pace_ranked.round
-        and stops.driver_code = pace_ranked.driver_code
+stop_coverage as (
+    select distinct season, round from {{ ref('stg_pitstops') }}
 )
 
 select
-    *,
-    grid_position - finish_position as grid_gain,
-    pace_rank - finish_position as outcome_vs_pace,
-    case
-        when not is_classified then 'Retirement / incident'
-        when finish_position = 1 and pace_rank = 1 then 'Pace-supported win'
-        when pace_rank - finish_position >= 3 then 'Execution gain'
-        when pace_rank - finish_position <= -3 then 'Missed conversion'
-        when grid_position - finish_position >= 5 then 'Comeback drive'
-        else 'Representative finish'
-    end as story_label
-from joined
+    results.season,
+    results.round,
+    races.race_name,
+    results.driver_code,
+    results.driver_id,
+    results.driver_name,
+    results.constructor_id as team,
+    cast(0 as bigint) as pace_samples,
+    cast(null as double precision) as controlled_pace_delta_sec,
+    results.grid_position,
+    results.finish_position,
+    results.status,
+    cast(null as integer) as pace_rank,
+    results.is_classified,
+    cast(null as integer) as outcome_vs_pace,
+    'Recorded result; pace supplied by separate analysis' as story_label,
+    'recorded-results-v1' as methodology_version,
+    case when stop_coverage.season is not null then coalesce(stops.stops, 0) end as stops,
+    case when results.grid_position > 0
+        then results.grid_position - results.finish_position end as grid_gain
+from {{ ref('stg_results') }} as results
+inner join scopes on results.season = scopes.season and results.round = scopes.round
+inner join {{ ref('stg_races') }} as races
+    on results.season = races.season and results.round = races.round
+left join stops on results.season = stops.season and results.round = stops.round
+    and results.driver_id = stops.driver_id
+left join stop_coverage on results.season = stop_coverage.season
+    and results.round = stop_coverage.round

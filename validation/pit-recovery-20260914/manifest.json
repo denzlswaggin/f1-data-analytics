@@ -1,0 +1,912 @@
+{
+  "schema_version": 1,
+  "baseline_sha256": "2181dc0c8db07c1da503b83f10eb0c32f73ad2d0f8a0d26c082393d8a0d1ab2e",
+  "provider": "FastF1",
+  "provider_version": "3.8.3",
+  "started_at": "2026-09-14T00:57:06.726879+00:00",
+  "complete": true,
+  "races": [
+    {
+      "season": 2024,
+      "round": 1,
+      "baseline_laps": 1129,
+      "retrieved_at": "2026-09-14T00:55:01.596913+00:00",
+      "source_file": "2024-01-source.parquet",
+      "source_sha256": "01f00f1b3d0540c87558d7f561b7a1fba430f78b97cf02e45689632689c56f14",
+      "candidate_file": "2024-01-reconciled.parquet",
+      "candidate_sha256": "ef3c08e57beeee324b1a4063ad89bc4af91e9a5a6cd66478218f6ebbbdd38bf1",
+      "filled": {
+        "pit_in_time_sec": 43,
+        "pit_out_time_sec": 43
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "baseline_laps": 901,
+      "retrieved_at": "2026-09-14T00:55:03.430023+00:00",
+      "source_file": "2024-02-source.parquet",
+      "source_sha256": "67aeb0f3667b7edd38f502e3a26e2bc553ae3fd42875d3e2b4d9bfe4e80761cc",
+      "candidate_file": "2024-02-reconciled.parquet",
+      "candidate_sha256": "cbbd23e3c3b8bdd791add2585db675e4670533c65fcf8bbd638c8a9035aeae02",
+      "filled": {
+        "pit_in_time_sec": 20,
+        "pit_out_time_sec": 19
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "baseline_laps": 998,
+      "retrieved_at": "2026-09-14T00:55:04.893288+00:00",
+      "source_file": "2024-03-source.parquet",
+      "source_sha256": "9a7acac2a658a65755a75ec526030a15c849ae5a75c6348561780809652d0490",
+      "candidate_file": "2024-03-reconciled.parquet",
+      "candidate_sha256": "f57e8afb1477fc69fd783f6d3b2f81ca691940cba527ae11c11f4732db0bc489",
+      "filled": {
+        "pit_in_time_sec": 37,
+        "pit_out_time_sec": 37
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "baseline_laps": 907,
+      "retrieved_at": "2026-09-14T00:55:06.145550+00:00",
+      "source_file": "2024-04-source.parquet",
+      "source_sha256": "0e3f013c025a154989c89d40e7a44543d1f8ce4a874847c299a0c143b474ca20",
+      "candidate_file": "2024-04-reconciled.parquet",
+      "candidate_sha256": "a0657259f4314f2bab07a166bbc10eed01fec5fc9a38517c04f2cebd23aed3bd",
+      "filled": {
+        "pit_in_time_sec": 55,
+        "pit_out_time_sec": 54
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 5,
+      "baseline_laps": 1032,
+      "retrieved_at": "2026-09-14T00:55:07.720787+00:00",
+      "source_file": "2024-05-source.parquet",
+      "source_sha256": "3cd681784674d3a24bc10eb3fce266afdfa9e2eb1dd52bf9bc38d823202d1ced",
+      "candidate_file": "2024-05-reconciled.parquet",
+      "candidate_sha256": "1edada367b3ee9671232820f509dbf2e7c182a4ca04a1c8594a87b3b8ca0e611",
+      "filled": {
+        "pit_in_time_sec": 41,
+        "pit_out_time_sec": 41
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 6,
+      "baseline_laps": 1111,
+      "retrieved_at": "2026-09-14T00:55:09.410623+00:00",
+      "source_file": "2024-06-source.parquet",
+      "source_sha256": "98533dd8f4d57ddeaf450f9bb537bf19e59896e6116abaf0b92f08f87f6d3e99",
+      "candidate_file": "2024-06-reconciled.parquet",
+      "candidate_sha256": "9918b8527dec1be34be3890af7999cc0810ceafde91791ed1049244e1d6635cd",
+      "filled": {
+        "pit_in_time_sec": 28,
+        "pit_out_time_sec": 28
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "baseline_laps": 1238,
+      "retrieved_at": "2026-09-14T00:55:11.105749+00:00",
+      "source_file": "2024-07-source.parquet",
+      "source_sha256": "6488221f7e1598348b5fd7749408541827e7536a43f1e1ab7a1b1192c3ebcfb5",
+      "candidate_file": "2024-07-reconciled.parquet",
+      "candidate_sha256": "a9743c101d0ea2bd29ca0569a3c0c2fe14e9562d7b3eaf82c4ded052cc859221",
+      "filled": {
+        "pit_in_time_sec": 28,
+        "pit_out_time_sec": 28
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "baseline_laps": 1237,
+      "retrieved_at": "2026-09-14T00:55:12.860638+00:00",
+      "source_file": "2024-08-source.parquet",
+      "source_sha256": "8579a67483d32fabdef860ee0c6a297af4b5b0d8d3775e92d9ee0e3691a6584b",
+      "candidate_file": "2024-08-reconciled.parquet",
+      "candidate_sha256": "1f4b78cca93ad3e7f0cd4bb608bd349a055f8cbaa69be54ea6a15b28deb7b099",
+      "filled": {
+        "pit_in_time_sec": 23,
+        "pit_out_time_sec": 23
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 9,
+      "baseline_laps": 1272,
+      "retrieved_at": "2026-09-14T00:55:14.857619+00:00",
+      "source_file": "2024-09-source.parquet",
+      "source_sha256": "cbae4bd509724c81db1666aed8ba5d8728a93306ecd2bcc908ae948b1c93ccf3",
+      "candidate_file": "2024-09-reconciled.parquet",
+      "candidate_sha256": "e2e0e7c0ddbc9b67832e08e813bb71249ab4c2563aba846558d59b0a1049804a",
+      "filled": {
+        "pit_in_time_sec": 45,
+        "pit_out_time_sec": 44
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "baseline_laps": 1310,
+      "retrieved_at": "2026-09-14T00:55:16.614896+00:00",
+      "source_file": "2024-10-source.parquet",
+      "source_sha256": "ebae62d069317adb35aaacaed0391726e42c47f132424fbd9166fe968204f184",
+      "candidate_file": "2024-10-reconciled.parquet",
+      "candidate_sha256": "487096639acdbd53f8f51b3e5d262fd35a7c0119cb78a3a4b8722377e79abd7b",
+      "filled": {
+        "pit_in_time_sec": 42,
+        "pit_out_time_sec": 43
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "baseline_laps": 1405,
+      "retrieved_at": "2026-09-14T00:55:18.490864+00:00",
+      "source_file": "2024-11-source.parquet",
+      "source_sha256": "542a3ec4d005dd0baff714434f56d9516f55ae09058c2296afabc31da9e590e0",
+      "candidate_file": "2024-11-reconciled.parquet",
+      "candidate_sha256": "8fcf905ec4526d61a4cc898be01220d0929ddbca1c502f118eb2cd833e1deb16",
+      "filled": {
+        "pit_in_time_sec": 46,
+        "pit_out_time_sec": 46
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "baseline_laps": 960,
+      "retrieved_at": "2026-09-14T00:55:20.100164+00:00",
+      "source_file": "2024-12-source.parquet",
+      "source_sha256": "a1541dee98b0d94e254a5f3c7124b1d24e8db0c664fe855d5c1a9564036ea29e",
+      "candidate_file": "2024-12-reconciled.parquet",
+      "candidate_sha256": "b37164dca393c7f98a6b4c347b48db5394d0d334ed941c146cbea942f414d522",
+      "filled": {
+        "pit_in_time_sec": 46,
+        "pit_out_time_sec": 46
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "baseline_laps": 1355,
+      "retrieved_at": "2026-09-14T00:55:22.048396+00:00",
+      "source_file": "2024-13-source.parquet",
+      "source_sha256": "15836f4fe8d46acef3531c5b4ac752f74b1eaf7a8fea5c5703fca7d4315e993d",
+      "candidate_file": "2024-13-reconciled.parquet",
+      "candidate_sha256": "815058abee4c59d473ab9b829ed2403852a2ee212d395522bf3994c84795f360",
+      "filled": {
+        "pit_in_time_sec": 41,
+        "pit_out_time_sec": 41
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 14,
+      "baseline_laps": 841,
+      "retrieved_at": "2026-09-14T00:55:23.508561+00:00",
+      "source_file": "2024-14-source.parquet",
+      "source_sha256": "0a81f6d6251027d7523084602e968bd01457ae8cc047a91f8e0389dc5fa30973",
+      "candidate_file": "2024-14-reconciled.parquet",
+      "candidate_sha256": "89110ef7809932c95323f9c11c611ac262a10a46dc3a5a56faa1afd273a3e4f5",
+      "filled": {
+        "pit_in_time_sec": 35,
+        "pit_out_time_sec": 34
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "baseline_laps": 1426,
+      "retrieved_at": "2026-09-14T00:55:25.234881+00:00",
+      "source_file": "2024-15-source.parquet",
+      "source_sha256": "38d78193ecc6eaaa4e8eb1c212bcdda202a28ed0f3885ee8043ec8db7769d664",
+      "candidate_file": "2024-15-reconciled.parquet",
+      "candidate_sha256": "c6a859eb997bf4eb2dbf7ede38a34f4230425159fe41fe1f9f59f32e6abb3151",
+      "filled": {
+        "pit_in_time_sec": 26,
+        "pit_out_time_sec": 27
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "baseline_laps": 1008,
+      "retrieved_at": "2026-09-14T00:55:26.579834+00:00",
+      "source_file": "2024-16-source.parquet",
+      "source_sha256": "d1df12fa0231f684905f6da14530ded5e16b5ef9d9197b76b3c23c17f5937912",
+      "candidate_file": "2024-16-reconciled.parquet",
+      "candidate_sha256": "202d5e28b8ea0c8094102a55e49f06836ca5ecb906c64c7d878daedaec729b79",
+      "filled": {
+        "pit_in_time_sec": 31,
+        "pit_out_time_sec": 30
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "baseline_laps": 973,
+      "retrieved_at": "2026-09-14T00:55:28.269938+00:00",
+      "source_file": "2024-17-source.parquet",
+      "source_sha256": "9196ab93bd541a179af1044ea31c44e1f031b883ba1a2d8b5871c46c9e6fc290",
+      "candidate_file": "2024-17-reconciled.parquet",
+      "candidate_sha256": "4d75743c24d661607b7707864ee95a0bf690208d656902a7558f4320a68e15f4",
+      "filled": {
+        "pit_in_time_sec": 24,
+        "pit_out_time_sec": 24
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "baseline_laps": 1177,
+      "retrieved_at": "2026-09-14T00:55:29.978823+00:00",
+      "source_file": "2024-18-source.parquet",
+      "source_sha256": "5a5f8e28095bb40e558d0f87785053901fab0bc322a5c58ab212a51584ea0f77",
+      "candidate_file": "2024-18-reconciled.parquet",
+      "candidate_sha256": "4eb5611ebf7e6fb7f4ec28de9218cf772ab686e2e138157695026d9052749a6a",
+      "filled": {
+        "pit_in_time_sec": 25,
+        "pit_out_time_sec": 23
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "baseline_laps": 1059,
+      "retrieved_at": "2026-09-14T00:55:31.574318+00:00",
+      "source_file": "2024-19-source.parquet",
+      "source_sha256": "d1052acf17e4285bcf146666c01311d13ae4cf785f1e8448ae2a35f3bdae7e10",
+      "candidate_file": "2024-19-reconciled.parquet",
+      "candidate_sha256": "8817360584cdb460593660966fdbe4a749f44da1197ee2366beee23ba79d957e",
+      "filled": {
+        "pit_in_time_sec": 23,
+        "pit_out_time_sec": 24
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "baseline_laps": 1215,
+      "retrieved_at": "2026-09-14T00:55:33.406217+00:00",
+      "source_file": "2024-20-source.parquet",
+      "source_sha256": "e91f1f124ebe2a32a0d98269fb5db3974285ce63becc127b49465a9152c206c9",
+      "candidate_file": "2024-20-reconciled.parquet",
+      "candidate_sha256": "ee2c9a0d6f638043217688b98172463c4e0fee2836a2354d5dad4414d91f6e3e",
+      "filled": {
+        "pit_in_time_sec": 22,
+        "pit_out_time_sec": 22
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 21,
+      "baseline_laps": 1134,
+      "retrieved_at": "2026-09-14T00:55:35.219497+00:00",
+      "source_file": "2024-21-source.parquet",
+      "source_sha256": "b8184308681bee588cb556a7afc46322e3db7f8a3db51f3d7e4f3205007b5b49",
+      "candidate_file": "2024-21-reconciled.parquet",
+      "candidate_sha256": "379af4c65b0acf28ad842df57011ac6f60caef6fc4976d3e1c9827586b91c7ae",
+      "filled": {
+        "pit_in_time_sec": 36,
+        "pit_out_time_sec": 35
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 22,
+      "baseline_laps": 938,
+      "retrieved_at": "2026-09-14T00:55:36.843890+00:00",
+      "source_file": "2024-22-source.parquet",
+      "source_sha256": "0d11fbf1566370ac5adb6c56c9fd0592e6aeb7011d287f6aa32d5077bc9e51c8",
+      "candidate_file": "2024-22-reconciled.parquet",
+      "candidate_sha256": "b97849d9632fe5a3b82cf95e024f1b6f1d751c6f3640476ad6febf99357d9dcd",
+      "filled": {
+        "pit_in_time_sec": 41,
+        "pit_out_time_sec": 40
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 23,
+      "baseline_laps": 943,
+      "retrieved_at": "2026-09-14T00:55:38.624503+00:00",
+      "source_file": "2024-23-source.parquet",
+      "source_sha256": "39d2068f26bae79076543e70286e67394387c54f098ec2ec1a14a33ea76588b0",
+      "candidate_file": "2024-23-reconciled.parquet",
+      "candidate_sha256": "24b07b363d7287ff6a225d06f5df8baa04d0b85254987ec629ed812e808dd565",
+      "filled": {
+        "pit_in_time_sec": 61,
+        "pit_out_time_sec": 60
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "baseline_laps": 1035,
+      "retrieved_at": "2026-09-14T00:55:39.924920+00:00",
+      "source_file": "2024-24-source.parquet",
+      "source_sha256": "e959fa9c4ab3ffbc81e8d2542dca190fb721a92f396efde637ee95915326f114",
+      "candidate_file": "2024-24-reconciled.parquet",
+      "candidate_sha256": "df08f7b3c0ee44b4cb7521f4e22ac8999da8a991372f1cc94f69496a3232b2ee",
+      "filled": {
+        "pit_in_time_sec": 30,
+        "pit_out_time_sec": 28
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 1,
+      "baseline_laps": 927,
+      "retrieved_at": "2026-09-14T00:55:41.887605+00:00",
+      "source_file": "2025-01-source.parquet",
+      "source_sha256": "3a7d3eba08ecf1f76eec87497a13fba8db166aa05c7a53004178e898ebe1768a",
+      "candidate_file": "2025-01-reconciled.parquet",
+      "candidate_sha256": "68161acba725126959be3b50a052ec0d7104c210b5591256122dc12ca7b23681",
+      "filled": {
+        "pit_in_time_sec": 82,
+        "pit_out_time_sec": 84
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 2,
+      "baseline_laps": 1065,
+      "retrieved_at": "2026-09-14T00:55:43.535547+00:00",
+      "source_file": "2025-02-source.parquet",
+      "source_sha256": "2cb7433ce21993ae11297d725b39636079f5b8761fda502de83c06fb9e3ac764",
+      "candidate_file": "2025-02-reconciled.parquet",
+      "candidate_sha256": "162d133a9d55743ee033b3ec7a326daddebec0c914aea4ed8df35954e3deb081",
+      "filled": {
+        "pit_in_time_sec": 26,
+        "pit_out_time_sec": 26
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 3,
+      "baseline_laps": 1059,
+      "retrieved_at": "2026-09-14T00:55:44.975189+00:00",
+      "source_file": "2025-03-source.parquet",
+      "source_sha256": "01b2c4df100f695dda4cc3939d6f901dc595b8c2865e77205084a076f7bf1bb1",
+      "candidate_file": "2025-03-reconciled.parquet",
+      "candidate_sha256": "fb4d2625921b04435348a3415d9a7e3658f5d16c1d4c838e45ead1ef382f4f53",
+      "filled": {
+        "pit_in_time_sec": 21,
+        "pit_out_time_sec": 21
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 4,
+      "baseline_laps": 1128,
+      "retrieved_at": "2026-09-14T00:55:46.338218+00:00",
+      "source_file": "2025-04-source.parquet",
+      "source_sha256": "69bc2412b83f93c42d0852dc396bafc328576e798f1baad693a96e436dba4045",
+      "candidate_file": "2025-04-reconciled.parquet",
+      "candidate_sha256": "1715d20ce6f962b1003e768c49f1eae9a5e59e3e997ac2f607c7740ef28d80fb",
+      "filled": {
+        "pit_in_time_sec": 43,
+        "pit_out_time_sec": 42
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "baseline_laps": 898,
+      "retrieved_at": "2026-09-14T00:55:47.808407+00:00",
+      "source_file": "2025-05-source.parquet",
+      "source_sha256": "166ad7e2e2c1cbd4bfc53f0936ba46545ba208d92ac591a39151f0eada8727f1",
+      "candidate_file": "2025-05-reconciled.parquet",
+      "candidate_sha256": "4eeb82b12edd0a6c319aac5355426f50ac8c735d5b8ef5cb8415d496690b9d5b",
+      "filled": {
+        "pit_in_time_sec": 20,
+        "pit_out_time_sec": 19
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "baseline_laps": 1005,
+      "retrieved_at": "2026-09-14T00:55:49.353486+00:00",
+      "source_file": "2025-06-source.parquet",
+      "source_sha256": "7f14b72364af7476c08b4d3719ad7438007ece8a621ca649486a9bac0402d0e5",
+      "candidate_file": "2025-06-reconciled.parquet",
+      "candidate_sha256": "533503199ecd9e1ede325472554ee4ded577728c326f2c2fa6957c681d11cc0d",
+      "filled": {
+        "pit_in_time_sec": 19,
+        "pit_out_time_sec": 19
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 7,
+      "baseline_laps": 1207,
+      "retrieved_at": "2026-09-14T00:55:51.106604+00:00",
+      "source_file": "2025-07-source.parquet",
+      "source_sha256": "23ea490e2130d7b8d849ddfa54e23592295008b708aebc7c128f6e5338b9951b",
+      "candidate_file": "2025-07-reconciled.parquet",
+      "candidate_sha256": "1ed1760b3bc7f1047977968c40fb9c13cea491316aa27211d7580a7e69c12808",
+      "filled": {
+        "pit_in_time_sec": 37,
+        "pit_out_time_sec": 38
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "baseline_laps": 1425,
+      "retrieved_at": "2026-09-14T00:55:52.954081+00:00",
+      "source_file": "2025-08-source.parquet",
+      "source_sha256": "a4eb64f900b570f49d8e11796926fb2b9f18476930976068abfa0a4f0fa33277",
+      "candidate_file": "2025-08-reconciled.parquet",
+      "candidate_sha256": "5c97472dd5f3f32067fb34b5589d75fb7f0ce20f89e23f32de6280f575adcf88",
+      "filled": {
+        "pit_in_time_sec": 41,
+        "pit_out_time_sec": 40
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 9,
+      "baseline_laps": 1203,
+      "retrieved_at": "2026-09-14T00:55:54.621664+00:00",
+      "source_file": "2025-09-source.parquet",
+      "source_sha256": "2a8b0c0d82569c60ec55234905deb5ebff8732f84c1cf21ffcbfb35054f2c086",
+      "candidate_file": "2025-09-reconciled.parquet",
+      "candidate_sha256": "d953e4df8cef40d86e785fba4110a3d6f1c202106c96f9752f7851142a973ca6",
+      "filled": {
+        "pit_in_time_sec": 55,
+        "pit_out_time_sec": 55
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "baseline_laps": 1349,
+      "retrieved_at": "2026-09-14T00:55:56.545137+00:00",
+      "source_file": "2025-10-source.parquet",
+      "source_sha256": "b239266c6d77d51c92e5dae6934e1564737400ab4638c94f6a090b6f47d5848e",
+      "candidate_file": "2025-10-reconciled.parquet",
+      "candidate_sha256": "e0a52371248e978f93f5b0fed19f486b88c12537ee8e1eb1888db21093be7973",
+      "filled": {
+        "pit_in_time_sec": 83,
+        "pit_out_time_sec": 84
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "baseline_laps": 1126,
+      "retrieved_at": "2026-09-14T00:55:57.663424+00:00",
+      "source_file": "2025-11-source.parquet",
+      "source_sha256": "83fdee61994afb0daeb79cb9f98490e3865e59a7370926c33a936f3a962d69ba",
+      "candidate_file": "2025-11-reconciled.parquet",
+      "candidate_sha256": "0d00765225d55b5a863b8a13f1a22304de44564d4342e47f00a45f85e47177a4",
+      "filled": {
+        "pit_in_time_sec": 33,
+        "pit_out_time_sec": 32
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 12,
+      "baseline_laps": 825,
+      "retrieved_at": "2026-09-14T00:55:59.287708+00:00",
+      "source_file": "2025-12-source.parquet",
+      "source_sha256": "76b87fadfb05a35e7a755c8c439a1f4f980dd40aa41aaa8699142aceedc23867",
+      "candidate_file": "2025-12-reconciled.parquet",
+      "candidate_sha256": "5fa226245d93baf4323e9e94db34d286ace137781813a2a075a2bb19804bde14",
+      "filled": {
+        "pit_in_time_sec": 36,
+        "pit_out_time_sec": 40
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 13,
+      "baseline_laps": 879,
+      "retrieved_at": "2026-09-14T00:56:00.903582+00:00",
+      "source_file": "2025-13-source.parquet",
+      "source_sha256": "6b16390de388f8809d06d9cfc3966dd2f78fcc19f331107e2d140b453ceb992a",
+      "candidate_file": "2025-13-reconciled.parquet",
+      "candidate_sha256": "91e293451331fa4eba0a42d517cee56b0a909bf34566a332b3395e91e22d0f81",
+      "filled": {
+        "pit_in_time_sec": 26,
+        "pit_out_time_sec": 46
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "baseline_laps": 1368,
+      "retrieved_at": "2026-09-14T00:56:02.742687+00:00",
+      "source_file": "2025-14-source.parquet",
+      "source_sha256": "2005b67970a9f1b6605037eaa5d2776ac0bb93f42a936985612952ace6614fee",
+      "candidate_file": "2025-14-reconciled.parquet",
+      "candidate_sha256": "271fd22181f59ab531de19f13c0c44ade885df2f2a0687e3c1c7ea03e409a590",
+      "filled": {
+        "pit_in_time_sec": 30,
+        "pit_out_time_sec": 30
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 15,
+      "baseline_laps": 1364,
+      "retrieved_at": "2026-09-14T00:56:04.556857+00:00",
+      "source_file": "2025-15-source.parquet",
+      "source_sha256": "50aaf875987194d336c5f5b82770828887598d6f0c2f98476ed8217ee9cc1d19",
+      "candidate_file": "2025-15-reconciled.parquet",
+      "candidate_sha256": "66bb70299b72910f13e27f1dfe016c9046e44beb9f3ac98927d6dc442524e67f",
+      "filled": {
+        "pit_in_time_sec": 40,
+        "pit_out_time_sec": 40
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "baseline_laps": 974,
+      "retrieved_at": "2026-09-14T00:56:06.006850+00:00",
+      "source_file": "2025-16-source.parquet",
+      "source_sha256": "7b681783d54367014384d84a7dfe01bc83678cf347b065ecda2537e3d2d4c0dd",
+      "candidate_file": "2025-16-reconciled.parquet",
+      "candidate_sha256": "0bfd6588ba0476b41ed6e0fcd6d55d8cc4679dce56dd241305ea7bff550c322e",
+      "filled": {
+        "pit_in_time_sec": 20,
+        "pit_out_time_sec": 21
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 17,
+      "baseline_laps": 968,
+      "retrieved_at": "2026-09-14T00:56:07.397673+00:00",
+      "source_file": "2025-17-source.parquet",
+      "source_sha256": "62db8e018f8a337a90fc9cd6291620f2fa519118baebede9592c76e6f40df38a",
+      "candidate_file": "2025-17-reconciled.parquet",
+      "candidate_sha256": "134b4e719ab5272045bcd668019a18ca4e246888e2bde6cac830005c4ce60220",
+      "filled": {
+        "pit_in_time_sec": 21,
+        "pit_out_time_sec": 21
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "baseline_laps": 1229,
+      "retrieved_at": "2026-09-14T00:56:09.021598+00:00",
+      "source_file": "2025-18-source.parquet",
+      "source_sha256": "f466d4971601ab0cf15ed125fbbed0152d82a5411e78ab3d77952d6c132f2ee6",
+      "candidate_file": "2025-18-reconciled.parquet",
+      "candidate_sha256": "3b718b260c839095b2c71f904dee587fe4763e9352e142e2030d626e5337bd0f",
+      "filled": {
+        "pit_in_time_sec": 23,
+        "pit_out_time_sec": 25
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 19,
+      "baseline_laps": 1067,
+      "retrieved_at": "2026-09-14T00:56:10.712424+00:00",
+      "source_file": "2025-19-source.parquet",
+      "source_sha256": "c7549ef835261deb953b64abf0ea678e4552e3b5a358824b6f81041c2e4af326",
+      "candidate_file": "2025-19-reconciled.parquet",
+      "candidate_sha256": "cbfc82df648abfb375ca32cdd3c71836b3c1969f04537774020b4bb17a217ab1",
+      "filled": {
+        "pit_in_time_sec": 21,
+        "pit_out_time_sec": 21
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "baseline_laps": 1263,
+      "retrieved_at": "2026-09-14T00:56:12.238819+00:00",
+      "source_file": "2025-20-source.parquet",
+      "source_sha256": "8251278ca25b3037d17b0e3ccaf12c0de1f41fd261ed518972b0898846d0233b",
+      "candidate_file": "2025-20-reconciled.parquet",
+      "candidate_sha256": "4fb24c1eb21198a365f94d0900e3b47753b44fefc391e5f2dd2bdc1328f813df",
+      "filled": {
+        "pit_in_time_sec": 30,
+        "pit_out_time_sec": 27
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 21,
+      "baseline_laps": 1251,
+      "retrieved_at": "2026-09-14T00:56:13.835969+00:00",
+      "source_file": "2025-21-source.parquet",
+      "source_sha256": "489f4a53ca3c0221ef8dd90c3c2dac73a25cc56db78d20b020b3e9464a1c164a",
+      "candidate_file": "2025-21-reconciled.parquet",
+      "candidate_sha256": "caa7b8c7ad3fe6881fd4b568662a2a0880d74ae9758e9eceb6e403da25653b6e",
+      "filled": {
+        "pit_in_time_sec": 38,
+        "pit_out_time_sec": 39
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 22,
+      "baseline_laps": 886,
+      "retrieved_at": "2026-09-14T00:56:14.977476+00:00",
+      "source_file": "2025-22-source.parquet",
+      "source_sha256": "f635679a0115fe8096912ad02bcbdd8b782a9ad14a3664a6222c7bba1ecdb054",
+      "candidate_file": "2025-22-reconciled.parquet",
+      "candidate_sha256": "9095948cdf26d8fb4719c8e5622bf6e270eba4dc91b5323de8acf9d4fdc43f29",
+      "filled": {
+        "pit_in_time_sec": 25,
+        "pit_out_time_sec": 24
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "baseline_laps": 1067,
+      "retrieved_at": "2026-09-14T00:56:16.683647+00:00",
+      "source_file": "2025-23-source.parquet",
+      "source_sha256": "b057de1c5021167f4fb43d4f3f1fe09dd9d6302cca7163364a614c1c7dfe3f18",
+      "candidate_file": "2025-23-reconciled.parquet",
+      "candidate_sha256": "14e4d4c6a4593c60a40b5db7176db1223aae73e4ddb01247c98ee9160012e28f",
+      "filled": {
+        "pit_in_time_sec": 44,
+        "pit_out_time_sec": 42
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "baseline_laps": 1156,
+      "retrieved_at": "2026-09-14T00:56:18.023695+00:00",
+      "source_file": "2025-24-source.parquet",
+      "source_sha256": "b277191256e138292a1319a8b5cc41e346b44ab1e8e641208c55e59ad54913fb",
+      "candidate_file": "2025-24-reconciled.parquet",
+      "candidate_sha256": "7e07a0f5e1f815c89cbaa13df7b6b3cc0587d7fe6cd4754b0524cce685652f6e",
+      "filled": {
+        "pit_in_time_sec": 27,
+        "pit_out_time_sec": 27
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "baseline_laps": 1006,
+      "retrieved_at": "2026-09-14T00:56:19.768977+00:00",
+      "source_file": "2026-01-source.parquet",
+      "source_sha256": "27a1d58f28da936017596e76f873d9293d3ec29e9bf10911774ceb3aab4124ee",
+      "candidate_file": "2026-01-reconciled.parquet",
+      "candidate_sha256": "e70e34d4217335f55a0d585d1884e6ce5a5d9e9c0e05e09df048ccfd390b0ff0",
+      "filled": {
+        "pit_in_time_sec": 33,
+        "pit_out_time_sec": 32
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "baseline_laps": 920,
+      "retrieved_at": "2026-09-14T00:56:20.930888+00:00",
+      "source_file": "2026-02-source.parquet",
+      "source_sha256": "bd511c73359c2b0dbef14e9a6e96f9869ff633692fd7069f53b1fc926c4d9ebb",
+      "candidate_file": "2026-02-reconciled.parquet",
+      "candidate_sha256": "2a32d8bbb354f37bcb59095da7a87729975ffec743ae1bf5acf434b63840af87",
+      "filled": {
+        "pit_in_time_sec": 21,
+        "pit_out_time_sec": 19
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 3,
+      "baseline_laps": 1107,
+      "retrieved_at": "2026-09-14T00:56:22.282419+00:00",
+      "source_file": "2026-03-source.parquet",
+      "source_sha256": "597c75b069a704f8644cf8a62d20b79006a617ef9eab9982b8f1c605e18b8efe",
+      "candidate_file": "2026-03-reconciled.parquet",
+      "candidate_sha256": "dc7394b698156547f1172eef976cda207d8a9eb95b09bc4e34a7363526838d97",
+      "filled": {
+        "pit_in_time_sec": 30,
+        "pit_out_time_sec": 29
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "baseline_laps": 1040,
+      "retrieved_at": "2026-09-14T00:56:23.590776+00:00",
+      "source_file": "2026-04-source.parquet",
+      "source_sha256": "a9c3c55ce5f3c07959b9a227b1f34876e98ef44b15a768f89dde53ab0c1813ad",
+      "candidate_file": "2026-04-reconciled.parquet",
+      "candidate_sha256": "af731842131ad4f5a78f5d574b6ccb1c4d5e105c920f6278d50b32dcf17aa05f",
+      "filled": {
+        "pit_in_time_sec": 24,
+        "pit_out_time_sec": 23
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "baseline_laps": 1211,
+      "retrieved_at": "2026-09-14T00:56:25.167091+00:00",
+      "source_file": "2026-05-source.parquet",
+      "source_sha256": "8c35005b7aea689b9be09479bf840b6990ecb4c2a107079aed7fd6fe0103852b",
+      "candidate_file": "2026-05-reconciled.parquet",
+      "candidate_sha256": "4ba23834feb240154c038b8ec2f292706739f3c4e9e355ef16098efd333af406",
+      "filled": {
+        "pit_in_time_sec": 36,
+        "pit_out_time_sec": 35
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 6,
+      "baseline_laps": 1452,
+      "retrieved_at": "2026-09-14T00:56:26.993048+00:00",
+      "source_file": "2026-06-source.parquet",
+      "source_sha256": "19df46f9d1ea85ba5aa1e485aac53bb58ee32a8ba1841c6bd3e00994638d8fca",
+      "candidate_file": "2026-06-reconciled.parquet",
+      "candidate_sha256": "99d699415f643a8ea557f480b43b0c0b46f35da6792c8aed5a9e6e5da7964067",
+      "filled": {
+        "pit_in_time_sec": 89,
+        "pit_out_time_sec": 87
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "baseline_laps": 1236,
+      "retrieved_at": "2026-09-14T00:56:28.547294+00:00",
+      "source_file": "2026-07-source.parquet",
+      "source_sha256": "b442dddb80c1e4aaec77927ea64298162a3f4e695e3d3956be565200bfb6cac4",
+      "candidate_file": "2026-07-reconciled.parquet",
+      "candidate_sha256": "c9785a4c956ac4d6cb0c2ce02a5926e33d83548f3c70ac37eb5152570fcc19bd",
+      "filled": {
+        "pit_in_time_sec": 53,
+        "pit_out_time_sec": 49
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "baseline_laps": 1339,
+      "retrieved_at": "2026-09-14T00:56:30.063434+00:00",
+      "source_file": "2026-08-source.parquet",
+      "source_sha256": "e5f2a57a2e2c539c02dde11ef95440881dcb1349be1bda8460d47d3abd8e2eb1",
+      "candidate_file": "2026-08-reconciled.parquet",
+      "candidate_sha256": "2c742be36c6e282f95467a526a45a4371361827f0bd4ea60ddbdafefb8789e06",
+      "filled": {
+        "pit_in_time_sec": 44,
+        "pit_out_time_sec": 41
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "baseline_laps": 1113,
+      "retrieved_at": "2026-09-14T00:56:31.786894+00:00",
+      "source_file": "2026-09-source.parquet",
+      "source_sha256": "2be73ec199e22e223897c4c7bd2b10f5d4acd573037f303f4c964fc842c0639b",
+      "candidate_file": "2026-09-reconciled.parquet",
+      "candidate_sha256": "e29a72b846e7e87bbc050b9ff60ef74b2b52ebc58b799b9af979cda90bafc3b4",
+      "filled": {
+        "pit_in_time_sec": 52,
+        "pit_out_time_sec": 52
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 10,
+      "baseline_laps": 872,
+      "retrieved_at": "2026-09-14T00:56:33.098592+00:00",
+      "source_file": "2026-10-source.parquet",
+      "source_sha256": "1965a6a042271f0ba8aa02dba72670e13b0b3f586d682138661da8a38c3477c8",
+      "candidate_file": "2026-10-reconciled.parquet",
+      "candidate_sha256": "4500e38ee21aea36b5fd18fa03ab1117426948f0e18eae2f2e1dad1d8a5645d2",
+      "filled": {
+        "pit_in_time_sec": 30,
+        "pit_out_time_sec": 28
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "baseline_laps": 1431,
+      "retrieved_at": "2026-09-14T00:56:34.653164+00:00",
+      "source_file": "2026-11-source.parquet",
+      "source_sha256": "9789f0311e68a81bf0510b6a2cfcadb290910cdb4cf4252cacd17f8c50b07c38",
+      "candidate_file": "2026-11-reconciled.parquet",
+      "candidate_sha256": "a404790cad7eb46b6e205c20ede99d86ad8e09c49f7cb7da84437b9cb15337af",
+      "filled": {
+        "pit_in_time_sec": 47,
+        "pit_out_time_sec": 46
+      },
+      "status": "reconciled"
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "baseline_laps": 1368,
+      "retrieved_at": "2026-09-14T00:56:36.400783+00:00",
+      "source_file": "2026-12-source.parquet",
+      "source_sha256": "194cf93ee429d0bb824e1138d78c9920f1be1afe319e26796ec47acbdc1ec182",
+      "candidate_file": "2026-12-reconciled.parquet",
+      "candidate_sha256": "79122d99704e8653b7e989c32d9c0c72d7a2c1bb8ffbc714b00ac288beb5dc3e",
+      "filled": {
+        "pit_in_time_sec": 68,
+        "pit_out_time_sec": 65
+      },
+      "status": "reconciled"
+    }
+  ],
+  "source_capture_sha256": "16cd86b139c8b1cc35f7e2b7902b2d9528b59f645022997ec23bb0e30bee632a",
+  "finished_at": "2026-09-14T00:57:08.652103+00:00"
+}

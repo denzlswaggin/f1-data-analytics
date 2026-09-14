@@ -1,0 +1,137 @@
+{
+  "window_id": "monza-2025-lead-return-laps2-4",
+  "driver_mapping": {
+    "1": "VER",
+    "4": "NOR"
+  },
+  "replay_start_t_s": 87.37800000000016,
+  "replay_end_t_s": 339.01099999999997,
+  "clock_alignment": {
+    "utc_minus_replay_s": 1757250214.9295,
+    "spread_s": 0.23199987411499023,
+    "maximum_spread_s": 1.0,
+    "anchors": [
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 2,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:05:02.302000+00:00",
+        "replay_t_s": 87.37800000000016
+      },
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:09:13.857000+00:00",
+        "replay_t_s": 339.01099999999997
+      },
+      {
+        "driver_code": "NOR",
+        "driver_number": 4,
+        "lap_number": 2,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:05:02.727000+00:00",
+        "replay_t_s": 87.64899999999989
+      },
+      {
+        "driver_code": "NOR",
+        "driver_number": 4,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-09-07T13:09:14.966000+00:00",
+        "replay_t_s": 340.03099999999995
+      }
+    ]
+  },
+  "source_position_timeline": {
+    "baseline_available": true,
+    "baseline_last_updates_utc_s": {
+      "1": 1757246748.631,
+      "4": 1757246748.631
+    },
+    "ambiguous_or_missing_intervals": [],
+    "transitions": [
+      {
+        "utc_s": 1757250310.226,
+        "overtaking_driver_number": 4,
+        "overtaken_driver_number": 1,
+        "inferred_state_duration_s": 170.937,
+        "right_censored": false,
+        "replay_t_s": 95.29649996757507,
+        "snapshot_order_near_transition": {
+          "VER": {
+            "t_s": 95.0,
+            "running_order": 1
+          },
+          "NOR": {
+            "t_s": 95.0,
+            "running_order": 2
+          }
+        }
+      },
+      {
+        "utc_s": 1757250481.163,
+        "overtaking_driver_number": 1,
+        "overtaken_driver_number": 4,
+        "inferred_state_duration_s": 72.7775,
+        "right_censored": true,
+        "replay_t_s": 266.2335000038147,
+        "snapshot_order_near_transition": {
+          "VER": {
+            "t_s": 266.0,
+            "running_order": 2
+          },
+          "NOR": {
+            "t_s": 266.0,
+            "running_order": 1
+          }
+        }
+      }
+    ],
+    "complete_source_coverage": null,
+    "limitations": "Sparse change events are carried forward between updates. State duration is not a measured physical lead duration. Continuous source delivery cannot be inferred from this stream."
+  },
+  "source_overtake_endpoint_rows": [
+    {
+      "meeting_key": 1268,
+      "session_key": 9912,
+      "overtaking_driver_number": 4,
+      "overtaken_driver_number": 1,
+      "date": "2025-09-07T13:05:10.226000+00:00",
+      "position": 1
+    },
+    {
+      "meeting_key": 1268,
+      "session_key": 9912,
+      "overtaking_driver_number": 1,
+      "overtaken_driver_number": 4,
+      "date": "2025-09-07T13:08:01.163000+00:00",
+      "position": 1
+    }
+  ],
+  "snapshot_detected_pair_events": [
+    {
+      "t_s": 111.0,
+      "passer_code": "NOR",
+      "passed_code": "VER"
+    },
+    {
+      "t_s": 285.0,
+      "passer_code": "VER",
+      "passed_code": "NOR"
+    }
+  ],
+  "accuracy": null,
+  "independent_video_validation": false,
+  "limitations": "Feed comparison only. OpenF1 and FastF1 may share original timing, so agreement is not independent adjudication. Source timestamps are not physical pass times; pit cycles and penalties may change order. Counts are not TP/FP/FN. Mapping is rejected if four bracketing lap clocks disagree by >1 second; this tolerance is a diagnostic policy, not calibrated uncertainty.",
+  "snapshot_metadata": [
+    [
+      "20260914-racecraft-integrity",
+      "2026-09-14 00:17:29.704042+02:00"
+    ]
+  ],
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
+  "capture_manifest_sha256": "d23c5f69ac4652bf2fa697b5430e9c3cecfc7efaf9e4d0c988a3caab69eff69f"
+}

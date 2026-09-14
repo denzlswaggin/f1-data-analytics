@@ -1,0 +1,61 @@
+{
+  "methodology": "source-pair-audit-v1",
+  "window_id": "spa-2025-verstappen-leclerc-laps5-44",
+  "snapshot_sha256": "ead8a7cb49900b74da08e840d6c7e9724fab3e4c76aabe52124309f4a0f88664",
+  "capture_manifest_sha256": "920ed490c1f0164ea9fc3b1f7f759989c17d5d380ea3fd9935775927e7a9394b",
+  "clock_alignment": {
+    "utc_minus_replay_s": 1753626000.2455,
+    "spread_s": 0.23200011253356934,
+    "maximum_spread_s": 1.0,
+    "anchors": [
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:55.071000+00:00",
+        "replay_t_s": 714.6890000000003
+      },
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:44.814000+00:00",
+        "replay_t_s": 5144.497
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:54.672000+00:00",
+        "replay_t_s": 714.4979999999996
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:43.220000+00:00",
+        "replay_t_s": 5143.07
+      }
+    ]
+  },
+  "max_interval_age_s": 4.0,
+  "ticks": 4429,
+  "driver_samples": 8858,
+  "gap_status_counts": {
+    "available": 3932,
+    "no_observed_pair_ahead": 4443,
+    "stale_interval": 428,
+    "non_numeric_interval": 42,
+    "interval_predates_order_change": 13
+  },
+  "distinct_usable_interval_observations": 1101,
+  "transition_contexts": [],
+  "snapshot_detected_pair_events": [],
+  "production_promotion": false,
+  "accuracy": null,
+  "limitations": "Development windows, not holdout accuracy. Pair ranks must not overwrite a full field. Held gaps are not independent pressure observations. Missing position updates cannot be detected without a heartbeat. Same source does not guarantee synchronized order and gaps. No physical-event or independent video verification."
+}

@@ -362,7 +362,14 @@ def _seed_warehouse(path: Path) -> Settings:
     lap_rows = (
         replay[["season", "round", "driver_code", "lap_number", "stint", "team", "track_status"]]
         .drop_duplicates(["season", "round", "driver_code", "lap_number"])
-        .assign(session="R", compound="MEDIUM", tyre_life=5)
+        .assign(
+            session="R",
+            compound="MEDIUM",
+            tyre_life=5,
+            lap_start_sec=0.0,
+            pit_in_time_sec=float("nan"),
+            pit_out_time_sec=float("nan"),
+        )
     )
     races = pd.DataFrame(
         [

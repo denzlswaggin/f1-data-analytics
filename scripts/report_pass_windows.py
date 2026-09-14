@@ -134,6 +134,7 @@ def evaluate(connection: duckdb.DuckDBPyConnection, reference: dict[str, Any]) -
                 [window["season"], window["round"], start, end, *pair, *reversed(pair)],
             ).fetchall()
             for t, passer, passed in events:
+                t = float(t)
                 nearest = min(ticks, key=lambda tick: (abs(tick[0] - t), tick[0]))
                 if abs(nearest[0] - t) > 1:
                     reasons.append("unaligned_pass_timestamp")

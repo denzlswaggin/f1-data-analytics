@@ -21,6 +21,7 @@ def _warehouse(path: Path) -> None:
         for schema in ("staging", "intermediate", "marts"):
             connection.execute(f"create schema {schema}")
         duck_type = {
+            "finish_position": "integer",
             "season": "integer",
             "round": "integer",
             "lap_number": "integer",
