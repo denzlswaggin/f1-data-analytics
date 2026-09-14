@@ -1,0 +1,102 @@
+{
+  "schema_version": 3,
+  "session_key": 9912,
+  "drivers": [
+    1,
+    4,
+    5,
+    6,
+    10,
+    12,
+    14,
+    16,
+    18,
+    22,
+    23,
+    27,
+    30,
+    31,
+    43,
+    44,
+    55,
+    63,
+    81,
+    87
+  ],
+  "documentation_url": "https://openf1.org/docs/",
+  "files": [
+    {
+      "file": "sessions.json",
+      "endpoint": "sessions",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/sessions?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:13.439374+00:00",
+      "http_status": 200,
+      "rows": 1,
+      "sha256": "b7b1870d5ef56c48af78b6fcf89fa365ba7ab3c7d7bcb7b10857a10647d02dad"
+    },
+    {
+      "file": "overtakes.json",
+      "endpoint": "overtakes",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/overtakes?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:14.473350+00:00",
+      "http_status": 200,
+      "rows": 202,
+      "sha256": "9818edbcc619c5f57bdae5258363f80c884e6da950fdf3d712443c774d5b2319"
+    },
+    {
+      "file": "drivers.json",
+      "endpoint": "drivers",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/drivers?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:15.505504+00:00",
+      "http_status": 200,
+      "rows": 20,
+      "sha256": "720d8a8a09e1ce030680266f7a849e480fd5f508f4c3228bfa0ae5d012cddeda"
+    },
+    {
+      "file": "position.json",
+      "endpoint": "position",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/position?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:16.556458+00:00",
+      "http_status": 200,
+      "rows": 421,
+      "sha256": "afac7f7f6adbb79fe856bf329208506a0b772cdf5df6c726ba96f2bfc8b0827f"
+    },
+    {
+      "file": "laps.json",
+      "endpoint": "laps",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/laps?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:17.748635+00:00",
+      "http_status": 200,
+      "rows": 976,
+      "sha256": "89cee73604aaf44129b1a80cb10205f55eb16937dff0ba804ca38326532bbbae"
+    },
+    {
+      "file": "intervals.json",
+      "endpoint": "intervals",
+      "parameters": {
+        "session_key": 9912
+      },
+      "url": "https://api.openf1.org/v1/intervals?session_key=9912",
+      "retrieved_at": "2026-09-14T00:20:20.033004+00:00",
+      "http_status": 200,
+      "rows": 20226,
+      "sha256": "f275eccbf43d73ce6bdb9c4c77327f0a4176623d15b39a095fe059d9f603e906"
+    }
+  ],
+  "limitations": "Historical public API capture, not footage truth. OpenF1 may share underlying F1 timing with FastF1. Position observations can be delayed or incomplete; overtakes include pit-cycle and penalty changes and may be incomplete. Empty responses are not proof of no event."
+}

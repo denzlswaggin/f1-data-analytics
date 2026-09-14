@@ -1,0 +1,60 @@
+{
+  "methodology": "source-field-audit-v1",
+  "window_id": "spa-2025-verstappen-leclerc-laps5-44",
+  "snapshot_sha256": "0bf672b6a642d60745d56f57f0e938fbc3b4df3aada026aa523401b2d6b6aebd",
+  "capture_manifest_sha256": "29c99ea04544fafd77c1c12260eec480f7312c6812f65256f86e03cef1ce9683",
+  "roster_size": 20,
+  "ticks": 4429,
+  "driver_samples": 88580,
+  "max_interval_age_s": 4.0,
+  "clock_alignment": {
+    "utc_minus_replay_s": 1753626000.2455,
+    "spread_s": 0.23200011253356934,
+    "maximum_spread_s": 1.0,
+    "anchors": [
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:55.071000+00:00",
+        "replay_t_s": 714.6890000000003
+      },
+      {
+        "driver_code": "VER",
+        "driver_number": 1,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:44.814000+00:00",
+        "replay_t_s": 5144.497
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 5,
+        "boundary": "lap_start",
+        "source_timestamp": "2025-07-27T14:31:54.672000+00:00",
+        "replay_t_s": 714.4979999999996
+      },
+      {
+        "driver_code": "LEC",
+        "driver_number": 16,
+        "lap_number": 44,
+        "boundary": "recorded_lap_end",
+        "source_timestamp": "2025-07-27T15:45:43.220000+00:00",
+        "replay_t_s": 5143.07
+      }
+    ]
+  },
+  "gap_status_counts": {
+    "available": 72416,
+    "no_observed_pair_ahead": 4429,
+    "stale_interval": 7641,
+    "interval_predates_order_change": 3541,
+    "non_numeric_interval": 553
+  },
+  "transition_contexts": [],
+  "production_promotion": false,
+  "accuracy": null,
+  "limitations": "Declared session roster includes retired/non-starting entries. A coherent 1..N rank state is not proof of a complete timing feed. All earlier gaps are invalidated after any field order change. Held observations never become measured pressure. Clock alignment uses the selected pair's four lap anchors, not every driver's clock. This is a development window, not held-out physical-event validation."
+}

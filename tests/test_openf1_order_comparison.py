@@ -10,6 +10,7 @@ from typing import Any
 import duckdb
 import pytest
 from scripts.compare_openf1_orders import compare, load_capture, position_timeline, utc_seconds
+from scripts.evaluate_field_order import evaluate
 
 CAPTURE = Path("validation/openf1-austria-2025")
 
@@ -121,6 +122,33 @@ def test_austria_source_reversal_is_present_but_not_video_truth(austria: Any) ->
     assert result["clock_alignment"]["spread_s"] == pytest.approx(0.159, abs=0.00001)
     assert result["accuracy"] is None
     assert result["independent_video_validation"] is False
+
+
+def test_full_field_evaluator_uses_captured_roster_and_checked_clock(
+    austria: Any, tmp_path: Path
+) -> None:
+    connection, _, _, window = austria
+    snapshot = tmp_path / "slice.duckdb"
+    with duckdb.connect(str(snapshot)) as target:
+        for qualified in (
+            "staging.stg_races",
+            "staging.stg_laps",
+            "marts.race_replay",
+            "marts.race_overtakes",
+        ):
+            schema = qualified.split(".")[0]
+            target.execute(f"create schema if not exists {schema}")
+            target.register("frame", connection.execute(f"select * from {qualified}").fetchdf())
+            target.execute(f"create table {qualified} as select * from frame")
+            target.unregister("frame")
+        target.execute("alter table staging.stg_races alter race_date type date")
+    result = evaluate(Path("validation/openf1-austria-2025-field"), snapshot, window)
+    assert result["roster_size"] == 20
+    assert result["driver_samples"] == 1420
+    assert result["gap_status_counts"]["available"] == 940
+    assert len(result["transition_contexts"]) == 2
+    assert result["accuracy"] is None
+    assert result["production_promotion"] is False
 
 
 @pytest.mark.parametrize("missing_duration", [False, True])

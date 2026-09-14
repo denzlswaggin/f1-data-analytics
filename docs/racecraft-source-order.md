@@ -59,3 +59,45 @@ interval streams, evaluate pit/neutralization context and observation-supported
 pressure, and compare an untouched frozen race scope. The three existing windows
 are development cases. Independent review remains pending; neither source
 agreement nor passing software tests establishes total data accuracy.
+
+## Full-field candidate
+
+`field_samples` now audits every entry in a captured session roster together.
+At each sampled instant the declared field must have unique ranks spanning 1..N;
+missing, duplicate or skipped ranks make all order and opponent assignments
+unknown. The ahead driver comes from this same field state, never from pair
+overwrites of lap-model ranks. All gaps predating any field order change are
+invalidated, including changes between sampled ticks. This deliberately
+conservative policy can discard a still-useful gap after an unrelated exchange.
+It has not been calibrated for production.
+
+Schema-v3 captures include the original `drivers`, `position`, `intervals`,
+`laps`, `sessions` and `overtakes` responses. The loader verifies their hashes,
+session scope and roster membership. An empty or duplicate roster, or an
+observation for an undeclared driver, fails validation. These are session
+entries, including retired or non-starting drivers; the roster does not establish
+who was actively racing at each instant.
+
+All three existing development windows have 20-entry full-field captures and
+reports in `validation/openf1-{austria,monza,spa}-2025-field`.
+
+| Window | Driver/tick rows | Available gap | Predates order change | Stale | Non-numeric | No pair ahead |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Austria lap 11 | 1,420 | 940 | 257 | 142 | 10 | 71 |
+| Monza laps 2–4 | 5,040 | 3,665 | 608 | 491 | 24 | 252 |
+| Spa laps 5–44 | 88,580 | 72,416 | 3,541 | 7,641 | 553 | 4,429 |
+
+Each window samples the entire roster on the aligned one-second grid; counts
+include held observations and must not be read as independent measurements.
+The full-field Austria regression retains both source lead changes and Norris's
+new 0.037-second interval behind Piastri. The clock still uses four selected-pair
+lap anchors projected from the same full capture; it is not validation of every
+driver's clock. Sparse order changes have no heartbeat. Coherent sampled ranks
+therefore do not establish complete source coverage or physical event accuracy.
+Every output remains `pressure_eligible=false`, and production promotion remains
+disabled pending event, pit and continuity validation beyond these known cases.
+
+```powershell
+.venv/Scripts/python.exe scripts/capture_openf1_reference.py --session 9955 --full-field --output data/warehouse/austria-full-new
+.venv/Scripts/python.exe -m scripts.evaluate_field_order --capture validation/openf1-austria-2025-field --window austria-2025-mclaren-lap11 --output data/warehouse/austria-field-report-new.json
+```

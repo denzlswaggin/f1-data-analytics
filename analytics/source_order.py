@@ -1,4 +1,4 @@
-"""Experimental pair order and interval audit, never a production pressure input.
+"""Experimental pair/full-field interval audit, never a production pressure input.
 
 Positions are sparse change events. Intervals are separate observations without
 an opponent identifier. Only an adjacent, unambiguous pair can supply that
