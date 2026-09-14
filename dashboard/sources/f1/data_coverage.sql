@@ -10,6 +10,24 @@ with races as (
     )
 ),
 
+global_evidence_races as (
+    select 'driver_rating' as section, season, round
+    from intermediate.int_teammate_quali_gaps
+    union
+    select 'pace_profile', season, round
+    from intermediate.int_teammate_race_gaps
+    union
+    select 'weather_slope', season, round
+    from marts.mart_weather_degradation
+),
+
+global_evidence_dates as (
+    select evidence.section, max(race.race_date) as latest_event_date
+    from global_evidence_races evidence
+    join staging.stg_races race using (season, round)
+    group by evidence.section
+),
+
 fastest_telemetry_laps as (
     select
         t.season,
@@ -183,10 +201,11 @@ coverage as (
 
 select
     coverage.*,
-    max(races.race_date) as latest_event_date
+    max(case when coverage.season is null then global_evidence_dates.latest_event_date
+        else races.race_date end) as latest_event_date
 from coverage
 left join races
-    on (coverage.season is null and races.season between coverage.first_season and coverage.last_season)
-    or (races.season = coverage.season and races.round = coverage.round)
+    on races.season = coverage.season and races.round = coverage.round
+left join global_evidence_dates on global_evidence_dates.section = coverage.section
 group by all
 order by section, race_label
