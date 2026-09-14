@@ -1,4 +1,4 @@
-.PHONY: help setup install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dashboard-prepare dashboard-check dashboard-dev data-audit dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
+.PHONY: help setup install install-dbt lock lint format typecheck test backfill dbt-build dbt-docs dbt-docs-check dashboard-snapshot dashboard-prepare dashboard-check dashboard-dev race-control-audit data-audit dagster dagster-validate pg-up pg-down prod-up prod-down prod-logs prod-smoke prod-backup prod-restore-drill prod-restore-drill-latest check
 
 # Prefer the repository virtual environment without requiring it. CI and
 # containers deliberately fall back to the Python found on PATH. Callers may
@@ -64,8 +64,12 @@ dashboard-prepare: ## Validate marts, export the snapshot and refresh Evidence s
 
 dashboard-check: ## Validate the current snapshot, Evidence build and dependent filters
 	$(PYTHON) scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb
+	$(MAKE) race-control-audit
 	cd dashboard && npm run sources:strict && npm run build:strict && npm run test:dropdown
 	$(PYTHON) scripts/check_dashboard_bundle.py dashboard/build --max-total-mb 275
+
+race-control-audit: ## Reconcile every published 2024-2026 race with source control messages
+	$(PYTHON) scripts/audit_race_control_coverage.py data/dashboard/latest.duckdb --summary-only
 
 data-audit: ## Audit snapshot provenance, checksum, coverage and freshness
 	$(PYTHON) scripts/data_audit.py --strict

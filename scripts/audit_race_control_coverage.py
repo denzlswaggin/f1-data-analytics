@@ -285,6 +285,7 @@ def main() -> None:
     parser.add_argument("--from-season", type=int, default=2024)
     parser.add_argument("--to-season", type=int, default=2026)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--summary-only", action="store_true")
     args = parser.parse_args()
     if args.from_season > args.to_season:
         parser.error("--from-season must not exceed --to-season")
@@ -294,7 +295,10 @@ def main() -> None:
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
-    print(rendered, end="")
+    if args.summary_only:
+        print(json.dumps(result["summary"], indent=2, ensure_ascii=False))
+    else:
+        print(rendered, end="")
     if not result["summary"]["audit_pass"]:
         raise SystemExit("FAIL: race-control race audit found structural violations")
 
