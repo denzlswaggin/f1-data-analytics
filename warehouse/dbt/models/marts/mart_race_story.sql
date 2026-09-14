@@ -2,12 +2,18 @@
 -- analysis; dbt must not recreate the retired pit-contaminated mean model.
 with scopes as (
     select distinct season, round from {{ ref('mart_lap_times') }}
-), stops as (
+),
+
+stops as (
     select season, round, driver_id, count(*) as stops
-    from {{ ref('stg_pitstops') }} group by season, round, driver_id
-), stop_coverage as (
+    from {{ ref('stg_pitstops') }}
+group by season, round, driver_id
+),
+
+stop_coverage as (
     select distinct season, round from {{ ref('stg_pitstops') }}
 )
+
 select
     results.season,
     results.round,
@@ -23,12 +29,12 @@ select
     results.status,
     cast(null as integer) as pace_rank,
     results.is_classified,
-    case when stop_coverage.season is not null then coalesce(stops.stops, 0) end as stops,
-    case when results.grid_position > 0
-        then results.grid_position - results.finish_position end as grid_gain,
     cast(null as integer) as outcome_vs_pace,
     'Recorded result; pace supplied by separate analysis' as story_label,
-    'recorded-results-v1' as methodology_version
+    'recorded-results-v1' as methodology_version,
+    case when stop_coverage.season is not null then coalesce(stops.stops, 0) end as stops,
+    case when results.grid_position > 0
+        then results.grid_position - results.finish_position end as grid_gain
 from {{ ref('stg_results') }} as results
 inner join scopes on results.season = scopes.season and results.round = scopes.round
 inner join {{ ref('stg_races') }} as races
