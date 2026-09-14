@@ -18,6 +18,30 @@
     "madrid_pits": {
       "url": "https://www.formula1.com/en/results/2026/races/1294/spain/pit-stop-summary",
       "accessed": "2026-09-14"
+    },
+    "australia_2024": {
+      "url": "https://www.formula1.com/en/latest/article/sainz-storms-to-victory-amid-drama-in-australia-as-zhou-retires-and.4ZVm82EhKLMcVIHurBPr8N.4ZVm82EhKLMcVIHurBPr8N",
+      "accessed": "2026-09-15"
+    },
+    "china_2024": {
+      "url": "https://www.formula1.com/en/latest/article/verstappen-charges-to-victory-over-norris-and-perez-in-action-packed-chinese.3Uz5CwNh5tEQt62umIGhob",
+      "accessed": "2026-09-15"
+    },
+    "japan_2024": {
+      "url": "https://www.formula1.com/en/latest/article/verstappen-leads-home-perez-for-red-bull-one-two-at-japanese-gp-after-early.1rtPVvnBYJgZIEppNtk6ZD",
+      "accessed": "2026-09-15"
+    },
+    "azerbaijan_2024": {
+      "url": "https://www.formula1.com/en/latest/article/piastri-edges-out-leclerc-for-dramatic-azerbaijan-gp-win-amid-late-race.3ZnRWkx1JNAx8lX8HbS2py",
+      "accessed": "2026-09-15"
+    },
+    "canada_2025": {
+      "url": "https://www.formula1.com/en/latest/article/russell-takes-solid-victory-as-piastri-and-norris-collide-late-on-in.2cri9oFCALqhfsbvpqDfBq",
+      "accessed": "2026-09-15"
+    },
+    "belgium_2025": {
+      "url": "https://www.formula1.com/en/latest/article/piastri-wins-wet-dry-belgian-gp-after-late-pressure-from-title-rival-and.7QmPcUP90MvR5iX0w3j91",
+      "accessed": "2026-09-15"
     }
   },
   "cases": [
@@ -116,6 +140,90 @@
       "lap_max": 15,
       "expected": true,
       "source_id": "madrid_pits"
+    },
+    {
+      "id": "australia-vsc-finish",
+      "season": 2024,
+      "round": 3,
+      "kind": "race_control_finish",
+      "driver": "SAI",
+      "other": "VSC",
+      "lap_min": 58,
+      "lap_max": 58,
+      "expected": true,
+      "source_id": "australia_2024"
+    },
+    {
+      "id": "china-vsc-start",
+      "season": 2024,
+      "round": 5,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "VSC",
+      "lap_min": 22,
+      "lap_max": 22,
+      "expected": true,
+      "source_id": "china_2024"
+    },
+    {
+      "id": "china-sc-start",
+      "season": 2024,
+      "round": 5,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "Safety Car",
+      "lap_min": 23,
+      "lap_max": 23,
+      "expected": true,
+      "source_id": "china_2024"
+    },
+    {
+      "id": "japan-red-start",
+      "season": 2024,
+      "round": 4,
+      "kind": "race_control_start",
+      "driver": "VER",
+      "other": "Red Flag",
+      "lap_min": 1,
+      "lap_max": 1,
+      "expected": true,
+      "source_id": "japan_2024"
+    },
+    {
+      "id": "azerbaijan-vsc-finish",
+      "season": 2024,
+      "round": 17,
+      "kind": "race_control_finish",
+      "driver": "PIA",
+      "other": "VSC",
+      "lap_min": 51,
+      "lap_max": 51,
+      "expected": true,
+      "source_id": "azerbaijan_2024"
+    },
+    {
+      "id": "canada-sc-finish",
+      "season": 2025,
+      "round": 10,
+      "kind": "race_control_finish",
+      "driver": "RUS",
+      "other": "Safety Car",
+      "lap_min": 70,
+      "lap_max": 70,
+      "expected": true,
+      "source_id": "canada_2025"
+    },
+    {
+      "id": "belgium-red-start",
+      "season": 2025,
+      "round": 13,
+      "kind": "race_control_start",
+      "driver": "NOR",
+      "other": "Red Flag",
+      "lap_min": 1,
+      "lap_max": 1,
+      "expected": true,
+      "source_id": "belgium_2025"
     }
   ]
 }
