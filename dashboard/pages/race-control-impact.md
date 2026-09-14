@@ -81,6 +81,15 @@ select *,
         when 'unresolved' then 'Stop inferred; exact timing unavailable'
         else 'No stop observed in the event window'
     end as pit_context,
+    case
+        when position_before is not null then 'P' || cast(position_before as varchar)
+        else 'Deployment position unavailable'
+    end as position_before_display,
+    case
+        when pit_duration_sec is not null then printf('%.3f s', pit_duration_sec)
+        when pit_timing_class = 'unresolved' then 'Exact pit timing unavailable'
+        else 'No stop in event window'
+    end as pit_duration_display,
     driver_code || ' · ' || driver_name || ' · ' || cast(story_count as varchar)
         || '/' || cast(story_total as varchar) || ' story' as driver_label
 from (
@@ -104,6 +113,8 @@ order by focus_rank, position_before
     <BigValue data={selected_event} value=gap_status title="Gap evidence" />
     <BigValue data={selected_event} value=restart_status title="Recovery evidence" />
 </Grid>
+
+{#if driver_evidence.length > 0}
 
 <FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable. The selector shows 1/1 when that driver has a material pit, gap, restart, position or tyre story in this event, otherwise 0/1.">
     <DependentDropdown data={driver_evidence} name=driver value=driver_code label=driver_label order="focus_rank asc" title="Driver" season={inputs.season.value} round={inputs.race.value} scopeKey={inputs.event.value} defaultValue={selected_event[0]?.focus_driver_code} />
@@ -136,13 +147,28 @@ where effect_type in ('estimated_vsc_pit_saving', 'estimated_safety_car_pit_savi
     and not eligible
 ```
 
+```sql pit_card
+select case
+    when effect.eligible then printf('%.2f s', effect.value)
+    when driver.pit_timing_class = 'no_stop_observed' then 'No stop in event window'
+    when driver.pit_timing_class = 'after_end' then 'Stopped after end; no neutralised saving'
+    when coalesce(effect.exclusion_reason, '') <> '' then effect.exclusion_reason
+    when not driver.pit_eligible then 'Exact pit timing unavailable'
+    else 'No supported same-race counterfactual'
+end as pit_saving_display
+from ${focus_driver} as driver
+left join ${focus_effects} as effect
+    on effect.effect_type in ('estimated_vsc_pit_saving', 'estimated_safety_car_pit_saving')
+qualify row_number() over (order by effect.eligible desc nulls last) = 1
+```
+
 ## {inputs.driver.value}'s intervention story
 
 <Grid cols=4>
-    <BigValue data={focus_driver} value=position_before title="Position at deployment" />
+    <BigValue data={focus_driver} value=position_before_display title="Position at deployment" />
     <BigValue data={focus_driver} value=pit_context title="Pit timing" />
-    <BigValue data={focus_driver} value=pit_duration_sec fmt="0.000" title="Recorded pit-lane duration (s)" />
-    <BigValue data={pit_saving} value=value fmt="0.00" title="Estimated neutralised pit saving (s)" />
+    <BigValue data={focus_driver} value=pit_duration_display title="Recorded pit-lane duration" />
+    <BigValue data={pit_card} value=pit_saving_display title="Estimated neutralised pit saving" />
 </Grid>
 
 <KeyInsight label="Final result is context only">
@@ -251,6 +277,14 @@ order by abs(field_adjusted_gap_gain_s) desc
 
 `race-control-impact-v3` pairs exact official intervention messages and evaluates position, gap, pit, tyre and recovery evidence independently. Gap publication still requires at least five comparable drivers and verified green recovery. Pit estimates instead require exact pit timestamps, at least one stable non-pitting peer, five clean same-race green stops from at least four drivers, and a stable reference distribution. Red flags suppress gap estimates across the suspension.
 </ExpandableSection>
+
+{:else}
+
+<KeyInsight label="Driver evidence unavailable">
+The intervention is retained because its deployment is present in the race-control source, but no trustworthy driver-level before/after view can be published. Reason: {selected_event[0]?.exclusion_reason || 'race replay or baseline unavailable'}. This is a source limitation, not evidence that the intervention had no impact.
+</KeyInsight>
+
+{/if}
 
 {:else}
 

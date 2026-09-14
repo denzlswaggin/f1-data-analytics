@@ -35,6 +35,13 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "story_total" in page
     assert "cast(story_total as varchar) || ' story'" in page
     assert "pit_eligible or gap_eligible or restart_eligible" in page
+    assert "No stop in event window" in page
+    assert "Stopped after end; no neutralised saving" in page
+    assert "No supported same-race counterfactual" in page
+    assert "Driver evidence unavailable" in page
+    assert "source limitation, not evidence" in page
+    assert "pit_duration_display" in page
+    assert "pit_saving_display" in page
     assert 'comparisonFmt="P0 after recovery"' not in page
 
 
