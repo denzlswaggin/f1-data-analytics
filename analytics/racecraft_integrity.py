@@ -10,7 +10,7 @@ from numbers import Number
 import duckdb
 import pandas as pd
 
-RECEIPT_VERSION = "racecraft-inputs-v1"
+RECEIPT_VERSION = "racecraft-inputs-v2-observed-persistence"
 INPUT_TABLES = {
     "replay": "marts.race_replay",
     "laps": "staging.stg_laps",

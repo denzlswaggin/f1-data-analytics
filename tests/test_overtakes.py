@@ -80,6 +80,40 @@ def test_detect_overtakes_clean_pass() -> None:
     assert row["reason"] == "clean_adjacent_swap"
 
 
+@pytest.mark.parametrize("failure", ["truncated", "missing_car", "missing_tick", "large_gap"])
+def test_persistence_requires_observed_continuous_followup(failure: str) -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10)
+    if failure == "truncated":
+        frame = frame.loc[frame.t_s < 8]
+    elif failure == "missing_car":
+        frame.loc[(frame.driver_code == "A") & (frame.t_s == 6), "running_order"] = np.nan
+    elif failure == "missing_tick":
+        frame = frame.loc[frame.t_s != 6]
+    else:
+        frame = frame.loc[(frame.t_s <= 5) | (frame.t_s >= 10)]
+    assert detect_overtakes(frame).empty
+
+
+def test_exact_persistence_endpoint_is_sufficient() -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10, n=9)
+    assert len(detect_overtakes(frame)) == 1
+
+
+@pytest.mark.parametrize("gap", [-0.1, float("-inf"), float("inf")])
+def test_invalid_completion_gap_is_not_evidence(gap: float) -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10)
+    frame.loc[(frame.driver_code == "A") & (frame.t_s == 5), "gap_to_ahead_s"] = gap
+    assert detect_overtakes(frame).empty
+
+
+def test_conflicting_driver_tick_is_rejected() -> None:
+    frame = _replay(lambda t: (1, 2) if t < 5 else (2, 1), lambda code, t: 100 + t * 10)
+    extra = frame.iloc[[10]].copy()
+    extra["running_order"] = 1
+    with pytest.raises(ValueError, match="Conflicting replay samples"):
+        detect_overtakes(pd.concat([frame, extra]))
+
+
 def test_detect_overtakes_bridges_one_incomplete_ranking_tick() -> None:
     # B's timing update is absent at t=5, then the adjacent A/B order resolves at
     # t=6. The detector may bridge this short incomplete transition.

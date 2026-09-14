@@ -12,7 +12,7 @@ from ingestion.loaders.warehouse import (
 )
 from ingestion.logging import get_logger
 
-from analytics.overtakes import detect_overtakes
+from analytics.overtakes import MAX_PERSISTENCE_GAP_S, detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
 from analytics.pace_profile import build_pace_profile
 from analytics.pipelines.driver_dna import build_driver_dna as build_driver_dna
@@ -1453,6 +1453,7 @@ def _build_racecraft_scope(
         "persist_s": settings.overtake_persist_s,
         "start_guard_s": settings.overtake_start_guard_s,
         "proximity_frac": settings.overtake_proximity_frac,
+        "max_persistence_gap_s": MAX_PERSISTENCE_GAP_S,
     }
     # A missing event partition is not proof of zero passes. Always detect from
     # the same replay scope before classifying any attack/defence outcomes.
