@@ -53,6 +53,19 @@ Within-lap exchanges, timing errors and incomplete pit observations remain open.
 · [Persistence audit](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/overtake-persistence.md)
 · [Pit-interval audit](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/overtake-pit-intervals.md)
 
+### Current-snapshot fitting diagnostic
+
+On `20260914-source-classification`, the actual robust fitting kernel used in
+pit timing was refitted on the first eight eligible clean-air laps of each stint
+and evaluated on later laps. Across 825 stints and 8,578 later laps, mean absolute
+error was **1.146 s**, compared with **1.198 s** for OLS and **0.653 s** for the
+training-median constant. Both fitted trends were worse than that baseline.
+
+This evaluates a fitting component under the diagnostic's selection rules, not
+the complete production strategy model. It uses already inspected races and
+derived pace targets; it provides no calibrated uncertainty or counterfactual
+strategy accuracy. [Protocol and complete reports](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/production-kernel-temporal-diagnostic.md).
+
 ### Historical reference panel: 11 September snapshot
 
 The first external reference panel checks 16 selected cases from the 2025
