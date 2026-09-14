@@ -600,7 +600,8 @@ def _checkpoint_row(
 ) -> dict[str, object]:
     driver = replay_race.loc[replay_race["driver_code"].eq(driver_code)]
     state = _interpolated_state(driver, checkpoint_t_s)
-    reason = "" if state is not None else "Replay does not bracket checkpoint within 2 seconds"
+    eligible = state is not None
+    reason = "" if eligible else "Replay does not bracket checkpoint within 2 seconds"
     state = state or {}
     return {
         "season": int(replay_race["season"].iloc[0]),
@@ -624,7 +625,7 @@ def _checkpoint_row(
         "tyre_life": _to_int(state.get("tyre_life")),
         "capture_offset_s": state.get("capture_offset_s", np.nan),
         "source": source,
-        "eligible": state is not None,
+        "eligible": eligible,
         "exclusion_reason": reason,
         "methodology_version": METHODOLOGY_VERSION,
     }
@@ -1628,7 +1629,12 @@ def analyse_race_control_impact(
                     if event.event_type != "Red Flag" and pd.notna(end_gap) and pd.notna(green_gap):
                         gap_change = float(end_gap - green_gap)
                 for effect_type, value, unit, metric_ok in (
-                    ("restart_position_change", position_change, "positions", restart_ok),
+                    (
+                        "restart_position_change",
+                        position_change,
+                        "positions",
+                        restart_ok and np.isfinite(position_change),
+                    ),
                     (
                         "restart_gap_change",
                         gap_change,

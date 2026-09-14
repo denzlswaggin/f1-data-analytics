@@ -18,6 +18,7 @@ from analytics.race_control_impact import (
     RACE_CONTROL_EVENT_COLUMNS,
     RACE_CONTROL_IMPACT_COLUMNS,
     RaceControlImpactResult,
+    _checkpoint_row,
     _estimated_lap_deficits,
     _Event,
     _pit_effect_rows,
@@ -346,6 +347,27 @@ def test_pit_saving_requires_stable_multi_driver_green_reference(
         < float(str(saving["upper_bound"]))
     )
     assert diagnostics["ANT"]["eligible"]
+
+
+def test_checkpoint_with_unbracketed_replay_is_explicitly_unavailable() -> None:
+    replay = _replay().loc[lambda frame: frame.t_s.isin([99.0, 140.0])]
+    event = _Event(1, "VSC", 100.0, 5, 150.0, 5, "complete")
+
+    checkpoint = _checkpoint_row(
+        replay,
+        event,
+        "2026-01-vsc-01",
+        "Test GP",
+        "AAA",
+        "control_end",
+        40,
+        130.0,
+        source="test",
+    )
+
+    assert not checkpoint["eligible"]
+    assert pd.isna(checkpoint["capture_offset_s"])
+    assert "does not bracket" in str(checkpoint["exclusion_reason"])
 
 
 @pytest.mark.parametrize(
