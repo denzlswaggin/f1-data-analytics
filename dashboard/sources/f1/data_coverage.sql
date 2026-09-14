@@ -208,4 +208,4 @@ left join races
     on races.season = coverage.season and races.round = coverage.round
 left join global_evidence_dates on global_evidence_dates.section = coverage.section
 group by all
-order by section, race_label
+order by coverage.section, coverage.race_label
