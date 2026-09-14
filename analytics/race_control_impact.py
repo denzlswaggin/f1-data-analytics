@@ -1027,9 +1027,14 @@ def _pit_effect_rows(
                 else "medium"
             )
         eligible = not reason
+        saving_effect_type = (
+            "estimated_vsc_pit_saving"
+            if event.event_type == "VSC"
+            else "estimated_safety_car_pit_saving"
+        )
         for effect_type, value, bounds in (
             ("estimated_green_pit_loss", green_loss, (np.nan, np.nan)),
-            ("estimated_vsc_pit_saving", estimate, (lower, upper)),
+            (saving_effect_type, estimate, (lower, upper)),
         ):
             rows.append(
                 {

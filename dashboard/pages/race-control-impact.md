@@ -115,13 +115,15 @@ order by effect_scope, effect_type
 ```sql pit_saving
 select value, lower_bound, upper_bound, confidence, sample_size
 from ${focus_effects}
-where effect_type = 'estimated_vsc_pit_saving' and eligible
+where effect_type in ('estimated_vsc_pit_saving', 'estimated_safety_car_pit_saving')
+    and eligible
 ```
 
 ```sql pit_unavailable
 select exclusion_reason
 from ${focus_effects}
-where effect_type = 'estimated_vsc_pit_saving' and not eligible
+where effect_type in ('estimated_vsc_pit_saving', 'estimated_safety_car_pit_saving')
+    and not eligible
 ```
 
 ## {inputs.driver.value}'s intervention story
@@ -130,7 +132,7 @@ where effect_type = 'estimated_vsc_pit_saving' and not eligible
     <BigValue data={focus_driver} value=position_before title="Position at deployment" />
     <BigValue data={focus_driver} value=pit_context title="Pit timing" />
     <BigValue data={focus_driver} value=pit_duration_sec fmt="0.000" title="Recorded pit-lane duration (s)" />
-    <BigValue data={pit_saving} value=value fmt="0.00" title="Estimated VSC pit saving (s)" />
+    <BigValue data={pit_saving} value=value fmt="0.00" title="Estimated neutralised pit saving (s)" />
 </Grid>
 
 <KeyInsight label="Final result is context only">

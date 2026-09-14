@@ -28,6 +28,9 @@ counterfactual uses clean, non-neutralised stops from the same race:
 
 `estimated saving = median(normalised green loss) - observed neutralised loss`
 
+The published effect is named `estimated_vsc_pit_saving` or
+`estimated_safety_car_pit_saving` so the intervention type remains explicit.
+
 Publication requires at least one comparable peer, five clean reference stops from
 at least four drivers, valid pit timestamps and a reference median absolute
 deviation no greater than two seconds. A deterministic 1,000-sample bootstrap

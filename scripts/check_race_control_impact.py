@@ -36,7 +36,8 @@ def main() -> None:
             where eligible and value is null""",
         "estimated_saving_without_interval": """select count(*)
             from marts.race_control_effects
-            where effect_type = 'estimated_vsc_pit_saving' and eligible
+            where effect_type in ('estimated_vsc_pit_saving',
+                    'estimated_safety_car_pit_saving') and eligible
                 and (evidence_class != 'estimated' or lower_bound is null or upper_bound is null
                     or lower_bound > value or upper_bound < value or sample_size < 5)""",
         "invalid_exact_pit_classification": """select count(*)
@@ -51,7 +52,8 @@ def main() -> None:
         "red_flag_gap_effect": """select count(*) from marts.race_control_effects
             where event_type = 'Red Flag' and eligible
                 and effect_type in ('observed_gap_change', 'field_adjusted_gap_change',
-                    'restart_gap_change', 'estimated_vsc_pit_saving')""",
+                    'restart_gap_change', 'estimated_vsc_pit_saving',
+                    'estimated_safety_car_pit_saving')""",
     }
     with duckdb.connect(str(args.path), read_only=True) as connection:
         violations = {}
