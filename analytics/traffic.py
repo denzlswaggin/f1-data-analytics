@@ -175,13 +175,16 @@ def _lap_context(
         "replay_coverage_pct",
         "median_gap_to_ahead_s",
     ]
-    context = replay.dropna(subset=[*_LAP_KEYS, "t_s", "running_order"]).copy()
+    context = replay.loc[:, sorted(_REPLAY_REQUIRED)].dropna(subset=[*_LAP_KEYS, "t_s"]).copy()
     if context.empty:
         return pd.DataFrame(columns=output_columns)
 
-    context = context.drop_duplicates(subset=[*_LAP_KEYS, "t_s"])
-    context["t_s"] = pd.to_numeric(context["t_s"], errors="coerce")
-    context = context.dropna(subset=["t_s"]).sort_values([*_DRIVER_KEYS, "t_s"])
+    for name in ("t_s", "running_order", "gap_to_ahead_s"):
+        context[name] = pd.to_numeric(context[name], errors="coerce")
+    context = context.loc[np.isfinite(context["t_s"])].drop_duplicates()
+    if context.duplicated([*_DRIVER_KEYS, "t_s"]).any():
+        raise ValueError("Conflicting replay context for a driver and tick")
+    context = context.sort_values([*_DRIVER_KEYS, "t_s"])
     context["sample_interval_s"] = context.groupby(_DRIVER_KEYS)["t_s"].diff()
     tick_interval = (
         context.loc[context["sample_interval_s"].gt(0)]
@@ -203,11 +206,14 @@ def _lap_context(
 
     order = pd.to_numeric(context["running_order"], errors="coerce")
     gap = pd.to_numeric(context["gap_to_ahead_s"], errors="coerce")
-    follower = order.gt(1)
-    context["valid_tick"] = order.eq(1) | (follower & gap.gt(0))
-    context["traffic_tick"] = follower & gap.gt(0) & gap.le(traffic_gap_s)
-    context["clean_air_tick"] = order.eq(1) | (follower & gap.ge(clean_air_gap_s))
-    context["follower_gap_s"] = gap.where(follower & gap.gt(0))
+    valid_order = np.isfinite(order) & order.ge(1) & order.mod(1).eq(0)
+    leader = valid_order & order.eq(1)
+    follower = valid_order & order.gt(1)
+    valid_gap = np.isfinite(gap) & gap.gt(0)
+    context["valid_tick"] = leader | (follower & valid_gap)
+    context["traffic_tick"] = follower & valid_gap & gap.le(traffic_gap_s)
+    context["clean_air_tick"] = leader | (follower & valid_gap & gap.ge(clean_air_gap_s))
+    context["follower_gap_s"] = gap.where(follower & valid_gap)
 
     grouped = (
         context.groupby(_LAP_KEYS, as_index=False, dropna=False)
@@ -259,8 +265,8 @@ def _exclude_non_representative_laps(laps: pd.DataFrame, replay: pd.DataFrame) -
     is_out_lap = out["lap_number"].eq(out["stint_first_lap"]) & out["stint"].gt(1)
     is_in_lap = out["lap_number"].eq(out["stint_last_lap"]) & out["stint"].lt(out["last_stint"])
     pit_boundary = out.get("is_pit_boundary", pd.Series(False, index=out.index)).fillna(False)
-    known_compound = out["compound"].astype(str).str.strip().str.upper().ne("UNKNOWN")
-    known_compound &= out["compound"].astype(str).str.strip().ne("")
+    compound = out["compound"].astype("string").str.strip().str.upper().fillna("")
+    known_compound = ~compound.isin(["", "UNKNOWN", "NONE", "NAN", "<NA>", "NAT"])
     mature_tyre = out["tyre_life"].ge(2)
     return out.loc[
         ~(is_start | is_out_lap | is_in_lap | pit_boundary) & known_compound & mature_tyre
@@ -342,12 +348,16 @@ def classify_representative_lap_air(
     """
     _require_columns(laps, _LAP_REQUIRED, "laps")
     _require_columns(replay, _REPLAY_REQUIRED, "replay")
-    if traffic_gap_s <= 0 or clean_air_gap_s <= traffic_gap_s:
+    if (
+        not np.isfinite([traffic_gap_s, clean_air_gap_s]).all()
+        or traffic_gap_s <= 0
+        or clean_air_gap_s <= traffic_gap_s
+    ):
         raise ValueError("clean_air_gap_s must be greater than traffic_gap_s > 0")
     shares = (traffic_lap_share, clean_air_lap_share, max_clean_lap_traffic_share)
-    if any(value < 0 or value > 1 for value in shares):
+    if any(not np.isfinite(value) or value < 0 or value > 1 for value in shares):
         raise ValueError("lap-share thresholds must be between 0 and 1")
-    if min_replay_coverage <= 0 or min_replay_coverage > 1:
+    if not np.isfinite(min_replay_coverage) or min_replay_coverage <= 0 or min_replay_coverage > 1:
         raise ValueError("min_replay_coverage must be in (0, 1]")
     if laps.empty or replay.empty:
         return pd.DataFrame()
@@ -375,6 +385,13 @@ def classify_representative_lap_air(
         return pace
 
     enough_coverage = pace["replay_coverage_pct"].ge(100 * min_replay_coverage)
+    # Replay presence alone cannot classify a whole lap. Missing order rows
+    # remain in the cadence calculation, and usable observations must cover
+    # the same minimum fraction of the lap.
+    usable_coverage = pace["replay_coverage_pct"] * (
+        pace["valid_context_samples"] / pace["context_samples"].replace(0, np.nan)
+    )
+    enough_coverage &= usable_coverage.ge(100 * min_replay_coverage)
     pace["air_state"] = np.select(
         [
             enough_coverage & pace["traffic_share"].ge(traffic_lap_share),
