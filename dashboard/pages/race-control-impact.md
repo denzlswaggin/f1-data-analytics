@@ -34,7 +34,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Completed races remain selectable even when no intervention or publishable estimate is available.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <Dropdown data={seasons} name=season value=season title="Season" defaultValue={2026} />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -127,10 +127,10 @@ where effect_type = 'estimated_vsc_pit_saving' and not eligible
 ## {inputs.driver.value}'s intervention story
 
 <Grid cols=4>
-    <BigValue data={focus_driver} value=position_before comparison=position_after comparisonFmt="P0 after recovery" title="Position at deployment" />
-    <BigValue data={focus_driver} value=pit_context comparison=pit_duration_sec comparisonFmt="0.000 s pit lane" title="Pit timing" />
-    <BigValue data={pit_saving} value=value fmt="0.00 s" comparison=confidence title="Estimated VSC pit saving" />
-    <BigValue data={focus_driver} value=compound_before comparison=compound_after title="Tyres before / after" />
+    <BigValue data={focus_driver} value=position_before title="Position at deployment" />
+    <BigValue data={focus_driver} value=pit_context title="Pit timing" />
+    <BigValue data={focus_driver} value=pit_duration_sec fmt="0.000" title="Recorded pit-lane duration (s)" />
+    <BigValue data={pit_saving} value=value fmt="0.00" title="Estimated VSC pit saving (s)" />
 </Grid>
 
 <KeyInsight label="Final result is context only">

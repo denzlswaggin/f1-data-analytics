@@ -30,6 +30,8 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "five clean same-race green stops" in page
     assert "Official validation context — Madrid 2026" in page
     assert "pit-stop-summary" in page
+    assert 'defaultValue={2026}' in page
+    assert 'comparisonFmt="P0 after recovery"' not in page
 
 
 def test_sources_publish_all_marts_with_empty_sentinels() -> None:
