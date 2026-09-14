@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from analytics.source_order import pair_samples
+from analytics.source_order import field_samples, pair_samples
 from scripts.compare_openf1_orders import load_capture
 
 
@@ -79,3 +79,56 @@ def test_frozen_austria_exchange_uses_new_opponent_interval() -> None:
         > report["transition_contexts"][0]["source_event"]["utc_s"]
     )
     assert norris[-1]["gap_to_ahead_s"] is None
+
+
+def test_full_field_swap_assigns_new_opponent_and_invalidates_old_gaps() -> None:
+    positions = {
+        1: [row(1, 0, position=1)],
+        4: [row(4, 0, position=2), row(4, 2, position=3)],
+        81: [row(81, 0, position=3), row(81, 2, position=2)],
+    }
+    intervals = {
+        1: [],
+        4: [row(4, 1, interval=0.3), row(4, 3, interval=0.7)],
+        81: [row(81, 1, interval=0.4), row(81, 3, interval=0.8)],
+    }
+    samples = field_samples(positions, intervals, [1, 2, 3])
+    norris = [s for s in samples if s["driver_number"] == 4]
+    assert [s["ahead_driver_number"] for s in norris] == [1, 81, 81]
+    assert [s["gap_to_ahead_s"] for s in norris] == [0.3, None, 0.7]
+    piastri = [s for s in samples if s["driver_number"] == 81]
+    assert piastri[-1]["ahead_driver_number"] == 1
+    assert piastri[-1]["gap_to_ahead_s"] == 0.8
+    assert not any(s["pressure_eligible"] for s in samples)
+
+
+@pytest.mark.parametrize("last_rank", [None, 2, 4])
+def test_incoherent_full_field_cannot_publish_any_order(last_rank: int | None) -> None:
+    positions = {d: [row(d, 0, position=r)] for d, r in ((1, 1), (4, 2), (81, last_rank))}
+    samples = field_samples(positions, {1: [], 4: [], 81: []}, [1])
+    assert all(s["running_order"] is None for s in samples)
+    assert all(s["ahead_driver_number"] is None for s in samples)
+    assert all(s["gap_status"] == "unknown_order" for s in samples)
+
+
+def test_frozen_full_field_retains_austria_exchange() -> None:
+    directory = Path("validation/openf1-austria-2025-field")
+    manifest, data = load_capture(directory)
+    report = json.loads((directory / "evaluation.json").read_text(encoding="utf-8"))
+    offset = report["clock_alignment"]["utc_minus_replay_s"]
+    samples = field_samples(
+        {
+            d: [r for r in data["position.json"] if r["driver_number"] == d]
+            for d in manifest["drivers"]
+        },
+        {
+            d: [r for r in data["intervals.json"] if r["driver_number"] == d]
+            for d in manifest["drivers"]
+        },
+        [offset + t for t in (821, 822, 834, 835)],
+    )
+    assert len(samples) == 80
+    norris = [s for s in samples if s["driver_number"] == 4]
+    assert [s["running_order"] for s in norris] == [1, 2, 2, 1]
+    assert norris[1]["gap_to_ahead_s"] == pytest.approx(0.037)
+    assert norris[1]["ahead_driver_number"] == 81

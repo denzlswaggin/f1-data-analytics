@@ -30,11 +30,16 @@ def utc_seconds(value: str) -> float:
 
 def load_capture(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     manifest = json.loads((directory / "manifest.json").read_text(encoding="utf-8"))
-    if manifest["schema_version"] not in (1, 2):
+    if manifest["schema_version"] not in (1, 2, 3):
         raise ValueError("Unsupported capture schema")
     drivers = manifest["drivers"]
-    if len(drivers) != 2 or len(set(drivers)) != 2:
-        raise ValueError("Capture requires two distinct drivers")
+    full_field = manifest["schema_version"] == 3
+    if (
+        len(drivers) < 2
+        or len(set(drivers)) != len(drivers)
+        or (not full_field and len(drivers) != 2)
+    ):
+        raise ValueError("Invalid capture driver roster")
     expected = {
         "sessions.json",
         "overtakes.json",
@@ -42,6 +47,11 @@ def load_capture(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     }
     if manifest["schema_version"] == 2:
         expected.update(f"intervals-{driver}.json" for driver in drivers)
+    if full_field:
+        expected = {
+            f"{endpoint}.json"
+            for endpoint in ("sessions", "drivers", "position", "intervals", "laps", "overtakes")
+        }
     files = manifest["files"]
     if {item["file"] for item in files} != expected or len(files) != len(expected):
         raise ValueError("Incomplete or duplicate source capture")
@@ -69,6 +79,17 @@ def load_capture(directory: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         ):
             raise ValueError("Source driver does not match capture scope")
         data[item["file"]] = rows
+    if full_field:
+        roster = [row.get("driver_number") for row in data["drivers.json"]]
+        if (
+            len(roster) != len(drivers)
+            or set(roster) != set(drivers)
+            or any(type(d) is not int or d < 1 for d in roster)
+        ):
+            raise ValueError("Manifest roster differs from captured drivers")
+        for endpoint in ("position", "intervals", "laps"):
+            if any(row.get("driver_number") not in roster for row in data[f"{endpoint}.json"]):
+                raise ValueError("Observation outside captured roster")
     return manifest, data
 
 
@@ -163,6 +184,8 @@ def compare(
     data: dict[str, Any],
     window: dict[str, Any],
 ) -> dict[str, Any]:
+    if len(manifest["drivers"]) != 2 or manifest["schema_version"] == 3:
+        raise ValueError("Pair comparison requires a pair-scoped capture")
     sessions = data["sessions.json"]
     if (
         len(sessions) != 1

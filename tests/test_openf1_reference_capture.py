@@ -19,6 +19,14 @@ def fake_client(monkeypatch: pytest.MonkeyPatch, failure: str | None = None) -> 
     def get(url: str, params: dict[str, int], timeout: int) -> requests.Response:
         row: dict[str, Any] = {**params}
         payload: Any = [row]
+        if url.endswith("/drivers"):
+            payload = [{**params, "driver_number": number} for number in (4, 81)]
+        elif "driver_number" not in params and url.rsplit("/", 1)[-1] in (
+            "position",
+            "laps",
+            "intervals",
+        ):
+            row["driver_number"] = 999 if failure == "foreign_field_driver" else 4
         status = 200
         if failure == "forbidden":
             status = 403
@@ -75,3 +83,32 @@ def test_interval_capture_requires_both_hashed_streams(
     (output / "intervals-4.json").write_text("[]", encoding="utf-8")
     with pytest.raises(ValueError, match="integrity"):
         load_capture(output)
+
+
+def test_full_field_roster_is_captured_and_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_client(monkeypatch)
+    output = tmp_path / "field"
+    manifest = capture(123, [], output, full_field=True)
+    assert manifest["drivers"] == [4, 81]
+    loaded, data = load_capture(output)
+    assert loaded["schema_version"] == 3
+    assert set(data) == {
+        f"{name}.json"
+        for name in ("drivers", "sessions", "position", "intervals", "laps", "overtakes")
+    }
+    manifest["drivers"] = [4, 99]
+    (output / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="roster"):
+        load_capture(output)
+
+
+def test_foreign_full_field_driver_never_produces_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fake_client(monkeypatch, "foreign_field_driver")
+    output = tmp_path / "field"
+    with pytest.raises(ValueError, match="outside captured roster"):
+        capture(123, [], output, full_field=True)
+    assert not (output / "manifest.json").exists()
