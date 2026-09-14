@@ -58,6 +58,9 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "season",
         "round",
         "driver_code",
+        "driver_id",
+        "driver_name",
+        "constructor_id",
         "grid_position",
         "finish_position",
         "status",
@@ -866,6 +869,7 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "pace_rank",
         "outcome_vs_pace",
         "story_label",
+        "methodology_version",
     },
     ("marts", "mart_adjusted_stint_degradation"): {
         "season",
@@ -1095,6 +1099,42 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
     return rows
 
 
+def validate_recorded_story(connection: duckdb.DuckDBPyConnection) -> None:
+    """Reject the retired analytical story even when its schema still compiles."""
+    violations = connection.execute("""
+        select count(*) from marts.mart_race_story
+        where methodology_version is distinct from 'recorded-results-v1'
+            or pace_samples is distinct from 0
+            or controlled_pace_delta_sec is not null
+            or pace_rank is not null or outcome_vs_pace is not null
+            or story_label is distinct from 'Recorded result; pace supplied by separate analysis'
+    """).fetchone()
+    assert violations is not None
+    if violations[0]:
+        raise ValueError("Retired race-story analysis must be rebuilt as recorded results")
+    mismatch = connection.execute("""
+        with expected as (
+            select * from staging.stg_results r
+            where exists (select 1 from marts.mart_lap_times l
+                where l.season=r.season and l.round=r.round)
+        )
+        select count(*) from expected e full outer join marts.mart_race_story s
+            using (season, round, driver_code)
+        where e.driver_code is null or s.driver_code is null
+            or e.finish_position is distinct from s.finish_position
+            or e.is_classified is distinct from s.is_classified
+    """).fetchone()
+    duplicates = connection.execute("""
+        select count(*) from (
+            select season, round, driver_code from marts.mart_race_story
+            group by season, round, driver_code having count(*) != 1
+        )
+    """).fetchone()
+    assert mismatch is not None and duplicates is not None
+    if mismatch[0] or duplicates[0]:
+        raise ValueError("Recorded race story does not match loaded race results")
+
+
 def validate_dashboard_snapshot(path: Path) -> str | None:
     """Validate that a snapshot can compile every public dashboard source."""
     connection = duckdb.connect(str(path), read_only=True)
@@ -1125,6 +1165,7 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
             raise ValueError(
                 "dashboard snapshot has incompatible columns: " + "; ".join(broken_columns)
             )
+        validate_recorded_story(connection)
         validate_snapshot_processing(connection)
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
