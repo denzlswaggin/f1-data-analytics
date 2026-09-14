@@ -151,7 +151,7 @@
         };
     }
 
-    // --- overtakes (detected on-track passes, aligned to the replay clock) ---
+    // --- model-detected passes, aligned to the reconstructed replay clock ---
     let passes = [];
     $: passes = (overtakes || [])
         .map((r) => ({
@@ -673,7 +673,6 @@
     // Interval to the car ahead, F1 timing-tower style, 3 decimals.
     const fmtInterval = (a) => (a == null ? '' : a <= 0 ? 'LEADER' : '+' + a.toFixed(3));
     const fmtGap = (g) => (g == null || g <= 0 ? '—' : '+' + g.toFixed(3));
-    const fmtConfidence = (value) => value == null ? 'confidence unavailable' : `${Math.round(value * 100)}% confidence`;
 
     onMount(() => {
         trackCtx = trackCanvas.getContext('2d');
@@ -782,7 +781,7 @@
 
         {#if activePass}
             <div class="tm-pass-caption">
-                ⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos} · {fmtConfidence(activePass.confidence)}
+                ⇄ {activePass.passer} ▸ {activePass.passed} · P{activePass.pos} · Unverified model event
             </div>
         {/if}
 

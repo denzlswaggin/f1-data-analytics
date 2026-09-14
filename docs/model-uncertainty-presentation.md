@@ -20,7 +20,8 @@ Replay events previously multiplied the detector's heuristic confidence score
 by 100 and displayed a percent confidence. The event label now identifies a
 model-detected pass and says event accuracy is unverified. The underlying score
 and detector evidence remain available in the data for audit, without presenting
-the score as a probability to the viewer.
+the score as a probability to the viewer. The legacy embedded track map and its
+event timeline use the same unverified-model wording.
 
 The race cockpit removes average confidence percentages and obtains pass counts
 from verified processing coverage. A processed zero stays zero; unavailable or

@@ -272,6 +272,7 @@ describe('replay model', () => {
 		expect(pass?.label).toContain('model-detected pass');
 		expect(pass?.meta).toContain('event accuracy unverified');
 		expect(pass?.meta).not.toContain('%');
+		expect(pass?.raw).toMatchObject({ confidence: 0.95 });
 	});
 
 	it('keeps live timeline events inside the replay duration', () => {
