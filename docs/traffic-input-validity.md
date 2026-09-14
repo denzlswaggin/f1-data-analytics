@@ -43,3 +43,23 @@ metadata and traffic/clean classifications below usable coverage. CI now runs
 shared-pit, robust-estimate, metric-evidence and traffic-reproduction checks on its compact snapshot,
 alongside Racecraft integrity and browser checks. Full-data reproduction remains
 an explicit audit rather than a claim that the small CI fixture covers every race.
+
+The expected sample interval now comes from the distinct shared replay clock
+within each race, before filtering to representative laps. It no longer comes
+from each driver's surviving rows. For example, retaining only every tenth
+one-second row for a driver now produces about 10% coverage instead of treating
+that driver as a complete ten-second feed. Such laps stay mixed and cannot
+publish a clean-air estimate. Separate races retain separate clock estimates;
+intentional whole-field two-second resampling remains supported.
+
+The [shared-clock audit](../validation/traffic-shared-clock-20260914.json)
+recomputes all 51,052 published evidence rows and 1,145 summaries with zero
+full-row differences. Regressions separately demonstrate the correction on
+missing driver rows and ensure differently sampled races cannot affect each
+other's clock. The current snapshot does not require a data replacement.
+
+This is coverage of the reconstructed replay grid. The grid can contain
+interpolated values, and its cadence is inferred from surviving field ticks.
+Uniformly missing ticks across the entire field cannot be distinguished from
+intentional resampling by this check alone. It is not a measurement of raw
+sensor coverage or independent evidence that a physical gap is accurate.
