@@ -1,4 +1,4 @@
--- On-track overtakes detected from the replay feed (analytics/overtakes.py), on the
+-- Modelled pass events detected from the replay feed (analytics/overtakes.py), on the
 -- shared race clock (t_s seconds since the green light) so the markers line up with
 -- the animation. One row per clean, close, sustained pass — a car directly behind
 -- takes the position and holds it, with the two cars physically side-by-side (which

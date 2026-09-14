@@ -149,16 +149,23 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 ```sql pass_summary
-select count(*) as passes, round(avg(confidence) * 100, 0) as average_confidence_pct
-from f1.race_overtakes
-where season = ${inputs.season.value} and round = ${inputs.race.value}
+select detected_passes as passes
+from f1.racecraft_coverage
+where coverage_status in ('Processed', 'Processed: no observed battles')
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
 <Grid cols=3>
     <BigValue data={strategy_summary} value=flips comparison=largest_swing comparisonFmt="0.00 s max swing" title="Pit-window flips" />
     <BigValue data={control_summary} value=interventions comparison=stops_under_control comparisonFmt="0 stops" title="Neutralisations" />
-    <BigValue data={pass_summary} value=passes comparison=average_confidence_pct comparisonFmt="0% avg confidence" title="Detected passes" />
+    {#if pass_summary.length > 0}
+    <BigValue data={pass_summary} value=passes title="Model-detected passes" />
+    {:else}
+    <div>Pass analysis unavailable for this race.</div>
+    {/if}
 </Grid>
+
+Pass counts are reconstructed model events; their event accuracy is unverified.
 
 ```sql strongest_windows
 select early_driver_code || ' → ' || late_driver_code as matchup,

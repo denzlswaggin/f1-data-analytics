@@ -9,12 +9,12 @@ max_width: 1600
 <PageHeader
     eyebrow="Driver intelligence"
     title="Compare drivers honestly."
-    description="Place two careers on the same season scale and keep the 90% uncertainty interval in view before calling a winner."
+    description="Compare season model estimates, their resampling ranges and the observations supporting each driver."
     accent="drivers"
 />
 
 <KeyInsight label="How to read the comparison">
-Compare the gap and its uncertainty in seasons both drivers share. This is relative form, not a predicted head-to-head lap time.
+The difference describes two fitted ratings in shared seasons. Individual resampling ranges do not establish the uncertainty of their difference or the probability that one driver is faster.
 </KeyInsight>
 
 ```sql drivers
@@ -25,7 +25,7 @@ order by driver_name
 
 <FilterBar title="Choose drivers" description="Ratings use seasons shared by both drivers.">
     <Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
-    <Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="lewis_hamilton" title="Driver B" />
+    <Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="hamilton" title="Driver B" />
 </FilterBar>
 
 ```sql comparison
@@ -39,66 +39,64 @@ select
     n_comparisons
 from f1.driver_ratings_v2
 where driver_id in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
+    and season in (
+        select season from f1.driver_ratings_v2 where driver_id = '${inputs.driver_a.value}'
+        intersect
+        select season from f1.driver_ratings_v2 where driver_id = '${inputs.driver_b.value}'
+    )
 order by season, driver_name
 ```
 
 <RatingComparison data={comparison} title="Season-by-season teammate-normalised form" />
 
-```sql comparison_probability
-with driver_a as (
-    select *, (rating_hi - rating_lo) / 3.2897 as rating_se
-    from f1.driver_ratings_v2
-    where driver_id = '${inputs.driver_a.value}'
-),
-driver_b as (
-    select *, (rating_hi - rating_lo) / 3.2897 as rating_se
-    from f1.driver_ratings_v2
-    where driver_id = '${inputs.driver_b.value}'
-)
+```sql shared_comparison
 select
-    driver_a.season,
-    driver_a.driver_name as driver_a,
-    driver_b.driver_name as driver_b,
-    driver_a.rating - driver_b.rating as rating_delta,
-    case
-        when driver_a.rating_se + driver_b.rating_se = 0 then
-            case when driver_a.rating > driver_b.rating then 1.0 else 0.5 end
-        else 1 / (1 + exp(
-            -1.702 * (driver_a.rating - driver_b.rating)
-            / sqrt(power(driver_a.rating_se, 2) + power(driver_b.rating_se, 2))
-        ))
-    end as probability_a_faster,
-    case
-        when driver_a.rating_lo <= driver_b.rating_hi
-            and driver_b.rating_lo <= driver_a.rating_hi then 'Intervals overlap'
-        else 'Intervals separated'
-    end as evidence_status
-from driver_a
-inner join driver_b using (season)
-order by season
+    a.season,
+    a.driver_name as driver_a,
+    b.driver_name as driver_b,
+    a.rating - b.rating as rating_delta,
+    a.rating_lo as a_lo, a.rating_hi as a_hi,
+    b.rating_lo as b_lo, b.rating_hi as b_hi,
+    a.n_comparisons as a_comparisons,
+    b.n_comparisons as b_comparisons
+from f1.driver_ratings_v2 a
+inner join f1.driver_ratings_v2 b using (season)
+where a.driver_id = '${inputs.driver_a.value}'
+    and b.driver_id = '${inputs.driver_b.value}'
+order by a.season
 ```
 
-```sql latest_probability
-select * from ${comparison_probability} order by season desc limit 1
+```sql latest_comparison
+select * from ${shared_comparison} order by season desc limit 1
 ```
 
-## Latest shared-season evidence
+## Latest shared-season model comparison
 
+{#if latest_comparison.length > 0}
 <div class="metric-grid">
-<BigValue data={latest_probability} value=probability_a_faster title="Approx. probability Driver A is faster" fmt="0.0%" />
+<BigValue data={latest_comparison} value=rating_delta title="Model rating difference (A minus B)" fmt="+0.000;-0.000" />
 </div>
+{:else}
+No shared season ratings are available for these drivers.
+{/if}
 
-The probability uses a logistic approximation to a normal distribution, derived
-from each 90% bootstrap interval. It is an interpretation aid, not a new fitted model: shared smoothing
-and correlation between the two ratings are not available from the published
-summary table.
+Positive means Driver A has the higher fitted rating. The scale is the model's
+relative rating scale, not an observed head-to-head lap-time difference.
+The ranges below describe each driver's own bootstrap resamples. Joint resamples
+and their correlation are not included in the published summaries, so this page
+does not calculate a probability of either driver being faster or an interval for
+the difference. Overlapping or separated individual ranges are not a paired test.
 
-<ExpandableSection title="View shared-season probabilities">
-<DataTable data={comparison_probability} rows=30>
+<ExpandableSection title="View shared-season estimates and sample counts">
+<DataTable data={shared_comparison} rows=30>
     <Column id=season fmt="0000" />
-    <Column id=rating_delta title="A − B" fmt="+0.000;-0.000" />
-    <Column id=probability_a_faster title="P(A faster)" fmt="0.0%" />
-    <Column id=evidence_status title="Evidence" />
+    <Column id=rating_delta title="Model A minus B" fmt="+0.000;-0.000" />
+    <Column id=a_lo title="A: 90% lower" fmt="0.000" />
+    <Column id=a_hi title="A: 90% upper" fmt="0.000" />
+    <Column id=b_lo title="B: 90% lower" fmt="0.000" />
+    <Column id=b_hi title="B: 90% upper" fmt="0.000" />
+    <Column id=a_comparisons title="A comparisons" />
+    <Column id=b_comparisons title="B comparisons" />
 </DataTable>
 </ExpandableSection>
 
@@ -107,14 +105,14 @@ summary table.
     <Column id=season fmt="0000" />
     <Column id=driver_name title="Driver" />
     <Column id=rating fmt="0.000" />
-    <Column id=rating_lo title="90% low" fmt="0.000" />
-    <Column id=rating_hi title="90% high" fmt="0.000" />
+    <Column id=rating_lo title="90% resampling lower" fmt="0.000" />
+    <Column id=rating_hi title="90% resampling upper" fmt="0.000" />
     <Column id=form_delta title="YoY change" fmt="+0.000;-0.000" />
-    <Column id=n_comparisons title="Head-to-heads" />
+    <Column id=n_comparisons title="Model comparisons" />
 </DataTable>
 </ExpandableSection>
 
-## Career benchmark
+## Career model benchmark
 
 ```sql career
 select driver_name, rank, rating, rating_lo, rating_hi, n_comparisons, first_season, last_season
