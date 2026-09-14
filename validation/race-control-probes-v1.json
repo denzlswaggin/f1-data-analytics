@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "lap_tolerance": 1,
-  "annotation_status": "Assistant-transcribed; single-reviewer; not adjudicated. Positive probes only, not exhaustive caution windows.",
+  "annotation_status": "Assistant-transcribed from official Formula 1 sources; single-reviewer; not adjudicated. Positive probes only, not exhaustive caution windows.",
   "sources": {
     "imola": {
       "url": "https://www.formula1.com/en/latest/article/verstappen-storms-to-victory-in-thrilling-emilia-romagna-grand-prix-ahead-of.4YJG3CyQJdFzCI6tiBtqoU",
@@ -10,6 +10,14 @@
     "brazil": {
       "url": "https://www.formula1.com/en/latest/article/verstappen-wins-chaotic-sao-paulo-grand-prix-after-stunning-recovery-from.1DIc8pzRmGbC3jHJmvtBi1",
       "accessed": "2026-09-11"
+    },
+    "madrid_report": {
+      "url": "https://www.formula1.com/en/latest/article/antonelli-clinches-victory-over-verstappen-and-norris-in-spanish-gp.644ZZfPzRPEaUh2JBHcB9",
+      "accessed": "2026-09-14"
+    },
+    "madrid_pits": {
+      "url": "https://www.formula1.com/en/results/2026/races/1294/spain/pit-stop-summary",
+      "accessed": "2026-09-14"
     }
   },
   "cases": [
@@ -60,6 +68,54 @@
       "lap_max": 32,
       "expected": true,
       "source_id": "brazil"
+    },
+    {
+      "id": "madrid-vsc-start",
+      "season": 2026,
+      "round": 14,
+      "kind": "race_control_start",
+      "driver": "ANT",
+      "other": "VSC",
+      "lap_min": 14,
+      "lap_max": 14,
+      "expected": true,
+      "source_id": "madrid_report"
+    },
+    {
+      "id": "madrid-vsc-end",
+      "season": 2026,
+      "round": 14,
+      "kind": "race_control_end",
+      "driver": "ANT",
+      "other": "VSC",
+      "lap_min": 15,
+      "lap_max": 15,
+      "expected": true,
+      "source_id": "madrid_report"
+    },
+    {
+      "id": "madrid-antonelli-pit",
+      "season": 2026,
+      "round": 14,
+      "kind": "pit_entry",
+      "driver": "ANT",
+      "other": "VSC",
+      "lap_min": 14,
+      "lap_max": 14,
+      "expected": true,
+      "source_id": "madrid_pits"
+    },
+    {
+      "id": "madrid-norris-pit",
+      "season": 2026,
+      "round": 14,
+      "kind": "pit_entry",
+      "driver": "NOR",
+      "other": "VSC",
+      "lap_min": 15,
+      "lap_max": 15,
+      "expected": true,
+      "source_id": "madrid_pits"
     }
   ]
 }

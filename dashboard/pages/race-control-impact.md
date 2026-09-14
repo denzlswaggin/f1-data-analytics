@@ -137,6 +137,12 @@ where effect_type = 'estimated_vsc_pit_saving' and not eligible
 {inputs.driver.value} finished P<Value data={focus_driver} column=finish_position />. This is shown to complete the race story, but no finishing position is attributed to the intervention: everything after the measured checkpoints remains residual and unmodelled.
 </KeyInsight>
 
+{#if inputs.season.value == 2026 && inputs.race.value == 14}
+<ExpandableSection title="Official validation context — Madrid 2026">
+The timing model is calculated independently of article prose. The frozen golden-case annotations are checked against Formula 1's [race report](https://www.formula1.com/en/latest/article/antonelli-clinches-victory-over-verstappen-and-norris-in-spanish-gp.644ZZfPzRPEaUh2JBHcB9) and [official pit-stop summary](https://www.formula1.com/en/results/2026/races/1294/spain/pit-stop-summary), which validate the VSC sequence and recorded pit laps/durations.
+</ExpandableSection>
+{/if}
+
 {#if pit_saving.length > 0}
 <KeyInsight label="Estimated pit opportunity—not race-result causality">
 Against supported clean green-flag stops from this race, the stop saved an estimated <Value data={pit_saving} column=value fmt="0.00" /> s. The 90% interval is <Value data={pit_saving} column=lower_bound fmt="0.00" /> to <Value data={pit_saving} column=upper_bound fmt="0.00" /> s and includes a one-second timing-resolution allowance. Later racing remains unattributed.

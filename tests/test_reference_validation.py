@@ -133,6 +133,20 @@ def test_committed_report_binds_frozen_annotations() -> None:
     assert report["population_precision"] is None
 
 
+def test_race_control_report_binds_official_madrid_annotations() -> None:
+    root = Path(__file__).parents[1] / "validation"
+    content = (root / "race-control-probes-v1.json").read_text(encoding="utf-8").encode("utf-8")
+    reference = json.loads(content)
+    report = json.loads((root / "race-control-results-v1.json").read_text())
+
+    assert report["reference_sha256"] == hashlib.sha256(content).hexdigest()
+    assert {case["id"] for case in report["cases"]} == {case["id"] for case in reference["cases"]}
+    assert report["exact_positive_matches"] == 8
+    assert report["population_precision"] is None
+    assert reference["sources"]["madrid_report"]["url"].startswith("https://www.formula1.com/")
+    assert reference["sources"]["madrid_pits"]["url"].endswith("pit-stop-summary")
+
+
 @pytest.mark.parametrize(
     "kind,column", [("race_control_start", "deployment_lap"), ("race_control_end", "end_lap")]
 )

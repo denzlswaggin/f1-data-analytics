@@ -1,16 +1,16 @@
 {
   "counts": {
-    "true_positive": 4,
+    "true_positive": 8,
     "true_negative": 0,
     "false_positive": 0,
     "false_negative": 0,
     "uncovered": 0
   },
-  "exact_positive_matches": 4,
+  "exact_positive_matches": 8,
   "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
-  "annotated_cases": 4,
-  "covered_cases": 4,
-  "annotated_positive_recall": 1,
+  "annotated_cases": 8,
+  "covered_cases": 8,
+  "annotated_positive_recall": 1.0,
   "population_precision": null,
   "population_false_positive_rate": null,
   "limitations": "Purposive, non-exhaustive, single-reviewer annotations. Unmentioned events are unknown, not false positives. No population accuracy or calibrated interval.",
@@ -58,13 +58,57 @@
         32
       ],
       "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-vsc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        14
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-vsc-end",
+      "kind": "race_control_end",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        15
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-antonelli-pit",
+      "kind": "pit_entry",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        14
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-norris-pit",
+      "kind": "pit_entry",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        15
+      ],
+      "outcome": "true_positive"
     }
   ],
   "snapshot_metadata": [
     [
-      "20260911-robust-estimates-v4",
-      "2026-09-11 00:57:24.717055+02:00"
+      "20260914T210234Z-local",
+      "2026-09-14 23:02:34.799732+02:00"
     ]
   ],
-  "reference_sha256": "2a9c666385198a19fe8512d3cc328032545550a884ae5a729f61074afdec2c88"
+  "reference_sha256": "943f90a18660336c2aa547c99ba03c2697504c84bf64a365123209ef7553d77f"
 }

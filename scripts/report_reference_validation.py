@@ -154,6 +154,7 @@ def main() -> None:
     parser.add_argument(
         "--reference", type=Path, default=Path("validation/reference-events-v1.json")
     )
+    parser.add_argument("--output", type=Path, help="Also write the JSON report to this path.")
     args = parser.parse_args()
     # Git may check out CRLF on Windows; hash the UTF-8, LF-normalized reference.
     content = args.reference.read_text(encoding="utf-8").encode("utf-8")
@@ -163,7 +164,10 @@ def main() -> None:
             "select version, generated_at from dashboard.snapshot_metadata"
         ).fetchall()
     result["reference_sha256"] = hashlib.sha256(content).hexdigest()
-    print(json.dumps(result, indent=2, default=str, allow_nan=False))
+    rendered = json.dumps(result, indent=2, default=str, allow_nan=False)
+    if args.output is not None:
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 if __name__ == "__main__":

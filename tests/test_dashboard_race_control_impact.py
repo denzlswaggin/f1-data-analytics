@@ -28,6 +28,8 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "Final result is context only" in page
     assert "finish_position" in page
     assert "five clean same-race green stops" in page
+    assert "Official validation context — Madrid 2026" in page
+    assert "pit-stop-summary" in page
 
 
 def test_sources_publish_all_marts_with_empty_sentinels() -> None:
