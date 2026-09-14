@@ -122,3 +122,65 @@ def test_frozen_all_race_recovery_preserves_source_hashes_and_reproduces_candida
         baseline[["pit_in_time_sec", "pit_out_time_sec"]] = np.nan
         actual = recover_pit_timestamps(baseline, donor)
         pd.testing.assert_frame_equal(actual, candidate)
+
+
+def test_candidate_build_is_isolated_and_rejects_tampered_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import duckdb
+    from scripts import build_recovered_pit_candidate as candidate_builder
+
+    original = laps()
+    snapshot = tmp_path / "baseline.duckdb"
+    with duckdb.connect(str(snapshot)) as connection:
+        connection.register("input_laps", original)
+        connection.execute("create schema staging")
+        connection.execute("create table staging.stg_laps as select * from input_laps")
+        connection.execute("create table staging.stg_pitstops as select 1 as recorded")
+    before_hash = candidate_builder.digest(snapshot)
+    capture = tmp_path / "capture"
+    capture.mkdir()
+    donor = original.copy()
+    donor.loc[10, "pit_in_time_sec"] = 5080
+    source = capture / "2025-11-source.parquet"
+    donor.to_parquet(source, index=False)
+    manifest = {
+        "complete": True,
+        "baseline_sha256": before_hash,
+        "races": [
+            {
+                "season": 2025,
+                "round": 11,
+                "status": "reconciled",
+                "source_file": source.name,
+                "source_sha256": candidate_builder.digest(source),
+            }
+        ],
+    }
+    (capture / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    called = []
+    for name in (
+        "build_all_racecraft_battles",
+        "build_all_traffic_adjusted_pace",
+        "build_all_pace_consistency",
+        "build_all_tyre_warmup",
+        "build_all_pit_window_effectiveness",
+        "build_all_pit_timing_sensitivity",
+    ):
+        monkeypatch.setattr(
+            candidate_builder, name, lambda settings: called.append(settings.duckdb_path)
+        )
+    output = tmp_path / "candidate"
+    candidate_builder.build(snapshot, capture, snapshot, output)
+    assert len(called) == 6 and set(called) == {output / "f1.duckdb"}
+    assert candidate_builder.digest(snapshot) == before_hash
+    with duckdb.connect(str(output / "f1.duckdb"), read_only=True) as connection:
+        result = connection.sql("select * from staging.stg_laps order by lap_number").df()
+    pd.testing.assert_frame_equal(
+        result, recover_pit_timestamps(original, donor).reset_index(drop=True)
+    )
+    source.write_bytes(b"tampered")
+    rejected = tmp_path / "rejected"
+    with pytest.raises(ValueError, match="hash mismatch"):
+        candidate_builder.build(snapshot, capture, snapshot, rejected)
+    assert not rejected.exists()

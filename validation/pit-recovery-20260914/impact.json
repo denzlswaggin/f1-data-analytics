@@ -1,0 +1,92 @@
+{
+  "pit_lap_context": {
+    "before": 67388,
+    "after": 67388,
+    "removed": 4285,
+    "added": 4285
+  },
+  "race_overtakes": {
+    "before": 2445,
+    "after": 2445,
+    "removed": 0,
+    "added": 0
+  },
+  "racecraft_battles": {
+    "before": 9117,
+    "after": 9019,
+    "removed": 1281,
+    "added": 1183
+  },
+  "racecraft_driver_summary": {
+    "before": 1163,
+    "after": 1163,
+    "removed": 70,
+    "added": 70
+  },
+  "traffic_adjusted_laps": {
+    "before": 51084,
+    "after": 51052,
+    "removed": 350,
+    "added": 318
+  },
+  "traffic_adjusted_pace": {
+    "before": 1147,
+    "after": 1145,
+    "removed": 94,
+    "added": 92
+  },
+  "pace_consistency_laps": {
+    "before": 51084,
+    "after": 51052,
+    "removed": 1627,
+    "added": 1595
+  },
+  "pace_consistency": {
+    "before": 1147,
+    "after": 1145,
+    "removed": 84,
+    "added": 82
+  },
+  "tyre_warmup_laps": {
+    "before": 21658,
+    "after": 21658,
+    "removed": 273,
+    "added": 273
+  },
+  "tyre_warmup": {
+    "before": 2142,
+    "after": 2142,
+    "removed": 31,
+    "added": 31
+  },
+  "pit_window_effectiveness": {
+    "before": 385,
+    "after": 385,
+    "removed": 1,
+    "added": 1
+  },
+  "pit_timing_sensitivity": {
+    "before": 2142,
+    "after": 2142,
+    "removed": 4,
+    "added": 4
+  },
+  "pit_timing_scenarios": {
+    "before": 14994,
+    "after": 14994,
+    "removed": 26,
+    "added": 26
+  },
+  "race_control_events": {
+    "before": 83,
+    "after": 83,
+    "removed": 0,
+    "added": 0
+  },
+  "race_control_impact": {
+    "before": 1468,
+    "after": 1468,
+    "removed": 0,
+    "added": 0
+  }
+}

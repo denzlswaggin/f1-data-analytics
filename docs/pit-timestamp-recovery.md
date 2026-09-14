@@ -38,8 +38,33 @@ python -m scripts.recover_pit_timestamps `
 
 Omit `--source-capture` to process FastF1 sessions. Existing output directories
 are refused. The command captures and reconciles only; it does not publish.
-Publication requires rebuilding dependent pit, pace, tyre, race-control and
+Publication requires rebuilding dependent pit, pace, tyre and
 Racecraft analyses together and validating their evidence and processing receipts.
+
+Build the dependent candidate with the original recorded-stop warehouse:
+
+```powershell
+python -m scripts.build_recovered_pit_candidate `
+  --snapshot path/to/original-baseline.duckdb `
+  --capture validation/pit-recovery-20260914 `
+  --stops-warehouse data/warehouse/f1.duckdb `
+  --output data/warehouse/new-pit-candidate
+```
+
+This rechecks the source hashes, baseline identity and full race scope, then
+rebuilds pit context, Racecraft, peer pace, consistency, tyre settling and pit
+scenarios. Race-control inputs do not use these two timestamp fields. The command
+does not replace the historical raw lake or publish the candidate automatically.
+
+The full candidate rebuild changes pit-boundary exclusions from 4,185 to 4,309
+laps. Racecraft episodes change from 9,117 to 9,019; eligible conversions from
+1,593 to 1,586 and eligible defended episodes from 1,227 to 1,221. Seventy driver
+summaries change. The underlying 2,445 model pass detections are identical.
+Peer pace retains 51,052 comparable laps and 1,145 driver/race summaries, down
+from 51,084 and 1,147. `impact.json` records full-row differences for dependent
+tables; changed row counts can include shifted episode IDs or recalculated peers,
+not just removed observations. Race-control outputs remain identical, and all
+non-pit-timestamp lap fields are unchanged.
 
 Recovered timestamps strengthen pit exclusions. They do not establish that every
 modelled position exchange happened on track. A whole pit lap is a conservative
