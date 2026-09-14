@@ -474,12 +474,25 @@ def _snapshot(frame: pd.DataFrame, target_t_s: float, *, before: bool) -> pd.Dat
 
 def _interpolated_state(frame: pd.DataFrame, target_t_s: float) -> dict[str, object] | None:
     """Interpolate one driver's replay state without hiding timing resolution."""
-    ordered = frame.dropna(subset=["t_s"]).sort_values("t_s").drop_duplicates("t_s")
-    before = ordered.loc[ordered["t_s"].le(target_t_s)].tail(1)
-    after = ordered.loc[ordered["t_s"].ge(target_t_s)].head(1)
-    if before.empty or after.empty:
+    if frame.empty or "t_s" not in frame:
         return None
-    left, right = before.iloc[0], after.iloc[0]
+    ordered = frame.dropna(subset=["t_s"])
+    if ordered.empty:
+        return None
+    if not ordered["t_s"].is_monotonic_increasing:
+        ordered = ordered.sort_values("t_s")
+    ordered = ordered.drop_duplicates("t_s")
+    times = ordered["t_s"].to_numpy(dtype=float)
+    right_index = int(np.searchsorted(times, target_t_s, side="left"))
+    if right_index == len(times):
+        return None
+    if times[right_index] == target_t_s:
+        left_index = right_index
+    elif right_index == 0:
+        return None
+    else:
+        left_index = right_index - 1
+    left, right = ordered.iloc[left_index], ordered.iloc[right_index]
     left_t, right_t = float(left["t_s"]), float(right["t_s"])
     span = right_t - left_t
     if span > MAX_INTERPOLATION_SPAN_S:
@@ -770,16 +783,43 @@ def _transition_overlaps(
     )
 
 
+def _cached_state(
+    replay_by_driver: dict[str, pd.DataFrame],
+    cache: dict[tuple[str, float], dict[str, object] | None],
+    driver_code: str,
+    target_t_s: float,
+) -> dict[str, object] | None:
+    key = (driver_code, target_t_s)
+    if key not in cache:
+        cache[key] = _interpolated_state(
+            replay_by_driver.get(driver_code, pd.DataFrame()), target_t_s
+        )
+    return cache[key]
+
+
+def _replay_driver_frames(replay: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    return {
+        str(code): frame.sort_values("t_s").reset_index(drop=True)
+        for code, frame in replay.groupby("driver_code", sort=False)
+    }
+
+
 def _pairwise_pit_loss(
-    replay: pd.DataFrame, transition: pd.Series, transitions: pd.DataFrame
+    replay: pd.DataFrame,
+    transition: pd.Series,
+    transitions: pd.DataFrame,
+    *,
+    replay_by_driver: dict[str, pd.DataFrame] | None = None,
+    state_cache: dict[tuple[str, float], dict[str, object] | None] | None = None,
 ) -> tuple[float, int]:
     """Observed loss versus the median non-pitting same-lap peer."""
     driver = str(transition["driver_code"])
     start_t_s = float(transition["pit_in_t_s"])
     end_t_s = float(transition["pit_out_t_s"])
-    target = replay.loc[replay["driver_code"].eq(driver)]
-    target_before = _interpolated_state(target, start_t_s)
-    target_after = _interpolated_state(target, end_t_s)
+    replay_by_driver = replay_by_driver or _replay_driver_frames(replay)
+    state_cache = state_cache if state_cache is not None else {}
+    target_before = _cached_state(replay_by_driver, state_cache, driver, start_t_s)
+    target_after = _cached_state(replay_by_driver, state_cache, driver, end_t_s)
     if target_before is None or target_after is None:
         return np.nan, 0
     target_gap_before = pd.to_numeric(
@@ -791,12 +831,11 @@ def _pairwise_pit_loss(
     if pd.isna(target_gap_before) or pd.isna(target_gap_after):
         return np.nan, 0
     changes: list[float] = []
-    for peer in replay["driver_code"].dropna().astype(str).unique():
+    for peer in replay_by_driver:
         if peer == driver or _transition_overlaps(transitions, peer, start_t_s, end_t_s):
             continue
-        peer_replay = replay.loc[replay["driver_code"].eq(peer)]
-        peer_before = _interpolated_state(peer_replay, start_t_s)
-        peer_after = _interpolated_state(peer_replay, end_t_s)
+        peer_before = _cached_state(replay_by_driver, state_cache, peer, start_t_s)
+        peer_after = _cached_state(replay_by_driver, state_cache, peer, end_t_s)
         if peer_before is None or peer_after is None:
             continue
         peer_gap_before = pd.to_numeric(
@@ -835,6 +874,8 @@ def _green_reference_losses(
     events: list[_Event],
 ) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
+    replay_by_driver = _replay_driver_frames(replay)
+    state_cache: dict[tuple[str, float], dict[str, object] | None] = {}
     for _, transition in transitions.iterrows():
         start_t_s = float(transition["pit_in_t_s"])
         end_t_s = float(transition["pit_out_t_s"])
@@ -850,7 +891,13 @@ def _green_reference_losses(
         ]
         if len(driver_laps) < 2 or not driver_laps["track_status"].astype(str).eq("1").all():
             continue
-        loss, peer_count = _pairwise_pit_loss(replay, transition, transitions)
+        loss, peer_count = _pairwise_pit_loss(
+            replay,
+            transition,
+            transitions,
+            replay_by_driver=replay_by_driver,
+            state_cache=state_cache,
+        )
         if not np.isfinite(loss) or peer_count < MIN_TIME_COMPARABLE_DRIVERS:
             continue
         rows.append(
@@ -872,8 +919,12 @@ def _pit_effect_rows(
     event: _Event,
     event_key: str,
     race_name: str,
+    references: pd.DataFrame | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, dict[str, object]]]:
-    references = _green_reference_losses(replay, laps, transitions, events)
+    if references is None:
+        references = _green_reference_losses(replay, laps, transitions, events)
+    replay_by_driver = _replay_driver_frames(replay)
+    state_cache: dict[tuple[str, float], dict[str, object] | None] = {}
     rows: list[dict[str, object]] = []
     diagnostics: dict[str, dict[str, object]] = {}
     during = transitions.loc[
@@ -884,7 +935,13 @@ def _pit_effect_rows(
     ]
     for _, transition in during.iterrows():
         driver = str(transition["driver_code"])
-        actual_loss, peer_count = _pairwise_pit_loss(replay, transition, transitions)
+        actual_loss, peer_count = _pairwise_pit_loss(
+            replay,
+            transition,
+            transitions,
+            replay_by_driver=replay_by_driver,
+            state_cache=state_cache,
+        )
         base = {
             "season": int(transition["season"]),
             "round": int(transition["round"]),
@@ -1315,6 +1372,11 @@ def analyse_race_control_impact(
         ]
         transitions = _pit_transitions(laps_race, stops_race)
         events = _extract_events(control_race)
+        green_references = (
+            _green_reference_losses(replay_race, laps_race, transitions, events)
+            if not replay_race.empty and not transitions.empty
+            else pd.DataFrame()
+        )
         for event in events:
             event_key = _event_id(season, rnd, event)
             race_name = (
@@ -1483,6 +1545,7 @@ def analyse_race_control_impact(
                     event,
                     event_key,
                     race_name,
+                    green_references,
                 )
                 event_effects.extend(pit_effects)
 

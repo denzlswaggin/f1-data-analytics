@@ -314,7 +314,7 @@ def test_pit_saving_requires_stable_multi_driver_green_reference(
     )
     monkeypatch.setattr(
         "analytics.race_control_impact._pairwise_pit_loss",
-        lambda *_args: (2.0, 3),
+        lambda *_args, **_kwargs: (2.0, 3),
     )
     transition = pd.DataFrame(
         [
