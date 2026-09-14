@@ -185,15 +185,19 @@ def _lap_context(
     if context.duplicated([*_DRIVER_KEYS, "t_s"]).any():
         raise ValueError("Conflicting replay context for a driver and tick")
     context = context.sort_values([*_DRIVER_KEYS, "t_s"])
-    context["sample_interval_s"] = context.groupby(_DRIVER_KEYS)["t_s"].diff()
+    # Replay uses one shared race clock. A sparse driver's own intervals must
+    # not redefine the expected cadence and turn missing rows into coverage.
+    race_keys = ["season", "round"]
+    clock = context[[*race_keys, "t_s"]].drop_duplicates().sort_values([*race_keys, "t_s"])
+    clock["sample_interval_s"] = clock.groupby(race_keys)["t_s"].diff()
     tick_interval = (
-        context.loc[context["sample_interval_s"].gt(0)]
-        .groupby(_DRIVER_KEYS, as_index=False)["sample_interval_s"]
+        clock.loc[clock["sample_interval_s"].gt(0)]
+        .groupby(race_keys, as_index=False)["sample_interval_s"]
         .median()
         .rename(columns={"sample_interval_s": "tick_interval_s"})
     )
     context = context.merge(lap_durations, on=_LAP_KEYS, how="inner", validate="many_to_one")
-    context = context.merge(tick_interval, on=_DRIVER_KEYS, how="left", validate="many_to_one")
+    context = context.merge(tick_interval, on=race_keys, how="left", validate="many_to_one")
     if context.empty:
         return pd.DataFrame(columns=output_columns)
 

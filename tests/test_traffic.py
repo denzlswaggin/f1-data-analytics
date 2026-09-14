@@ -157,6 +157,33 @@ def test_publishes_clean_air_pace_and_paired_traffic_association() -> None:
     ] == pytest.approx(2.0)
 
 
+def test_missing_driver_rows_cannot_redefine_the_shared_clock() -> None:
+    replay = _replay()
+    sparse = replay.loc[replay.driver_code.ne("A") | replay.t_s.mod(10).eq(0)]
+    result = analyse_traffic_adjusted_pace(_laps(), sparse)
+    evidence = result.evidence.loc[result.evidence.driver_code.eq("A")]
+    assert evidence.context_samples.eq(10).all()
+    assert evidence.replay_coverage_pct.le(10).all()
+    assert evidence.air_state.eq("mixed").all()
+    summary = result.summary.loc[result.summary.driver_code.eq("A")].iloc[0]
+    assert not summary.clean_air_eligible
+    assert pd.isna(summary.traffic_adjusted_pace_delta_sec)
+
+
+def test_shared_clock_is_scoped_to_race_and_supports_resampling() -> None:
+    second_laps = _laps().assign(round=2)
+    second_replay = _replay(tick_s=2).assign(round=2)
+    combined = analyse_traffic_adjusted_pace(
+        pd.concat([_laps(), second_laps], ignore_index=True),
+        pd.concat([_replay(), second_replay], ignore_index=True),
+    )
+    expected = analyse_traffic_adjusted_pace(second_laps, second_replay)
+    pd.testing.assert_frame_equal(
+        combined.evidence.loc[combined.evidence["round"].eq(2)].reset_index(drop=True),
+        expected.evidence,
+    )
+
+
 def test_leader_is_clean_but_zero_gap_follower_is_unknown() -> None:
     replay = _replay()
     zero_gap = (replay["driver_code"] == "A") & (replay["lap_number"] == 2)
