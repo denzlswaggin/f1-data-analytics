@@ -518,9 +518,9 @@ export function timingAt(drivers: ReplayDriver[], time: number): TimingRow[] {
 			sample = driver.samples.at(-1) ?? null;
 			status =
 				driver.isClassified === true
-					? 'finished'
+					? 'classified'
 					: driver.isClassified === false
-						? 'retired'
+						? 'not classified'
 						: 'out';
 		}
 		if (!sample || sample.order == null) continue;

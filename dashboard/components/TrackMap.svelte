@@ -463,9 +463,9 @@
                 if (t > g.tmax && g.samples.length) {
                     const last = g.samples[g.samples.length - 1];
                     const status = g.isClassified === true
-                        ? 'finished'
+                        ? 'classified'
                         : g.isClassified === false
-                            ? 'retired'
+                            ? 'not classified'
                             : 'out';
                     board.push(timingRow(g, last, status));
                 }

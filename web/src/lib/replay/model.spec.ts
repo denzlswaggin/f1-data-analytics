@@ -63,6 +63,21 @@ const positions: PositionRow[] = [
 ];
 
 describe('replay model', () => {
+	it.each([
+		[true, 'Engine', 'classified'],
+		[true, 'Lapped', 'classified'],
+		[false, 'Disqualified', 'not classified'],
+		[null, null, 'out']
+	] as const)('keeps classification separate from finishing: %s %s', (flag, result, label) => {
+		const drivers = buildDrivers(
+			positions,
+			[{ ...metadata[0], is_classified: flag, status: result }],
+			laps
+		);
+		expect(timingAt(drivers, 100)[0].status).toBe(label);
+		expect(sampleAt(drivers[0], 100)).toBeNull();
+	});
+
 	it('formats lap durations as minutes and seconds', () => {
 		expect(formatLapTime(79.842)).toBe('1:19.842');
 		expect(formatLapTime(60)).toBe('1:00.000');
