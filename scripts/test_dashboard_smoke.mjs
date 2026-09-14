@@ -65,6 +65,23 @@ try {
 			});
 			assert.equal(response?.status(), 200, `${route || 'home'} should return 200`);
 			assert.equal(await page.locator('h1').count(), 1, `${route || 'home'} should have one h1`);
+			assert.equal(
+				await page
+					.locator('.data-trust summary')
+					.getByText('Data confidence', { exact: true })
+					.count(),
+				0,
+				'row availability must not be presented as confidence in accuracy'
+			);
+			if (route === 'traffic-adjusted-pace') {
+				assert.equal(
+					await page
+						.locator('.data-trust summary')
+						.getByText('Data coverage', { exact: true })
+						.count(),
+					1
+				);
+			}
 			if (route === 'driver-comparison') {
 				assert.equal(
 					await page.getByText('Model rating difference (A minus B)', { exact: true }).count(),
