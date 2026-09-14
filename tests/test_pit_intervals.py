@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -51,3 +54,27 @@ def test_rejects_mixed_races_and_missing_clock() -> None:
         observed_pit_intervals(_laps().assign(round=[1, 1, 2]))
     with pytest.raises(ValueError, match="clock origin"):
         observed_pit_intervals(_laps().assign(lap_start_sec=np.nan))
+
+
+def test_all_frozen_pit_conflicts_match_recovered_source_intervals() -> None:
+    root = Path(__file__).resolve().parents[1] / "validation"
+    audit = json.loads((root / "overtake-pit-intervals-v1.json").read_text(encoding="utf-8"))
+    conflicts = pd.DataFrame(audit["overlaps"])
+    assert len(conflicts) == 56
+    assert (
+        len(conflicts.drop_duplicates(["season", "round", "t_s", "passer_code", "passed_code"]))
+        == 47
+    )
+    for (season, rnd), group in conflicts.groupby(["season", "round"]):
+        laps = pd.read_parquet(
+            root / "pit-recovery-20260914" / f"{season}-{rnd:02}-reconciled.parquet"
+        )
+        intervals = observed_pit_intervals(laps)
+        for conflict in group.itertuples():
+            matching = intervals.loc[
+                intervals.driver_code.eq(conflict.driver_code)
+                & np.isclose(intervals.entry_t_s, conflict.entry_t_s, atol=1e-6, rtol=0)
+                & np.isclose(intervals.exit_t_s, conflict.exit_t_s, atol=1e-6, rtol=0)
+            ]
+            assert len(matching) == 1
+            assert conflict.entry_t_s <= conflict.t_s <= conflict.exit_t_s
