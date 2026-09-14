@@ -196,6 +196,33 @@ def test_red_flag_interrupts_open_safety_car() -> None:
     assert safety_car["exclusion_reason"] == "Interrupted by red flag"
 
 
+def test_safety_car_supersedes_open_vsc() -> None:
+    result = _analyse(
+        [
+            (100.0, 5, "VSC DEPLOYED", None),
+            (130.0, 5, "SAFETY CAR DEPLOYED", None),
+            (150.0, 5, "SAFETY CAR IN THIS LAP", None),
+        ]
+    )
+
+    vsc = result.events.loc[result.events["event_type"].eq("VSC")].iloc[0]
+    assert vsc["end_t_s"] == 130.0
+    assert vsc["event_status"] == "interrupted"
+    assert vsc["exclusion_reason"] == "Superseded by Safety Car"
+
+
+@pytest.mark.parametrize("event_type", ["VSC", "Safety Car"])
+def test_chequered_flag_closes_active_neutralisation(event_type: str) -> None:
+    start = "VSC DEPLOYED" if event_type == "VSC" else "SAFETY CAR DEPLOYED"
+    result = _analyse([(100.0, 5, start, None), (150.0, 6, "CHEQUERED FLAG", "CHEQUERED")])
+
+    event = result.events.iloc[0]
+    assert event["end_t_s"] == 150.0
+    assert event["end_lap"] == 6
+    assert event["event_status"] == "finished"
+    assert event["exclusion_reason"] == f"Race finished under {event_type}"
+
+
 def test_recovery_interrupted_by_next_event_is_excluded() -> None:
     result = _analyse(
         [

@@ -393,11 +393,30 @@ def _extract_events(control: pd.DataFrame) -> list[_Event]:
     events: list[_Event] = []
     opened: dict[str, tuple[float, int | None]] = {}
     for row in control.sort_values("t_s").itertuples(index=False):
-        marker = _marker(_normalise(row.message), _normalise(row.flag))
+        message = _normalise(row.message)
+        flag = _normalise(row.flag)
+        t_s, lap = float(row.t_s), _optional_int(row.lap)
+        if flag == "CHEQUERED" or message == "CHEQUERED FLAG":
+            for event_type in ("Safety Car", "VSC"):
+                started = opened.pop(event_type, None)
+                if started is not None and t_s > started[0]:
+                    events.append(
+                        _Event(
+                            0,
+                            event_type,
+                            started[0],
+                            started[1],
+                            t_s,
+                            lap,
+                            "finished",
+                            f"Race finished under {event_type}",
+                        )
+                    )
+            continue
+        marker = _marker(message, flag)
         if marker is None:
             continue
         event_type, action = marker
-        t_s, lap = float(row.t_s), _optional_int(row.lap)
         if action == "start":
             if event_type == "Red Flag":
                 for interrupted_type in ("Safety Car", "VSC"):
@@ -415,6 +434,22 @@ def _extract_events(control: pd.DataFrame) -> list[_Event]:
                                 "Interrupted by red flag",
                             )
                         )
+            elif event_type in {"Safety Car", "VSC"}:
+                interrupted_type = "VSC" if event_type == "Safety Car" else "Safety Car"
+                interrupted = opened.pop(interrupted_type, None)
+                if interrupted is not None:
+                    events.append(
+                        _Event(
+                            0,
+                            interrupted_type,
+                            interrupted[0],
+                            interrupted[1],
+                            t_s,
+                            lap,
+                            "interrupted",
+                            f"Superseded by {event_type}",
+                        )
+                    )
             previous = opened.get(event_type)
             if previous is not None:
                 events.append(
