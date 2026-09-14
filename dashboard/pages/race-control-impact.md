@@ -81,10 +81,20 @@ select *,
         when 'unresolved' then 'Stop inferred; exact timing unavailable'
         else 'No stop observed in the event window'
     end as pit_context,
-    driver_code || ' · ' || driver_name as driver_label
-from f1.race_control_impact
-where event_id = '${inputs.event.value}'
-    and season = ${inputs.season.value} and round = ${inputs.race.value}
+    driver_code || ' · ' || driver_name || ' · ' || cast(story_count as varchar)
+        || '/' || cast(story_total as varchar) || ' story' as driver_label
+from (
+    select *,
+        case when pit_eligible or gap_eligible or restart_eligible
+                or coalesce(positions_gained, 0) <> 0
+                or coalesce(tyre_changed_during_suspension, false)
+            then 1 else 0
+        end as story_count,
+        1 as story_total
+    from f1.race_control_impact
+    where event_id = '${inputs.event.value}'
+        and season = ${inputs.season.value} and round = ${inputs.race.value}
+) as driver_story
 order by focus_rank, position_before
 ```
 
@@ -95,7 +105,7 @@ order by focus_rank, position_before
     <BigValue data={selected_event} value=restart_status title="Recovery evidence" />
 </Grid>
 
-<FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable.">
+<FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable. The selector shows 1/1 when that driver has a material pit, gap, restart, position or tyre story in this event, otherwise 0/1.">
     <DependentDropdown data={driver_evidence} name=driver value=driver_code label=driver_label order="focus_rank asc" title="Driver" season={inputs.season.value} round={inputs.race.value} scopeKey={inputs.event.value} defaultValue={selected_event[0]?.focus_driver_code} />
 </FilterBar>
 

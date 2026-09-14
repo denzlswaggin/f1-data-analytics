@@ -31,6 +31,10 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "Official validation context — Madrid 2026" in page
     assert "pit-stop-summary" in page
     assert "defaultValue={2026}" in page
+    assert "story_count" in page
+    assert "story_total" in page
+    assert "cast(story_total as varchar) || ' story'" in page
+    assert "pit_eligible or gap_eligible or restart_eligible" in page
     assert 'comparisonFmt="P0 after recovery"' not in page
 
 
