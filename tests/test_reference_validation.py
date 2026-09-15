@@ -172,3 +172,120 @@ def test_control_probes_require_source_coverage(kind: str, column: str) -> None:
     ref["cases"][0]["expected"] = False
     with pytest.raises(ValueError, match="positive"):
         evaluate(c, ref)
+
+
+def test_v2_stratified_report_tracks_binary_categorical_and_expected_limitations() -> None:
+    c, ref = fixture()
+    c.execute("create schema staging")
+    c.execute("create table staging.stg_race_control(season int, round int, session varchar)")
+    c.execute("""create table marts.race_control_events(season int, round int,
+        event_number int, event_type varchar, deployment_lap int, end_lap int,
+        event_status varchar)""")
+    c.execute("""create table marts.race_control_impact(season int, round int,
+        event_number int, driver_code varchar, position_before int, position_after int,
+        position_evidence_class varchar, position_eligible boolean, pit_timing_class varchar,
+        story_status varchar, story_direction varchar)""")
+    c.execute("""create table marts.race_control_checkpoints(season int, round int,
+        event_number int, driver_code varchar, checkpoint_type varchar, running_order int,
+        evidence_class varchar, eligible boolean)""")
+    c.execute("""create table marts.race_control_effects(season int, round int,
+        event_number int, driver_code varchar, effect_type varchar, eligible boolean,
+        lower_bound double, upper_bound double, exclusion_reason varchar)""")
+    c.execute("insert into staging.stg_race_control values (2025,13,'R')")
+    c.execute("insert into marts.race_control_events values (2025,13,1,'VSC',5,6,'complete')")
+    c.execute("""insert into marts.race_control_impact values
+        (2025,13,1,'PIA',2,2,'recorded',true,'no_stop_observed',
+        'no_material_effect','neutral')""")
+    ref.update(schema_version=2)
+    ref["cases"] = [
+        {
+            **ref["cases"][0],
+            "id": "boundary-positive",
+            "kind": "race_control_start",
+            "other": "VSC",
+            "expected_state": "present",
+            "coverage_expectation": "covered",
+            "annotation_group": "boundary",
+        },
+        {
+            **ref["cases"][0],
+            "id": "story-match",
+            "kind": "driver_story",
+            "event_number": 1,
+            "expected_state": "no_material_effect",
+            "expected_direction": "neutral",
+            "coverage_expectation": "covered",
+            "annotation_group": "driver",
+        },
+        {
+            **ref["cases"][0],
+            "id": "expected-limitation",
+            "kind": "pit_story",
+            "driver": "NOR",
+            "event_number": 1,
+            "expected_state": "unavailable",
+            "coverage_expectation": "source_limited",
+            "annotation_group": "pit",
+        },
+    ]
+    for case in ref["cases"]:
+        case.pop("expected", None)
+        case["evidence_note"] = "Synthetic test annotation."
+
+    report = evaluate(c, ref)
+
+    assert report["validation_pass"]
+    assert report["counts"]["true_positive"] == 1
+    assert report["counts"]["matched"] == 1
+    assert report["counts"]["expected_unavailable"] == 1
+    assert report["annotated_precision"] == 1.0
+    assert report["annotated_positive_recall"] == 1.0
+
+
+def test_v2_impact_position_applies_declared_tolerance_and_requires_evidence() -> None:
+    c, ref = fixture()
+    c.execute("""create table marts.race_control_impact(season int, round int,
+        event_number int, driver_code varchar, position_before int, position_after int,
+        position_evidence_class varchar, position_eligible boolean)""")
+    c.execute("insert into marts.race_control_impact values (2025,13,1,'PIA',2,4,'recorded',true)")
+    ref.update(schema_version=2)
+    ref["cases"] = [
+        {
+            **ref["cases"][0],
+            "kind": "impact_position",
+            "event_number": 1,
+            "expected_state": "recorded",
+            "expected_position_before": 2,
+            "expected_position_after": 3,
+            "position_tolerance": 1,
+            "coverage_expectation": "covered",
+            "annotation_group": "driver",
+            "evidence_note": "External completed-lap chart permits a one-place boundary offset.",
+        }
+    ]
+    ref["cases"][0].pop("expected", None)
+
+    assert evaluate(c, ref)["validation_pass"]
+    ref["cases"][0]["evidence_note"] = ""
+    with pytest.raises(ValueError, match="evidence metadata"):
+        evaluate(c, ref)
+
+
+def test_committed_race_control_v2_report_is_stratified_and_bound() -> None:
+    root = Path(__file__).parents[1] / "validation"
+    content = (root / "race-control-probes-v2.json").read_text(encoding="utf-8").encode("utf-8")
+    reference = json.loads(content)
+    report = json.loads((root / "race-control-results-v2.json").read_text())
+
+    assert report["reference_sha256"] == hashlib.sha256(content).hexdigest()
+    assert len(reference["cases"]) == 36
+    assert {
+        group: sum(case["annotation_group"] == group for case in reference["cases"])
+        for group in ("boundary", "driver", "pit")
+    } == {
+        "boundary": 18,
+        "driver": 12,
+        "pit": 6,
+    }
+    assert report["validation_pass"]
+    assert report["population_precision"] is None

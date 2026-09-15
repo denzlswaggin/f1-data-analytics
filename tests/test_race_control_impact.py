@@ -23,6 +23,7 @@ from analytics.race_control_impact import (
     _Event,
     _pit_effect_rows,
     _snapshot,
+    _story_classification,
     analyse_race_control_impact,
 )
 from ingestion.config import Settings
@@ -199,6 +200,87 @@ def test_unknown_order_provenance_withholds_position_story() -> None:
     ]
     assert not position_effects["eligible"].any()
     assert position_effects["value"].isna().all()
+
+
+def _story_effect(
+    effect_type: str,
+    value: float,
+    *,
+    lower: float = float("nan"),
+    upper: float = float("nan"),
+    eligible: bool = True,
+) -> dict[str, object]:
+    return {
+        "driver_code": "AAA",
+        "effect_type": effect_type,
+        "value": value,
+        "lower_bound": lower,
+        "upper_bound": upper,
+        "eligible": eligible,
+    }
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_status"),
+    [(0.49, "no_material_effect"), (0.50, "material_impact")],
+)
+def test_story_time_threshold_is_explicit(value: float, expected_status: str) -> None:
+    story = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "no_stop_observed"},
+        [_story_effect("field_adjusted_gap_change", value)],
+    )
+
+    assert story["story_status"] == expected_status
+
+
+def test_story_reports_benefit_loss_and_mixed_material_effects() -> None:
+    benefit = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "no_stop_observed"},
+        [_story_effect("observed_position_change", 1.0)],
+    )
+    loss = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "no_stop_observed"},
+        [_story_effect("restart_gap_change", -0.5)],
+    )
+    mixed = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "no_stop_observed"},
+        [
+            _story_effect("observed_position_change", 1.0),
+            _story_effect("restart_gap_change", -0.5),
+        ],
+    )
+
+    assert benefit["story_direction"] == "benefit"
+    assert loss["story_direction"] == "loss"
+    assert mixed["story_direction"] == "mixed"
+
+
+def test_story_pit_interval_must_not_cross_zero() -> None:
+    crossing = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "during_neutralisation"},
+        [_story_effect("estimated_vsc_pit_saving", 1.2, lower=-0.1, upper=2.0)],
+    )
+    one_sided = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "during_neutralisation"},
+        [_story_effect("estimated_vsc_pit_saving", 1.2, lower=0.1, upper=2.0)],
+    )
+
+    assert crossing["story_status"] == "context_only"
+    assert "crosses zero" in str(crossing["story_reason"])
+    assert one_sided["story_status"] == "material_impact"
+
+
+def test_after_end_pit_and_missing_evidence_are_context_not_no_effect() -> None:
+    after_end = _story_classification({"driver_code": "AAA", "pit_timing_class": "after_end"}, [])
+    unavailable = _story_classification(
+        {"driver_code": "AAA", "pit_timing_class": "no_stop_observed"},
+        [_story_effect("observed_position_change", 0.0, eligible=False)],
+    )
+
+    assert after_end["story_status"] == "context_only"
+    assert unavailable["story_status"] == "context_only"
+    assert after_end["evaluated_effect_count"] == 0
+    assert unavailable["evaluated_effect_count"] == 0
 
 
 def test_snapshot_withholds_an_entire_duplicate_rank_field() -> None:

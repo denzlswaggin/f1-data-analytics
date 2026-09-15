@@ -8,6 +8,7 @@ it does not turn an absent message into proof that an incident never happened.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import math
@@ -285,6 +286,11 @@ def main() -> None:
     parser.add_argument("--from-season", type=int, default=2024)
     parser.add_argument("--to-season", type=int, default=2026)
     parser.add_argument("--output", type=Path)
+    parser.add_argument(
+        "--check-report",
+        type=Path,
+        help="Fail if the deterministic audit differs from this frozen JSON report.",
+    )
     parser.add_argument("--summary-only", action="store_true")
     args = parser.parse_args()
     if args.from_season > args.to_season:
@@ -295,6 +301,20 @@ def main() -> None:
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
+    if args.check_report is not None:
+        expected = args.check_report.read_text(encoding="utf-8")
+        if expected != rendered:
+            diff = "".join(
+                difflib.unified_diff(
+                    expected.splitlines(keepends=True),
+                    rendered.splitlines(keepends=True),
+                    fromfile=str(args.check_report),
+                    tofile="current audit",
+                    n=2,
+                )
+            )
+            print(diff, end="")
+            raise SystemExit("FAIL: frozen race-control audit report is stale")
     if args.summary_only:
         print(json.dumps(result["summary"], indent=2, ensure_ascii=False))
     else:

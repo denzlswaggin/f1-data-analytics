@@ -31,12 +31,13 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "Official validation context — Madrid 2026" in page
     assert "pit-stop-summary" in page
     assert "defaultValue={2026}" in page
-    assert "story_count" in page
-    assert "story_total" in page
-    assert "cast(story_total as varchar) || ' story'" in page
-    assert "gap_eligible and abs(field_adjusted_gap_gain_s) >= 0.5" in page
-    assert "restart_position_change', 'restart_gap_change'" in page
-    assert "position_eligible and coalesce(positions_gained, 0) <> 0" in page
+    assert "story_status" in page
+    assert "story_direction" in page
+    assert "story_reason" in page
+    assert "1/1 · Material" in page
+    assert "0/1 · Context only" in page
+    assert "0/1 · No material effect" in page
+    assert "abs(field_adjusted_gap_gain_s) >= 0.5" not in page
     assert "≈P" in page
     assert "OpenF1 full-field order" in page
     assert "position_evidence_class" in page

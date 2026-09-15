@@ -218,3 +218,9 @@ models:
           - accepted_values:
               arguments:
                 values: ['verified', 'rejected', 'unavailable']
+      - name: anchor_source
+        description: Local lap partition used to align OpenF1 UTC timestamps.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['raw.laps', 'staging.stg_laps', 'unavailable']

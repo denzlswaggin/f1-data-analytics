@@ -12,10 +12,10 @@
     "modelled_events": 87,
     "source_start_markers": 87,
     "status_counts": {
-      "verified_all_components": 18,
+      "verified_all_components": 16,
       "verified_no_neutralisation_marker": 16,
       "verified_source_limited": 3,
-      "verified_with_withheld_components": 25
+      "verified_with_withheld_components": 27
     },
     "structural_violations": 0,
     "audit_pass": true
@@ -32,7 +32,7 @@
       "source_sha256": "11d30c12a3e9411ce948019d068c01ab0dcbe55998343f9895a86b072994a515",
       "source_start_markers": 0,
       "modelled_events": 0,
-      "replay_rows": 112000,
+      "replay_rows": 111918,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
@@ -135,7 +135,7 @@
       "source_sha256": "d86f20ab23bffa7ef710e57f6cf9d7b0fd603b746649f4b140495c5f55b1962e",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 92935,
+      "replay_rows": 92882,
       "driver_impact_rows": 18,
       "publishable_event_components": {
         "position": 0,
@@ -228,8 +228,8 @@
       "source_sha256": "4dbc7688b20e5650cb000582df373cab1d0b3e76b92d0fcb70d4427fca585f4c",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 107736,
-      "driver_impact_rows": 40,
+      "replay_rows": 107640,
+      "driver_impact_rows": 39,
       "publishable_event_components": {
         "position": 2,
         "gap": 2,
@@ -295,7 +295,7 @@
       "source_sha256": "340c849caee2baa036d43da5eabe2774037a256e3e820d7aed5685fa6ad0a532",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 101357,
+      "replay_rows": 101340,
       "driver_impact_rows": 17,
       "publishable_event_components": {
         "position": 1,
@@ -329,8 +329,8 @@
       "source_sha256": "687f5079d13ea588a9f923dd6d157722c526f2d07681842dd7f906fc28b46bbd",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 116945,
-      "driver_impact_rows": 37,
+      "replay_rows": 116699,
+      "driver_impact_rows": 35,
       "publishable_event_components": {
         "position": 2,
         "gap": 2,
@@ -476,7 +476,7 @@
       "source_sha256": "3c0e7951e80754865b0592d52b3291ddebaf6202f87f4a7015656f2c2b19322f",
       "source_start_markers": 0,
       "modelled_events": 0,
-      "replay_rows": 93511,
+      "replay_rows": 93510,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
@@ -672,8 +672,8 @@
       "source_sha256": "c1ce845cb6cb84b059f0f8b0810477acc7dd460381aa7dce53bd552ef6001d8e",
       "source_start_markers": 4,
       "modelled_events": 4,
-      "replay_rows": 126238,
-      "driver_impact_rows": 69,
+      "replay_rows": 104315,
+      "driver_impact_rows": 68,
       "publishable_event_components": {
         "position": 3,
         "gap": 0,
@@ -763,7 +763,7 @@
       "source_sha256": "92e59505669d9276d6a6eb928b4415aa32ad7c180314b778f0f488f84cccd92c",
       "source_start_markers": 4,
       "modelled_events": 4,
-      "replay_rows": 91737,
+      "replay_rows": 91736,
       "driver_impact_rows": 66,
       "publishable_event_components": {
         "position": 3,
@@ -865,14 +865,14 @@
       "source_sha256": "61e6f80c7751bb7698d69913360f39d93c80dd42cfb9fd0250fef440c004d82b",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 100055,
-      "driver_impact_rows": 51,
+      "replay_rows": 99829,
+      "driver_impact_rows": 50,
       "publishable_event_components": {
-        "position": 3,
+        "position": 2,
         "gap": 2,
         "pit": 3,
         "restart": 3,
-        "tyre": 3
+        "tyre": 2
       },
       "limitations": [],
       "events": [
@@ -919,7 +919,7 @@
       "source_sha256": "517e24b39ac5f620d95961b25a648e8e36f12c4b71d27e6c206070950d7c745a",
       "source_start_markers": 0,
       "modelled_events": 0,
-      "replay_rows": 105788,
+      "replay_rows": 105724,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
@@ -965,7 +965,7 @@
       "source_sha256": "40d06eb4a48feb23ea411587d2df23a2414146a5eaa9dd10b18d188e59a3b147",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 115129,
+      "replay_rows": 113781,
       "driver_impact_rows": 20,
       "publishable_event_components": {
         "position": 1,
@@ -999,8 +999,8 @@
       "source_sha256": "d54d090f023b01e7bcd7348aeb2b51f32fac955c2523600e2d8b2592e0e41b7b",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 89831,
-      "driver_impact_rows": 20,
+      "replay_rows": 89654,
+      "driver_impact_rows": 19,
       "publishable_event_components": {
         "position": 1,
         "gap": 1,
@@ -1033,8 +1033,8 @@
       "source_sha256": "f905feb25af331a1f787e77046b002de5e11e16c3c41ad5a6e21fb2ee9a53800",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 96264,
-      "driver_impact_rows": 55,
+      "replay_rows": 96107,
+      "driver_impact_rows": 54,
       "publishable_event_components": {
         "position": 3,
         "gap": 2,
@@ -1089,8 +1089,8 @@
       "source_sha256": "0730cc9e6e36df777883fbb9a58fe66a8e5277ad9314eb05a53964fb2805f999",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 105787,
-      "driver_impact_rows": 39,
+      "replay_rows": 105636,
+      "driver_impact_rows": 37,
       "publishable_event_components": {
         "position": 2,
         "gap": 2,
@@ -1133,7 +1133,7 @@
       "source_sha256": "c71f5e8cb64aa600040cf5125b979f8a9a4f465da7677aa5410166bd969e18d8",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 113692,
+      "replay_rows": 113664,
       "driver_impact_rows": 20,
       "publishable_event_components": {
         "position": 1,
@@ -1162,19 +1162,19 @@
       "round": 9,
       "race_name": "Spanish Grand Prix",
       "race_date": "2025-06-01",
-      "verification_status": "verified_all_components",
+      "verification_status": "verified_with_withheld_components",
       "source_message_count": 100,
       "source_sha256": "a13b1f21b95c52f306449af5c5b67cdeee7193b5d4cf94b7e5c4cf5809c5d17b",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 102282,
+      "replay_rows": 102154,
       "driver_impact_rows": 18,
       "publishable_event_components": {
-        "position": 1,
-        "gap": 1,
+        "position": 0,
+        "gap": 0,
         "pit": 1,
         "restart": 1,
-        "tyre": 1
+        "tyre": 0
       },
       "limitations": [],
       "events": [
@@ -1201,8 +1201,8 @@
       "source_sha256": "fb3a9db5952724dafe23da57363ea6a54ea65d5e1fbefd96aa87534ec16f61cb",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 107169,
-      "driver_impact_rows": 18,
+      "replay_rows": 106859,
+      "driver_impact_rows": 17,
       "publishable_event_components": {
         "position": 0,
         "gap": 0,
@@ -1237,8 +1237,8 @@
       "source_sha256": "5d4161ac8a72b8608eb82ea9ea7016c0a3a4ed02149edc9e1bb889c5903b6468",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 82931,
-      "driver_impact_rows": 18,
+      "replay_rows": 82847,
+      "driver_impact_rows": 17,
       "publishable_event_components": {
         "position": 1,
         "gap": 1,
@@ -1271,18 +1271,18 @@
       "source_sha256": "5a69abbf6d07b76c54966b9658933417fe01bba02c44712fdc7fe2f24a5d9c5f",
       "source_start_markers": 4,
       "modelled_events": 4,
-      "replay_rows": 96211,
-      "driver_impact_rows": 72,
+      "replay_rows": 94801,
+      "driver_impact_rows": 69,
       "publishable_event_components": {
-        "position": 4,
+        "position": 1,
         "gap": 0,
         "pit": 4,
         "restart": 0,
-        "tyre": 4
+        "tyre": 1
       },
       "limitations": [
-        "Recovery interrupted by another neutralisation",
-        "Two complete green recovery laps not verified"
+        "Two complete green recovery laps not verified",
+        "Two-lap recovery unavailable"
       ],
       "events": [
         {
@@ -1293,7 +1293,7 @@
           "end_lap": 4,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": "Recovery interrupted by another neutralisation"
+          "limitation": "Two-lap recovery unavailable"
         },
         {
           "event_id": "2025-12-vsc-02",
@@ -1313,7 +1313,7 @@
           "end_lap": 17,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": "Recovery interrupted by another neutralisation"
+          "limitation": "Two-lap recovery unavailable"
         },
         {
           "event_id": "2025-12-sc-04",
@@ -1323,7 +1323,7 @@
           "end_lap": 21,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": "Two complete green recovery laps not verified"
+          "limitation": "Two-lap recovery unavailable"
         }
       ],
       "violations": []
@@ -1338,13 +1338,13 @@
       "source_sha256": "df6375f581b4f4c249b7d14a625fc9909f5aa72981ca7bc7278007fb6f4ab3d2",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 104392,
+      "replay_rows": 104047,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
         "gap": 0,
         "pit": 0,
-        "restart": 1,
+        "restart": 0,
         "tyre": 0
       },
       "limitations": [
@@ -1374,7 +1374,7 @@
       "source_sha256": "e49867894cb7a5150926579da45358bdc52934f5f7bedefe9661b200c351b91f",
       "source_start_markers": 0,
       "modelled_events": 0,
-      "replay_rows": 114285,
+      "replay_rows": 114186,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
@@ -1397,11 +1397,11 @@
       "source_sha256": "fc99c887a1c2610aa9696576c85bd91243891166debb38513742be34ae2e8e79",
       "source_start_markers": 4,
       "modelled_events": 4,
-      "replay_rows": 112208,
-      "driver_impact_rows": 76,
+      "replay_rows": 111985,
+      "driver_impact_rows": 74,
       "publishable_event_components": {
         "position": 4,
-        "gap": 3,
+        "gap": 4,
         "pit": 3,
         "restart": 4,
         "tyre": 4
@@ -1461,7 +1461,7 @@
       "source_sha256": "3088820bd9747f2a23c7a440a1c1651d0433995e26c49a9fe713bf5ba066585d",
       "source_start_markers": 0,
       "modelled_events": 0,
-      "replay_rows": 83233,
+      "replay_rows": 83008,
       "driver_impact_rows": 0,
       "publishable_event_components": {
         "position": 0,
@@ -1484,8 +1484,8 @@
       "source_sha256": "08f0eb0d257e09b76157911cbbeb3df75308ba700647f27fbde963111764a128",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 108516,
-      "driver_impact_rows": 20,
+      "replay_rows": 108454,
+      "driver_impact_rows": 19,
       "publishable_event_components": {
         "position": 1,
         "gap": 1,
@@ -1541,7 +1541,7 @@
       "source_sha256": "0388f668c849bb4ea50c5d55d6e18e0ee2bab338377a96044e373a4901032309",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 109595,
+      "replay_rows": 109593,
       "driver_impact_rows": 19,
       "publishable_event_components": {
         "position": 1,
@@ -1577,7 +1577,7 @@
       "source_sha256": "d67438669e8023a8d5f2ec012abebd23d0a64b378f65457a71a1d716c8af8755",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 106935,
+      "replay_rows": 106629,
       "driver_impact_rows": 16,
       "publishable_event_components": {
         "position": 0,
@@ -1613,8 +1613,8 @@
       "source_sha256": "ebf7fb1ab6ef0685454e4c7ab1bcb8b9930549cbd51265a0eaa300e74cb30a20",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 99017,
-      "driver_impact_rows": 39,
+      "replay_rows": 98814,
+      "driver_impact_rows": 37,
       "publishable_event_components": {
         "position": 2,
         "gap": 1,
@@ -1654,16 +1654,16 @@
       "round": 22,
       "race_name": "Las Vegas Grand Prix",
       "race_date": "2025-11-23",
-      "verification_status": "verified_with_withheld_components",
+      "verification_status": "verified_all_components",
       "source_message_count": 61,
       "source_sha256": "64cd11f0a279c12e4b3b27a50c1dc4b808b0b5c4cafbb1f85bd59991f9268431",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 88415,
+      "replay_rows": 88261,
       "driver_impact_rows": 37,
       "publishable_event_components": {
         "position": 2,
-        "gap": 1,
+        "gap": 2,
         "pit": 2,
         "restart": 2,
         "tyre": 2
@@ -1703,7 +1703,7 @@
       "source_sha256": "50d2f060278058806c58d3a4f01a9a3a915189e144a05c5c852c9abf4513533d",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 97382,
+      "replay_rows": 97170,
       "driver_impact_rows": 20,
       "publishable_event_components": {
         "position": 1,
@@ -1755,21 +1755,23 @@
       "round": 1,
       "race_name": "Australian Grand Prix",
       "race_date": "2026-03-08",
-      "verification_status": "verified_all_components",
+      "verification_status": "verified_with_withheld_components",
       "source_message_count": 167,
       "source_sha256": "b9e2b612177e9b6ed22d870a022b85a1d3151a2f6b4f59f64411cb81f1649369",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 91805,
-      "driver_impact_rows": 57,
+      "replay_rows": 89753,
+      "driver_impact_rows": 54,
       "publishable_event_components": {
-        "position": 3,
-        "gap": 3,
+        "position": 1,
+        "gap": 1,
         "pit": 3,
-        "restart": 3,
-        "tyre": 3
+        "restart": 1,
+        "tyre": 1
       },
-      "limitations": [],
+      "limitations": [
+        "Two-lap recovery unavailable"
+      ],
       "events": [
         {
           "event_id": "2026-01-vsc-01",
@@ -1779,7 +1781,7 @@
           "end_lap": 14,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": null
+          "limitation": "Two-lap recovery unavailable"
         },
         {
           "event_id": "2026-01-vsc-02",
@@ -1799,7 +1801,7 @@
           "end_lap": 34,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": null
+          "limitation": "Two-lap recovery unavailable"
         }
       ],
       "violations": []
@@ -1809,21 +1811,23 @@
       "round": 2,
       "race_name": "Chinese Grand Prix",
       "race_date": "2026-03-15",
-      "verification_status": "verified_all_components",
+      "verification_status": "verified_with_withheld_components",
       "source_message_count": 86,
       "source_sha256": "ac38c1dff38f309c7629f8d340cf5d70b1b169fec417652333b888126e1c5c60",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 94244,
+      "replay_rows": 93368,
       "driver_impact_rows": 17,
       "publishable_event_components": {
-        "position": 1,
-        "gap": 1,
+        "position": 0,
+        "gap": 0,
         "pit": 1,
-        "restart": 1,
-        "tyre": 1
+        "restart": 0,
+        "tyre": 0
       },
-      "limitations": [],
+      "limitations": [
+        "Two-lap recovery unavailable"
+      ],
       "events": [
         {
           "event_id": "2026-02-sc-01",
@@ -1833,7 +1837,7 @@
           "end_lap": 13,
           "end_source": "explicit_end_message",
           "boundary_verified": true,
-          "limitation": null
+          "limitation": "Two-lap recovery unavailable"
         }
       ],
       "violations": []
@@ -1848,8 +1852,8 @@
       "source_sha256": "488a68996838dd42f5cf850a604d846004ba5d2494f1cecc9e937210bdd47d41",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 112935,
-      "driver_impact_rows": 22,
+      "replay_rows": 112784,
+      "driver_impact_rows": 21,
       "publishable_event_components": {
         "position": 1,
         "gap": 1,
@@ -1882,8 +1886,8 @@
       "source_sha256": "7c23c5b17971d8dcbb3f677bba8f1e5d38580a53e8c2a59d714b03ca5af2be2d",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 104906,
-      "driver_impact_rows": 22,
+      "replay_rows": 104817,
+      "driver_impact_rows": 20,
       "publishable_event_components": {
         "position": 1,
         "gap": 0,
@@ -1918,8 +1922,8 @@
       "source_sha256": "965e562918132fb7640cde701cb92e46ebb45f6eaf7dbdd466bbb855deb55d62",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 98142,
-      "driver_impact_rows": 51,
+      "replay_rows": 97502,
+      "driver_impact_rows": 50,
       "publishable_event_components": {
         "position": 3,
         "gap": 3,
@@ -2029,8 +2033,8 @@
       "source_sha256": "1606a159d6e0ba64dff72e7af8f167ae1bc94202945dd50fa5311e6a422123e4",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 108269,
-      "driver_impact_rows": 37,
+      "replay_rows": 107041,
+      "driver_impact_rows": 34,
       "publishable_event_components": {
         "position": 1,
         "gap": 1,
@@ -2075,7 +2079,7 @@
       "source_sha256": "ed7d9af790899183c5a4f3e312cdae74f756d51d2f1cad53cecdf76c6b5073c5",
       "source_start_markers": 2,
       "modelled_events": 2,
-      "replay_rows": 100870,
+      "replay_rows": 100672,
       "driver_impact_rows": 38,
       "publishable_event_components": {
         "position": 2,
@@ -2119,8 +2123,8 @@
       "source_sha256": "bac601a68afadd4c43b03490e44fccea170b7447bb4a1d10c73afaf1e9b4c6bd",
       "source_start_markers": 4,
       "modelled_events": 4,
-      "replay_rows": 112245,
-      "driver_impact_rows": 84,
+      "replay_rows": 112037,
+      "driver_impact_rows": 81,
       "publishable_event_components": {
         "position": 2,
         "gap": 2,
@@ -2185,7 +2189,7 @@
       "source_sha256": "596945f10a9d584b9131c10dc84d288f2fa0b224a013b839e692c808e49ca45c",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 103559,
+      "replay_rows": 103499,
       "driver_impact_rows": 61,
       "publishable_event_components": {
         "position": 3,
@@ -2242,7 +2246,7 @@
       "source_sha256": "6cfaa681482cdd2994f2b1ebe845c5861313a908660fee77ed391e1e2c38b3f1",
       "source_start_markers": 1,
       "modelled_events": 1,
-      "replay_rows": 125645,
+      "replay_rows": 123794,
       "driver_impact_rows": 19,
       "publishable_event_components": {
         "position": 1,
@@ -2276,8 +2280,8 @@
       "source_sha256": "886c1672358bf647c4cddab0cb05a4433c10c1d079403be89a31737a86a82b86",
       "source_start_markers": 3,
       "modelled_events": 3,
-      "replay_rows": 147135,
-      "driver_impact_rows": 57,
+      "replay_rows": 114119,
+      "driver_impact_rows": 55,
       "publishable_event_components": {
         "position": 2,
         "gap": 1,

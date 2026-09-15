@@ -17,8 +17,8 @@ explicit limitations.
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | 2024 | 24 | 2,129 | 25 | 5 | 8 | 10 | 1 |
 | 2025 | 24 | 2,178 | 31 | 8 | 9 | 6 | 1 |
-| 2026 | 14 | 2,558 | 31 | 5 | 8 | 0 | 1 |
-| **Total** | **62** | **6,865** | **87** | **18** | **25** | **16** | **3** |
+| 2026 | 14 | 2,558 | 31 | 3 | 10 | 0 | 1 |
+| **Total** | **62** | **6,865** | **87** | **16** | **27** | **16** | **3** |
 
 All 87 source deployment markers reconcile exactly to 87 published events. Every
 complete event end reconciles to an explicit end message, every superseded event
@@ -68,10 +68,32 @@ These references supplement the population audit. Articles are positive edge-cas
 checks, not a complete negative oracle; the loaded Formula 1 live-timing messages
 remain the population source for all 62 races.
 
-The frozen external-probe pack contains 15 positive cases. All 15 have full source
-coverage and exact-lap matches; it reports no false negatives or uncovered cases.
-Population precision and false-positive rate remain deliberately unclaimed because
-race-report prose is not an exhaustive negative annotation set.
+The schema-v2 external probe pack contains 36 purposively stratified annotations:
+18 intervention/boundary cases (13 positive and 5 negative), 12 driver checkpoint
+or story cases, and 6 pit cases. The pit stratum includes a stop during an
+intervention, a stop after its end, no stop, an uncertainty interval crossing zero,
+insufficient same-race references, and an expected source-limited race. The frozen
+result has 13 true positives, 5 true negatives, 17 categorical matches and one
+expected unavailability, with no covered mismatch. Its 100% annotated precision
+and recall describe only this selected sample; population precision and false-positive
+rate remain deliberately unclaimed.
+
+Driver stories are classified in `marts.race_control_impact`, not in dashboard SQL.
+`material_impact` requires at least one eligible position delta of at least one place,
+an eligible field-adjusted or restart gap delta of at least 0.50 seconds, a pit-saving
+90% interval wholly above or below zero, or an observed tyre change during a red-flag
+suspension. Signed effects produce `benefit`, `loss` or `mixed`; a tyre-only result is
+`unknown`. `no_material_effect` is used only when at least one component was genuinely
+evaluated below threshold. Stops after the end, inconclusive pit intervals, strategic
+actions without a supported counterfactual, and missing evidence remain `context_only`.
+
+For 2026 historical replay, OpenF1 UTC alignment can use a validated
+`staging.stg_laps` partition when the raw lap partition is absent. The selected anchor
+source, finite-row count and SHA-256 fingerprint are stored in the timing audit. The
+8-anchor, 4-driver and 90%-within-one-second gate is unchanged. Rounds 2–12 passed this
+gate in the backfill; round 1 was rejected at 36.9% inliers. Monaco R6 position geometry
+covered only 4.5% of its lap-timing window, below the unchanged 90% replay gate, so its
+driver impact remains unavailable.
 
 ## Reproduction
 
@@ -80,7 +102,15 @@ race-report prose is not an exhaustive negative annotation set.
 .venv/bin/python scripts/audit_race_control_coverage.py \
   data/warehouse/f1.duckdb \
   --output validation/race-control-2024-2026-audit-v1.json
+.venv/bin/python scripts/audit_race_control_coverage.py \
+  data/warehouse/f1.duckdb \
+  --check-report validation/race-control-2024-2026-audit-v1.json \
+  --summary-only
 .venv/bin/python scripts/check_race_control_impact.py data/warehouse/f1.duckdb
+.venv/bin/python scripts/report_reference_validation.py \
+  --snapshot data/dashboard/latest.duckdb \
+  --reference validation/race-control-probes-v2.json \
+  --output validation/race-control-results-v2.json
 ```
 
 The audit fails on missing race partitions, source deployments omitted from the

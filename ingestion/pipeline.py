@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import math
 import re
 from typing import Any
 
@@ -412,6 +413,61 @@ def _openf1_gap(value: object) -> tuple[float | None, int | None]:
     return (None, int(match.group(1))) if match else (None, None)
 
 
+def _select_openf1_anchor_laps(
+    raw_laps: pd.DataFrame, staged_laps: pd.DataFrame
+) -> tuple[pd.DataFrame, dict[str, str], dict[str, object]]:
+    """Choose deterministic local clock anchors and validate driver-number identity."""
+    source = "raw.laps" if not raw_laps.empty else "staging.stg_laps"
+    selected = raw_laps if not raw_laps.empty else staged_laps
+    required = {"driver_code", "driver_number", "lap_number", "lap_start_sec"}
+    if selected.empty or not required.issubset(selected.columns):
+        return (
+            selected.iloc[0:0].copy(),
+            {},
+            {
+                "anchor_source": "unavailable",
+                "anchor_row_count": 0,
+                "anchor_sha256": None,
+                "anchor_exclusion_reason": "Missing local lap partition for clock alignment",
+            },
+        )
+    selected = selected.loc[:, sorted(required)].copy()
+    selected["driver_code"] = selected["driver_code"].astype("string")
+    selected["driver_number"] = selected["driver_number"].astype("string")
+    selected["lap_number"] = pd.to_numeric(selected["lap_number"], errors="coerce")
+    selected["lap_start_sec"] = pd.to_numeric(selected["lap_start_sec"], errors="coerce")
+    selected = selected.dropna(subset=list(required))
+    selected = selected.loc[selected["lap_start_sec"].map(lambda value: math.isfinite(value))]
+    selected = selected.drop_duplicates().sort_values(
+        ["driver_code", "lap_number", "lap_start_sec"]
+    )
+    identities = selected[["driver_number", "driver_code"]].drop_duplicates()
+    identity_valid = bool(
+        not identities.empty
+        and identities.groupby("driver_number")["driver_code"].nunique().max() == 1
+        and identities.groupby("driver_code")["driver_number"].nunique().max() == 1
+    )
+    reason = "" if identity_valid else "Driver number/code mapping is not one-to-one"
+    number_to_code = (
+        dict(zip(identities["driver_number"], identities["driver_code"], strict=True))
+        if identity_valid
+        else {}
+    )
+    digest_rows = (
+        selected.fillna("").astype(str).to_dict(orient="records") if not selected.empty else []
+    )
+    return (
+        selected,
+        number_to_code,
+        {
+            "anchor_source": source,
+            "anchor_row_count": len(selected),
+            "anchor_sha256": _openf1_digest(digest_rows),
+            "anchor_exclusion_reason": reason,
+        },
+    )
+
+
 def _openf1_clock_audit(
     source_laps: list[dict[str, Any]],
     local_laps: pd.DataFrame,
@@ -521,6 +577,9 @@ def ingest_openf1_timing(
                     "session_key": None,
                     "meeting_key": None,
                     "status": "unavailable",
+                    "anchor_source": "unavailable",
+                    "anchor_row_count": 0,
+                    "anchor_sha256": None,
                     "anchor_count": 0,
                     "inlier_anchor_count": 0,
                     "anchor_driver_count": 0,
@@ -540,20 +599,51 @@ def ingest_openf1_timing(
         raw_intervals = source.intervals(session_key)
         raw_laps = source.laps(session_key)
         raw_control = source.race_control(session_key)
-        local_laps = read_query(
+        raw_anchor_laps = read_query(
             # Read the freshly ingested raw partition: the scheduled round job
             # deliberately runs dbt only after every external source has landed.
             "select driver_code, driver_number, lap_number, lap_start_sec from raw.laps "
             f"where season = {season} and round = {rnd} and session = '{session}'",
             settings,
         )
-        number_to_code = {
-            str(row.driver_number): str(row.driver_code)
-            for row in local_laps.dropna(subset=["driver_number", "driver_code"])
-            .drop_duplicates("driver_number")
-            .itertuples(index=False)
+        staged_anchor_laps = pd.DataFrame()
+        if raw_anchor_laps.empty:
+            try:
+                staged_anchor_laps = read_query(
+                    "select driver_code, driver_number, lap_number, lap_start_sec "
+                    "from staging.stg_laps "
+                    f"where season = {season} and round = {rnd} and session = '{session}'",
+                    settings,
+                )
+            except Exception as exc:
+                log.warning(
+                    "pipeline.openf1_staged_anchors_unavailable",
+                    season=season,
+                    round=rnd,
+                    error=str(exc),
+                )
+        local_laps, number_to_code, anchor_metadata = _select_openf1_anchor_laps(
+            raw_anchor_laps, staged_anchor_laps
+        )
+        if anchor_metadata["anchor_exclusion_reason"]:
+            audit = {
+                "status": "unavailable",
+                "anchor_count": 0,
+                "inlier_anchor_count": 0,
+                "anchor_driver_count": 0,
+                "inlier_ratio": 0.0,
+                "alignment_p95_s": None,
+                "clock_zero_utc": None,
+                "exclusion_reason": anchor_metadata["anchor_exclusion_reason"],
+            }
+        else:
+            audit = _openf1_clock_audit(raw_laps, local_laps, number_to_code)
+        audit = {
+            "anchor_source": anchor_metadata["anchor_source"],
+            "anchor_row_count": anchor_metadata["anchor_row_count"],
+            "anchor_sha256": anchor_metadata["anchor_sha256"],
+            **audit,
         }
-        audit = _openf1_clock_audit(raw_laps, local_laps, number_to_code)
         if audit["status"] == "verified" and (not raw_positions or not raw_intervals):
             audit = {
                 **audit,
