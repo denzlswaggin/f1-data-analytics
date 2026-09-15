@@ -17,12 +17,40 @@ from uuid import uuid4
 
 import duckdb
 import pandas as pd
+from pandas.api import types as pandas_types
 from sqlalchemy import bindparam, create_engine, text
 
 from ingestion.config import Settings, get_settings
 from ingestion.logging import get_logger
 
 log = get_logger(__name__)
+
+
+def _portable_sql_type(series: pd.Series) -> str:
+    """Return a conservative DuckDB/Postgres type for additive mart columns."""
+    dtype = series.dtype
+    if pandas_types.is_bool_dtype(dtype):
+        return "BOOLEAN"
+    if pandas_types.is_integer_dtype(dtype):
+        return "BIGINT"
+    if pandas_types.is_float_dtype(dtype):
+        return "DOUBLE PRECISION"
+    if pandas_types.is_datetime64_any_dtype(dtype):
+        return "TIMESTAMP WITH TIME ZONE"
+    return "VARCHAR"
+
+
+def _add_missing_frame_columns(
+    connection: duckdb.DuckDBPyConnection, schema: str, table: str, frame: pd.DataFrame
+) -> None:
+    """Make additive DataFrame schema evolution safe for incremental writers."""
+    for column in frame.columns:
+        sql_type = _portable_sql_type(frame[column])
+        statement = (
+            f'ALTER TABLE "{schema}"."{table}" ADD COLUMN IF NOT EXISTS '
+            f'"{column}" {sql_type}'
+        )
+        connection.execute(statement)
 
 
 @dataclass(frozen=True)
@@ -382,6 +410,7 @@ def replace_table_partition(
                 f'CREATE TABLE IF NOT EXISTS "{schema}"."{table}" '
                 "AS SELECT * FROM incoming WHERE 1 = 0"
             )
+            _add_missing_frame_columns(con, schema, table, df)
             predicate = " AND ".join(f'"{column}" = ?' for column in partition)
             con.execute(
                 f'DELETE FROM "{schema}"."{table}" WHERE {predicate}',
@@ -402,6 +431,12 @@ def replace_table_partition(
             with engine.begin() as conn:
                 conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
                 df.head(0).to_sql(table, conn, schema=schema, if_exists="append", index=False)
+                for column in df.columns:
+                    sql_type = _portable_sql_type(df[column])
+                    conn.exec_driver_sql(
+                        f'ALTER TABLE "{schema}"."{table}" ADD COLUMN IF NOT EXISTS '
+                        f'"{column}" {sql_type}'
+                    )
                 predicate = " AND ".join(
                     f'"{column}" = :partition_{index}' for index, column in enumerate(partition)
                 )

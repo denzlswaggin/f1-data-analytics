@@ -361,6 +361,32 @@ def _replay_laps_query(season: int, rnd: int) -> str:
     """
 
 
+def _optional_openf1_replay_source(table: str, season: int, rnd: int, settings: Settings) -> pd.DataFrame:
+    columns = (
+        "driver_code, session_time_sec, position"
+        if table == "stg_openf1_positions"
+        else "driver_code, session_time_sec, gap_to_leader_s, gap_to_ahead_s"
+    )
+    try:
+        return read_query(
+            f"select {columns} from staging.{table} "
+            f"where season = {int(season)} and round = {int(rnd)} and session = 'R' "
+            "and exists (select 1 from staging.stg_openf1_timing_audit audit "
+            f"where audit.season = {int(season)} and audit.round = {int(rnd)} "
+            "and audit.session = 'R' and audit.status = 'verified')",
+            settings,
+        )
+    except Exception as exc:
+        log.info(
+            "replay.openf1_optional_unavailable",
+            season=season,
+            round=rnd,
+            table=table,
+            reason=str(exc),
+        )
+        return pd.DataFrame()
+
+
 def _build_one_replay(
     season: int,
     rnd: int,
@@ -378,10 +404,18 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
+    source_order = _optional_openf1_replay_source(
+        "stg_openf1_positions", season, rnd, settings
+    )
+    source_intervals = _optional_openf1_replay_source(
+        "stg_openf1_intervals", season, rnd, settings
+    )
     validate_replay_sources(positions, laps)
     replay = resample_race(
         positions,
         laps,
+        source_order=source_order,
+        source_intervals=source_intervals,
         tick_s=tick_s,
         retire_buffer_s=retire_buffer_s,
         max_linger_s=max_linger_s,
@@ -1129,7 +1163,13 @@ def _race_control_replay_query(season: int | None, rnd: int | None) -> str:
             replay.tyre_life,
             replay.running_order,
             replay.gap_to_leader_s,
-            replay.lap_progress
+            replay.lap_progress,
+            replay.running_order_source,
+            replay.running_order_confidence,
+            replay.running_order_observed_t_s,
+            replay.gap_source,
+            replay.gap_confidence,
+            replay.gap_observed_t_s
         from marts.race_replay as replay
         left join staging.stg_races as races
             on races.season = replay.season and races.round = replay.round
