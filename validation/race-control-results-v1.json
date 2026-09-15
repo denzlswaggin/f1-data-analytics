@@ -1,16 +1,16 @@
 {
   "counts": {
-    "true_positive": 4,
+    "true_positive": 15,
     "true_negative": 0,
     "false_positive": 0,
     "false_negative": 0,
     "uncovered": 0
   },
-  "exact_positive_matches": 4,
+  "exact_positive_matches": 15,
   "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
-  "annotated_cases": 4,
-  "covered_cases": 4,
-  "annotated_positive_recall": 1,
+  "annotated_cases": 15,
+  "covered_cases": 15,
+  "annotated_positive_recall": 1.0,
   "population_precision": null,
   "population_false_positive_rate": null,
   "limitations": "Purposive, non-exhaustive, single-reviewer annotations. Unmentioned events are unknown, not false positives. No population accuracy or calibrated interval.",
@@ -58,13 +58,135 @@
         32
       ],
       "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-vsc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        14
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-vsc-end",
+      "kind": "race_control_end",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        15
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-antonelli-pit",
+      "kind": "pit_entry",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        14
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "madrid-norris-pit",
+      "kind": "pit_entry",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        15
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "australia-vsc-finish",
+      "kind": "race_control_finish",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        58
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "china-vsc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        22
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "china-sc-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        23,
+        27
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "japan-red-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        1
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "azerbaijan-vsc-finish",
+      "kind": "race_control_finish",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        51
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "canada-sc-finish",
+      "kind": "race_control_finish",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        70
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "belgium-red-start",
+      "kind": "race_control_start",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        1
+      ],
+      "outcome": "true_positive"
     }
   ],
   "snapshot_metadata": [
     [
-      "20260911-robust-estimates-v4",
-      "2026-09-11 00:57:24.717055+02:00"
+      "20260914T234532Z-local",
+      "2026-09-15 01:45:32.796573+02:00"
     ]
   ],
-  "reference_sha256": "2a9c666385198a19fe8512d3cc328032545550a884ae5a729f61074afdec2c88"
+  "reference_sha256": "52b01576051143eab93b670d715d1338af87e05bf11103581bfecefe614c12f1"
 }

@@ -1,0 +1,2420 @@
+{
+  "schema_version": 1,
+  "scope": {
+    "from_season": 2024,
+    "to_season": 2026
+  },
+  "source_basis": "Loaded Formula 1 live-timing race-control messages, independently reconciled to published event starts and boundary markers.",
+  "limitations": "A verified absence means no supported SC, VSC or red-flag deployment marker in the loaded source partition; it is not independent proof that no incident occurred.",
+  "summary": {
+    "audited_races": 62,
+    "source_races": 62,
+    "modelled_events": 87,
+    "source_start_markers": 87,
+    "status_counts": {
+      "verified_all_components": 18,
+      "verified_no_neutralisation_marker": 16,
+      "verified_source_limited": 3,
+      "verified_with_withheld_components": 25
+    },
+    "structural_violations": 0,
+    "audit_pass": true
+  },
+  "violations": [],
+  "races": [
+    {
+      "season": 2024,
+      "round": 1,
+      "race_name": "Bahrain Grand Prix",
+      "race_date": "2024-03-02",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 69,
+      "source_sha256": "11d30c12a3e9411ce948019d068c01ab0dcbe55998343f9895a86b072994a515",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 112000,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 2,
+      "race_name": "Saudi Arabian Grand Prix",
+      "race_date": "2024-03-09",
+      "verification_status": "verified_all_components",
+      "source_message_count": 66,
+      "source_sha256": "34c6fbfab540c16954b358aa8f3b69885316c4b5806b1a88a83b1aa8e3d6d141",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 89405,
+      "driver_impact_rows": 18,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-02-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 7,
+          "end_lap": 9,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 3,
+      "race_name": "Australian Grand Prix",
+      "race_date": "2024-03-24",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 82,
+      "source_sha256": "1f8a36643871f3ef35c0d9707c9a62cba8982dfad4a130c1a4646091da42b911",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 85344,
+      "driver_impact_rows": 33,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [
+        "Race finished under VSC"
+      ],
+      "events": [
+        {
+          "event_id": "2024-03-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 17,
+          "end_lap": 18,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2024-03-vsc-02",
+          "event_type": "VSC",
+          "status": "finished",
+          "start_lap": 58,
+          "end_lap": 58,
+          "end_source": "chequered_flag",
+          "boundary_verified": true,
+          "limitation": "Race finished under VSC"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 4,
+      "race_name": "Japanese Grand Prix",
+      "race_date": "2024-04-07",
+      "verification_status": "verified_source_limited",
+      "source_message_count": 66,
+      "source_sha256": "d86f20ab23bffa7ef710e57f6cf9d7b0fd603b746649f4b140495c5f55b1962e",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 92935,
+      "driver_impact_rows": 18,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [
+        "No matching end message"
+      ],
+      "events": [
+        {
+          "event_id": "2024-04-red-01",
+          "event_type": "Red Flag",
+          "status": "unclosed",
+          "start_lap": 1,
+          "end_lap": null,
+          "end_source": "missing_source_end",
+          "boundary_verified": false,
+          "limitation": "No matching end message"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 5,
+      "race_name": "Chinese Grand Prix",
+      "race_date": "2024-04-21",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 56,
+      "source_sha256": "a90ff99f2de349e20f9852962c8817a9cf84b317e1d94b64dee0901f60ffa206",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 113078,
+      "driver_impact_rows": 55,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 1,
+        "pit": 3,
+        "restart": 1,
+        "tyre": 2
+      },
+      "limitations": [
+        "Recovery interrupted by another neutralisation",
+        "Superseded by Safety Car"
+      ],
+      "events": [
+        {
+          "event_id": "2024-05-vsc-01",
+          "event_type": "VSC",
+          "status": "interrupted",
+          "start_lap": 22,
+          "end_lap": 23,
+          "end_source": "superseding_neutralisation",
+          "boundary_verified": true,
+          "limitation": "Superseded by Safety Car"
+        },
+        {
+          "event_id": "2024-05-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 23,
+          "end_lap": 26,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2024-05-sc-03",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 27,
+          "end_lap": 31,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 6,
+      "race_name": "Miami Grand Prix",
+      "race_date": "2024-05-05",
+      "verification_status": "verified_all_components",
+      "source_message_count": 75,
+      "source_sha256": "4dbc7688b20e5650cb000582df373cab1d0b3e76b92d0fcb70d4427fca585f4c",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 107736,
+      "driver_impact_rows": 40,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 2,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-06-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 23,
+          "end_lap": 23,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2024-06-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 28,
+          "end_lap": 32,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 7,
+      "race_name": "Emilia Romagna Grand Prix",
+      "race_date": "2024-05-19",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 98,
+      "source_sha256": "82b6a8afc5e8e125f5fb3bb25b9553358ae00b090265af6f43bce7569f148460",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 103318,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 8,
+      "race_name": "Monaco Grand Prix",
+      "race_date": "2024-05-26",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 118,
+      "source_sha256": "340c849caee2baa036d43da5eabe2774037a256e3e820d7aed5685fa6ad0a532",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 101357,
+      "driver_impact_rows": 17,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 0,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-08-red-01",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 2,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 9,
+      "race_name": "Canadian Grand Prix",
+      "race_date": "2024-06-09",
+      "verification_status": "verified_all_components",
+      "source_message_count": 128,
+      "source_sha256": "687f5079d13ea588a9f923dd6d157722c526f2d07681842dd7f906fc28b46bbd",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 116945,
+      "driver_impact_rows": 37,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 2,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-09-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 25,
+          "end_lap": 29,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2024-09-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 54,
+          "end_lap": 58,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 10,
+      "race_name": "Spanish Grand Prix",
+      "race_date": "2024-06-23",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 105,
+      "source_sha256": "1dcbd6f05f06c0df662d08074e13ea5a802b2b312a2f01d51b60521ed081f04a",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 107514,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 11,
+      "race_name": "Austrian Grand Prix",
+      "race_date": "2024-06-30",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 124,
+      "source_sha256": "91cf2b9627998f7420d1fdd4d8a9100b5b4bbd9d075ee9c3b339b973cb68fab9",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 102121,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 0,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-11-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 66,
+          "end_lap": 66,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 12,
+      "race_name": "British Grand Prix",
+      "race_date": "2024-07-07",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 108,
+      "source_sha256": "a782b4d84b272128f0ce8f20915f18fdd2604ea172045bb64ccbea83fc6e35eb",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 93917,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 13,
+      "race_name": "Hungarian Grand Prix",
+      "race_date": "2024-07-21",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 75,
+      "source_sha256": "16741c40a7c6082a5b91258582eb62fc186999c1e95b4d10c03eab07e9c31165",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 116205,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 14,
+      "race_name": "Belgian Grand Prix",
+      "race_date": "2024-07-28",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 21,
+      "source_sha256": "3c0e7951e80754865b0592d52b3291ddebaf6202f87f4a7015656f2c2b19322f",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 93511,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 15,
+      "race_name": "Dutch Grand Prix",
+      "race_date": "2024-08-25",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 82,
+      "source_sha256": "bf1db09ed7e1f57215b3ad2ae9bc1af4256968b32fc6d6b15aac0f152cf4e3f5",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 110239,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 16,
+      "race_name": "Italian Grand Prix",
+      "race_date": "2024-09-01",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 59,
+      "source_sha256": "d8e652ba8c8f1e467d9dafafb8857efda79aa31956fcc1d32b4170ae3041410e",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 87352,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 17,
+      "race_name": "Azerbaijan Grand Prix",
+      "race_date": "2024-09-15",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 115,
+      "source_sha256": "d50dadb87691e1e07194e21298682e622a7787a7239d4e33c5fee406c16c01d2",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 106451,
+      "driver_impact_rows": 16,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 1,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [
+        "Race finished under VSC"
+      ],
+      "events": [
+        {
+          "event_id": "2024-17-vsc-01",
+          "event_type": "VSC",
+          "status": "finished",
+          "start_lap": 51,
+          "end_lap": 51,
+          "end_source": "chequered_flag",
+          "boundary_verified": true,
+          "limitation": "Race finished under VSC"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 18,
+      "race_name": "Singapore Grand Prix",
+      "race_date": "2024-09-22",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 61,
+      "source_sha256": "eabbd19eb2178d041e8a693f281bd426d221b9b1fda1a4bd30f4ab210559c874",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 118117,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 19,
+      "race_name": "United States Grand Prix",
+      "race_date": "2024-10-20",
+      "verification_status": "verified_all_components",
+      "source_message_count": 118,
+      "source_sha256": "a9408f736059262960bc78e995533a8fe93e4e07d917975d86934466edfcfc6a",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 110341,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-19-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 3,
+          "end_lap": 5,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 20,
+      "race_name": "Mexico City Grand Prix",
+      "race_date": "2024-10-27",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 118,
+      "source_sha256": "bc91d0628cb7551ec3b58e79e23556c186b99dce30a14629e9f3a6a6b47378fe",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 105916,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 0,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-20-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 6,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 21,
+      "race_name": "São Paulo Grand Prix",
+      "race_date": "2024-11-03",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 107,
+      "source_sha256": "c1ce845cb6cb84b059f0f8b0810477acc7dd460381aa7dce53bd552ef6001d8e",
+      "source_start_markers": 4,
+      "modelled_events": 4,
+      "replay_rows": 126238,
+      "driver_impact_rows": 69,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 0,
+        "pit": 3,
+        "restart": 0,
+        "tyre": 3
+      },
+      "limitations": [
+        "Interrupted by red flag",
+        "Recovery interrupted by another neutralisation",
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2024-21-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 28,
+          "end_lap": 28,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2024-21-sc-02",
+          "event_type": "Safety Car",
+          "status": "interrupted",
+          "start_lap": 30,
+          "end_lap": 32,
+          "end_source": "superseding_neutralisation",
+          "boundary_verified": true,
+          "limitation": "Interrupted by red flag"
+        },
+        {
+          "event_id": "2024-21-red-03",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 32,
+          "end_lap": 33,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2024-21-sc-04",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 39,
+          "end_lap": 42,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 22,
+      "race_name": "Las Vegas Grand Prix",
+      "race_date": "2024-11-23",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 35,
+      "source_sha256": "c9f8601de34e2a0f92e98fe95172c2ca26530303502783b9bab06ca0ce2363dd",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 94419,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 23,
+      "race_name": "Qatar Grand Prix",
+      "race_date": "2024-12-01",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 113,
+      "source_sha256": "92e59505669d9276d6a6eb928b4415aa32ad7c180314b778f0f488f84cccd92c",
+      "source_start_markers": 4,
+      "modelled_events": 4,
+      "replay_rows": 91737,
+      "driver_impact_rows": 66,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 1,
+        "pit": 4,
+        "restart": 1,
+        "tyre": 3
+      },
+      "limitations": [
+        "Recovery interrupted by another neutralisation",
+        "Superseded by Safety Car",
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2024-23-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2024-23-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 35,
+          "end_lap": 39,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2024-23-vsc-03",
+          "event_type": "VSC",
+          "status": "interrupted",
+          "start_lap": 40,
+          "end_lap": 40,
+          "end_source": "superseding_neutralisation",
+          "boundary_verified": true,
+          "limitation": "Superseded by Safety Car"
+        },
+        {
+          "event_id": "2024-23-sc-04",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 40,
+          "end_lap": 42,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2024,
+      "round": 24,
+      "race_name": "Abu Dhabi Grand Prix",
+      "race_date": "2024-12-08",
+      "verification_status": "verified_all_components",
+      "source_message_count": 130,
+      "source_sha256": "8a7717c51db9e27fcbbd9b73ba1c8f3e0a0576f87b5fb1079cc41955d69aec29",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 95022,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2024-24-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 3,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 1,
+      "race_name": "Australian Grand Prix",
+      "race_date": "2025-03-16",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 113,
+      "source_sha256": "61e6f80c7751bb7698d69913360f39d93c80dd42cfb9fd0250fef440c004d82b",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 100055,
+      "driver_impact_rows": 51,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 2,
+        "pit": 3,
+        "restart": 3,
+        "tyre": 3
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-01-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 7,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-01-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 34,
+          "end_lap": 41,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-01-sc-03",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 47,
+          "end_lap": 51,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 2,
+      "race_name": "Chinese Grand Prix",
+      "race_date": "2025-03-23",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 56,
+      "source_sha256": "517e24b39ac5f620d95961b25a648e8e36f12c4b71d27e6c206070950d7c745a",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 105788,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 3,
+      "race_name": "Japanese Grand Prix",
+      "race_date": "2025-04-06",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 23,
+      "source_sha256": "d73b075397779fc436368e3840a8c28b5d435d237925c10228258aa40c32f665",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 100260,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 4,
+      "race_name": "Bahrain Grand Prix",
+      "race_date": "2025-04-13",
+      "verification_status": "verified_all_components",
+      "source_message_count": 91,
+      "source_sha256": "40d06eb4a48feb23ea411587d2df23a2414146a5eaa9dd10b18d188e59a3b147",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 115129,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-04-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 32,
+          "end_lap": 35,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 5,
+      "race_name": "Saudi Arabian Grand Prix",
+      "race_date": "2025-04-20",
+      "verification_status": "verified_all_components",
+      "source_message_count": 65,
+      "source_sha256": "d54d090f023b01e7bcd7348aeb2b51f32fac955c2523600e2d8b2592e0e41b7b",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 89831,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-05-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 3,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 6,
+      "race_name": "Miami Grand Prix",
+      "race_date": "2025-05-04",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 77,
+      "source_sha256": "f905feb25af331a1f787e77046b002de5e11e16c3c41ad5a6e21fb2ee9a53800",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 96264,
+      "driver_impact_rows": 55,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 2,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 3
+      },
+      "limitations": [
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2025-06-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 3,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-06-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 29,
+          "end_lap": 30,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2025-06-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 33,
+          "end_lap": 34,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 7,
+      "race_name": "Emilia Romagna Grand Prix",
+      "race_date": "2025-05-18",
+      "verification_status": "verified_all_components",
+      "source_message_count": 44,
+      "source_sha256": "0730cc9e6e36df777883fbb9a58fe66a8e5277ad9314eb05a53964fb2805f999",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 105787,
+      "driver_impact_rows": 39,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 2,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-07-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 29,
+          "end_lap": 31,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-07-sc-02",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 46,
+          "end_lap": 53,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 8,
+      "race_name": "Monaco Grand Prix",
+      "race_date": "2025-05-25",
+      "verification_status": "verified_all_components",
+      "source_message_count": 196,
+      "source_sha256": "c71f5e8cb64aa600040cf5125b979f8a9a4f465da7677aa5410166bd969e18d8",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 113692,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-08-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 9,
+      "race_name": "Spanish Grand Prix",
+      "race_date": "2025-06-01",
+      "verification_status": "verified_all_components",
+      "source_message_count": 100,
+      "source_sha256": "a13b1f21b95c52f306449af5c5b67cdeee7193b5d4cf94b7e5c4cf5809c5d17b",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 102282,
+      "driver_impact_rows": 18,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-09-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 55,
+          "end_lap": 60,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 10,
+      "race_name": "Canadian Grand Prix",
+      "race_date": "2025-06-15",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 97,
+      "source_sha256": "fb3a9db5952724dafe23da57363ea6a54ea65d5e1fbefd96aa87534ec16f61cb",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 107169,
+      "driver_impact_rows": 18,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 1,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [
+        "Race finished under Safety Car"
+      ],
+      "events": [
+        {
+          "event_id": "2025-10-sc-01",
+          "event_type": "Safety Car",
+          "status": "finished",
+          "start_lap": 67,
+          "end_lap": 70,
+          "end_source": "chequered_flag",
+          "boundary_verified": true,
+          "limitation": "Race finished under Safety Car"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 11,
+      "race_name": "Austrian Grand Prix",
+      "race_date": "2025-06-29",
+      "verification_status": "verified_all_components",
+      "source_message_count": 117,
+      "source_sha256": "5d4161ac8a72b8608eb82ea9ea7016c0a3a4ed02149edc9e1bb889c5903b6468",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 82931,
+      "driver_impact_rows": 18,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-11-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 3,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 12,
+      "race_name": "British Grand Prix",
+      "race_date": "2025-07-06",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 158,
+      "source_sha256": "5a69abbf6d07b76c54966b9658933417fe01bba02c44712fdc7fe2f24a5d9c5f",
+      "source_start_markers": 4,
+      "modelled_events": 4,
+      "replay_rows": 96211,
+      "driver_impact_rows": 72,
+      "publishable_event_components": {
+        "position": 4,
+        "gap": 0,
+        "pit": 4,
+        "restart": 0,
+        "tyre": 4
+      },
+      "limitations": [
+        "Recovery interrupted by another neutralisation",
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2025-12-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2025-12-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 5,
+          "end_lap": 7,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2025-12-sc-03",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 14,
+          "end_lap": 17,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2025-12-sc-04",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 18,
+          "end_lap": 21,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 13,
+      "race_name": "Belgian Grand Prix",
+      "race_date": "2025-07-27",
+      "verification_status": "verified_source_limited",
+      "source_message_count": 116,
+      "source_sha256": "df6375f581b4f4c249b7d14a625fc9909f5aa72981ca7bc7278007fb6f4ab3d2",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 104392,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 1,
+        "tyre": 0
+      },
+      "limitations": [
+        "No pre-event baseline"
+      ],
+      "events": [
+        {
+          "event_id": "2025-13-red-01",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "No pre-event baseline"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 14,
+      "race_name": "Hungarian Grand Prix",
+      "race_date": "2025-08-03",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 96,
+      "source_sha256": "e49867894cb7a5150926579da45358bdc52934f5f7bedefe9661b200c351b91f",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 114285,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 15,
+      "race_name": "Dutch Grand Prix",
+      "race_date": "2025-08-31",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 108,
+      "source_sha256": "fc99c887a1c2610aa9696576c85bd91243891166debb38513742be34ae2e8e79",
+      "source_start_markers": 4,
+      "modelled_events": 4,
+      "replay_rows": 112208,
+      "driver_impact_rows": 76,
+      "publishable_event_components": {
+        "position": 4,
+        "gap": 3,
+        "pit": 3,
+        "restart": 4,
+        "tyre": 4
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-15-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 23,
+          "end_lap": 26,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-15-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 31,
+          "end_lap": 32,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-15-sc-03",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 53,
+          "end_lap": 57,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-15-sc-04",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 65,
+          "end_lap": 68,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 16,
+      "race_name": "Italian Grand Prix",
+      "race_date": "2025-09-07",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 71,
+      "source_sha256": "3088820bd9747f2a23c7a440a1c1651d0433995e26c49a9fe713bf5ba066585d",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 83233,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 17,
+      "race_name": "Azerbaijan Grand Prix",
+      "race_date": "2025-09-21",
+      "verification_status": "verified_all_components",
+      "source_message_count": 71,
+      "source_sha256": "08f0eb0d257e09b76157911cbbeb3df75308ba700647f27fbde963111764a128",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 108516,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-17-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 18,
+      "race_name": "Singapore Grand Prix",
+      "race_date": "2025-10-05",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 119,
+      "source_sha256": "844d062966d9836ea30333dda2fc818a6ee214c88deabd8be59790d7f12bc0e0",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 122360,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 19,
+      "race_name": "United States Grand Prix",
+      "race_date": "2025-10-19",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 79,
+      "source_sha256": "0388f668c849bb4ea50c5d55d6e18e0ee2bab338377a96044e373a4901032309",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 109595,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 0,
+        "pit": 1,
+        "restart": 0,
+        "tyre": 1
+      },
+      "limitations": [
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2025-19-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 7,
+          "end_lap": 8,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 20,
+      "race_name": "Mexico City Grand Prix",
+      "race_date": "2025-10-26",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 78,
+      "source_sha256": "d67438669e8023a8d5f2ec012abebd23d0a64b378f65457a71a1d716c8af8755",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 106935,
+      "driver_impact_rows": 16,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [
+        "Two-lap recovery unavailable"
+      ],
+      "events": [
+        {
+          "event_id": "2025-20-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 70,
+          "end_lap": 71,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two-lap recovery unavailable"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 21,
+      "race_name": "São Paulo Grand Prix",
+      "race_date": "2025-11-09",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 56,
+      "source_sha256": "ebf7fb1ab6ef0685454e4c7ab1bcb8b9930549cbd51265a0eaa300e74cb30a20",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 99017,
+      "driver_impact_rows": 39,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 1,
+        "pit": 2,
+        "restart": 1,
+        "tyre": 2
+      },
+      "limitations": [
+        "Recovery interrupted by another neutralisation"
+      ],
+      "events": [
+        {
+          "event_id": "2025-21-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 5,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2025-21-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 7,
+          "end_lap": 8,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 22,
+      "race_name": "Las Vegas Grand Prix",
+      "race_date": "2025-11-23",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 61,
+      "source_sha256": "64cd11f0a279c12e4b3b27a50c1dc4b808b0b5c4cafbb1f85bd59991f9268431",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 88415,
+      "driver_impact_rows": 37,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 1,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-22-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2025-22-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 16,
+          "end_lap": 16,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 23,
+      "race_name": "Qatar Grand Prix",
+      "race_date": "2025-11-30",
+      "verification_status": "verified_all_components",
+      "source_message_count": 79,
+      "source_sha256": "50d2f060278058806c58d3a4f01a9a3a915189e144a05c5c852c9abf4513533d",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 97382,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2025-23-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 7,
+          "end_lap": 10,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2025,
+      "round": 24,
+      "race_name": "Abu Dhabi Grand Prix",
+      "race_date": "2025-12-07",
+      "verification_status": "verified_no_neutralisation_marker",
+      "source_message_count": 107,
+      "source_sha256": "eaaa5e9ad6c245c35421eb3fffa2462cdc6ba6f136da76eb909c57c9db9b6777",
+      "source_start_markers": 0,
+      "modelled_events": 0,
+      "replay_rows": 105100,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [],
+      "events": [],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 1,
+      "race_name": "Australian Grand Prix",
+      "race_date": "2026-03-08",
+      "verification_status": "verified_all_components",
+      "source_message_count": 167,
+      "source_sha256": "b9e2b612177e9b6ed22d870a022b85a1d3151a2f6b4f59f64411cb81f1649369",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 91805,
+      "driver_impact_rows": 57,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 3,
+        "pit": 3,
+        "restart": 3,
+        "tyre": 3
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-01-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 12,
+          "end_lap": 14,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-01-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 18,
+          "end_lap": 20,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-01-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 34,
+          "end_lap": 34,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 2,
+      "race_name": "Chinese Grand Prix",
+      "race_date": "2026-03-15",
+      "verification_status": "verified_all_components",
+      "source_message_count": 86,
+      "source_sha256": "ac38c1dff38f309c7629f8d340cf5d70b1b169fec417652333b888126e1c5c60",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 94244,
+      "driver_impact_rows": 17,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-02-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 10,
+          "end_lap": 13,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 3,
+      "race_name": "Japanese Grand Prix",
+      "race_date": "2026-03-29",
+      "verification_status": "verified_all_components",
+      "source_message_count": 47,
+      "source_sha256": "488a68996838dd42f5cf850a604d846004ba5d2494f1cecc9e937210bdd47d41",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 112935,
+      "driver_impact_rows": 22,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-03-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 22,
+          "end_lap": 27,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 4,
+      "race_name": "Miami Grand Prix",
+      "race_date": "2026-05-03",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 176,
+      "source_sha256": "7c23c5b17971d8dcbb3f677bba8f1e5d38580a53e8c2a59d714b03ca5af2be2d",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 104906,
+      "driver_impact_rows": 22,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 0,
+        "pit": 1,
+        "restart": 0,
+        "tyre": 1
+      },
+      "limitations": [
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2026-04-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 6,
+          "end_lap": 11,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 5,
+      "race_name": "Canadian Grand Prix",
+      "race_date": "2026-05-24",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 286,
+      "source_sha256": "965e562918132fb7640cde701cb92e46ebb45f6eaf7dbdd466bbb855deb55d62",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 98142,
+      "driver_impact_rows": 51,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 3,
+        "pit": 2,
+        "restart": 3,
+        "tyre": 3
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-05-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 31,
+          "end_lap": 32,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-05-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 46,
+          "end_lap": 46,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-05-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 53,
+          "end_lap": 54,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 6,
+      "race_name": "Monaco Grand Prix",
+      "race_date": "2026-06-07",
+      "verification_status": "verified_source_limited",
+      "source_message_count": 265,
+      "source_sha256": "a97a9a20f2296ec7edfc7383dc9d19dcb552d25ee645e1ae5ffec281ca5a8737",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 0,
+      "driver_impact_rows": 0,
+      "publishable_event_components": {
+        "position": 0,
+        "gap": 0,
+        "pit": 0,
+        "restart": 0,
+        "tyre": 0
+      },
+      "limitations": [
+        "Interrupted by red flag",
+        "Replay unavailable"
+      ],
+      "events": [
+        {
+          "event_id": "2026-06-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 60,
+          "end_lap": 65,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Replay unavailable"
+        },
+        {
+          "event_id": "2026-06-sc-02",
+          "event_type": "Safety Car",
+          "status": "interrupted",
+          "start_lap": 66,
+          "end_lap": 68,
+          "end_source": "superseding_neutralisation",
+          "boundary_verified": true,
+          "limitation": "Interrupted by red flag"
+        },
+        {
+          "event_id": "2026-06-red-03",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 68,
+          "end_lap": 70,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Replay unavailable"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 7,
+      "race_name": "Barcelona Grand Prix",
+      "race_date": "2026-06-14",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 177,
+      "source_sha256": "1606a159d6e0ba64dff72e7af8f167ae1bc94202945dd50fa5311e6a422123e4",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 108269,
+      "driver_impact_rows": 37,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [
+        "Two-lap recovery unavailable"
+      ],
+      "events": [
+        {
+          "event_id": "2026-07-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 41,
+          "end_lap": 42,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-07-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 63,
+          "end_lap": 65,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two-lap recovery unavailable"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 8,
+      "race_name": "Austrian Grand Prix",
+      "race_date": "2026-06-28",
+      "verification_status": "verified_all_components",
+      "source_message_count": 211,
+      "source_sha256": "ed7d9af790899183c5a4f3e312cdae74f756d51d2f1cad53cecdf76c6b5073c5",
+      "source_start_markers": 2,
+      "modelled_events": 2,
+      "replay_rows": 100870,
+      "driver_impact_rows": 38,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 2,
+        "pit": 2,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-08-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 25,
+          "end_lap": 26,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-08-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 52,
+          "end_lap": 53,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 9,
+      "race_name": "British Grand Prix",
+      "race_date": "2026-07-05",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 248,
+      "source_sha256": "bac601a68afadd4c43b03490e44fccea170b7447bb4a1d10c73afaf1e9b4c6bd",
+      "source_start_markers": 4,
+      "modelled_events": 4,
+      "replay_rows": 112245,
+      "driver_impact_rows": 84,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 2,
+        "pit": 3,
+        "restart": 2,
+        "tyre": 2
+      },
+      "limitations": [
+        "Two-lap recovery unavailable"
+      ],
+      "events": [
+        {
+          "event_id": "2026-09-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 22,
+          "end_lap": 22,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-09-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 39,
+          "end_lap": 39,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-09-sc-03",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 48,
+          "end_lap": 51,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two-lap recovery unavailable"
+        },
+        {
+          "event_id": "2026-09-sc-04",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 51,
+          "end_lap": 52,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two-lap recovery unavailable"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 10,
+      "race_name": "Belgian Grand Prix",
+      "race_date": "2026-07-19",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 149,
+      "source_sha256": "596945f10a9d584b9131c10dc84d288f2fa0b224a013b839e692c808e49ca45c",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 103559,
+      "driver_impact_rows": 61,
+      "publishable_event_components": {
+        "position": 3,
+        "gap": 1,
+        "pit": 3,
+        "restart": 1,
+        "tyre": 3
+      },
+      "limitations": [
+        "Recovery interrupted by another neutralisation",
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2026-10-sc-01",
+          "event_type": "Safety Car",
+          "status": "complete",
+          "start_lap": 1,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-10-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 18,
+          "end_lap": 18,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Recovery interrupted by another neutralisation"
+        },
+        {
+          "event_id": "2026-10-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 20,
+          "end_lap": 21,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 11,
+      "race_name": "Hungarian Grand Prix",
+      "race_date": "2026-07-26",
+      "verification_status": "verified_all_components",
+      "source_message_count": 80,
+      "source_sha256": "6cfaa681482cdd2994f2b1ebe845c5861313a908660fee77ed391e1e2c38b3f1",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 125645,
+      "driver_impact_rows": 19,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 1,
+        "pit": 1,
+        "restart": 1,
+        "tyre": 1
+      },
+      "limitations": [],
+      "events": [
+        {
+          "event_id": "2026-11-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 56,
+          "end_lap": 57,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 12,
+      "race_name": "Dutch Grand Prix",
+      "race_date": "2026-08-23",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 329,
+      "source_sha256": "886c1672358bf647c4cddab0cb05a4433c10c1d079403be89a31737a86a82b86",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 147135,
+      "driver_impact_rows": 57,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 1,
+        "pit": 2,
+        "restart": 1,
+        "tyre": 2
+      },
+      "limitations": [
+        "Two complete green recovery laps not verified",
+        "Two-lap recovery unavailable"
+      ],
+      "events": [
+        {
+          "event_id": "2026-12-red-01",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 2,
+          "end_lap": 3,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2026-12-vsc-02",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 55,
+          "end_lap": 57,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        },
+        {
+          "event_id": "2026-12-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 70,
+          "end_lap": 70,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two-lap recovery unavailable"
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 13,
+      "race_name": "Italian Grand Prix",
+      "race_date": "2026-09-06",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 154,
+      "source_sha256": "19cc4c7c13cf140f5ea542137be7d7cb6b5e586ed85543f157f13911a55d95a4",
+      "source_start_markers": 3,
+      "modelled_events": 3,
+      "replay_rows": 97770,
+      "driver_impact_rows": 62,
+      "publishable_event_components": {
+        "position": 2,
+        "gap": 1,
+        "pit": 3,
+        "restart": 1,
+        "tyre": 2
+      },
+      "limitations": [
+        "Interrupted by red flag",
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2026-13-sc-01",
+          "event_type": "Safety Car",
+          "status": "interrupted",
+          "start_lap": 3,
+          "end_lap": 3,
+          "end_source": "superseding_neutralisation",
+          "boundary_verified": true,
+          "limitation": "Interrupted by red flag"
+        },
+        {
+          "event_id": "2026-13-red-02",
+          "event_type": "Red Flag",
+          "status": "complete",
+          "start_lap": 3,
+          "end_lap": 4,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        },
+        {
+          "event_id": "2026-13-vsc-03",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 28,
+          "end_lap": 29,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": null
+        }
+      ],
+      "violations": []
+    },
+    {
+      "season": 2026,
+      "round": 14,
+      "race_name": "Spanish Grand Prix",
+      "race_date": "2026-09-13",
+      "verification_status": "verified_with_withheld_components",
+      "source_message_count": 183,
+      "source_sha256": "5a7bfd1382fb3ea0bca6404852d509be42abea9bfeacfaf137d01b2052973b27",
+      "source_start_markers": 1,
+      "modelled_events": 1,
+      "replay_rows": 113613,
+      "driver_impact_rows": 20,
+      "publishable_event_components": {
+        "position": 1,
+        "gap": 0,
+        "pit": 1,
+        "restart": 0,
+        "tyre": 1
+      },
+      "limitations": [
+        "Two complete green recovery laps not verified"
+      ],
+      "events": [
+        {
+          "event_id": "2026-14-vsc-01",
+          "event_type": "VSC",
+          "status": "complete",
+          "start_lap": 14,
+          "end_lap": 15,
+          "end_source": "explicit_end_message",
+          "boundary_verified": true,
+          "limitation": "Two complete green recovery laps not verified"
+        }
+      ],
+      "violations": []
+    }
+  ]
+}

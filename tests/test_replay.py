@@ -14,7 +14,12 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from analytics.pipeline import build_race_replay, build_race_replay_incremental, build_race_replays
+from analytics.pipeline import (
+    _fallback_replay_positions,
+    build_race_replay,
+    build_race_replay_incremental,
+    build_race_replays,
+)
 from analytics.replay import replay_source_coverage, resample_race, validate_replay_sources
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
@@ -32,7 +37,33 @@ EXPECTED_COLUMNS = [
     "running_order",
     "gap_to_leader_s",
     "gap_to_ahead_s",
+    "running_order_source",
+    "running_order_confidence",
+    "running_order_observed_t_s",
+    "gap_source",
+    "gap_confidence",
+    "gap_observed_t_s",
 ]
+
+
+def test_existing_replay_geometry_recovers_missing_raw_position_clock() -> None:
+    laps = pd.DataFrame({"lap_start_sec": [1000.0, 1100.0]})
+    existing = pd.DataFrame(
+        {
+            "driver_code": ["A", "A"],
+            "t_s": [0.0, 1.0],
+            "x": [10.0, 11.0],
+            "y": [20.0, 21.0],
+        }
+    )
+
+    recovered = _fallback_replay_positions(pd.DataFrame(), laps, existing)
+
+    assert recovered["session_time_sec"].tolist() == [1000.0, 1001.0]
+    assert recovered[["driver_code", "x", "y"]].to_dict("records") == [
+        {"driver_code": "A", "x": 10.0, "y": 20.0},
+        {"driver_code": "A", "x": 11.0, "y": 21.0},
+    ]
 
 
 def _synthetic_race() -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -152,6 +183,71 @@ def test_resample_race_adds_lap_progress_and_tyre_state() -> None:
     assert a.loc[10.0, "compound"] == "MEDIUM"
     assert a.loc[10.0, "tyre_life"] == 1
     assert a.loc[20.0, "lap_progress"] == pytest.approx(1.0)
+
+
+def test_incomplete_lap_never_manufactures_a_leader() -> None:
+    positions, laps = _synthetic_race()
+    laps.loc[(laps.driver_code == "B") & (laps.lap_number == 2), "lap_time_sec"] = np.nan
+
+    out = resample_race(positions, laps, tick_s=1.0)
+    snapshot = out.loc[out.t_s.eq(15.0)]
+
+    assert snapshot["running_order"].isna().all()
+    assert snapshot["gap_to_leader_s"].isna().all()
+    assert out.loc[(out.driver_code == "B") & out.t_s.ge(12), "lap_progress"].isna().all()
+
+
+def test_recorded_full_field_order_overrides_incomplete_lap_estimate() -> None:
+    positions, laps = _synthetic_race()
+    laps.loc[(laps.driver_code == "B") & (laps.lap_number == 2), "lap_time_sec"] = np.nan
+    source_order = pd.DataFrame(
+        [
+            {"driver_code": "A", "session_time_sec": 0.0, "position": 1},
+            {"driver_code": "B", "session_time_sec": 0.0, "position": 2},
+            {"driver_code": "A", "session_time_sec": 14.0, "position": 2},
+            {"driver_code": "B", "session_time_sec": 14.0, "position": 1},
+        ]
+    )
+    source_intervals = pd.DataFrame(
+        [
+            {
+                "driver_code": "A",
+                "session_time_sec": 14.0,
+                "gap_to_leader_s": 0.7,
+                "gap_to_ahead_s": 0.7,
+            }
+        ]
+    )
+
+    out = resample_race(
+        positions,
+        laps,
+        source_order=source_order,
+        source_intervals=source_intervals,
+        tick_s=1.0,
+    )
+    snapshot = out.loc[out.t_s.eq(15.0)].set_index("driver_code")
+
+    assert snapshot.loc["B", "running_order"] == 1
+    assert snapshot.loc["A", "running_order"] == 2
+    assert snapshot.loc["A", "gap_to_leader_s"] == pytest.approx(0.7)
+    assert snapshot.loc["A", "gap_to_ahead_s"] == pytest.approx(0.7)
+    assert snapshot.loc["A", "running_order_source"] == "openf1_recorded"
+    assert snapshot.loc["A", "gap_source"] == "openf1_recorded"
+
+
+def test_incoherent_recorded_order_fails_closed() -> None:
+    positions, laps = _synthetic_race()
+    source_order = pd.DataFrame(
+        [
+            {"driver_code": "A", "session_time_sec": 0.0, "position": 1},
+            {"driver_code": "B", "session_time_sec": 0.0, "position": 1},
+        ]
+    )
+
+    out = resample_race(positions, laps, source_order=source_order, tick_s=1.0)
+
+    assert not out["running_order_source"].eq("openf1_recorded").any()
 
 
 def test_resample_race_keeps_original_lap_input_contract() -> None:
@@ -354,7 +450,9 @@ def test_incremental_replay_preserves_other_rounds(tmp_path: Path) -> None:
         con.execute(
             "insert into marts.race_replay "
             "select season, 2 as round, driver_code, t_s, x, y, lap_number, lap_progress, "
-            "stint, compound, tyre_life, running_order, gap_to_leader_s, gap_to_ahead_s "
+            "stint, compound, tyre_life, running_order, gap_to_leader_s, gap_to_ahead_s, "
+            "running_order_source, running_order_confidence, running_order_observed_t_s, "
+            "gap_source, gap_confidence, gap_observed_t_s "
             "from marts.race_replay where round = 1"
         )
     finally:

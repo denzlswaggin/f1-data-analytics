@@ -10,6 +10,7 @@
     export let order = undefined;
     export let season;
     export let round = undefined;
+    export let scopeKey = undefined;
     export let defaultValue = undefined;
     export let fallbackIndex = 0;
     export let latest = false;
@@ -22,7 +23,7 @@
     let previousOptions;
     let generation = 0;
 
-    $: scope = JSON.stringify([season, round]);
+    $: scope = JSON.stringify([season, round, scopeKey]);
     // Ignore an earlier query response while the parent selection is changing.
     $: rows = Array.from(data ?? []).filter(row => same(row.season, season)
         && (round === undefined || same(row.round, round)));

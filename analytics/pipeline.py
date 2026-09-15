@@ -361,6 +361,50 @@ def _replay_laps_query(season: int, rnd: int) -> str:
     """
 
 
+def _fallback_replay_positions(
+    positions: pd.DataFrame, laps: pd.DataFrame, existing_replay: pd.DataFrame
+) -> pd.DataFrame:
+    """Recover coordinate samples from a prior replay when raw geometry is absent."""
+    if not positions.empty or laps.empty or existing_replay.empty:
+        return positions
+    race_start = pd.to_numeric(laps["lap_start_sec"], errors="coerce").min()
+    if pd.isna(race_start):
+        return positions
+    recovered = existing_replay.loc[:, ["driver_code", "t_s", "x", "y"]].copy()
+    recovered["session_time_sec"] = pd.to_numeric(recovered.pop("t_s"), errors="coerce") + float(
+        race_start
+    )
+    return recovered.dropna(subset=["driver_code", "session_time_sec", "x", "y"])
+
+
+def _optional_openf1_replay_source(
+    table: str, season: int, rnd: int, settings: Settings
+) -> pd.DataFrame:
+    columns = (
+        "driver_code, session_time_sec, position"
+        if table == "stg_openf1_positions"
+        else "driver_code, session_time_sec, gap_to_leader_s, gap_to_ahead_s"
+    )
+    try:
+        return read_query(
+            f"select {columns} from staging.{table} "
+            f"where season = {int(season)} and round = {int(rnd)} and session = 'R' "
+            "and exists (select 1 from staging.stg_openf1_timing_audit audit "
+            f"where audit.season = {int(season)} and audit.round = {int(rnd)} "
+            "and audit.session = 'R' and audit.status = 'verified')",
+            settings,
+        )
+    except Exception as exc:
+        log.info(
+            "replay.openf1_optional_unavailable",
+            season=season,
+            round=rnd,
+            table=table,
+            reason=str(exc),
+        )
+        return pd.DataFrame()
+
+
 def _build_one_replay(
     season: int,
     rnd: int,
@@ -378,10 +422,31 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
+    if positions.empty:
+        try:
+            existing = read_query(
+                "select driver_code, t_s, x, y from marts.race_replay "
+                f"where season = {int(season)} and round = {int(rnd)}",
+                settings,
+            )
+        except Exception:
+            existing = pd.DataFrame()
+        positions = _fallback_replay_positions(positions, laps, existing)
+        if not positions.empty:
+            log.info(
+                "replay.recovered_existing_geometry",
+                season=season,
+                round=rnd,
+                rows=len(positions),
+            )
+    source_order = _optional_openf1_replay_source("stg_openf1_positions", season, rnd, settings)
+    source_intervals = _optional_openf1_replay_source("stg_openf1_intervals", season, rnd, settings)
     validate_replay_sources(positions, laps)
     replay = resample_race(
         positions,
         laps,
+        source_order=source_order,
+        source_intervals=source_intervals,
         tick_s=tick_s,
         retire_buffer_s=retire_buffer_s,
         max_linger_s=max_linger_s,
@@ -439,13 +504,16 @@ def build_race_replay_incremental(
     replay = _build_one_replay(
         season, rnd, tick_s, buf, settings.replay_retire_max_linger_s, settings
     )
-    replace_table_partition(
-        replay,
-        schema="marts",
-        table="race_replay",
-        partition={"season": season, "round": rnd},
-        settings=settings,
-    )
+    if replay.empty:
+        log.warning("replay.empty_partition_preserved", season=season, round=rnd)
+    else:
+        replace_table_partition(
+            replay,
+            schema="marts",
+            table="race_replay",
+            partition={"season": season, "round": rnd},
+            settings=settings,
+        )
     log.info(
         "replay.materialised_partition",
         season=season,
@@ -1116,20 +1184,10 @@ def _race_control_replay_query(season: int | None, rnd: int | None) -> str:
             group by season, round, driver_code
         )
         select
-            replay.season,
-            replay.round,
+            replay.*,
             races.race_name,
-            replay.driver_code,
             coalesce(codes.driver_name, replay.driver_code) as driver_name,
-            teams.team,
-            replay.t_s,
-            replay.lap_number,
-            replay.stint,
-            replay.compound,
-            replay.tyre_life,
-            replay.running_order,
-            replay.gap_to_leader_s,
-            replay.lap_progress
+            teams.team
         from marts.race_replay as replay
         left join staging.stg_races as races
             on races.season = replay.season and races.round = replay.round
@@ -1174,14 +1232,33 @@ def _race_control_laps_query(season: int | None, rnd: int | None) -> str:
     scope = _race_control_scope_clause("laps", season, rnd)
     return f"""
         select laps.season, laps.round, laps.driver_code, laps.lap_number, laps.track_status,
+            laps.stint, laps.compound, laps.tyre_life,
             laps.lap_start_sec - windows.race_start_sec as lap_start_t_s,
-            laps.lap_start_sec + laps.lap_time_sec - windows.race_start_sec as lap_end_t_s
+            laps.lap_start_sec + laps.lap_time_sec - windows.race_start_sec as lap_end_t_s,
+            laps.pit_in_time_sec - windows.race_start_sec as pit_in_t_s,
+            laps.pit_out_time_sec - windows.race_start_sec as pit_out_t_s
         from staging.stg_laps as laps
         inner join (
             select season, round, min(lap_start_sec) as race_start_sec
             from staging.stg_laps where session = 'R' group by season, round
         ) as windows on windows.season = laps.season and windows.round = laps.round
         where laps.session = 'R'{scope}
+    """
+
+
+def _race_control_stops_query(season: int | None, rnd: int | None) -> str:
+    scope = _race_control_scope_clause("stops", season, rnd)
+    return f"""
+        select
+            stops.season,
+            stops.round,
+            codes.driver_code,
+            stops.pit_lap,
+            stops.duration_sec
+        from staging.stg_pitstops as stops
+        inner join staging.stg_driver_codes as codes
+            on codes.season = stops.season and codes.driver_id = stops.driver_id
+        where true{scope}
     """
 
 
@@ -1193,7 +1270,8 @@ def _build_race_control_impact_scope(
     replay = read_query(_race_control_replay_query(season, rnd), settings)
     messages = read_query(_race_control_messages_query(season, rnd), settings)
     laps = read_query(_race_control_laps_query(season, rnd), settings)
-    return analyse_race_control_impact(replay, messages, laps)
+    stops = read_query(_race_control_stops_query(season, rnd), settings)
+    return analyse_race_control_impact(replay, messages, laps, stops)
 
 
 def _replace_race_control_impact_tables(
@@ -1201,6 +1279,10 @@ def _replace_race_control_impact_tables(
 ) -> None:
     replace_table(result.events, schema="marts", table="race_control_events", settings=settings)
     replace_table(result.evidence, schema="marts", table="race_control_impact", settings=settings)
+    replace_table(
+        result.checkpoints, schema="marts", table="race_control_checkpoints", settings=settings
+    )
+    replace_table(result.effects, schema="marts", table="race_control_effects", settings=settings)
 
 
 def build_race_control_impact(
@@ -1218,6 +1300,8 @@ def build_race_control_impact(
         round=rnd,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 
@@ -1244,12 +1328,28 @@ def build_race_control_impact_incremental(
         partition={"season": season, "round": rnd},
         settings=settings,
     )
+    replace_table_partition(
+        result.checkpoints,
+        schema="marts",
+        table="race_control_checkpoints",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
+    replace_table_partition(
+        result.effects,
+        schema="marts",
+        table="race_control_effects",
+        partition={"season": season, "round": rnd},
+        settings=settings,
+    )
     log.info(
         "race_control_impact.materialised_partition",
         season=season,
         round=rnd,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 
@@ -1267,6 +1367,8 @@ def build_all_race_control_impact(
         races=races,
         events=len(result.events),
         evidence=len(result.evidence),
+        checkpoints=len(result.checkpoints),
+        effects=len(result.effects),
     )
     return result
 

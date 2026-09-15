@@ -9,16 +9,26 @@ The metric is descriptive evidence, not a causal strategy estimate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+import hashlib
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 import pandas as pd
 
-METHODOLOGY_VERSION = "race-control-impact-v2"
+METHODOLOGY_VERSION = "race-control-impact-v3"
 MAX_CAPTURE_OFFSET_S = 3.0
 HIGH_CONFIDENCE_OFFSET_S = 1.5
+MAX_INTERPOLATION_SPAN_S = 2.0
 DEFAULT_MIN_EVENT_DRIVERS = 12
 MIN_TIME_COMPARABLE_DRIVERS = 5
+MIN_PIT_REFERENCE_STOPS = 5
+MIN_PIT_REFERENCE_DRIVERS = 4
+HIGH_PIT_REFERENCE_STOPS = 8
+HIGH_PIT_REFERENCE_DRIVERS = 5
+MAX_PIT_REFERENCE_MAD_S = 2.0
+HIGH_PIT_REFERENCE_MAD_S = 1.0
+PIT_BOOTSTRAP_SAMPLES = 1_000
+TIMING_RESOLUTION_S = 1.0
 # Reconstructed progress is not official lapping evidence. Suppress estimates
 # close to a whole-lap boundary rather than converting interpolation noise to a lap.
 LAP_DEFICIT_BOUNDARY_MARGIN = 0.02
@@ -39,6 +49,15 @@ _REPLAY_REQUIRED = {
     "running_order",
     "gap_to_leader_s",
 }
+_REPLAY_PROVENANCE_DEFAULTS: dict[str, object] = {
+    "running_order_source": "lap_progress_estimate",
+    "running_order_confidence": "Medium",
+    "running_order_observed_t_s": np.nan,
+    "gap_source": "lap_progress_estimate",
+    "gap_confidence": "Medium",
+    "gap_observed_t_s": np.nan,
+}
+_TRUSTED_REPLAY_SOURCES = {"openf1_recorded", "lap_progress_estimate"}
 _CONTROL_REQUIRED = {
     *_RACE_KEYS,
     "race_name",
@@ -56,6 +75,7 @@ _LAPS_REQUIRED = {
     "lap_start_t_s",
     "lap_end_t_s",
 }
+_STOPS_REQUIRED = {*_RACE_KEYS, "driver_code", "pit_lap", "duration_sec"}
 
 RACE_CONTROL_EVENT_COLUMNS = [
     "season",
@@ -83,6 +103,12 @@ RACE_CONTROL_EVENT_COLUMNS = [
     "recovery_stop_count",
     "position_gainer_count",
     "position_loser_count",
+    "position_status",
+    "gap_status",
+    "pit_status",
+    "restart_status",
+    "tyre_status",
+    "focus_driver_code",
     "eligible",
     "exclusion_reason",
     "confidence",
@@ -102,10 +128,24 @@ RACE_CONTROL_IMPACT_COLUMNS = [
     "position_before",
     "position_after",
     "positions_gained",
+    "position_before_source",
+    "position_after_source",
+    "position_before_confidence",
+    "position_after_confidence",
+    "position_before_observed_t_s",
+    "position_after_observed_t_s",
+    "position_evidence_class",
     "gap_to_leader_before_s",
     "gap_to_leader_after_s",
     "raw_gap_gain_s",
     "field_adjusted_gap_gain_s",
+    "gap_before_source",
+    "gap_after_source",
+    "gap_before_confidence",
+    "gap_after_confidence",
+    "gap_before_observed_t_s",
+    "gap_after_observed_t_s",
+    "gap_evidence_class",
     "time_comparable_driver_count",
     "time_eligible",
     "time_exclusion_reason",
@@ -122,15 +162,81 @@ RACE_CONTROL_IMPACT_COLUMNS = [
     "tyre_life_after",
     "pitted_during_intervention",
     "pitted_during_recovery",
+    "pit_timing_class",
+    "pit_in_t_s",
+    "pit_out_t_s",
+    "pit_duration_sec",
     "stop_count",
     "tyre_changed_during_suspension",
     "active_after",
+    "position_eligible",
+    "gap_eligible",
+    "pit_eligible",
+    "restart_eligible",
+    "tyre_eligible",
+    "focus_rank",
     "eligible",
     "exclusion_reason",
     "confidence",
     "outcome_label",
     "timing_before_offset_s",
     "timing_after_offset_s",
+    "methodology_version",
+]
+
+RACE_CONTROL_CHECKPOINT_COLUMNS = [
+    "season",
+    "round",
+    "race_name",
+    "event_id",
+    "event_number",
+    "event_type",
+    "driver_code",
+    "driver_name",
+    "team",
+    "checkpoint_type",
+    "checkpoint_order",
+    "checkpoint_t_s",
+    "lap_number",
+    "lap_progress",
+    "running_order",
+    "gap_to_leader_s",
+    "running_order_source",
+    "running_order_confidence",
+    "running_order_observed_t_s",
+    "gap_source",
+    "gap_confidence",
+    "gap_observed_t_s",
+    "evidence_class",
+    "stint",
+    "compound",
+    "tyre_life",
+    "capture_offset_s",
+    "source",
+    "eligible",
+    "exclusion_reason",
+    "methodology_version",
+]
+
+RACE_CONTROL_EFFECT_COLUMNS = [
+    "season",
+    "round",
+    "race_name",
+    "event_id",
+    "event_number",
+    "event_type",
+    "driver_code",
+    "effect_type",
+    "effect_scope",
+    "value",
+    "lower_bound",
+    "upper_bound",
+    "unit",
+    "evidence_class",
+    "confidence",
+    "sample_size",
+    "eligible",
+    "exclusion_reason",
     "methodology_version",
 ]
 
@@ -169,6 +275,7 @@ _IMPACT_INTEGER = {
     "tyre_life_after",
     "stop_count",
     "time_comparable_driver_count",
+    "focus_rank",
 }
 _IMPACT_FLOAT = {
     "gap_to_leader_before_s",
@@ -177,6 +284,13 @@ _IMPACT_FLOAT = {
     "field_adjusted_gap_gain_s",
     "timing_before_offset_s",
     "timing_after_offset_s",
+    "position_before_observed_t_s",
+    "position_after_observed_t_s",
+    "gap_before_observed_t_s",
+    "gap_after_observed_t_s",
+    "pit_in_t_s",
+    "pit_out_t_s",
+    "pit_duration_sec",
 }
 _IMPACT_BOOLEAN = {
     "lap_deficit_changed",
@@ -184,9 +298,37 @@ _IMPACT_BOOLEAN = {
     "pitted_during_recovery",
     "tyre_changed_during_suspension",
     "active_after",
+    "position_eligible",
+    "gap_eligible",
+    "pit_eligible",
+    "restart_eligible",
+    "tyre_eligible",
     "eligible",
     "time_eligible",
 }
+
+_CHECKPOINT_INTEGER = {
+    "season",
+    "round",
+    "event_number",
+    "checkpoint_order",
+    "lap_number",
+    "running_order",
+    "stint",
+    "tyre_life",
+}
+_CHECKPOINT_FLOAT = {
+    "checkpoint_t_s",
+    "lap_progress",
+    "gap_to_leader_s",
+    "capture_offset_s",
+    "running_order_observed_t_s",
+    "gap_observed_t_s",
+}
+_CHECKPOINT_BOOLEAN = {"eligible"}
+_EFFECT_INTEGER = {"season", "round", "event_number", "sample_size"}
+_EFFECT_FLOAT = {"value", "lower_bound", "upper_bound"}
+_EFFECT_BOOLEAN = {"eligible"}
 
 
 @dataclass(frozen=True)
@@ -195,6 +337,8 @@ class RaceControlImpactResult:
 
     events: pd.DataFrame
     evidence: pd.DataFrame
+    checkpoints: pd.DataFrame = field(default_factory=pd.DataFrame)
+    effects: pd.DataFrame = field(default_factory=pd.DataFrame)
 
 
 @dataclass(frozen=True)
@@ -238,6 +382,15 @@ def _empty_result() -> RaceControlImpactResult:
         evidence=_typed_empty(
             RACE_CONTROL_IMPACT_COLUMNS, _IMPACT_INTEGER, _IMPACT_FLOAT, _IMPACT_BOOLEAN
         ),
+        checkpoints=_typed_empty(
+            RACE_CONTROL_CHECKPOINT_COLUMNS,
+            _CHECKPOINT_INTEGER,
+            _CHECKPOINT_FLOAT,
+            _CHECKPOINT_BOOLEAN,
+        ),
+        effects=_typed_empty(
+            RACE_CONTROL_EFFECT_COLUMNS, _EFFECT_INTEGER, _EFFECT_FLOAT, _EFFECT_BOOLEAN
+        ),
     )
 
 
@@ -249,6 +402,18 @@ def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None
 
 def _normalise(value: object) -> str:
     return " ".join(str(value).upper().split())
+
+
+def _source_value(value: object) -> str:
+    return "" if pd.isna(value) else str(value)
+
+
+def _evidence_class(before_source: object, after_source: object) -> str:
+    """Classify a pair conservatively by its weakest timing source."""
+    sources = {_source_value(before_source), _source_value(after_source)}
+    if "" in sources or not sources.issubset(_TRUSTED_REPLAY_SOURCES):
+        return "unavailable"
+    return "recorded" if sources == {"openf1_recorded"} else "estimated"
 
 
 def _marker(message: str, flag: str) -> tuple[str, str] | None:
@@ -276,11 +441,30 @@ def _extract_events(control: pd.DataFrame) -> list[_Event]:
     events: list[_Event] = []
     opened: dict[str, tuple[float, int | None]] = {}
     for row in control.sort_values("t_s").itertuples(index=False):
-        marker = _marker(_normalise(row.message), _normalise(row.flag))
+        message = _normalise(row.message)
+        flag = _normalise(row.flag)
+        t_s, lap = float(row.t_s), _optional_int(row.lap)
+        if flag == "CHEQUERED" or message == "CHEQUERED FLAG":
+            for event_type in ("Safety Car", "VSC"):
+                started = opened.pop(event_type, None)
+                if started is not None and t_s > started[0]:
+                    events.append(
+                        _Event(
+                            0,
+                            event_type,
+                            started[0],
+                            started[1],
+                            t_s,
+                            lap,
+                            "finished",
+                            f"Race finished under {event_type}",
+                        )
+                    )
+            continue
+        marker = _marker(message, flag)
         if marker is None:
             continue
         event_type, action = marker
-        t_s, lap = float(row.t_s), _optional_int(row.lap)
         if action == "start":
             if event_type == "Red Flag":
                 for interrupted_type in ("Safety Car", "VSC"):
@@ -298,6 +482,22 @@ def _extract_events(control: pd.DataFrame) -> list[_Event]:
                                 "Interrupted by red flag",
                             )
                         )
+            elif event_type in {"Safety Car", "VSC"}:
+                interrupted_type = "VSC" if event_type == "Safety Car" else "Safety Car"
+                interrupted = opened.pop(interrupted_type, None)
+                if interrupted is not None:
+                    events.append(
+                        _Event(
+                            0,
+                            interrupted_type,
+                            interrupted[0],
+                            interrupted[1],
+                            t_s,
+                            lap,
+                            "interrupted",
+                            f"Superseded by {event_type}",
+                        )
+                    )
             previous = opened.get(event_type)
             if previous is not None:
                 events.append(
@@ -352,7 +552,244 @@ def _snapshot(frame: pd.DataFrame, target_t_s: float, *, before: bool) -> pd.Dat
     snapshot["capture_offset_s"] = (
         target_t_s - snapshot["t_s"] if before else snapshot["t_s"] - target_t_s
     )
-    return snapshot.loc[snapshot["capture_offset_s"].le(MAX_CAPTURE_OFFSET_S)]
+    snapshot = snapshot.loc[snapshot["capture_offset_s"].le(MAX_CAPTURE_OFFSET_S)].copy()
+    ranks = pd.to_numeric(snapshot["running_order"], errors="coerce")
+    coherent = (
+        len(snapshot) > 0
+        and ranks.notna().all()
+        and ranks.is_unique
+        and sorted(ranks.astype(int).tolist()) == list(range(1, len(snapshot) + 1))
+    )
+    if not coherent:
+        snapshot["running_order"] = np.nan
+        snapshot["running_order_source"] = ""
+        snapshot["running_order_confidence"] = ""
+        snapshot["running_order_observed_t_s"] = np.nan
+    return snapshot
+
+
+def _invalidate_incoherent_checkpoint_orders(rows: list[dict[str, object]]) -> None:
+    """Fail closed when separately captured drivers do not form one dense field."""
+    grouped: dict[tuple[str, int], list[dict[str, object]]] = {}
+    for row in rows:
+        if str(row["checkpoint_type"]) in {"pit_in", "pit_out"}:
+            continue
+        grouped.setdefault(
+            (str(row["checkpoint_type"]), int(str(row["checkpoint_order"]))), []
+        ).append(row)
+    for checkpoint_rows in grouped.values():
+        eligible = [row for row in checkpoint_rows if bool(row["eligible"])]
+        ranks = [_to_int(row.get("running_order")) for row in eligible]
+        coherent = (
+            len(eligible) == len(checkpoint_rows)
+            and all(rank is not None for rank in ranks)
+            and len(set(ranks)) == len(ranks)
+            and sorted(int(rank) for rank in ranks if rank is not None)
+            == list(range(1, len(ranks) + 1))
+        )
+        if coherent:
+            continue
+        for row in checkpoint_rows:
+            row["eligible"] = False
+            row["evidence_class"] = "unavailable"
+            row["exclusion_reason"] = "Checkpoint order is not a coherent dense field"
+
+
+def _interpolated_state(frame: pd.DataFrame, target_t_s: float) -> dict[str, object] | None:
+    """Interpolate one driver's replay state without hiding timing resolution."""
+    if frame.empty or "t_s" not in frame:
+        return None
+    ordered = frame.dropna(subset=["t_s"])
+    if ordered.empty:
+        return None
+    if not ordered["t_s"].is_monotonic_increasing:
+        ordered = ordered.sort_values("t_s")
+    ordered = ordered.drop_duplicates("t_s")
+    times = ordered["t_s"].to_numpy(dtype=float)
+    right_index = int(np.searchsorted(times, target_t_s, side="left"))
+    if right_index == len(times):
+        return None
+    if times[right_index] == target_t_s:
+        left_index = right_index
+    elif right_index == 0:
+        return None
+    else:
+        left_index = right_index - 1
+    left, right = ordered.iloc[left_index], ordered.iloc[right_index]
+    left_t, right_t = float(left["t_s"]), float(right["t_s"])
+    span = right_t - left_t
+    if span > MAX_INTERPOLATION_SPAN_S:
+        return None
+    weight = 0.0 if span <= 0 else (target_t_s - left_t) / span
+    state: dict[str, object] = dict(left.to_dict())
+    for column in ("lap_progress", "gap_to_leader_s"):
+        left_value = pd.to_numeric(pd.Series([left.get(column)]), errors="coerce").iloc[0]
+        right_value = pd.to_numeric(pd.Series([right.get(column)]), errors="coerce").iloc[0]
+        state[column] = (
+            float(left_value + weight * (right_value - left_value))
+            if pd.notna(left_value) and pd.notna(right_value)
+            else np.nan
+        )
+    state["t_s"] = target_t_s
+    state["capture_offset_s"] = max(target_t_s - left_t, right_t - target_t_s)
+    return state
+
+
+def _prepare_stops(stops: pd.DataFrame | None) -> pd.DataFrame:
+    if stops is None or stops.empty:
+        return pd.DataFrame(columns=sorted(_STOPS_REQUIRED))
+    _require_columns(stops, _STOPS_REQUIRED, "stops")
+    out = stops.copy()
+    for column in ("season", "round", "pit_lap", "duration_sec"):
+        out[column] = pd.to_numeric(out[column], errors="coerce")
+    return out.dropna(subset=["season", "round", "driver_code", "pit_lap"])
+
+
+def _pit_transitions(laps: pd.DataFrame, stops: pd.DataFrame | None) -> pd.DataFrame:
+    columns = [
+        "season",
+        "round",
+        "driver_code",
+        "pit_lap",
+        "pit_in_t_s",
+        "pit_out_t_s",
+        "duration_sec",
+        "old_compound",
+        "new_compound",
+    ]
+    if laps.empty or "pit_in_t_s" not in laps or "pit_out_t_s" not in laps:
+        return pd.DataFrame(columns=columns)
+    official = _prepare_stops(stops)
+    rows: list[dict[str, object]] = []
+    ordered = laps.sort_values([*_RACE_KEYS, "driver_code", "lap_number"])
+    for keys, driver_laps in ordered.groupby([*_RACE_KEYS, "driver_code"], sort=False):
+        driver_laps = driver_laps.reset_index(drop=True)
+        for _index, lap in driver_laps.loc[driver_laps["pit_in_t_s"].notna()].iterrows():
+            following = driver_laps.loc[
+                driver_laps["lap_number"].between(lap["lap_number"], lap["lap_number"] + 2)
+                & driver_laps["pit_out_t_s"].notna()
+                & driver_laps["pit_out_t_s"].gt(lap["pit_in_t_s"])
+            ].head(1)
+            if following.empty:
+                continue
+            out_lap = following.iloc[0]
+            match = official.loc[
+                official["season"].eq(keys[0])
+                & official["round"].eq(keys[1])
+                & official["driver_code"].eq(keys[2])
+                & official["pit_lap"].eq(lap["lap_number"])
+            ]
+            measured = float(out_lap["pit_out_t_s"] - lap["pit_in_t_s"])
+            duration = float(match.iloc[0]["duration_sec"]) if not match.empty else measured
+            next_compound = out_lap.get("compound", "")
+            rows.append(
+                {
+                    "season": int(keys[0]),
+                    "round": int(keys[1]),
+                    "driver_code": str(keys[2]),
+                    "pit_lap": int(lap["lap_number"]),
+                    "pit_in_t_s": float(lap["pit_in_t_s"]),
+                    "pit_out_t_s": float(out_lap["pit_out_t_s"]),
+                    "duration_sec": duration,
+                    "old_compound": str(lap.get("compound", "")),
+                    "new_compound": str(next_compound) if pd.notna(next_compound) else "",
+                }
+            )
+    return pd.DataFrame(rows, columns=columns)
+
+
+def _pit_classification(transition: pd.Series, event: _Event, post_t_s: float | None) -> str:
+    pit_in = float(transition["pit_in_t_s"])
+    if pit_in < event.start_t_s:
+        return "before_deployment"
+    if event.end_t_s is not None and pit_in <= event.end_t_s:
+        return "during_neutralisation"
+    if event.end_t_s is not None and (post_t_s is None or pit_in <= post_t_s):
+        return "after_end"
+    return "outside_event_window"
+
+
+def _checkpoint_row(
+    replay_race: pd.DataFrame,
+    event: _Event,
+    event_key: str,
+    race_name: str,
+    driver_code: str,
+    checkpoint_type: str,
+    checkpoint_order: int,
+    checkpoint_t_s: float,
+    *,
+    source: str,
+) -> dict[str, object]:
+    driver = replay_race.loc[replay_race["driver_code"].eq(driver_code)]
+    state = _interpolated_state(driver, checkpoint_t_s)
+    position_source = _source_value(state.get("running_order_source")) if state else ""
+    eligible = state is not None and position_source in _TRUSTED_REPLAY_SOURCES
+    reason = ""
+    if state is None:
+        reason = "Replay does not bracket checkpoint within 2 seconds"
+    elif not eligible:
+        reason = "Position provenance unavailable at checkpoint"
+    state = state or {}
+    evidence_class = (
+        "recorded"
+        if position_source == "openf1_recorded"
+        else "estimated"
+        if eligible
+        else "unavailable"
+    )
+    return {
+        "season": int(replay_race["season"].iloc[0]),
+        "round": int(replay_race["round"].iloc[0]),
+        "race_name": race_name,
+        "event_id": event_key,
+        "event_number": event.event_number,
+        "event_type": event.event_type,
+        "driver_code": driver_code,
+        "driver_name": str(state.get("driver_name", driver_code)),
+        "team": str(state.get("team", "")),
+        "checkpoint_type": checkpoint_type,
+        "checkpoint_order": checkpoint_order,
+        "checkpoint_t_s": checkpoint_t_s,
+        "lap_number": _to_int(state.get("lap_number")),
+        "lap_progress": state.get("lap_progress", np.nan),
+        "running_order": _to_int(state.get("running_order")),
+        "gap_to_leader_s": state.get("gap_to_leader_s", np.nan),
+        "running_order_source": position_source,
+        "running_order_confidence": _source_value(state.get("running_order_confidence")),
+        "running_order_observed_t_s": state.get("running_order_observed_t_s", np.nan),
+        "gap_source": _source_value(state.get("gap_source")),
+        "gap_confidence": _source_value(state.get("gap_confidence")),
+        "gap_observed_t_s": state.get("gap_observed_t_s", np.nan),
+        "evidence_class": evidence_class,
+        "stint": _to_int(state.get("stint")),
+        "compound": str(state.get("compound", "")),
+        "tyre_life": _to_int(state.get("tyre_life")),
+        "capture_offset_s": state.get("capture_offset_s", np.nan),
+        "source": source,
+        "eligible": eligible,
+        "exclusion_reason": reason,
+        "methodology_version": METHODOLOGY_VERSION,
+    }
+
+
+def _green_one_checkpoint(replay: pd.DataFrame, event: _Event) -> float | None:
+    if event.end_t_s is None:
+        return None
+    leader_at_end = replay.loc[
+        replay["t_s"].le(event.end_t_s) & replay["running_order"].eq(1)
+    ].sort_values("t_s")
+    if leader_at_end.empty:
+        return None
+    end_lap = _optional_int(leader_at_end.iloc[-1]["lap_number"])
+    if end_lap is None:
+        return None
+    crossing = replay.loc[
+        replay["t_s"].gt(event.end_t_s)
+        & replay["running_order"].eq(1)
+        & replay["lap_number"].ge(end_lap + 1)
+    ]
+    return None if crossing.empty else float(crossing["t_s"].min())
 
 
 def _post_checkpoint(replay: pd.DataFrame, event: _Event) -> tuple[float, int] | None:
@@ -475,10 +912,305 @@ def _estimated_lap_deficits(snapshot: pd.DataFrame) -> dict[str, int | None]:
     return result
 
 
+def _transition_overlaps(
+    transitions: pd.DataFrame, driver_code: str, start_t_s: float, end_t_s: float
+) -> bool:
+    if transitions.empty:
+        return False
+    return bool(
+        (
+            transitions["driver_code"].eq(driver_code)
+            & transitions["pit_in_t_s"].le(end_t_s)
+            & transitions["pit_out_t_s"].ge(start_t_s)
+        ).any()
+    )
+
+
+def _cached_state(
+    replay_by_driver: dict[str, pd.DataFrame],
+    cache: dict[tuple[str, float], dict[str, object] | None],
+    driver_code: str,
+    target_t_s: float,
+) -> dict[str, object] | None:
+    key = (driver_code, target_t_s)
+    if key not in cache:
+        cache[key] = _interpolated_state(
+            replay_by_driver.get(driver_code, pd.DataFrame()), target_t_s
+        )
+    return cache[key]
+
+
+def _replay_driver_frames(replay: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    return {
+        str(code): frame.sort_values("t_s").reset_index(drop=True)
+        for code, frame in replay.groupby("driver_code", sort=False)
+    }
+
+
+def _pairwise_pit_loss(
+    replay: pd.DataFrame,
+    transition: pd.Series,
+    transitions: pd.DataFrame,
+    *,
+    replay_by_driver: dict[str, pd.DataFrame] | None = None,
+    state_cache: dict[tuple[str, float], dict[str, object] | None] | None = None,
+) -> tuple[float, int]:
+    """Observed loss versus the median non-pitting same-lap peer."""
+    driver = str(transition["driver_code"])
+    start_t_s = float(transition["pit_in_t_s"])
+    end_t_s = float(transition["pit_out_t_s"])
+    replay_by_driver = replay_by_driver or _replay_driver_frames(replay)
+    state_cache = state_cache if state_cache is not None else {}
+    target_before = _cached_state(replay_by_driver, state_cache, driver, start_t_s)
+    target_after = _cached_state(replay_by_driver, state_cache, driver, end_t_s)
+    if target_before is None or target_after is None:
+        return np.nan, 0
+    target_gap_before = pd.to_numeric(
+        pd.Series([target_before.get("gap_to_leader_s")]), errors="coerce"
+    ).iloc[0]
+    target_gap_after = pd.to_numeric(
+        pd.Series([target_after.get("gap_to_leader_s")]), errors="coerce"
+    ).iloc[0]
+    if pd.isna(target_gap_before) or pd.isna(target_gap_after):
+        return np.nan, 0
+    changes: list[float] = []
+    for peer in replay_by_driver:
+        if peer == driver or _transition_overlaps(transitions, peer, start_t_s, end_t_s):
+            continue
+        peer_before = _cached_state(replay_by_driver, state_cache, peer, start_t_s)
+        peer_after = _cached_state(replay_by_driver, state_cache, peer, end_t_s)
+        if peer_before is None or peer_after is None:
+            continue
+        peer_gap_before = pd.to_numeric(
+            pd.Series([peer_before.get("gap_to_leader_s")]), errors="coerce"
+        ).iloc[0]
+        peer_gap_after = pd.to_numeric(
+            pd.Series([peer_after.get("gap_to_leader_s")]), errors="coerce"
+        ).iloc[0]
+        lap_values = [
+            _to_int(target_before.get("lap_number")),
+            _to_int(target_after.get("lap_number")),
+            _to_int(peer_before.get("lap_number")),
+            _to_int(peer_after.get("lap_number")),
+        ]
+        if (
+            pd.isna(peer_gap_before)
+            or pd.isna(peer_gap_after)
+            or any(value is None for value in lap_values)
+        ):
+            continue
+        target_lap_before, target_lap_after, peer_lap_before, peer_lap_after = (
+            int(str(value)) for value in lap_values
+        )
+        if target_lap_before - peer_lap_before != target_lap_after - peer_lap_after:
+            continue
+        pair_before = float(target_gap_before - peer_gap_before)
+        pair_after = float(target_gap_after - peer_gap_after)
+        changes.append(pair_after - pair_before)
+    return (float(np.median(changes)), len(changes)) if changes else (np.nan, 0)
+
+
+def _green_reference_losses(
+    replay: pd.DataFrame,
+    laps: pd.DataFrame,
+    transitions: pd.DataFrame,
+    events: list[_Event],
+) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    replay_by_driver = _replay_driver_frames(replay)
+    state_cache: dict[tuple[str, float], dict[str, object] | None] = {}
+    for _, transition in transitions.iterrows():
+        start_t_s = float(transition["pit_in_t_s"])
+        end_t_s = float(transition["pit_out_t_s"])
+        overlaps_control = any(
+            event.end_t_s is None or (start_t_s <= event.end_t_s and end_t_s >= event.start_t_s)
+            for event in events
+        )
+        if overlaps_control:
+            continue
+        driver_laps = laps.loc[
+            laps["driver_code"].eq(transition["driver_code"])
+            & laps["lap_number"].between(transition["pit_lap"], transition["pit_lap"] + 1)
+        ]
+        if len(driver_laps) < 2 or not driver_laps["track_status"].astype(str).eq("1").all():
+            continue
+        loss, peer_count = _pairwise_pit_loss(
+            replay,
+            transition,
+            transitions,
+            replay_by_driver=replay_by_driver,
+            state_cache=state_cache,
+        )
+        if not np.isfinite(loss) or peer_count < MIN_TIME_COMPARABLE_DRIVERS:
+            continue
+        rows.append(
+            {
+                "driver_code": str(transition["driver_code"]),
+                "duration_sec": float(transition["duration_sec"]),
+                "observed_loss_sec": loss,
+                "peer_count": peer_count,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _pit_effect_rows(
+    replay: pd.DataFrame,
+    laps: pd.DataFrame,
+    transitions: pd.DataFrame,
+    events: list[_Event],
+    event: _Event,
+    event_key: str,
+    race_name: str,
+    references: pd.DataFrame | None = None,
+) -> tuple[list[dict[str, object]], dict[str, dict[str, object]]]:
+    if references is None:
+        references = _green_reference_losses(replay, laps, transitions, events)
+    replay_by_driver = _replay_driver_frames(replay)
+    state_cache: dict[tuple[str, float], dict[str, object] | None] = {}
+    rows: list[dict[str, object]] = []
+    diagnostics: dict[str, dict[str, object]] = {}
+    during = transitions.loc[
+        transitions["pit_in_t_s"].ge(event.start_t_s)
+        & transitions["pit_in_t_s"].le(
+            event.end_t_s if event.end_t_s is not None else event.start_t_s
+        )
+    ]
+    for _, transition in during.iterrows():
+        driver = str(transition["driver_code"])
+        actual_loss, peer_count = _pairwise_pit_loss(
+            replay,
+            transition,
+            transitions,
+            replay_by_driver=replay_by_driver,
+            state_cache=state_cache,
+        )
+        base = {
+            "season": int(transition["season"]),
+            "round": int(transition["round"]),
+            "race_name": race_name,
+            "event_id": event_key,
+            "event_number": event.event_number,
+            "event_type": event.event_type,
+            "driver_code": driver,
+            "effect_scope": "pit_stop",
+            "unit": "seconds",
+            "methodology_version": METHODOLOGY_VERSION,
+        }
+        actual_eligible = np.isfinite(actual_loss) and peer_count >= 1
+        actual_reason = (
+            "" if actual_eligible else "No comparable non-pitting peer or incomplete replay timing"
+        )
+        rows.append(
+            {
+                **base,
+                "effect_type": "observed_pit_relative_loss",
+                "value": actual_loss,
+                "lower_bound": np.nan,
+                "upper_bound": np.nan,
+                "evidence_class": "observed" if actual_eligible else "unavailable",
+                "confidence": (
+                    "high"
+                    if actual_eligible and peer_count >= MIN_TIME_COMPARABLE_DRIVERS
+                    else "medium"
+                    if actual_eligible
+                    else "insufficient"
+                ),
+                "sample_size": peer_count,
+                "eligible": actual_eligible,
+                "exclusion_reason": actual_reason,
+            }
+        )
+        reference_count = len(references)
+        reference_drivers = references["driver_code"].nunique() if not references.empty else 0
+        reason = actual_reason
+        if not reason and reference_count < MIN_PIT_REFERENCE_STOPS:
+            reason = "Fewer than 5 clean green-flag reference stops"
+        elif not reason and reference_drivers < MIN_PIT_REFERENCE_DRIVERS:
+            reason = "Green-flag references cover fewer than 4 drivers"
+        normalized = np.array([], dtype=float)
+        mad = np.nan
+        if not reason:
+            normalized = (
+                references["observed_loss_sec"]
+                - (references["duration_sec"] - float(transition["duration_sec"]))
+            ).to_numpy(dtype=float)
+            centre = float(np.median(normalized))
+            mad = float(np.median(np.abs(normalized - centre)))
+            if not np.isfinite(mad) or mad > MAX_PIT_REFERENCE_MAD_S:
+                reason = "Green-flag pit-loss reference is unstable"
+        estimate = lower = upper = green_loss = np.nan
+        confidence = "insufficient"
+        if not reason:
+            green_loss = float(np.median(normalized))
+            estimate = green_loss - actual_loss
+            seed_key = f"{event_key}:{driver}:pit-opportunity"
+            seed = int.from_bytes(hashlib.sha256(seed_key.encode()).digest()[:8], "little")
+            generator = np.random.default_rng(seed)
+            samples = (
+                np.median(
+                    generator.choice(
+                        normalized,
+                        size=(PIT_BOOTSTRAP_SAMPLES, len(normalized)),
+                        replace=True,
+                    ),
+                    axis=1,
+                )
+                - actual_loss
+            )
+            lower = float(np.quantile(samples, 0.05) - TIMING_RESOLUTION_S)
+            upper = float(np.quantile(samples, 0.95) + TIMING_RESOLUTION_S)
+            confidence = (
+                "high"
+                if reference_count >= HIGH_PIT_REFERENCE_STOPS
+                and reference_drivers >= HIGH_PIT_REFERENCE_DRIVERS
+                and mad <= HIGH_PIT_REFERENCE_MAD_S
+                and peer_count >= MIN_TIME_COMPARABLE_DRIVERS
+                else "medium"
+            )
+        eligible = not reason
+        saving_effect_type = (
+            "estimated_vsc_pit_saving"
+            if event.event_type == "VSC"
+            else "estimated_safety_car_pit_saving"
+        )
+        for effect_type, value, bounds in (
+            ("estimated_green_pit_loss", green_loss, (np.nan, np.nan)),
+            (saving_effect_type, estimate, (lower, upper)),
+        ):
+            rows.append(
+                {
+                    **base,
+                    "effect_type": effect_type,
+                    "value": value,
+                    "lower_bound": bounds[0],
+                    "upper_bound": bounds[1],
+                    "evidence_class": "estimated" if eligible else "unavailable",
+                    "confidence": confidence,
+                    "sample_size": reference_count,
+                    "eligible": eligible,
+                    "exclusion_reason": reason,
+                }
+            )
+        diagnostics[driver] = {
+            "eligible": eligible,
+            "reason": reason,
+            "actual_loss": actual_loss,
+            "saving": estimate,
+            "confidence": confidence,
+        }
+    return rows, diagnostics
+
+
 def _to_int(value: object) -> int | None:
     if pd.isna(value):
         return None
     return int(float(str(value)))
+
+
+def _to_float(value: object) -> float:
+    converted = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    return float(converted) if pd.notna(converted) else np.nan
 
 
 def _outcome(eligible: bool, positions_gained: int | None, active_after: bool) -> str:
@@ -503,6 +1235,7 @@ def _driver_rows(
     event_reason: str,
     event_confidence: str,
     post_t_s: float | None,
+    transitions: pd.DataFrame,
 ) -> list[dict[str, object]]:
     post_by_driver = post.set_index("driver_code", drop=False)
     intervention_end = event.end_t_s if event.end_t_s is not None else event.start_t_s
@@ -525,6 +1258,11 @@ def _driver_rows(
         active_after = after is not None
         position_before = _to_int(before.running_order)
         position_after = _to_int(after["running_order"]) if after is not None else None
+        position_before_source = _source_value(before.running_order_source)
+        position_after_source = (
+            _source_value(after["running_order_source"]) if after is not None else ""
+        )
+        position_evidence_class = _evidence_class(position_before_source, position_after_source)
         positions_gained = (
             position_before - position_after
             if position_before is not None and position_after is not None
@@ -545,9 +1283,13 @@ def _driver_rows(
             if after is not None and pd.notna(after["gap_to_leader_s"])
             else np.nan
         )
+        gap_before_source = _source_value(before.gap_source)
+        gap_after_source = _source_value(after["gap_source"]) if after is not None else ""
+        gap_evidence_class = _evidence_class(gap_before_source, gap_after_source)
         raw_gap_gain = (
             gap_before - gap_after
             if event.event_type != "Red Flag"
+            and gap_evidence_class != "unavailable"
             and deficit_changed is not None
             and not deficit_changed
             and np.isfinite(gap_before)
@@ -573,6 +1315,23 @@ def _driver_rows(
             and pd.notna(recovery_max)
             and recovery_max > recovery_baseline
         )
+        driver_transitions = transitions.loc[transitions["driver_code"].eq(driver)]
+        relevant_transition: pd.Series | None = None
+        pit_timing_class = "no_stop_observed"
+        if not driver_transitions.empty:
+            classified = driver_transitions.assign(
+                _class=driver_transitions.apply(
+                    lambda row: _pit_classification(row, event, post_t_s), axis=1
+                )
+            )
+            relevant = classified.loc[
+                classified["_class"].isin(["during_neutralisation", "after_end"])
+            ].sort_values("pit_in_t_s")
+            if not relevant.empty:
+                relevant_transition = relevant.iloc[0]
+                pit_timing_class = str(relevant_transition["_class"])
+        if relevant_transition is None and (pitted_intervention or pitted_recovery):
+            pit_timing_class = "unresolved"
         stop_count = (
             max(0, stint_after - stint_before)
             if stint_before is not None and stint_after is not None
@@ -595,14 +1354,30 @@ def _driver_rows(
             and active_after
             and position_before is not None
             and position_after is not None
+            and position_evidence_class != "unavailable"
             and before_offset <= MAX_CAPTURE_OFFSET_S
             and after_offset <= MAX_CAPTURE_OFFSET_S
+        )
+        position_eligible = bool(
+            event.status == "complete"
+            and active_after
+            and position_before is not None
+            and position_after is not None
+            and position_evidence_class != "unavailable"
+            and before_offset <= MAX_CAPTURE_OFFSET_S
+            and after_offset <= MAX_CAPTURE_OFFSET_S
+        )
+        pit_eligible = relevant_transition is not None
+        tyre_eligible = bool(
+            position_eligible and compound_before and compound_after and stint_before is not None
         )
         reason = event_reason
         if not active_after:
             reason = "No post-event timing"
         elif position_before is None or position_after is None:
             reason = "Incomplete position timing"
+        elif position_evidence_class == "unavailable":
+            reason = "Position provenance unavailable"
         confidence = event_confidence if driver_eligible else "Low"
         time_reason = ""
         if not driver_eligible:
@@ -613,6 +1388,8 @@ def _driver_rows(
             time_reason = "Lap deficit unavailable or near an uncertain boundary"
         elif deficit_changed:
             time_reason = "Estimated lap deficit changed"
+        elif gap_evidence_class == "unavailable":
+            time_reason = "Gap provenance unavailable"
         elif not np.isfinite(raw_gap_gain):
             time_reason = "Incomplete gap timing"
         rows.append(
@@ -629,10 +1406,32 @@ def _driver_rows(
                 "position_before": position_before,
                 "position_after": position_after,
                 "positions_gained": positions_gained,
+                "position_before_source": position_before_source,
+                "position_after_source": position_after_source,
+                "position_before_confidence": _source_value(before.running_order_confidence),
+                "position_after_confidence": (
+                    _source_value(after["running_order_confidence"]) if after is not None else ""
+                ),
+                "position_before_observed_t_s": _to_float(before.running_order_observed_t_s),
+                "position_after_observed_t_s": (
+                    _to_float(after["running_order_observed_t_s"]) if after is not None else np.nan
+                ),
+                "position_evidence_class": position_evidence_class,
                 "gap_to_leader_before_s": gap_before,
                 "gap_to_leader_after_s": gap_after,
                 "raw_gap_gain_s": raw_gap_gain,
                 "field_adjusted_gap_gain_s": np.nan,
+                "gap_before_source": gap_before_source,
+                "gap_after_source": gap_after_source,
+                "gap_before_confidence": _source_value(before.gap_confidence),
+                "gap_after_confidence": (
+                    _source_value(after["gap_confidence"]) if after is not None else ""
+                ),
+                "gap_before_observed_t_s": _to_float(before.gap_observed_t_s),
+                "gap_after_observed_t_s": (
+                    _to_float(after["gap_observed_t_s"]) if after is not None else np.nan
+                ),
+                "gap_evidence_class": gap_evidence_class,
                 "time_comparable_driver_count": 0,
                 "time_eligible": not time_reason,
                 "time_exclusion_reason": time_reason,
@@ -649,13 +1448,35 @@ def _driver_rows(
                 "tyre_life_after": _to_int(after["tyre_life"]) if after is not None else None,
                 "pitted_during_intervention": pitted_intervention,
                 "pitted_during_recovery": pitted_recovery,
+                "pit_timing_class": pit_timing_class,
+                "pit_in_t_s": (
+                    float(relevant_transition["pit_in_t_s"])
+                    if relevant_transition is not None
+                    else np.nan
+                ),
+                "pit_out_t_s": (
+                    float(relevant_transition["pit_out_t_s"])
+                    if relevant_transition is not None
+                    else np.nan
+                ),
+                "pit_duration_sec": (
+                    float(relevant_transition["duration_sec"])
+                    if relevant_transition is not None
+                    else np.nan
+                ),
                 "stop_count": stop_count,
                 "tyre_changed_during_suspension": tyre_changed_red,
                 "active_after": active_after,
+                "position_eligible": position_eligible,
+                "gap_eligible": False,
+                "pit_eligible": pit_eligible,
+                "restart_eligible": bool(driver_eligible),
+                "tyre_eligible": tyre_eligible,
+                "focus_rank": None,
                 "eligible": driver_eligible,
                 "exclusion_reason": "" if driver_eligible else reason,
                 "confidence": confidence,
-                "outcome_label": _outcome(driver_eligible, positions_gained, active_after),
+                "outcome_label": _outcome(position_eligible, positions_gained, active_after),
                 "timing_before_offset_s": before_offset,
                 "timing_after_offset_s": after_offset,
                 "methodology_version": METHODOLOGY_VERSION,
@@ -689,6 +1510,7 @@ def analyse_race_control_impact(
     replay: pd.DataFrame,
     race_control: pd.DataFrame,
     laps: pd.DataFrame,
+    stops: pd.DataFrame | None = None,
     *,
     min_event_drivers: int = DEFAULT_MIN_EVENT_DRIVERS,
 ) -> RaceControlImpactResult:
@@ -696,6 +1518,7 @@ def analyse_race_control_impact(
     _require_columns(replay, _REPLAY_REQUIRED, "replay")
     _require_columns(race_control, _CONTROL_REQUIRED, "race_control")
     _require_columns(laps, _LAPS_REQUIRED, "laps")
+    prepared_stops = _prepare_stops(stops)
     if min_event_drivers < 1:
         raise ValueError("min_event_drivers must be at least one")
     if race_control.empty:
@@ -704,6 +1527,12 @@ def analyse_race_control_impact(
     replay = replay.copy()
     race_control = race_control.copy()
     laps = laps.copy()
+    for column, default in _REPLAY_PROVENANCE_DEFAULTS.items():
+        if column not in replay:
+            replay[column] = default
+    for column in ("pit_in_t_s", "pit_out_t_s", "compound"):
+        if column not in laps:
+            laps[column] = np.nan if column != "compound" else ""
     for frame in (replay, race_control, laps):
         for column in ("season", "round"):
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
@@ -717,15 +1546,30 @@ def analyse_race_control_impact(
         laps[column] = pd.to_numeric(laps[column], errors="coerce").replace(
             [np.inf, -np.inf], np.nan
         )
+    for column in ("pit_in_t_s", "pit_out_t_s"):
+        laps[column] = pd.to_numeric(laps[column], errors="coerce").replace(
+            [np.inf, -np.inf], np.nan
+        )
 
     event_rows: list[dict[str, object]] = []
     evidence_rows: list[dict[str, object]] = []
+    checkpoint_rows: list[dict[str, object]] = []
+    effect_rows: list[dict[str, object]] = []
     grouped = race_control.dropna(subset=[*_RACE_KEYS, "t_s"]).groupby(_RACE_KEYS, sort=True)
     for keys, control_race in grouped:
         season, rnd = (int(keys[0]), int(keys[1]))
         replay_race = replay.loc[replay["season"].eq(season) & replay["round"].eq(rnd)]
         laps_race = laps.loc[laps["season"].eq(season) & laps["round"].eq(rnd)]
+        stops_race = prepared_stops.loc[
+            prepared_stops["season"].eq(season) & prepared_stops["round"].eq(rnd)
+        ]
+        transitions = _pit_transitions(laps_race, stops_race)
         events = _extract_events(control_race)
+        green_references = (
+            _green_reference_losses(replay_race, laps_race, transitions, events)
+            if not replay_race.empty and not transitions.empty
+            else pd.DataFrame()
+        )
         for event in events:
             event_key = _event_id(season, rnd, event)
             race_name = (
@@ -799,6 +1643,7 @@ def analyse_race_control_impact(
                 reason,
                 confidence,
                 post_t_s,
+                transitions,
             )
             comparable = [row for row in driver_rows if bool(row["time_eligible"])]
             time_count = len(comparable)
@@ -823,8 +1668,247 @@ def analyse_race_control_impact(
                         row["field_adjusted_gap_gain_s"] = (
                             float(str(row["raw_gap_gain_s"])) - median
                         )
+                        row["gap_eligible"] = True
+
+            event_effects: list[dict[str, object]] = []
+            for row in driver_rows:
+                base_effect = {
+                    "season": season,
+                    "round": rnd,
+                    "race_name": race_name,
+                    "event_id": event_key,
+                    "event_number": event.event_number,
+                    "event_type": event.event_type,
+                    "driver_code": row["driver_code"],
+                    "methodology_version": METHODOLOGY_VERSION,
+                }
+                for effect_type, value, unit, is_eligible, effect_reason, evidence_class in (
+                    (
+                        "observed_position_change",
+                        row["positions_gained"],
+                        "positions",
+                        row["position_eligible"],
+                        "" if row["position_eligible"] else row["exclusion_reason"],
+                        row["position_evidence_class"],
+                    ),
+                    (
+                        "observed_gap_change",
+                        row["raw_gap_gain_s"],
+                        "seconds",
+                        row["gap_eligible"],
+                        "" if row["gap_eligible"] else row["time_exclusion_reason"],
+                        row["gap_evidence_class"],
+                    ),
+                    (
+                        "field_adjusted_gap_change",
+                        row["field_adjusted_gap_gain_s"],
+                        "seconds",
+                        row["gap_eligible"],
+                        "" if row["gap_eligible"] else row["time_exclusion_reason"],
+                        row["gap_evidence_class"],
+                    ),
+                    (
+                        "observed_tyre_change",
+                        1.0 if row["stint_after"] != row["stint_before"] else 0.0,
+                        "boolean",
+                        row["tyre_eligible"],
+                        "" if row["tyre_eligible"] else "Tyre state unavailable",
+                        "recorded",
+                    ),
+                ):
+                    event_effects.append(
+                        {
+                            **base_effect,
+                            "effect_type": effect_type,
+                            "effect_scope": "event_window",
+                            "value": value if is_eligible else np.nan,
+                            "lower_bound": np.nan,
+                            "upper_bound": np.nan,
+                            "unit": unit,
+                            "evidence_class": evidence_class if is_eligible else "unavailable",
+                            "confidence": confidence.lower() if is_eligible else "insufficient",
+                            "sample_size": 1 if is_eligible else 0,
+                            "eligible": is_eligible,
+                            "exclusion_reason": effect_reason,
+                        }
+                    )
+            pit_diagnostics: dict[str, dict[str, object]] = {}
+            if event.event_type in {"VSC", "Safety Car"} and not transitions.empty:
+                pit_effects, pit_diagnostics = _pit_effect_rows(
+                    replay_race,
+                    laps_race,
+                    transitions,
+                    events,
+                    event,
+                    event_key,
+                    race_name,
+                    green_references,
+                )
+                event_effects.extend(pit_effects)
+
+            event_checkpoints: list[dict[str, object]] = []
+            if not replay_race.empty:
+                green_one_t_s = _green_one_checkpoint(replay_race, event)
+                common = [
+                    ("pre_deploy", 10, event.start_t_s),
+                    ("control_end", 40, event.end_t_s),
+                    ("green_lap_1", 70, green_one_t_s),
+                    ("green_lap_3", 90, post_t_s),
+                ]
+                for checkpoint_type, checkpoint_order, checkpoint_t_s in common:
+                    if checkpoint_t_s is None:
+                        continue
+                    for driver in replay_race["driver_code"].dropna().astype(str).unique():
+                        event_checkpoints.append(
+                            _checkpoint_row(
+                                replay_race,
+                                event,
+                                event_key,
+                                race_name,
+                                driver,
+                                checkpoint_type,
+                                checkpoint_order,
+                                float(checkpoint_t_s),
+                                source="official_race_control+race_replay",
+                            )
+                        )
+                relevant_transitions = transitions.loc[
+                    transitions["pit_in_t_s"].ge(event.start_t_s)
+                    & transitions["pit_in_t_s"].le(post_t_s if post_t_s is not None else np.inf)
+                ]
+                for _, transition in relevant_transitions.iterrows():
+                    for checkpoint_type, checkpoint_order, column in (
+                        ("pit_in", 20, "pit_in_t_s"),
+                        ("pit_out", 30, "pit_out_t_s"),
+                    ):
+                        event_checkpoints.append(
+                            _checkpoint_row(
+                                replay_race,
+                                event,
+                                event_key,
+                                race_name,
+                                str(transition["driver_code"]),
+                                checkpoint_type,
+                                checkpoint_order,
+                                float(transition[column]),
+                                source="fastf1_pit_timing+race_replay",
+                            )
+                        )
+                _invalidate_incoherent_checkpoint_orders(event_checkpoints)
+
+            checkpoint_by_key = {
+                (row["driver_code"], row["checkpoint_type"]): row
+                for row in event_checkpoints
+                if bool(row["eligible"])
+            }
+            for row in driver_rows:
+                driver = str(row["driver_code"])
+                end_state = checkpoint_by_key.get((driver, "control_end"))
+                green_state = checkpoint_by_key.get((driver, "green_lap_3"))
+                restart_ok = end_state is not None and green_state is not None and recovery_clean
+                restart_position_class = (
+                    _evidence_class(
+                        end_state.get("running_order_source"),
+                        green_state.get("running_order_source"),
+                    )
+                    if end_state is not None and green_state is not None
+                    else "unavailable"
+                )
+                restart_gap_class = (
+                    _evidence_class(end_state.get("gap_source"), green_state.get("gap_source"))
+                    if end_state is not None and green_state is not None
+                    else "unavailable"
+                )
+                row["restart_eligible"] = restart_ok
+                restart_reason = (
+                    "" if restart_ok else "Verified green recovery checkpoints unavailable"
+                )
+                position_change = np.nan
+                gap_change = np.nan
+                if end_state is not None and green_state is not None and restart_ok:
+                    end_position = _to_int(end_state.get("running_order"))
+                    green_position = _to_int(green_state.get("running_order"))
+                    if end_position is not None and green_position is not None:
+                        position_change = end_position - green_position
+                    end_gap = pd.to_numeric(
+                        pd.Series([end_state.get("gap_to_leader_s")]), errors="coerce"
+                    ).iloc[0]
+                    green_gap = pd.to_numeric(
+                        pd.Series([green_state.get("gap_to_leader_s")]), errors="coerce"
+                    ).iloc[0]
+                    if event.event_type != "Red Flag" and pd.notna(end_gap) and pd.notna(green_gap):
+                        gap_change = float(end_gap - green_gap)
+                for effect_type, value, unit, metric_ok, evidence_class in (
+                    (
+                        "restart_position_change",
+                        position_change,
+                        "positions",
+                        restart_ok
+                        and restart_position_class != "unavailable"
+                        and np.isfinite(position_change),
+                        restart_position_class,
+                    ),
+                    (
+                        "restart_gap_change",
+                        gap_change,
+                        "seconds",
+                        restart_ok
+                        and restart_gap_class != "unavailable"
+                        and event.event_type != "Red Flag"
+                        and np.isfinite(gap_change),
+                        restart_gap_class,
+                    ),
+                ):
+                    event_effects.append(
+                        {
+                            "season": season,
+                            "round": rnd,
+                            "race_name": race_name,
+                            "event_id": event_key,
+                            "event_number": event.event_number,
+                            "event_type": event.event_type,
+                            "driver_code": driver,
+                            "effect_type": effect_type,
+                            "effect_scope": "control_end_to_green_lap_3",
+                            "value": value if metric_ok else np.nan,
+                            "lower_bound": np.nan,
+                            "upper_bound": np.nan,
+                            "unit": unit,
+                            "evidence_class": evidence_class if metric_ok else "unavailable",
+                            "confidence": confidence.lower() if metric_ok else "insufficient",
+                            "sample_size": 1 if metric_ok else 0,
+                            "eligible": metric_ok,
+                            "exclusion_reason": "" if metric_ok else restart_reason,
+                            "methodology_version": METHODOLOGY_VERSION,
+                        }
+                    )
+
+            during_drivers = [
+                str(row["driver_code"])
+                for row in driver_rows
+                if row["pit_timing_class"] == "during_neutralisation"
+            ]
+            ranked = sorted(
+                driver_rows,
+                key=lambda row: (
+                    0 if str(row["driver_code"]) in during_drivers else 1,
+                    _to_int(row["position_before"])
+                    if _to_int(row["position_before"]) is not None
+                    else 999,
+                    -(_to_int(row["positions_gained"]) or 0),
+                    str(row["driver_code"]),
+                ),
+            )
+            for rank, row in enumerate(ranked, start=1):
+                row["focus_rank"] = rank
+            focus_driver = str(ranked[0]["driver_code"]) if ranked else ""
             evidence_rows.extend(driver_rows)
+            checkpoint_rows.extend(event_checkpoints)
+            effect_rows.extend(event_effects)
             eligible_driver_rows = [row for row in driver_rows if bool(row["eligible"])]
+            position_rows = [row for row in driver_rows if bool(row["position_eligible"])]
+            tyre_rows = [row for row in driver_rows if bool(row["tyre_eligible"])]
+            pit_rows = [row for row in driver_rows if bool(row["pit_eligible"])]
             event_rows.append(
                 {
                     "season": season,
@@ -857,11 +1941,40 @@ def analyse_race_control_impact(
                         bool(row["pitted_during_recovery"]) for row in driver_rows
                     ),
                     "position_gainer_count": sum(
-                        float(str(row["positions_gained"] or 0)) > 0 for row in eligible_driver_rows
+                        float(str(row["positions_gained"] or 0)) > 0 for row in position_rows
                     ),
                     "position_loser_count": sum(
-                        float(str(row["positions_gained"] or 0)) < 0 for row in eligible_driver_rows
+                        float(str(row["positions_gained"] or 0)) < 0 for row in position_rows
                     ),
+                    "position_status": (
+                        "recorded"
+                        if position_rows
+                        and all(
+                            row["position_evidence_class"] == "recorded" for row in position_rows
+                        )
+                        else "estimated"
+                        if position_rows
+                        else "unavailable"
+                    ),
+                    "gap_status": (
+                        "recorded"
+                        if not time_reason
+                        and comparable
+                        and all(row["gap_evidence_class"] == "recorded" for row in comparable)
+                        else "estimated"
+                        if not time_reason and comparable
+                        else "unavailable"
+                    ),
+                    "pit_status": (
+                        "estimated"
+                        if any(bool(item.get("eligible")) for item in pit_diagnostics.values())
+                        else "observed"
+                        if pit_rows
+                        else "unavailable"
+                    ),
+                    "restart_status": "observed" if recovery_clean else "unavailable",
+                    "tyre_status": "observed" if tyre_rows else "unavailable",
+                    "focus_driver_code": focus_driver,
                     "eligible": event_eligible,
                     "exclusion_reason": reason,
                     "confidence": confidence,
@@ -883,6 +1996,20 @@ def analyse_race_control_impact(
         _IMPACT_FLOAT,
         _IMPACT_BOOLEAN,
     )
+    checkpoint_frame = _cast_frame(
+        pd.DataFrame(checkpoint_rows),
+        RACE_CONTROL_CHECKPOINT_COLUMNS,
+        _CHECKPOINT_INTEGER,
+        _CHECKPOINT_FLOAT,
+        _CHECKPOINT_BOOLEAN,
+    )
+    effect_frame = _cast_frame(
+        pd.DataFrame(effect_rows),
+        RACE_CONTROL_EFFECT_COLUMNS,
+        _EFFECT_INTEGER,
+        _EFFECT_FLOAT,
+        _EFFECT_BOOLEAN,
+    )
     if not evidence_frame.empty:
         evidence_frame = evidence_frame.sort_values(
             ["season", "round", "event_number", "position_before"]
@@ -890,4 +2017,10 @@ def analyse_race_control_impact(
     return RaceControlImpactResult(
         events=events_frame.sort_values(["season", "round", "event_number"]).reset_index(drop=True),
         evidence=evidence_frame,
+        checkpoints=checkpoint_frame.sort_values(
+            ["season", "round", "event_number", "driver_code", "checkpoint_order"]
+        ).reset_index(drop=True),
+        effects=effect_frame.sort_values(
+            ["season", "round", "event_number", "driver_code", "effect_type"]
+        ).reset_index(drop=True),
     )

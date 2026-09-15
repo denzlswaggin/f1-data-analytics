@@ -41,6 +41,7 @@ from ingestion.config import Settings, get_settings
 from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
+    ingest_openf1_timing,
     ingest_pitstops,
     ingest_positions,
     ingest_race_control,
@@ -118,6 +119,7 @@ def _ingest_round(season: int, rnd: int, session: str, settings: Settings) -> di
             "positions": ingest_positions(season, [rnd], session, settings),
             "race_control": ingest_race_control(season, [rnd], session, settings),
             "team_radio": ingest_team_radio(season, [rnd], session, settings),
+            "openf1_timing": ingest_openf1_timing(season, [rnd], session, settings),
         }
     )
     return summary

@@ -41,7 +41,7 @@ def evaluate(connection: duckdb.DuckDBPyConnection, reference: dict[str, Any]) -
                 where season=? and round=? and driver_code=? and is_pit_in_lap""",
                 params,
             ).fetchall()
-        elif kind in {"race_control_start", "race_control_end"}:
+        elif kind in {"race_control_start", "race_control_end", "race_control_finish"}:
             if case["other"] not in {"Safety Car", "VSC", "Red Flag"}:
                 raise ValueError("Unknown race-control event type")
             if not case["expected"]:
@@ -56,9 +56,10 @@ def evaluate(connection: duckdb.DuckDBPyConnection, reference: dict[str, Any]) -
                 [*params, low, high, case["season"], case["round"]],
             ).fetchone()
             column = "deployment_lap" if kind == "race_control_start" else "end_lap"
+            status_filter = " and event_status='finished'" if kind == "race_control_finish" else ""
             detections = connection.execute(
                 f"select {column} from marts.race_control_events "
-                "where season=? and round=? and event_type=?",
+                f"where season=? and round=? and event_type=?{status_filter}",
                 [case["season"], case["round"], case["other"]],
             ).fetchall()
         elif kind in {"overtake", "competitive_conversion"}:
@@ -154,6 +155,7 @@ def main() -> None:
     parser.add_argument(
         "--reference", type=Path, default=Path("validation/reference-events-v1.json")
     )
+    parser.add_argument("--output", type=Path, help="Also write the JSON report to this path.")
     args = parser.parse_args()
     # Git may check out CRLF on Windows; hash the UTF-8, LF-normalized reference.
     content = args.reference.read_text(encoding="utf-8").encode("utf-8")
@@ -163,7 +165,10 @@ def main() -> None:
             "select version, generated_at from dashboard.snapshot_metadata"
         ).fetchall()
     result["reference_sha256"] = hashlib.sha256(content).hexdigest()
-    print(json.dumps(result, indent=2, default=str, allow_nan=False))
+    rendered = json.dumps(result, indent=2, default=str, allow_nan=False)
+    if args.output is not None:
+        args.output.write_text(rendered + "\n", encoding="utf-8")
+    print(rendered)
 
 
 if __name__ == "__main__":

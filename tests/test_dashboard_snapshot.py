@@ -85,6 +85,10 @@ def _warehouse(path: Path) -> None:
             "position_after_early": "integer",
             "position_after_late": "integer",
             "event_number": "integer",
+            "checkpoint_order": "integer",
+            "running_order": "integer",
+            "focus_rank": "integer",
+            "sample_size": "integer",
             "deployment_lap": "integer",
             "post_checkpoint_lap": "integer",
             "pre_driver_count": "integer",
@@ -210,6 +214,15 @@ def _warehouse(path: Path) -> None:
             "field_adjusted_gap_gain_s": "double",
             "timing_before_offset_s": "double",
             "timing_after_offset_s": "double",
+            "pit_in_t_s": "double",
+            "pit_out_t_s": "double",
+            "checkpoint_t_s": "double",
+            "lap_progress": "double",
+            "gap_to_leader_s": "double",
+            "capture_offset_s": "double",
+            "value": "double",
+            "lower_bound": "double",
+            "upper_bound": "double",
             "early_new_tyre_fresh": "boolean",
             "late_new_tyre_fresh": "boolean",
             "position_flip": "boolean",
@@ -221,6 +234,11 @@ def _warehouse(path: Path) -> None:
             "pitted_during_recovery": "boolean",
             "tyre_changed_during_suspension": "boolean",
             "active_after": "boolean",
+            "position_eligible": "boolean",
+            "gap_eligible": "boolean",
+            "pit_eligible": "boolean",
+            "restart_eligible": "boolean",
+            "tyre_eligible": "boolean",
             "eligible": "boolean",
             "is_pit_in_lap": "boolean",
             "is_pit_out_lap": "boolean",
@@ -393,14 +411,14 @@ def test_race_control_sources_preserve_time_eligibility_schema(tmp_path: Path, t
         assert sentinel["time_comparable_driver_count"] == 0
         assert not sentinel["time_eligible"]
         assert sentinel["time_exclusion_reason"] == "No data"
-        assert sentinel["methodology_version"] == "race-control-impact-v2"
+        assert sentinel["methodology_version"] == "race-control-impact-v3"
 
         connection.execute(
             f"insert into marts.{table} "
             "(season, round, time_comparable_driver_count, time_eligible, "
             "time_exclusion_reason, eligible, methodology_version) "
             "values (2025, 1, 4, false, 'Insufficient comparable cohort', true, "
-            "'race-control-impact-v2')"
+            "'race-control-impact-v3')"
         )
         result = connection.execute(query).fetchdf()
         assert len(result) == 1
@@ -410,6 +428,21 @@ def test_race_control_sources_preserve_time_eligibility_schema(tmp_path: Path, t
         assert row["time_comparable_driver_count"] == 4
         assert not row["time_eligible"]
         assert row["time_exclusion_reason"] == "Insufficient comparable cohort"
+
+
+@pytest.mark.parametrize("table", ["race_control_checkpoints", "race_control_effects"])
+def test_race_control_detail_sources_have_typed_empty_sentinel(tmp_path: Path, table: str) -> None:
+    source = tmp_path / "source.duckdb"
+    _warehouse(source)
+    query = (
+        Path(__file__).resolve().parents[1] / "dashboard" / "sources" / "f1" / f"{table}.sql"
+    ).read_text(encoding="utf-8")
+    with duckdb.connect(str(source)) as connection:
+        result = connection.execute(query).fetchdf()
+    assert len(result) == 1
+    assert result.iloc[0]["season"] == 0
+    assert not result.iloc[0]["eligible"]
+    assert result.iloc[0]["methodology_version"] == "race-control-impact-v3"
 
 
 @pytest.mark.parametrize("table", ["racecraft_battles", "racecraft_driver_summary"])

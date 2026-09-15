@@ -16,6 +16,7 @@ analysis-paths: ["analyses"]
 # empty relation here keeps upgrades backward compatible; ingestion populates it.
 on-run-start:
   - "{{ create_ingestion_partitions() }}"
+  - "{{ create_optional_openf1_timing_sources() }}"
 
 target-path: "target"
 clean-targets:

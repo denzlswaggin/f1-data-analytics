@@ -13,10 +13,16 @@ from analytics.pipeline import (
     build_race_control_impact_incremental,
 )
 from analytics.race_control_impact import (
+    RACE_CONTROL_CHECKPOINT_COLUMNS,
+    RACE_CONTROL_EFFECT_COLUMNS,
     RACE_CONTROL_EVENT_COLUMNS,
     RACE_CONTROL_IMPACT_COLUMNS,
     RaceControlImpactResult,
+    _checkpoint_row,
     _estimated_lap_deficits,
+    _Event,
+    _pit_effect_rows,
+    _snapshot,
     analyse_race_control_impact,
 )
 from ingestion.config import Settings
@@ -115,11 +121,13 @@ def _analyse(
     *,
     replay: pd.DataFrame | None = None,
     laps: pd.DataFrame | None = None,
+    stops: pd.DataFrame | None = None,
 ) -> RaceControlImpactResult:
     return analyse_race_control_impact(
         _replay() if replay is None else replay,
         _control(messages),
         _laps() if laps is None else laps,
+        stops,
         min_event_drivers=2,
     )
 
@@ -141,6 +149,66 @@ def test_measures_two_lap_safety_car_position_gap_and_stop_impact() -> None:
     assert not event["time_eligible"]
     assert bool(bbb["pitted_during_intervention"])
     assert bbb["outcome_label"] == "Observed position gain"
+    assert bbb["position_evidence_class"] == "estimated"
+    assert event["position_status"] == "estimated"
+
+
+def test_full_field_recorded_order_is_published_as_recorded_evidence() -> None:
+    replay = _replay().assign(
+        running_order_source="openf1_recorded",
+        running_order_confidence="High",
+        running_order_observed_t_s=lambda frame: frame["t_s"],
+        gap_source="openf1_recorded",
+        gap_confidence="High",
+        gap_observed_t_s=lambda frame: frame["t_s"],
+    )
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)],
+        replay=replay,
+    )
+
+    assert result.events.iloc[0]["position_status"] == "recorded"
+    assert set(result.evidence["position_evidence_class"]) == {"recorded"}
+    assert set(result.checkpoints["evidence_class"]) == {"recorded"}
+    position_effects = result.effects.loc[
+        result.effects["effect_type"].eq("observed_position_change")
+    ]
+    assert set(position_effects["evidence_class"]) == {"recorded"}
+
+
+def test_unknown_order_provenance_withholds_position_story() -> None:
+    replay = _replay().assign(
+        running_order_source="unknown",
+        running_order_confidence="Low",
+        running_order_observed_t_s=float("nan"),
+        gap_source="unknown",
+        gap_confidence="Low",
+        gap_observed_t_s=float("nan"),
+    )
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)],
+        replay=replay,
+    )
+
+    assert not result.evidence["position_eligible"].any()
+    assert set(result.evidence["position_evidence_class"]) == {"unavailable"}
+    assert result.events.iloc[0]["position_gainer_count"] == 0
+    assert result.events.iloc[0]["position_status"] == "unavailable"
+    position_effects = result.effects.loc[
+        result.effects["effect_type"].eq("observed_position_change")
+    ]
+    assert not position_effects["eligible"].any()
+    assert position_effects["value"].isna().all()
+
+
+def test_snapshot_withholds_an_entire_duplicate_rank_field() -> None:
+    replay = _replay()
+    replay.loc[replay["driver_code"].eq("BBB"), "running_order"] = 1
+
+    snapshot = _snapshot(replay, 100.0, before=True)
+
+    assert snapshot["running_order"].isna().all()
+    assert snapshot["running_order_source"].eq("").all()
 
 
 @pytest.mark.parametrize(
@@ -187,6 +255,33 @@ def test_red_flag_interrupts_open_safety_car() -> None:
     assert safety_car["event_status"] == "interrupted"
     assert not bool(safety_car["eligible"])
     assert safety_car["exclusion_reason"] == "Interrupted by red flag"
+
+
+def test_safety_car_supersedes_open_vsc() -> None:
+    result = _analyse(
+        [
+            (100.0, 5, "VSC DEPLOYED", None),
+            (130.0, 5, "SAFETY CAR DEPLOYED", None),
+            (150.0, 5, "SAFETY CAR IN THIS LAP", None),
+        ]
+    )
+
+    vsc = result.events.loc[result.events["event_type"].eq("VSC")].iloc[0]
+    assert vsc["end_t_s"] == 130.0
+    assert vsc["event_status"] == "interrupted"
+    assert vsc["exclusion_reason"] == "Superseded by Safety Car"
+
+
+@pytest.mark.parametrize("event_type", ["VSC", "Safety Car"])
+def test_chequered_flag_closes_active_neutralisation(event_type: str) -> None:
+    start = "VSC DEPLOYED" if event_type == "VSC" else "SAFETY CAR DEPLOYED"
+    result = _analyse([(100.0, 5, start, None), (150.0, 6, "CHEQUERED FLAG", "CHEQUERED")])
+
+    event = result.events.iloc[0]
+    assert event["end_t_s"] == 150.0
+    assert event["end_lap"] == 6
+    assert event["event_status"] == "finished"
+    assert event["exclusion_reason"] == f"Race finished under {event_type}"
 
 
 def test_recovery_interrupted_by_next_event_is_excluded() -> None:
@@ -249,6 +344,118 @@ def test_unclean_recovery_excludes_event_but_retains_evidence() -> None:
     assert not result.events["eligible"].any()
     assert not result.evidence["time_eligible"].any()
     assert len(result.evidence) == 2
+
+
+def test_exact_pit_timing_remains_eligible_when_recovery_is_unclean() -> None:
+    laps = _laps(clean=False).assign(
+        compound="MEDIUM", stint=1, tyre_life=lambda frame: frame["lap_number"]
+    )
+    laps["pit_in_t_s"] = float("nan")
+    laps["pit_out_t_s"] = float("nan")
+    laps.loc[laps.driver_code.eq("BBB") & laps.lap_number.eq(5), "pit_in_t_s"] = 110.0
+    laps.loc[laps.driver_code.eq("BBB") & laps.lap_number.eq(6), "pit_out_t_s"] = 130.0
+    laps.loc[laps.driver_code.eq("BBB") & laps.lap_number.ge(6), ["stint", "compound"]] = [
+        2,
+        "HARD",
+    ]
+    stops = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "round": 1,
+                "driver_code": "BBB",
+                "pit_lap": 5,
+                "duration_sec": 20.25,
+            }
+        ]
+    )
+
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)],
+        laps=laps,
+        stops=stops,
+    )
+
+    event = result.events.iloc[0]
+    driver = result.evidence.loc[result.evidence.driver_code.eq("BBB")].iloc[0]
+    assert not bool(event["eligible"])
+    assert event["pit_status"] == "observed"
+    assert driver["pit_timing_class"] == "during_neutralisation"
+    assert driver["pit_duration_sec"] == pytest.approx(20.25)
+    assert bool(driver["pit_eligible"])
+    assert set(result.checkpoints.checkpoint_type) >= {"pit_in", "pit_out"}
+
+
+def test_pit_saving_requires_stable_multi_driver_green_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    references = pd.DataFrame(
+        {
+            "driver_code": ["A", "B", "C", "D", "A"],
+            "duration_sec": [30.0, 31.0, 32.0, 30.5, 31.5],
+            "observed_loss_sec": [7.0, 8.0, 9.0, 7.5, 8.5],
+            "peer_count": [5] * 5,
+        }
+    )
+    monkeypatch.setattr(
+        "analytics.race_control_impact._green_reference_losses",
+        lambda *_args: references,
+    )
+    monkeypatch.setattr(
+        "analytics.race_control_impact._pairwise_pit_loss",
+        lambda *_args, **_kwargs: (2.0, 3),
+    )
+    transition = pd.DataFrame(
+        [
+            {
+                "season": 2026,
+                "round": 1,
+                "driver_code": "ANT",
+                "pit_lap": 14,
+                "pit_in_t_s": 110.0,
+                "pit_out_t_s": 141.0,
+                "duration_sec": 31.0,
+                "old_compound": "MEDIUM",
+                "new_compound": "HARD",
+            }
+        ]
+    )
+    event = _Event(1, "VSC", 100.0, 14, 150.0, 15, "complete")
+
+    rows, diagnostics = _pit_effect_rows(
+        _replay(), _laps(), transition, [event], event, "2026-01-vsc-01", "Test GP"
+    )
+
+    saving = next(row for row in rows if row["effect_type"] == "estimated_vsc_pit_saving")
+    assert saving["eligible"]
+    assert saving["evidence_class"] == "estimated"
+    assert (
+        float(str(saving["lower_bound"]))
+        < float(str(saving["value"]))
+        < float(str(saving["upper_bound"]))
+    )
+    assert diagnostics["ANT"]["eligible"]
+
+
+def test_checkpoint_with_unbracketed_replay_is_explicitly_unavailable() -> None:
+    replay = _replay().loc[lambda frame: frame.t_s.isin([99.0, 140.0])]
+    event = _Event(1, "VSC", 100.0, 5, 150.0, 5, "complete")
+
+    checkpoint = _checkpoint_row(
+        replay,
+        event,
+        "2026-01-vsc-01",
+        "Test GP",
+        "AAA",
+        "control_end",
+        40,
+        130.0,
+        source="test",
+    )
+
+    assert not checkpoint["eligible"]
+    assert pd.isna(checkpoint["capture_offset_s"])
+    assert "does not bracket" in str(checkpoint["exclusion_reason"])
 
 
 @pytest.mark.parametrize(
@@ -453,6 +660,8 @@ def test_empty_inputs_keep_typed_schemas() -> None:
 
     assert result.events.columns.tolist() == RACE_CONTROL_EVENT_COLUMNS
     assert result.evidence.columns.tolist() == RACE_CONTROL_IMPACT_COLUMNS
+    assert result.checkpoints.columns.tolist() == RACE_CONTROL_CHECKPOINT_COLUMNS
+    assert result.effects.columns.tolist() == RACE_CONTROL_EFFECT_COLUMNS
     assert str(result.events["eligible"].dtype) == "boolean"
     assert str(result.evidence["field_adjusted_gap_gain_s"].dtype) == "float64"
 
@@ -474,6 +683,11 @@ def _seed_warehouse(path: Path) -> Settings:
     laps = _laps().assign(
         session="R",
         team=lambda frame: "Team " + frame["driver_code"],
+        stint=1,
+        compound="MEDIUM",
+        tyre_life=lambda frame: frame["lap_number"],
+        pit_in_time_sec=float("nan"),
+        pit_out_time_sec=float("nan"),
         lap_start_sec=lambda frame: 1000.0 + frame["lap_start_t_s"],
         lap_time_sec=lambda frame: frame["lap_end_t_s"] - frame["lap_start_t_s"],
     )
@@ -483,6 +697,7 @@ def _seed_warehouse(path: Path) -> Settings:
             {
                 "season": 2026,
                 "driver_code": code,
+                "driver_id": code.lower(),
                 "driver_name": f"Driver {code}",
             }
             for code in ("AAA", "BBB")
@@ -490,6 +705,15 @@ def _seed_warehouse(path: Path) -> Settings:
     )
     messages = _control([(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)]).assign(
         session="R", session_time_sec=lambda frame: frame["t_s"] + 1000.0
+    )
+    stops = pd.DataFrame(
+        {
+            "season": pd.Series(dtype="int64"),
+            "round": pd.Series(dtype="int64"),
+            "driver_id": pd.Series(dtype="object"),
+            "pit_lap": pd.Series(dtype="int64"),
+            "duration_sec": pd.Series(dtype="float64"),
+        }
     )
 
     connection = duckdb.connect(str(path))
@@ -502,6 +726,7 @@ def _seed_warehouse(path: Path) -> Settings:
             ("staging", "stg_races", races),
             ("staging", "stg_driver_codes", codes),
             ("staging", "stg_race_control", messages),
+            ("staging", "stg_pitstops", stops),
         ):
             connection.register("incoming", frame)
             connection.execute(f"create table {schema}.{name} as select * from incoming")
@@ -511,15 +736,19 @@ def _seed_warehouse(path: Path) -> Settings:
     return settings
 
 
-def test_builder_materialises_both_race_control_marts(tmp_path: Path) -> None:
+def test_builder_materialises_all_race_control_marts(tmp_path: Path) -> None:
     settings = _seed_warehouse(tmp_path / "race-control.duckdb")
 
     result = build_race_control_impact(2026, 1, settings=settings)
     events = read_query("select * from marts.race_control_events", settings)
     evidence = read_query("select * from marts.race_control_impact", settings)
+    checkpoints = read_query("select * from marts.race_control_checkpoints", settings)
+    effects = read_query("select * from marts.race_control_effects", settings)
 
     assert len(events) == len(result.events) == 1
     assert len(evidence) == len(result.evidence) == 2
+    assert len(checkpoints) == len(result.checkpoints)
+    assert len(effects) == len(result.effects)
     assert events["event_type"].tolist() == ["VSC"]
 
 
@@ -531,6 +760,8 @@ def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
         for table, frame in (
             ("race_control_events", result.events.assign(round=2)),
             ("race_control_impact", result.evidence.assign(round=2)),
+            ("race_control_checkpoints", result.checkpoints.assign(round=2)),
+            ("race_control_effects", result.effects.assign(round=2)),
         ):
             connection.register("copy", frame)
             connection.execute(f"insert into marts.{table} by name select * from copy")
@@ -550,5 +781,23 @@ def test_incremental_builder_preserves_other_races(tmp_path: Path) -> None:
         "group by round order by round",
         settings,
     )
+    checkpoints = read_query(
+        "select round, count(*) as rows from marts.race_control_checkpoints "
+        "group by round order by round",
+        settings,
+    )
+    effects = read_query(
+        "select round, count(*) as rows from marts.race_control_effects "
+        "group by round order by round",
+        settings,
+    )
     assert events[["round", "rows"]].values.tolist() == [[1, 1], [2, 1]]
     assert evidence[["round", "rows"]].values.tolist() == [[1, 2], [2, 2]]
+    assert checkpoints[["round", "rows"]].values.tolist() == [
+        [1, len(result.checkpoints)],
+        [2, len(result.checkpoints)],
+    ]
+    assert effects[["round", "rows"]].values.tolist() == [
+        [1, len(result.effects)],
+        [2, len(result.effects)],
+    ]

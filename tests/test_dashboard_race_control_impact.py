@@ -6,28 +6,64 @@ ROOT = Path(__file__).parents[1]
 PAGE = ROOT / "dashboard" / "pages" / "race-control-impact.md"
 EVENT_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_control_events.sql"
 IMPACT_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_control_impact.sql"
+CHECKPOINT_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_control_checkpoints.sql"
+EFFECT_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_control_effects.sql"
 COVERAGE = ROOT / "dashboard" / "sources" / "f1" / "data_coverage.sql"
 RACES_SOURCE = ROOT / "dashboard" / "sources" / "f1" / "race_control_races.sql"
 
 
-def test_page_exposes_position_time_pit_and_exclusion_evidence() -> None:
+def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     page = PAGE.read_text(encoding="utf-8")
 
     assert "positions_gained" in page
     assert "field_adjusted_gap_gain_s" in page
-    assert "pitted_during_intervention" in page
-    assert "changed estimated deficits" in page.lower()
-    assert "time_comparable_driver_count" in page
-    assert "time_exclusion_reason" in page
-    assert "where time_eligible and field_adjusted_gap_gain_s is not null" in page
-    assert "at least five time-comparable drivers" in page.lower()
-    assert "rather than what race control caused" in page
-    assert "at least 12 cars" in page
+    assert "focus_driver_code" in page
+    assert "pit_timing_class" in page
+    assert "estimated_vsc_pit_saving" in page
+    assert "lower_bound" in page and "upper_bound" in page
+    assert "race_control_checkpoints" in page
+    assert "race_control_effects" in page
+    assert "facts kept distinct from counterfactual estimates" in page
+    assert "never a claim that race control caused the final result" in page
+    assert "Final result is context only" in page
+    assert "finish_position" in page
+    assert "five clean same-race green stops" in page
+    assert "Official validation context — Madrid 2026" in page
+    assert "pit-stop-summary" in page
+    assert "defaultValue={2026}" in page
+    assert "story_count" in page
+    assert "story_total" in page
+    assert "cast(story_total as varchar) || ' story'" in page
+    assert "gap_eligible and abs(field_adjusted_gap_gain_s) >= 0.5" in page
+    assert "restart_position_change', 'restart_gap_change'" in page
+    assert "position_eligible and coalesce(positions_gained, 0) <> 0" in page
+    assert "≈P" in page
+    assert "OpenF1 full-field order" in page
+    assert "position_evidence_class" in page
+    assert "No stop in event window" in page
+    assert "Stopped after end; no neutralised saving" in page
+    assert "No supported same-race counterfactual" in page
+    assert "Driver evidence unavailable" in page
+    assert "source limitation, not evidence" in page
+    assert "pit_duration_display" in page
+    assert "pit_saving_display" in page
+    assert "No publishable position comparison" in page
+    assert "Position evidence is withheld rather than shown as an empty result" in page
+    assert "No publishable gap comparison" in page
+    assert "Gap effects are withheld; this does not mean the intervention had no effect" in page
+    assert "No pit-saving estimate applies" in page
+    assert "A numeric saving is only estimated for a stop observed during the intervention" in page
+    assert "{#if pit_unavailable.length > 0}" in page
+    assert "{#if position_drivers.length > 0}" in page
+    assert "{#if time_movers.length > 0}" in page
+    assert 'comparisonFmt="P0 after recovery"' not in page
 
 
-def test_sources_publish_both_marts_with_empty_sentinels() -> None:
+def test_sources_publish_all_marts_with_empty_sentinels() -> None:
     events = EVENT_SOURCE.read_text(encoding="utf-8")
     impact = IMPACT_SOURCE.read_text(encoding="utf-8")
+    checkpoints = CHECKPOINT_SOURCE.read_text(encoding="utf-8")
+    effects = EFFECT_SOURCE.read_text(encoding="utf-8")
     coverage = COVERAGE.read_text(encoding="utf-8")
 
     assert "from marts.race_control_events" in events
@@ -36,6 +72,15 @@ def test_sources_publish_both_marts_with_empty_sentinels() -> None:
     assert "where not exists" in impact
     assert "methodology_version" in events
     assert "field_adjusted_gap_gain_s" in impact
+    assert "position_before_source" in impact
+    assert "position_evidence_class" in impact
+    assert "from marts.race_control_checkpoints" in checkpoints
+    assert "where not exists" in checkpoints
+    assert "running_order_source" in checkpoints
+    assert "evidence_class" in checkpoints
+    assert "from marts.race_control_effects" in effects
+    assert "where not exists" in effects
+    assert "lower_bound" in effects
     assert "'race_control'" in coverage
 
 

@@ -1,9 +1,8 @@
 """Minimal client for the OpenF1 API (https://openf1.org).
 
-Used only for **team-radio** clips (timestamped MP3 recordings per driver), which
-neither Jolpica nor the F1 archive expose for the current season. Kept tiny: a
-polite rate limit and 404 -> empty (OpenF1 returns ``{"detail": "No results
-found."}`` with a 404 when a session has no clips).
+Used for timestamped timing-state evidence (position changes and intervals) and
+team-radio clips. Kept tiny: a polite rate limit and 404 -> empty (OpenF1 returns
+``{"detail": "No results found."}`` with a 404 when an endpoint has no rows).
 """
 
 from __future__ import annotations
@@ -18,6 +17,7 @@ from ingestion.logging import get_logger
 log = get_logger(__name__)
 
 _BASE_URL = "https://api.openf1.org/v1"
+_MAX_RATE_LIMIT_RETRIES = 5
 
 
 class OpenF1AuthenticationError(RuntimeError):
@@ -75,24 +75,37 @@ class OpenF1Client:
         self._session.headers.update({"Authorization": f"Bearer {token}"})
 
     def _get(self, path: str, **params: Any) -> list[dict[str, Any]]:
-        elapsed = time.monotonic() - self._last
-        if elapsed < self._min_interval:
-            time.sleep(self._min_interval - elapsed)
-        resp = self._session.get(f"{self.base_url}/{path}", params=params, timeout=30)
-        self._last = time.monotonic()
-        if resp.status_code == 401:
-            self._authenticate()
+        authenticated = False
+        for attempt in range(_MAX_RATE_LIMIT_RETRIES + 1):
+            elapsed = time.monotonic() - self._last
+            if elapsed < self._min_interval:
+                time.sleep(self._min_interval - elapsed)
             resp = self._session.get(f"{self.base_url}/{path}", params=params, timeout=30)
             self._last = time.monotonic()
+            if resp.status_code == 401 and not authenticated:
+                self._authenticate()
+                authenticated = True
+                continue
             if resp.status_code == 401:
                 raise OpenF1AuthenticationError(
                     "OpenF1 rejected the configured credential with HTTP 401"
                 )
-        if resp.status_code == 404:  # OpenF1's "no results" for an empty query
-            return []
-        resp.raise_for_status()
-        data = resp.json()
-        return data if isinstance(data, list) else []
+            if resp.status_code == 429 and attempt < _MAX_RATE_LIMIT_RETRIES:
+                delay = min(30.0, float(2 ** (attempt + 1)))
+                log.warning(
+                    "openf1.rate_limited",
+                    endpoint=path,
+                    retry=attempt + 1,
+                    delay_seconds=delay,
+                )
+                time.sleep(delay)
+                continue
+            if resp.status_code == 404:  # OpenF1's "no results" for an empty query
+                return []
+            resp.raise_for_status()
+            data = resp.json()
+            return data if isinstance(data, list) else []
+        raise RuntimeError("OpenF1 request retry loop ended unexpectedly")
 
     def race_sessions(self, year: int) -> list[dict[str, Any]]:
         """All 'Race' sessions for a season (each has session_key + date_start)."""
@@ -101,3 +114,23 @@ class OpenF1Client:
     def team_radio(self, session_key: int) -> list[dict[str, Any]]:
         """Team-radio clips for a session: date, driver_number, recording_url."""
         return self._get("team_radio", session_key=session_key)
+
+    def drivers(self, session_key: int) -> list[dict[str, Any]]:
+        """Declared drivers and stable number/code mapping for one session."""
+        return self._get("drivers", session_key=session_key)
+
+    def positions(self, session_key: int) -> list[dict[str, Any]]:
+        """Timestamped full-session driver position state changes."""
+        return self._get("position", session_key=session_key)
+
+    def intervals(self, session_key: int) -> list[dict[str, Any]]:
+        """Timestamped gaps to the leader and the car ahead."""
+        return self._get("intervals", session_key=session_key)
+
+    def laps(self, session_key: int) -> list[dict[str, Any]]:
+        """OpenF1 lap boundaries used to audit clock alignment."""
+        return self._get("laps", session_key=session_key)
+
+    def race_control(self, session_key: int) -> list[dict[str, Any]]:
+        """Secondary timestamped race-control feed for boundary reconciliation."""
+        return self._get("race_control", session_key=session_key)
