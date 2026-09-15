@@ -42,6 +42,7 @@ _MIN_POSITION_COVERAGE = 0.90
 # for a few seconds. Wider gaps are outages (or garage/recovery moves), not a route the
 # replay should invent as a straight line.
 _MAX_POSITION_GAP_S = 10.0
+_MAX_RECORDED_INTERVAL_AGE_S = 4.0
 
 
 class IncompleteReplayError(ValueError):
@@ -120,7 +121,13 @@ def _progress_curve(grid: np.ndarray, laps_d: pd.DataFrame) -> np.ndarray:
     xp = [float(start[0])]
     fp = [float(lapno[0] - 1.0)]
     for s, d, lap in zip(start, dur, lapno, strict=True):
-        end = s + d if np.isfinite(d) else s
+        # An unfinished/red-flagged lap commonly has a start timestamp but no
+        # duration. Crediting that lap at its start moves the driver one whole lap
+        # ahead and can manufacture a false leader. Only a measured positive
+        # duration may advance completed progress.
+        if not np.isfinite(d) or d <= 0:
+            continue
+        end = s + d
         if end > xp[-1]:  # keep the breakpoint sequence strictly increasing
             xp.append(float(end))
             fp.append(float(lap))
@@ -241,9 +248,153 @@ def validate_replay_sources(
         )
 
 
+def _overlay_recorded_timing(
+    grid: np.ndarray,
+    drivers: list[str],
+    active: np.ndarray,
+    order: np.ndarray,
+    ahead: np.ndarray,
+    leader_gap: np.ndarray,
+    order_source: np.ndarray,
+    order_confidence: np.ndarray,
+    order_observed_t: np.ndarray,
+    gap_source: np.ndarray,
+    gap_confidence: np.ndarray,
+    gap_observed_t: np.ndarray,
+    source_order: pd.DataFrame | None,
+    source_intervals: pd.DataFrame | None,
+) -> None:
+    """Overlay coherent recorded order and fresh gaps onto model arrays in place."""
+    if source_order is None or source_order.empty:
+        return
+    required = {"driver_code", "session_time_sec", "position"}
+    missing = required - set(source_order.columns)
+    if missing:
+        raise ValueError(f"source_order is missing columns: {sorted(missing)}")
+
+    recorded = source_order.copy()
+    recorded["driver_code"] = recorded["driver_code"].astype("string")
+    for column in ("session_time_sec", "position"):
+        recorded[column] = pd.to_numeric(recorded[column], errors="coerce")
+    recorded = recorded.loc[
+        recorded["driver_code"].isin(drivers)
+        & np.isfinite(recorded["session_time_sec"])
+        & recorded["position"].gt(0)
+        & recorded["position"].mod(1).eq(0)
+    ].sort_values(["session_time_sec", "driver_code"])
+    if recorded.empty:
+        return
+
+    interval_rows = pd.DataFrame()
+    if source_intervals is not None and not source_intervals.empty:
+        interval_required = {
+            "driver_code",
+            "session_time_sec",
+            "gap_to_leader_s",
+            "gap_to_ahead_s",
+        }
+        missing = interval_required - set(source_intervals.columns)
+        if missing:
+            raise ValueError(f"source_intervals is missing columns: {sorted(missing)}")
+        interval_rows = source_intervals.copy()
+        interval_rows["driver_code"] = interval_rows["driver_code"].astype("string")
+        for column in ("session_time_sec", "gap_to_leader_s", "gap_to_ahead_s"):
+            interval_rows[column] = pd.to_numeric(interval_rows[column], errors="coerce")
+        interval_rows = interval_rows.loc[
+            interval_rows["driver_code"].isin(drivers)
+            & np.isfinite(interval_rows["session_time_sec"])
+        ].sort_values(["session_time_sec", "driver_code"])
+
+    order_records = recorded.to_dict("records")
+    gap_records = interval_rows.to_dict("records")
+    order_cursor = 0
+    gap_cursor = 0
+    positions: dict[str, int] = {}
+    position_times: dict[str, float] = {}
+    gaps: dict[str, tuple[float, float, float]] = {}
+    topology_epoch = -np.inf
+    roster_ranks = set(range(1, len(drivers) + 1))
+
+    for tick_index, when in enumerate(grid):
+        while order_cursor < len(order_records) and float(
+            order_records[order_cursor]["session_time_sec"]
+        ) <= when:
+            batch_time = float(order_records[order_cursor]["session_time_sec"])
+            changed = False
+            while order_cursor < len(order_records) and np.isclose(
+                float(order_records[order_cursor]["session_time_sec"]), batch_time
+            ):
+                row = order_records[order_cursor]
+                driver = str(row["driver_code"])
+                value = int(row["position"])
+                changed = changed or positions.get(driver) != value
+                positions[driver] = value
+                position_times[driver] = batch_time
+                order_cursor += 1
+            if changed:
+                topology_epoch = batch_time
+
+        while gap_cursor < len(gap_records) and float(
+            gap_records[gap_cursor]["session_time_sec"]
+        ) <= when:
+            row = gap_records[gap_cursor]
+            driver = str(row["driver_code"])
+            gaps[driver] = (
+                float(row["session_time_sec"]),
+                float(row["gap_to_leader_s"]),
+                float(row["gap_to_ahead_s"]),
+            )
+            gap_cursor += 1
+
+        if set(positions) != set(drivers) or set(positions.values()) != roster_ranks:
+            continue
+        active_indices = np.where(active[:, tick_index])[0]
+        if active_indices.size == 0:
+            continue
+        ranked = sorted(active_indices, key=lambda idx: positions[drivers[idx]])
+        active_codes = {drivers[idx] for idx in active_indices}
+        full_by_rank = {rank: driver for driver, rank in positions.items()}
+        for dense_rank, driver_index in enumerate(ranked, start=1):
+            driver = drivers[driver_index]
+            full_rank = positions[driver]
+            order[driver_index, tick_index] = dense_rank
+            order_source[driver_index, tick_index] = "openf1_recorded"
+            order_confidence[driver_index, tick_index] = "High"
+            order_observed_t[driver_index, tick_index] = position_times[driver]
+
+            if full_rank == 1:
+                leader_gap[driver_index, tick_index] = 0.0
+                ahead[driver_index, tick_index] = 0.0
+                gap_source[driver_index, tick_index] = "openf1_recorded"
+                gap_confidence[driver_index, tick_index] = "High"
+                gap_observed_t[driver_index, tick_index] = position_times[driver]
+                continue
+            predecessor = full_by_rank.get(full_rank - 1)
+            observation = gaps.get(driver)
+            if predecessor not in active_codes or observation is None:
+                continue
+            observed_at, gap_leader, gap_ahead = observation
+            if (
+                observed_at < topology_epoch
+                or when - observed_at > _MAX_RECORDED_INTERVAL_AGE_S
+                or not np.isfinite(gap_leader)
+                or not np.isfinite(gap_ahead)
+                or gap_leader < 0
+                or gap_ahead < 0
+            ):
+                continue
+            leader_gap[driver_index, tick_index] = gap_leader
+            ahead[driver_index, tick_index] = gap_ahead
+            gap_source[driver_index, tick_index] = "openf1_recorded"
+            gap_confidence[driver_index, tick_index] = "High"
+            gap_observed_t[driver_index, tick_index] = observed_at
+
+
 def resample_race(
     positions: pd.DataFrame,
     laps: pd.DataFrame,
+    source_order: pd.DataFrame | None = None,
+    source_intervals: pd.DataFrame | None = None,
     tick_s: float = 1.0,
     retire_buffer_s: float = _RETIRE_BUFFER_S,
     max_linger_s: float = _RETIRE_MAX_LINGER_S,
@@ -262,6 +413,10 @@ def resample_race(
     ``retire_buffer_s`` grace, so retirees vanish where they pull off instead of
     freezing on the map. Using the *last* movement is red-flag-safe: a car that
     resumes has a later last-movement, so it isn't retired during the stoppage.
+    ``source_order`` and ``source_intervals`` are optional timestamped state-change
+    feeds on the same session clock. A complete coherent recorded order overrides
+    the lap-progress estimate; a fresh interval overrides the modelled gap.
+
     ``max_linger_s`` caps this above: a retiree is never shown more than that long
     past its last completed lap (guards a recovered car whose sensor keeps moving).
     """
@@ -373,20 +528,53 @@ def resample_race(
 
     order = np.full((n, n_ticks), np.nan)
     ahead = np.full((n, n_ticks), np.nan)
-    rank_ok = active & np.isfinite(P)
+    order_source = np.full((n, n_ticks), None, dtype=object)
+    order_confidence = np.full((n, n_ticks), None, dtype=object)
+    order_observed_t = np.full((n, n_ticks), np.nan)
+    gap_source = np.full((n, n_ticks), None, dtype=object)
+    gap_confidence = np.full((n, n_ticks), None, dtype=object)
+    gap_observed_t = np.full((n, n_ticks), np.nan)
+    rank_ok = active & np.isfinite(P) & np.isfinite(lap_progress)
     for t in range(n_ticks):
         act = np.where(rank_ok[:, t])[0]
-        if act.size == 0:
+        active_at_tick = np.where(active[:, t])[0]
+        # Partial ranks are worse than missing ranks: downstream code assumes one
+        # dense, mutually consistent field. Missing current-lap progress therefore
+        # withholds the entire model order at that tick.
+        if act.size == 0 or not np.array_equal(act, active_at_tick):
+            G[active_at_tick, t] = np.nan
+            ahead[active_at_tick, t] = np.nan
             continue
         # Order by lap progress (desc); break ties (lead-lap finishers all plateau
         # at the same progress) by who crossed the line first — the finishing order.
         srt = act[np.lexsort((t_finish[act], -P[act, t]))]
         order[srt, t] = np.arange(1, srt.size + 1)
+        order_source[srt, t] = "lap_progress_estimate"
+        order_confidence[srt, t] = "Medium"
         gl = G[srt, t]
         ah = np.empty_like(gl)
         ah[0] = 0.0
         ah[1:] = np.clip(np.diff(gl), 0.0, None)
         ahead[srt, t] = ah
+        gap_source[srt, t] = "lap_progress_estimate"
+        gap_confidence[srt, t] = "Medium"
+
+    _overlay_recorded_timing(
+        grid,
+        drivers,
+        active,
+        order,
+        ahead,
+        G,
+        order_source,
+        order_confidence,
+        order_observed_t,
+        gap_source,
+        gap_confidence,
+        gap_observed_t,
+        source_order,
+        source_intervals,
+    )
 
     frames: list[pd.DataFrame] = []
     for i, d in enumerate(drivers):
@@ -408,6 +596,12 @@ def resample_race(
                     "running_order": order[i, mask],
                     "gap_to_leader_s": np.round(G[i, mask], 2),
                     "gap_to_ahead_s": np.round(ahead[i, mask], 2),
+                    "running_order_source": order_source[i, mask],
+                    "running_order_confidence": order_confidence[i, mask],
+                    "running_order_observed_t_s": np.round(order_observed_t[i, mask] - t0, 3),
+                    "gap_source": gap_source[i, mask],
+                    "gap_confidence": gap_confidence[i, mask],
+                    "gap_observed_t_s": np.round(gap_observed_t[i, mask] - t0, 3),
                 }
             )
         )
@@ -416,6 +610,8 @@ def resample_race(
     for column in ["lap_number", "stint", "tyre_life", "running_order"]:
         out[column] = out[column].astype("Int64")
     out["compound"] = out["compound"].astype("string")
+    for column in ["running_order_source", "running_order_confidence", "gap_source", "gap_confidence"]:
+        out[column] = out[column].astype("string")
     log.info("replay.resampled", drivers=n, ticks=n_ticks, rows=len(out), tick_s=tick_s)
     return out
 
@@ -435,5 +631,11 @@ def _empty_replay() -> pd.DataFrame:
             "running_order",
             "gap_to_leader_s",
             "gap_to_ahead_s",
+            "running_order_source",
+            "running_order_confidence",
+            "running_order_observed_t_s",
+            "gap_source",
+            "gap_confidence",
+            "gap_observed_t_s",
         ]
     )
