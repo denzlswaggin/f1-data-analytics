@@ -16,7 +16,10 @@ jobs:
   quality:
     name: Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # A cold dependency cache plus the full numerical suite can exceed 15
+    # minutes on a contended hosted runner even though the tests themselves are
+    # healthy. Keep the gate bounded without cancelling it before its report.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 

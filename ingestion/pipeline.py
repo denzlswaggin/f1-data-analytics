@@ -454,10 +454,14 @@ def _openf1_clock_audit(
             "clock_zero_utc": None,
             "exclusion_reason": "No matching finite lap anchors for clock alignment",
         }
-    candidate_zero_ns = merged["source_utc"].astype("int64") - (
-        pd.to_numeric(merged["lap_start_sec"], errors="coerce") * 1_000_000_000
-    )
-    t0_ts = pd.Timestamp(int(candidate_zero_ns.median()), tz="UTC")
+    # Do not infer the timestamp unit from ``astype("int64")``: pandas 3 uses
+    # microsecond-backed UTC columns in cases where pandas 2 used nanoseconds.
+    # Working in elapsed seconds makes the alignment independent of that
+    # internal representation.
+    epoch = pd.Timestamp("1970-01-01T00:00:00Z")
+    source_epoch_sec = (merged["source_utc"] - epoch).dt.total_seconds()
+    candidate_zero_sec = source_epoch_sec - pd.to_numeric(merged["lap_start_sec"], errors="coerce")
+    t0_ts = epoch + pd.to_timedelta(float(candidate_zero_sec.median()), unit="s")
     merged["source_session_time_sec"] = (merged["source_utc"] - t0_ts).dt.total_seconds()
     residual = (merged["source_session_time_sec"] - merged["lap_start_sec"]).abs()
     finite = residual[pd.notna(residual)]

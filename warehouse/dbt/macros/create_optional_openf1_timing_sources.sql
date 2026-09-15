@@ -1,5 +1,4 @@
 {% macro create_optional_openf1_timing_sources() %}
-    {% if not var('load_ci_seeds', false) | as_bool %}
     {% set ddl %}
         create schema if not exists raw;
         create table if not exists raw.openf1_positions (
@@ -32,5 +31,4 @@
         )
     {% endset %}
     {% do run_query(ddl) %}
-    {% endif %}
 {% endmacro %}
