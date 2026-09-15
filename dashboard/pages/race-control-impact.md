@@ -186,9 +186,15 @@ The timing model is calculated independently of article prose. The frozen golden
 Against supported clean green-flag stops from this race, the stop saved an estimated <Value data={pit_saving} column=value fmt="0.00" /> s. The 90% interval is <Value data={pit_saving} column=lower_bound fmt="0.00" /> to <Value data={pit_saving} column=upper_bound fmt="0.00" /> s and includes a one-second timing-resolution allowance. Later racing remains unattributed.
 </KeyInsight>
 {:else}
+{#if pit_unavailable.length > 0}
 <DataTable data={pit_unavailable} rows=3>
     <Column id=exclusion_reason title="Why no pit-saving estimate is published" />
 </DataTable>
+{:else}
+<KeyInsight label="No pit-saving estimate applies">
+{pit_card[0]?.pit_saving_display || 'No supported same-race counterfactual'}. A numeric saving is only estimated for a stop observed during the intervention.
+</KeyInsight>
+{/if}
 {/if}
 
 ```sql focus_checkpoints
