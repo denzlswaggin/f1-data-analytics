@@ -14,7 +14,7 @@ max_width: 1600
 />
 
 <KeyInsight label="Evidence first">
-Observed timing and positions are facts from the loaded feeds. A VSC pit saving is a same-race green-stop estimate with a 90% uncertainty interval, never a claim that race control caused the final result. If a component fails its own evidence rules, its number is withheld while the remaining facts stay visible.
+Positions marked **Recorded** come from a coherent full-field OpenF1 order aligned to the FastF1 race clock. Values marked **Estimated** use complete lap-progress timing and carry an approximation sign. A VSC pit saving is a same-race green-stop estimate with a 90% uncertainty interval, never a claim that race control caused the final result. If a component fails its own evidence rules, its number is withheld.
 </KeyInsight>
 
 ```sql seasons
@@ -82,9 +82,19 @@ select *,
         else 'No stop observed in the event window'
     end as pit_context,
     case
-        when position_before is not null then 'P' || cast(position_before as varchar)
+        when position_eligible and position_evidence_class = 'recorded'
+            then 'P' || cast(position_before as varchar) || ' · Recorded'
+        when position_eligible and position_evidence_class = 'estimated'
+            then '≈P' || cast(position_before as varchar) || ' · Estimated'
         else 'Deployment position unavailable'
     end as position_before_display,
+    case
+        when position_eligible and position_evidence_class = 'recorded'
+            then 'P' || cast(position_after as varchar) || ' · Recorded'
+        when position_eligible and position_evidence_class = 'estimated'
+            then '≈P' || cast(position_after as varchar) || ' · Estimated'
+        else 'Recovery position unavailable'
+    end as position_after_display,
     case
         when pit_duration_sec is not null then printf('%.3f s', pit_duration_sec)
         when pit_timing_class = 'unresolved' then 'Exact pit timing unavailable'
@@ -94,13 +104,26 @@ select *,
         || '/' || cast(story_total as varchar) || ' story' as driver_label
 from (
     select *,
-        case when pit_eligible or gap_eligible or restart_eligible
-                or coalesce(positions_gained, 0) <> 0
+        case when pit_eligible
+                or (gap_eligible and abs(field_adjusted_gap_gain_s) >= 0.5)
+                or (position_eligible and coalesce(positions_gained, 0) <> 0)
                 or coalesce(tyre_changed_during_suspension, false)
+                or exists (
+                    select 1 from f1.race_control_effects as restart
+                    where restart.event_id = driver.event_id
+                        and restart.driver_code = driver.driver_code
+                        and restart.effect_type in (
+                            'restart_position_change', 'restart_gap_change'
+                        )
+                        and restart.eligible
+                        and abs(restart.value) >= case
+                            when restart.unit = 'positions' then 1 else 0.5
+                        end
+                )
             then 1 else 0
         end as story_count,
         1 as story_total
-    from f1.race_control_impact
+    from f1.race_control_impact as driver
     where event_id = '${inputs.event.value}'
         and season = ${inputs.season.value} and round = ${inputs.race.value}
 ) as driver_story
@@ -207,7 +230,19 @@ select *,
         when 'green_lap_1' then 'After 1 green lap'
         when 'green_lap_3' then 'After 3 leader crossings'
         else checkpoint_type
-    end as checkpoint_label
+    end as checkpoint_label,
+    case
+        when eligible and evidence_class = 'recorded'
+            then 'P' || cast(running_order as varchar) || ' · Recorded'
+        when eligible and evidence_class = 'estimated'
+            then '≈P' || cast(running_order as varchar) || ' · Estimated'
+        else 'Unavailable'
+    end as position_display,
+    case running_order_source
+        when 'openf1_recorded' then 'OpenF1 full-field order'
+        when 'lap_progress_estimate' then 'FastF1 lap-progress estimate'
+        else 'Unavailable'
+    end as position_source_display
 from f1.race_control_checkpoints
 where event_id = '${inputs.event.value}' and driver_code = '${inputs.driver.value}'
     and season = ${inputs.season.value} and round = ${inputs.race.value}
@@ -219,13 +254,17 @@ order by checkpoint_order
 <DataTable data={focus_checkpoints} rows=12>
     <Column id=checkpoint_label title="Checkpoint" />
     <Column id=checkpoint_t_s title="Race clock (s)" fmt="0.000" />
-    <Column id=running_order title="Position" />
+    <Column id=position_display title="Position" />
+    <Column id=position_source_display title="Position source" />
+    <Column id=running_order_observed_t_s title="Source clock (s)" fmt="0.000" />
     <Column id=gap_to_leader_s title="Gap to leader (s)" fmt="0.00" />
     <Column id=lap_number title="Lap" />
     <Column id=compound title="Tyre" />
     <Column id=tyre_life title="Tyre age" />
     <Column id=capture_offset_s title="Timing resolution (s)" fmt="0.000" />
-    <Column id=source title="Source" />
+    <Column id=gap_source title="Gap source" />
+    <Column id=gap_observed_t_s title="Gap source clock (s)" fmt="0.000" />
+    <Column id=source title="Checkpoint construction" />
     <Column id=exclusion_reason title="Evidence gap" />
 </DataTable>
 
@@ -279,8 +318,9 @@ No driver passes the comparable-field and verified-recovery rules for this inter
 <ExpandableSection title="All drivers and unavailable components">
 <DataTable data={driver_evidence} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
-    <Column id=position_before title="Before" />
-    <Column id=position_after title="After" />
+    <Column id=position_before_display title="Before" />
+    <Column id=position_after_display title="After" />
+    <Column id=position_evidence_class title="Position evidence" />
     <Column id=positions_gained title="Position Δ" fmt="+0;-0" />
     <Column id=field_adjusted_gap_gain_s title="Field-adjusted gap Δ" fmt="+0.00;-0.00" />
     <Column id=pit_context title="Pit context" />
@@ -293,7 +333,7 @@ No driver passes the comparable-field and verified-recovery rules for this inter
     <Column id=exclusion_reason title="Legacy window exclusion" />
 </DataTable>
 
-`race-control-impact-v3` pairs exact official intervention messages and evaluates position, gap, pit, tyre and recovery evidence independently. Gap publication still requires at least five comparable drivers and verified green recovery. Pit estimates instead require exact pit timestamps, at least one stable non-pitting peer, five clean same-race green stops from at least four drivers, and a stable reference distribution. Red flags suppress gap estimates across the suspension.
+`race-control-impact-v3` pairs exact official intervention messages and evaluates position, gap, pit, tyre and recovery evidence independently. Recorded order is only used after the OpenF1-to-FastF1 clock passes an 8-anchor, 4-driver and 90%-inlier gate and the replay sees a coherent full-field ranking. Missing timing never advances an unfinished lap. Gap publication still requires at least five comparable drivers and verified green recovery. Pit estimates require exact pit timestamps, at least one stable non-pitting peer, five clean same-race green stops from at least four drivers, and a stable reference distribution. Red flags suppress gap estimates across the suspension.
 </ExpandableSection>
 
 {:else}

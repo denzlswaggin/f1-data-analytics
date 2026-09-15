@@ -34,7 +34,12 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "story_count" in page
     assert "story_total" in page
     assert "cast(story_total as varchar) || ' story'" in page
-    assert "pit_eligible or gap_eligible or restart_eligible" in page
+    assert "gap_eligible and abs(field_adjusted_gap_gain_s) >= 0.5" in page
+    assert "restart_position_change', 'restart_gap_change'" in page
+    assert "position_eligible and coalesce(positions_gained, 0) <> 0" in page
+    assert "≈P" in page
+    assert "OpenF1 full-field order" in page
+    assert "position_evidence_class" in page
     assert "No stop in event window" in page
     assert "Stopped after end; no neutralised saving" in page
     assert "No supported same-race counterfactual" in page
@@ -67,8 +72,12 @@ def test_sources_publish_all_marts_with_empty_sentinels() -> None:
     assert "where not exists" in impact
     assert "methodology_version" in events
     assert "field_adjusted_gap_gain_s" in impact
+    assert "position_before_source" in impact
+    assert "position_evidence_class" in impact
     assert "from marts.race_control_checkpoints" in checkpoints
     assert "where not exists" in checkpoints
+    assert "running_order_source" in checkpoints
+    assert "evidence_class" in checkpoints
     assert "from marts.race_control_effects" in effects
     assert "where not exists" in effects
     assert "lower_bound" in effects

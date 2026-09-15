@@ -148,6 +148,56 @@ def test_measures_two_lap_safety_car_position_gap_and_stop_impact() -> None:
     assert not event["time_eligible"]
     assert bool(bbb["pitted_during_intervention"])
     assert bbb["outcome_label"] == "Observed position gain"
+    assert bbb["position_evidence_class"] == "estimated"
+    assert event["position_status"] == "estimated"
+
+
+def test_full_field_recorded_order_is_published_as_recorded_evidence() -> None:
+    replay = _replay().assign(
+        running_order_source="openf1_recorded",
+        running_order_confidence="High",
+        running_order_observed_t_s=lambda frame: frame["t_s"],
+        gap_source="openf1_recorded",
+        gap_confidence="High",
+        gap_observed_t_s=lambda frame: frame["t_s"],
+    )
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)],
+        replay=replay,
+    )
+
+    assert result.events.iloc[0]["position_status"] == "recorded"
+    assert set(result.evidence["position_evidence_class"]) == {"recorded"}
+    assert set(result.checkpoints["evidence_class"]) == {"recorded"}
+    position_effects = result.effects.loc[
+        result.effects["effect_type"].eq("observed_position_change")
+    ]
+    assert set(position_effects["evidence_class"]) == {"recorded"}
+
+
+def test_unknown_order_provenance_withholds_position_story() -> None:
+    replay = _replay().assign(
+        running_order_source="unknown",
+        running_order_confidence="Low",
+        running_order_observed_t_s=float("nan"),
+        gap_source="unknown",
+        gap_confidence="Low",
+        gap_observed_t_s=float("nan"),
+    )
+    result = _analyse(
+        [(100.0, 5, "VSC DEPLOYED", None), (150.0, 5, "VSC ENDING", None)],
+        replay=replay,
+    )
+
+    assert not result.evidence["position_eligible"].any()
+    assert set(result.evidence["position_evidence_class"]) == {"unavailable"}
+    assert result.events.iloc[0]["position_gainer_count"] == 0
+    assert result.events.iloc[0]["position_status"] == "unavailable"
+    position_effects = result.effects.loc[
+        result.effects["effect_type"].eq("observed_position_change")
+    ]
+    assert not position_effects["eligible"].any()
+    assert position_effects["value"].isna().all()
 
 
 @pytest.mark.parametrize(

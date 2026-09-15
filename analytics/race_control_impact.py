@@ -49,6 +49,15 @@ _REPLAY_REQUIRED = {
     "running_order",
     "gap_to_leader_s",
 }
+_REPLAY_PROVENANCE_DEFAULTS: dict[str, object] = {
+    "running_order_source": "lap_progress_estimate",
+    "running_order_confidence": "Medium",
+    "running_order_observed_t_s": np.nan,
+    "gap_source": "lap_progress_estimate",
+    "gap_confidence": "Medium",
+    "gap_observed_t_s": np.nan,
+}
+_TRUSTED_REPLAY_SOURCES = {"openf1_recorded", "lap_progress_estimate"}
 _CONTROL_REQUIRED = {
     *_RACE_KEYS,
     "race_name",
@@ -119,10 +128,24 @@ RACE_CONTROL_IMPACT_COLUMNS = [
     "position_before",
     "position_after",
     "positions_gained",
+    "position_before_source",
+    "position_after_source",
+    "position_before_confidence",
+    "position_after_confidence",
+    "position_before_observed_t_s",
+    "position_after_observed_t_s",
+    "position_evidence_class",
     "gap_to_leader_before_s",
     "gap_to_leader_after_s",
     "raw_gap_gain_s",
     "field_adjusted_gap_gain_s",
+    "gap_before_source",
+    "gap_after_source",
+    "gap_before_confidence",
+    "gap_after_confidence",
+    "gap_before_observed_t_s",
+    "gap_after_observed_t_s",
+    "gap_evidence_class",
     "time_comparable_driver_count",
     "time_eligible",
     "time_exclusion_reason",
@@ -178,6 +201,13 @@ RACE_CONTROL_CHECKPOINT_COLUMNS = [
     "lap_progress",
     "running_order",
     "gap_to_leader_s",
+    "running_order_source",
+    "running_order_confidence",
+    "running_order_observed_t_s",
+    "gap_source",
+    "gap_confidence",
+    "gap_observed_t_s",
+    "evidence_class",
     "stint",
     "compound",
     "tyre_life",
@@ -254,6 +284,10 @@ _IMPACT_FLOAT = {
     "field_adjusted_gap_gain_s",
     "timing_before_offset_s",
     "timing_after_offset_s",
+    "position_before_observed_t_s",
+    "position_after_observed_t_s",
+    "gap_before_observed_t_s",
+    "gap_after_observed_t_s",
     "pit_in_t_s",
     "pit_out_t_s",
     "pit_duration_sec",
@@ -288,6 +322,8 @@ _CHECKPOINT_FLOAT = {
     "lap_progress",
     "gap_to_leader_s",
     "capture_offset_s",
+    "running_order_observed_t_s",
+    "gap_observed_t_s",
 }
 _CHECKPOINT_BOOLEAN = {"eligible"}
 _EFFECT_INTEGER = {"season", "round", "event_number", "sample_size"}
@@ -366,6 +402,18 @@ def _require_columns(frame: pd.DataFrame, required: set[str], name: str) -> None
 
 def _normalise(value: object) -> str:
     return " ".join(str(value).upper().split())
+
+
+def _source_value(value: object) -> str:
+    return "" if pd.isna(value) else str(value)
+
+
+def _evidence_class(before_source: object, after_source: object) -> str:
+    """Classify a pair conservatively by its weakest timing source."""
+    sources = {_source_value(before_source), _source_value(after_source)}
+    if "" in sources or not sources.issubset(_TRUSTED_REPLAY_SOURCES):
+        return "unavailable"
+    return "recorded" if sources == {"openf1_recorded"} else "estimated"
 
 
 def _marker(message: str, flag: str) -> tuple[str, str] | None:
@@ -635,9 +683,21 @@ def _checkpoint_row(
 ) -> dict[str, object]:
     driver = replay_race.loc[replay_race["driver_code"].eq(driver_code)]
     state = _interpolated_state(driver, checkpoint_t_s)
-    eligible = state is not None
-    reason = "" if eligible else "Replay does not bracket checkpoint within 2 seconds"
+    position_source = _source_value(state.get("running_order_source")) if state else ""
+    eligible = state is not None and position_source in _TRUSTED_REPLAY_SOURCES
+    reason = ""
+    if state is None:
+        reason = "Replay does not bracket checkpoint within 2 seconds"
+    elif not eligible:
+        reason = "Position provenance unavailable at checkpoint"
     state = state or {}
+    evidence_class = (
+        "recorded"
+        if position_source == "openf1_recorded"
+        else "estimated"
+        if eligible
+        else "unavailable"
+    )
     return {
         "season": int(replay_race["season"].iloc[0]),
         "round": int(replay_race["round"].iloc[0]),
@@ -655,6 +715,13 @@ def _checkpoint_row(
         "lap_progress": state.get("lap_progress", np.nan),
         "running_order": _to_int(state.get("running_order")),
         "gap_to_leader_s": state.get("gap_to_leader_s", np.nan),
+        "running_order_source": position_source,
+        "running_order_confidence": _source_value(state.get("running_order_confidence")),
+        "running_order_observed_t_s": state.get("running_order_observed_t_s", np.nan),
+        "gap_source": _source_value(state.get("gap_source")),
+        "gap_confidence": _source_value(state.get("gap_confidence")),
+        "gap_observed_t_s": state.get("gap_observed_t_s", np.nan),
+        "evidence_class": evidence_class,
         "stint": _to_int(state.get("stint")),
         "compound": str(state.get("compound", "")),
         "tyre_life": _to_int(state.get("tyre_life")),
@@ -1101,6 +1168,11 @@ def _to_int(value: object) -> int | None:
     return int(float(str(value)))
 
 
+def _to_float(value: object) -> float:
+    converted = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+    return float(converted) if pd.notna(converted) else np.nan
+
+
 def _outcome(eligible: bool, positions_gained: int | None, active_after: bool) -> str:
     if not active_after:
         return "No post-event timing"
@@ -1146,6 +1218,11 @@ def _driver_rows(
         active_after = after is not None
         position_before = _to_int(before.running_order)
         position_after = _to_int(after["running_order"]) if after is not None else None
+        position_before_source = _source_value(before.running_order_source)
+        position_after_source = (
+            _source_value(after["running_order_source"]) if after is not None else ""
+        )
+        position_evidence_class = _evidence_class(position_before_source, position_after_source)
         positions_gained = (
             position_before - position_after
             if position_before is not None and position_after is not None
@@ -1166,9 +1243,13 @@ def _driver_rows(
             if after is not None and pd.notna(after["gap_to_leader_s"])
             else np.nan
         )
+        gap_before_source = _source_value(before.gap_source)
+        gap_after_source = _source_value(after["gap_source"]) if after is not None else ""
+        gap_evidence_class = _evidence_class(gap_before_source, gap_after_source)
         raw_gap_gain = (
             gap_before - gap_after
             if event.event_type != "Red Flag"
+            and gap_evidence_class != "unavailable"
             and deficit_changed is not None
             and not deficit_changed
             and np.isfinite(gap_before)
@@ -1233,6 +1314,7 @@ def _driver_rows(
             and active_after
             and position_before is not None
             and position_after is not None
+            and position_evidence_class != "unavailable"
             and before_offset <= MAX_CAPTURE_OFFSET_S
             and after_offset <= MAX_CAPTURE_OFFSET_S
         )
@@ -1241,6 +1323,7 @@ def _driver_rows(
             and active_after
             and position_before is not None
             and position_after is not None
+            and position_evidence_class != "unavailable"
             and before_offset <= MAX_CAPTURE_OFFSET_S
             and after_offset <= MAX_CAPTURE_OFFSET_S
         )
@@ -1253,6 +1336,8 @@ def _driver_rows(
             reason = "No post-event timing"
         elif position_before is None or position_after is None:
             reason = "Incomplete position timing"
+        elif position_evidence_class == "unavailable":
+            reason = "Position provenance unavailable"
         confidence = event_confidence if driver_eligible else "Low"
         time_reason = ""
         if not driver_eligible:
@@ -1263,6 +1348,8 @@ def _driver_rows(
             time_reason = "Lap deficit unavailable or near an uncertain boundary"
         elif deficit_changed:
             time_reason = "Estimated lap deficit changed"
+        elif gap_evidence_class == "unavailable":
+            time_reason = "Gap provenance unavailable"
         elif not np.isfinite(raw_gap_gain):
             time_reason = "Incomplete gap timing"
         rows.append(
@@ -1279,10 +1366,32 @@ def _driver_rows(
                 "position_before": position_before,
                 "position_after": position_after,
                 "positions_gained": positions_gained,
+                "position_before_source": position_before_source,
+                "position_after_source": position_after_source,
+                "position_before_confidence": _source_value(before.running_order_confidence),
+                "position_after_confidence": (
+                    _source_value(after["running_order_confidence"]) if after is not None else ""
+                ),
+                "position_before_observed_t_s": _to_float(before.running_order_observed_t_s),
+                "position_after_observed_t_s": (
+                    _to_float(after["running_order_observed_t_s"]) if after is not None else np.nan
+                ),
+                "position_evidence_class": position_evidence_class,
                 "gap_to_leader_before_s": gap_before,
                 "gap_to_leader_after_s": gap_after,
                 "raw_gap_gain_s": raw_gap_gain,
                 "field_adjusted_gap_gain_s": np.nan,
+                "gap_before_source": gap_before_source,
+                "gap_after_source": gap_after_source,
+                "gap_before_confidence": _source_value(before.gap_confidence),
+                "gap_after_confidence": (
+                    _source_value(after["gap_confidence"]) if after is not None else ""
+                ),
+                "gap_before_observed_t_s": _to_float(before.gap_observed_t_s),
+                "gap_after_observed_t_s": (
+                    _to_float(after["gap_observed_t_s"]) if after is not None else np.nan
+                ),
+                "gap_evidence_class": gap_evidence_class,
                 "time_comparable_driver_count": 0,
                 "time_eligible": not time_reason,
                 "time_exclusion_reason": time_reason,
@@ -1327,7 +1436,7 @@ def _driver_rows(
                 "eligible": driver_eligible,
                 "exclusion_reason": "" if driver_eligible else reason,
                 "confidence": confidence,
-                "outcome_label": _outcome(driver_eligible, positions_gained, active_after),
+                "outcome_label": _outcome(position_eligible, positions_gained, active_after),
                 "timing_before_offset_s": before_offset,
                 "timing_after_offset_s": after_offset,
                 "methodology_version": METHODOLOGY_VERSION,
@@ -1378,6 +1487,9 @@ def analyse_race_control_impact(
     replay = replay.copy()
     race_control = race_control.copy()
     laps = laps.copy()
+    for column, default in _REPLAY_PROVENANCE_DEFAULTS.items():
+        if column not in replay:
+            replay[column] = default
     for column in ("pit_in_t_s", "pit_out_t_s", "compound"):
         if column not in laps:
             laps[column] = np.nan if column != "compound" else ""
@@ -1530,13 +1642,14 @@ def analyse_race_control_impact(
                     "driver_code": row["driver_code"],
                     "methodology_version": METHODOLOGY_VERSION,
                 }
-                for effect_type, value, unit, is_eligible, effect_reason in (
+                for effect_type, value, unit, is_eligible, effect_reason, evidence_class in (
                     (
                         "observed_position_change",
                         row["positions_gained"],
                         "positions",
                         row["position_eligible"],
                         "" if row["position_eligible"] else row["exclusion_reason"],
+                        row["position_evidence_class"],
                     ),
                     (
                         "observed_gap_change",
@@ -1544,6 +1657,7 @@ def analyse_race_control_impact(
                         "seconds",
                         row["gap_eligible"],
                         "" if row["gap_eligible"] else row["time_exclusion_reason"],
+                        row["gap_evidence_class"],
                     ),
                     (
                         "field_adjusted_gap_change",
@@ -1551,6 +1665,7 @@ def analyse_race_control_impact(
                         "seconds",
                         row["gap_eligible"],
                         "" if row["gap_eligible"] else row["time_exclusion_reason"],
+                        row["gap_evidence_class"],
                     ),
                     (
                         "observed_tyre_change",
@@ -1558,6 +1673,7 @@ def analyse_race_control_impact(
                         "boolean",
                         row["tyre_eligible"],
                         "" if row["tyre_eligible"] else "Tyre state unavailable",
+                        "recorded",
                     ),
                 ):
                     event_effects.append(
@@ -1569,7 +1685,7 @@ def analyse_race_control_impact(
                             "lower_bound": np.nan,
                             "upper_bound": np.nan,
                             "unit": unit,
-                            "evidence_class": "observed" if is_eligible else "unavailable",
+                            "evidence_class": evidence_class if is_eligible else "unavailable",
                             "confidence": confidence.lower() if is_eligible else "insufficient",
                             "sample_size": 1 if is_eligible else 0,
                             "eligible": is_eligible,
@@ -1649,6 +1765,19 @@ def analyse_race_control_impact(
                 end_state = checkpoint_by_key.get((driver, "control_end"))
                 green_state = checkpoint_by_key.get((driver, "green_lap_3"))
                 restart_ok = end_state is not None and green_state is not None and recovery_clean
+                restart_position_class = (
+                    _evidence_class(
+                        end_state.get("running_order_source"),
+                        green_state.get("running_order_source"),
+                    )
+                    if end_state is not None and green_state is not None
+                    else "unavailable"
+                )
+                restart_gap_class = (
+                    _evidence_class(end_state.get("gap_source"), green_state.get("gap_source"))
+                    if end_state is not None and green_state is not None
+                    else "unavailable"
+                )
                 row["restart_eligible"] = restart_ok
                 restart_reason = (
                     "" if restart_ok else "Verified green recovery checkpoints unavailable"
@@ -1668,18 +1797,25 @@ def analyse_race_control_impact(
                     ).iloc[0]
                     if event.event_type != "Red Flag" and pd.notna(end_gap) and pd.notna(green_gap):
                         gap_change = float(end_gap - green_gap)
-                for effect_type, value, unit, metric_ok in (
+                for effect_type, value, unit, metric_ok, evidence_class in (
                     (
                         "restart_position_change",
                         position_change,
                         "positions",
-                        restart_ok and np.isfinite(position_change),
+                        restart_ok
+                        and restart_position_class != "unavailable"
+                        and np.isfinite(position_change),
+                        restart_position_class,
                     ),
                     (
                         "restart_gap_change",
                         gap_change,
                         "seconds",
-                        restart_ok and event.event_type != "Red Flag" and np.isfinite(gap_change),
+                        restart_ok
+                        and restart_gap_class != "unavailable"
+                        and event.event_type != "Red Flag"
+                        and np.isfinite(gap_change),
+                        restart_gap_class,
                     ),
                 ):
                     event_effects.append(
@@ -1697,7 +1833,7 @@ def analyse_race_control_impact(
                             "lower_bound": np.nan,
                             "upper_bound": np.nan,
                             "unit": unit,
-                            "evidence_class": "observed" if metric_ok else "unavailable",
+                            "evidence_class": evidence_class if metric_ok else "unavailable",
                             "confidence": confidence.lower() if metric_ok else "insufficient",
                             "sample_size": 1 if metric_ok else 0,
                             "eligible": metric_ok,
@@ -1764,13 +1900,30 @@ def analyse_race_control_impact(
                         bool(row["pitted_during_recovery"]) for row in driver_rows
                     ),
                     "position_gainer_count": sum(
-                        float(str(row["positions_gained"] or 0)) > 0 for row in eligible_driver_rows
+                        float(str(row["positions_gained"] or 0)) > 0 for row in position_rows
                     ),
                     "position_loser_count": sum(
-                        float(str(row["positions_gained"] or 0)) < 0 for row in eligible_driver_rows
+                        float(str(row["positions_gained"] or 0)) < 0 for row in position_rows
                     ),
-                    "position_status": "observed" if position_rows else "unavailable",
-                    "gap_status": "observed" if not time_reason else "unavailable",
+                    "position_status": (
+                        "recorded"
+                        if position_rows
+                        and all(
+                            row["position_evidence_class"] == "recorded" for row in position_rows
+                        )
+                        else "estimated"
+                        if position_rows
+                        else "unavailable"
+                    ),
+                    "gap_status": (
+                        "recorded"
+                        if not time_reason
+                        and comparable
+                        and all(row["gap_evidence_class"] == "recorded" for row in comparable)
+                        else "estimated"
+                        if not time_reason and comparable
+                        else "unavailable"
+                    ),
                     "pit_status": (
                         "estimated"
                         if any(bool(item.get("eligible")) for item in pit_diagnostics.values())

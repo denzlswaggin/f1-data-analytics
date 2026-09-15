@@ -15,6 +15,13 @@ select
     lap_progress,
     running_order,
     gap_to_leader_s,
+    running_order_source,
+    running_order_confidence,
+    running_order_observed_t_s,
+    gap_source,
+    gap_confidence,
+    gap_observed_t_s,
+    evidence_class,
     stint,
     compound,
     tyre_life,
@@ -30,7 +37,8 @@ select
     0, 0, '__NO_DATA__', '__NO_DATA__', 0, 'No event', '__NO_DATA__',
     'No driver', 'No team', 'unavailable', 0, cast(null as double),
     cast(null as integer), cast(null as double), cast(null as integer),
-    cast(null as double), cast(null as integer), '', cast(null as integer),
+    cast(null as double), '', '', cast(null as double), '', '', cast(null as double),
+    'unavailable', cast(null as integer), '', cast(null as integer),
     cast(null as double), 'unavailable', false, 'No data', 'race-control-impact-v3'
 where not exists (select 1 from marts.race_control_checkpoints)
 order by season, round, event_number, driver_code, checkpoint_order

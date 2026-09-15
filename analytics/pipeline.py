@@ -1150,26 +1150,10 @@ def _race_control_replay_query(season: int | None, rnd: int | None) -> str:
             group by season, round, driver_code
         )
         select
-            replay.season,
-            replay.round,
+            replay.*,
             races.race_name,
-            replay.driver_code,
             coalesce(codes.driver_name, replay.driver_code) as driver_name,
-            teams.team,
-            replay.t_s,
-            replay.lap_number,
-            replay.stint,
-            replay.compound,
-            replay.tyre_life,
-            replay.running_order,
-            replay.gap_to_leader_s,
-            replay.lap_progress,
-            replay.running_order_source,
-            replay.running_order_confidence,
-            replay.running_order_observed_t_s,
-            replay.gap_source,
-            replay.gap_confidence,
-            replay.gap_observed_t_s
+            teams.team
         from marts.race_replay as replay
         left join staging.stg_races as races
             on races.season = replay.season and races.round = replay.round
