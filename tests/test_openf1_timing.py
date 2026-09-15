@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import cast
+
 import pandas as pd
 from ingestion.pipeline import _openf1_clock_audit, _openf1_digest, _openf1_gap
 
@@ -42,7 +44,7 @@ def test_clock_audit_accepts_many_consistent_anchors_and_one_red_flag_outlier() 
     assert result["anchor_count"] == 12
     assert result["inlier_anchor_count"] == 11
     assert result["anchor_driver_count"] == 4
-    assert float(result["alignment_p95_s"]) <= 0.01
+    assert cast(float, result["alignment_p95_s"]) <= 0.01
     assert str(result["clock_zero_utc"]).startswith("2026-09-06T12:00:00.200")
 
 

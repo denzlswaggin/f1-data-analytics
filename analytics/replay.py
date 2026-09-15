@@ -316,9 +316,10 @@ def _overlay_recorded_timing(
     roster_ranks = set(range(1, len(drivers) + 1))
 
     for tick_index, when in enumerate(grid):
-        while order_cursor < len(order_records) and float(
-            order_records[order_cursor]["session_time_sec"]
-        ) <= when:
+        while (
+            order_cursor < len(order_records)
+            and float(order_records[order_cursor]["session_time_sec"]) <= when
+        ):
             batch_time = float(order_records[order_cursor]["session_time_sec"])
             changed = False
             while order_cursor < len(order_records) and np.isclose(
@@ -334,9 +335,10 @@ def _overlay_recorded_timing(
             if changed:
                 topology_epoch = batch_time
 
-        while gap_cursor < len(gap_records) and float(
-            gap_records[gap_cursor]["session_time_sec"]
-        ) <= when:
+        while (
+            gap_cursor < len(gap_records)
+            and float(gap_records[gap_cursor]["session_time_sec"]) <= when
+        ):
             row = gap_records[gap_cursor]
             driver = str(row["driver_code"])
             gaps[driver] = (
@@ -610,7 +612,12 @@ def resample_race(
     for column in ["lap_number", "stint", "tyre_life", "running_order"]:
         out[column] = out[column].astype("Int64")
     out["compound"] = out["compound"].astype("string")
-    for column in ["running_order_source", "running_order_confidence", "gap_source", "gap_confidence"]:
+    for column in [
+        "running_order_source",
+        "running_order_confidence",
+        "gap_source",
+        "gap_confidence",
+    ]:
         out[column] = out[column].astype("string")
     log.info("replay.resampled", drivers=n, ticks=n_ticks, rows=len(out), tick_s=tick_s)
     return out
