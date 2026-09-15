@@ -244,9 +244,15 @@ select * from ${driver_evidence} where position_eligible
 
 ## Field context
 
+{#if position_drivers.length > 0}
 <BarChart data={position_drivers} x=driver_code y=positions_gained series=pit_context yAxisTitle="positions gained (+) / lost (−)" labels=true sort=false>
     <ReferenceLine y=0 label="position held" />
 </BarChart>
+{:else}
+<KeyInsight label="No publishable position comparison">
+No driver has a trustworthy before/after position pair for this intervention. Position evidence is withheld rather than shown as an empty result.
+</KeyInsight>
+{/if}
 
 ```sql time_movers
 select * from ${driver_evidence}
@@ -254,9 +260,15 @@ where gap_eligible and field_adjusted_gap_gain_s is not null
 order by abs(field_adjusted_gap_gain_s) desc
 ```
 
+{#if time_movers.length > 0}
 <BarChart data={time_movers} x=driver_code y=field_adjusted_gap_gain_s series=pit_context yAxisTitle="median-centred relative gap gain (s)" swapXY=true labels=true sort=false>
     <ReferenceLine y=0 label="event median" />
 </BarChart>
+{:else}
+<KeyInsight label="No publishable gap comparison">
+No driver passes the comparable-field and verified-recovery rules for this intervention. Gap effects are withheld; this does not mean the intervention had no effect.
+</KeyInsight>
+{/if}
 
 <ExpandableSection title="All drivers and unavailable components">
 <DataTable data={driver_evidence} rows=30 search=true download=true>

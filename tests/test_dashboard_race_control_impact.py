@@ -42,6 +42,12 @@ def test_page_exposes_driver_story_component_evidence_and_uncertainty() -> None:
     assert "source limitation, not evidence" in page
     assert "pit_duration_display" in page
     assert "pit_saving_display" in page
+    assert "No publishable position comparison" in page
+    assert "Position evidence is withheld rather than shown as an empty result" in page
+    assert "No publishable gap comparison" in page
+    assert "Gap effects are withheld; this does not mean the intervention had no effect" in page
+    assert "{#if position_drivers.length > 0}" in page
+    assert "{#if time_movers.length > 0}" in page
     assert 'comparisonFmt="P0 after recovery"' not in page
 
 
