@@ -174,6 +174,11 @@ RACE_CONTROL_IMPACT_COLUMNS = [
     "pit_eligible",
     "restart_eligible",
     "tyre_eligible",
+    "story_status",
+    "story_direction",
+    "story_reason",
+    "material_effect_count",
+    "evaluated_effect_count",
     "focus_rank",
     "eligible",
     "exclusion_reason",
@@ -275,6 +280,8 @@ _IMPACT_INTEGER = {
     "tyre_life_after",
     "stop_count",
     "time_comparable_driver_count",
+    "material_effect_count",
+    "evaluated_effect_count",
     "focus_rank",
 }
 _IMPACT_FLOAT = {
@@ -1225,6 +1232,113 @@ def _outcome(eligible: bool, positions_gained: int | None, active_after: bool) -
     return "Position held"
 
 
+_STORY_POSITION_THRESHOLD = 1.0
+_STORY_TIME_THRESHOLD_S = 0.5
+_STORY_DIRECT_EFFECTS = {
+    "observed_position_change": _STORY_POSITION_THRESHOLD,
+    "field_adjusted_gap_change": _STORY_TIME_THRESHOLD_S,
+    "restart_position_change": _STORY_POSITION_THRESHOLD,
+    "restart_gap_change": _STORY_TIME_THRESHOLD_S,
+}
+_STORY_PIT_EFFECTS = {
+    "estimated_vsc_pit_saving",
+    "estimated_safety_car_pit_saving",
+}
+
+
+def _story_classification(
+    driver: dict[str, object], effects: list[dict[str, object]]
+) -> dict[str, object]:
+    """Summarise evaluated, non-duplicated effects into one driver story state."""
+    evaluated = 0
+    material = 0
+    directions: set[str] = set()
+
+    for effect in effects:
+        if str(effect.get("driver_code")) != str(driver.get("driver_code")):
+            continue
+        effect_type = str(effect.get("effect_type"))
+        eligible = bool(effect.get("eligible"))
+        value = _to_float(effect.get("value"))
+        if effect_type in _STORY_DIRECT_EFFECTS and eligible and np.isfinite(value):
+            evaluated += 1
+            if abs(value) >= _STORY_DIRECT_EFFECTS[effect_type]:
+                material += 1
+                directions.add("benefit" if value > 0 else "loss")
+        elif effect_type in _STORY_PIT_EFFECTS and eligible and np.isfinite(value):
+            evaluated += 1
+            lower = _to_float(effect.get("lower_bound"))
+            upper = _to_float(effect.get("upper_bound"))
+            # A pit counterfactual is material only when its complete 90% interval
+            # lies on one side of zero. The point estimate alone is not enough.
+            if np.isfinite(lower) and np.isfinite(upper) and (lower > 0 or upper < 0):
+                material += 1
+                directions.add("benefit" if lower > 0 else "loss")
+
+    tyre_change = bool(driver.get("tyre_eligible")) and bool(
+        driver.get("tyre_changed_during_suspension")
+    )
+    if tyre_change:
+        evaluated += 1
+        material += 1
+
+    if material:
+        direction = (
+            "mixed"
+            if directions == {"benefit", "loss"}
+            else next(iter(directions))
+            if directions
+            else "unknown"
+        )
+        return {
+            "story_status": "material_impact",
+            "story_direction": direction,
+            "story_reason": f"{material} material effect(s) exceed the publication threshold",
+            "material_effect_count": material,
+            "evaluated_effect_count": evaluated,
+        }
+
+    pit_timing = str(driver.get("pit_timing_class") or "")
+    pit_effect = next(
+        (
+            effect
+            for effect in effects
+            if str(effect.get("driver_code")) == str(driver.get("driver_code"))
+            and str(effect.get("effect_type")) in _STORY_PIT_EFFECTS
+        ),
+        None,
+    )
+    if pit_timing == "after_end":
+        reason = "Pit stop occurred after the neutralisation ended"
+    elif pit_timing == "during_neutralisation" and pit_effect is not None:
+        reason = (
+            "Pit stop observed, but its estimated saving/loss interval crosses zero"
+            if bool(pit_effect.get("eligible"))
+            else "Pit stop observed; trustworthy counterfactual unavailable"
+        )
+    elif pit_timing == "during_neutralisation":
+        reason = "Pit stop observed; trustworthy counterfactual unavailable"
+    elif pit_timing == "unresolved":
+        reason = "Strategic action inferred, but exact timing is unavailable"
+    elif evaluated:
+        return {
+            "story_status": "no_material_effect",
+            "story_direction": "neutral",
+            "story_reason": f"{evaluated} evaluated effect(s) remain below materiality thresholds",
+            "material_effect_count": 0,
+            "evaluated_effect_count": evaluated,
+        }
+    else:
+        reason = "Trustworthy component evidence is unavailable"
+    return {
+        "story_status": "context_only",
+        "story_direction": "unknown",
+        "story_reason": reason,
+        "material_effect_count": 0,
+        "evaluated_effect_count": evaluated,
+    }
+
+
 def _driver_rows(
     replay: pd.DataFrame,
     event: _Event,
@@ -1472,6 +1586,11 @@ def _driver_rows(
                 "pit_eligible": pit_eligible,
                 "restart_eligible": bool(driver_eligible),
                 "tyre_eligible": tyre_eligible,
+                "story_status": "context_only",
+                "story_direction": "unknown",
+                "story_reason": "Trustworthy component evidence is unavailable",
+                "material_effect_count": 0,
+                "evaluated_effect_count": 0,
                 "focus_rank": None,
                 "eligible": driver_eligible,
                 "exclusion_reason": "" if driver_eligible else reason,
@@ -1883,18 +2002,30 @@ def analyse_race_control_impact(
                         }
                     )
 
-            during_drivers = [
-                str(row["driver_code"])
-                for row in driver_rows
-                if row["pit_timing_class"] == "during_neutralisation"
-            ]
+            for row in driver_rows:
+                row.update(_story_classification(row, event_effects))
+            story_priority = {
+                "material_impact": 0,
+                "context_only": 1,
+                "no_material_effect": 2,
+            }
+            material_pit_drivers = {
+                str(effect["driver_code"])
+                for effect in event_effects
+                if str(effect["effect_type"]) in _STORY_PIT_EFFECTS
+                and bool(effect["eligible"])
+                and (_to_float(effect["lower_bound"]) > 0 or _to_float(effect["upper_bound"]) < 0)
+            }
             ranked = sorted(
                 driver_rows,
                 key=lambda row: (
-                    0 if str(row["driver_code"]) in during_drivers else 1,
+                    story_priority[str(row["story_status"])],
+                    0 if str(row["driver_code"]) in material_pit_drivers else 1,
+                    0 if row["pit_timing_class"] == "during_neutralisation" else 1,
                     _to_int(row["position_before"])
                     if _to_int(row["position_before"]) is not None
                     else 999,
+                    -(_to_int(row["material_effect_count"]) or 0),
                     -(_to_int(row["positions_gained"]) or 0),
                     str(row["driver_code"]),
                 ),

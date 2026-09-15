@@ -1,0 +1,436 @@
+{
+  "counts": {
+    "true_positive": 13,
+    "true_negative": 5,
+    "false_positive": 0,
+    "false_negative": 0,
+    "uncovered": 0,
+    "matched": 17,
+    "mismatch": 0,
+    "expected_unavailable": 1,
+    "unexpected_coverage": 0
+  },
+  "exact_positive_matches": 13,
+  "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
+  "annotated_cases": 36,
+  "covered_cases": 35,
+  "annotated_positive_recall": 1.0,
+  "annotated_precision": 1.0,
+  "population_precision": null,
+  "population_false_positive_rate": null,
+  "limitations": "Stratified, purposive official-source annotations; precision and recall apply only to this annotated set. No population accuracy or calibrated interval.",
+  "cases": [
+    {
+      "id": "boundary-imola-vsc-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        29
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-imola-sc-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        46
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-imola-sc-end",
+      "kind": "race_control_end",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        53
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-brazil-red-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        32
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-madrid-vsc-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        14
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-madrid-vsc-end",
+      "kind": "race_control_end",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        15
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-australia-vsc-finish",
+      "kind": "race_control_finish",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        58
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-china-vsc-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        22
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-china-sc-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        23,
+        27
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-japan-red-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        1
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-azerbaijan-vsc-finish",
+      "kind": "race_control_finish",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        51
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-canada-sc-finish",
+      "kind": "race_control_finish",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        70
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-belgium-red-start",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        1
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "boundary-imola-no-red-at-vsc",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "boundary-madrid-no-sc-at-vsc",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "boundary-australia-no-sc-finish",
+      "kind": "race_control_finish",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "boundary-canada-no-vsc-finish",
+      "kind": "race_control_finish",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "boundary-japan-no-vsc-lap1",
+      "kind": "race_control_start",
+      "annotation_group": "boundary",
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "driver-madrid-ant-story",
+      "kind": "driver_story",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "material_impact",
+      "expected_state": "material_impact",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-madrid-ant-pit-in",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "recorded",
+      "expected_state": "recorded",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-madrid-ant-pit-out",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "recorded",
+      "expected_state": "recorded",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-madrid-ant-pre-withheld",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "unavailable",
+      "expected_state": "unavailable",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-sc-context",
+      "kind": "driver_story",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "context_only",
+      "expected_state": "context_only",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-red-benefit",
+      "kind": "driver_story",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "material_impact",
+      "expected_state": "material_impact",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-vsc-loss",
+      "kind": "driver_story",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "material_impact",
+      "expected_state": "material_impact",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-sc-pre",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "recorded",
+      "expected_state": "recorded",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-red-pre-withheld",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "unavailable",
+      "expected_state": "unavailable",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-vsc-pre-withheld",
+      "kind": "driver_checkpoint",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "unavailable",
+      "expected_state": "unavailable",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-red-window",
+      "kind": "impact_position",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "recorded",
+      "expected_state": "recorded",
+      "outcome": "matched"
+    },
+    {
+      "id": "driver-italy-tsu-vsc-window",
+      "kind": "impact_position",
+      "annotation_group": "driver",
+      "covered": true,
+      "detected_state": "recorded",
+      "expected_state": "recorded",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-madrid-ant-during",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": true,
+      "detected_state": "during_neutralisation",
+      "expected_state": "during_neutralisation",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-madrid-nor-after-end",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": true,
+      "detected_state": "after_end",
+      "expected_state": "after_end",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-madrid-law-no-stop",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": true,
+      "detected_state": "no_stop_observed",
+      "expected_state": "no_stop_observed",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-imola-pia-interval-crosses-zero",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": true,
+      "detected_state": "interval_crosses_zero",
+      "expected_state": "interval_crosses_zero",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-brazil-bea-insufficient-references",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": true,
+      "detected_state": "insufficient_references",
+      "expected_state": "insufficient_references",
+      "outcome": "matched"
+    },
+    {
+      "id": "pit-monaco-source-limited",
+      "kind": "pit_story",
+      "annotation_group": "pit",
+      "covered": false,
+      "detected_state": null,
+      "expected_state": "unavailable",
+      "outcome": "expected_unavailable"
+    }
+  ],
+  "confusion_matrices": {
+    "boundary": {
+      "true_positive": 13,
+      "true_negative": 5,
+      "false_positive": 0,
+      "false_negative": 0,
+      "uncovered": 0,
+      "matched": 0,
+      "mismatch": 0,
+      "expected_unavailable": 0,
+      "unexpected_coverage": 0
+    },
+    "driver": {
+      "true_positive": 0,
+      "true_negative": 0,
+      "false_positive": 0,
+      "false_negative": 0,
+      "uncovered": 0,
+      "matched": 12,
+      "mismatch": 0,
+      "expected_unavailable": 0,
+      "unexpected_coverage": 0
+    },
+    "pit": {
+      "true_positive": 0,
+      "true_negative": 0,
+      "false_positive": 0,
+      "false_negative": 0,
+      "uncovered": 0,
+      "matched": 5,
+      "mismatch": 0,
+      "expected_unavailable": 1,
+      "unexpected_coverage": 0
+    }
+  },
+  "validation_pass": true,
+  "snapshot_metadata": [
+    [
+      "20260915T143040Z-local",
+      "2026-09-15 16:30:40.146228+02:00"
+    ]
+  ],
+  "reference_sha256": "613cd8e86397d31bfd2e4553cc515229cf3a43da20154dbf05631e67610310e8"
+}

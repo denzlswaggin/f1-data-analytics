@@ -3,7 +3,12 @@ from __future__ import annotations
 from typing import cast
 
 import pandas as pd
-from ingestion.pipeline import _openf1_clock_audit, _openf1_digest, _openf1_gap
+from ingestion.pipeline import (
+    _openf1_clock_audit,
+    _openf1_digest,
+    _openf1_gap,
+    _select_openf1_anchor_laps,
+)
 
 
 def test_openf1_gap_keeps_numeric_and_lap_deficit_separate() -> None:
@@ -69,3 +74,35 @@ def test_clock_audit_rejects_insufficient_driver_coverage() -> None:
 
     assert result["status"] == "rejected"
     assert result["anchor_driver_count"] == 1
+
+
+def test_anchor_selection_prefers_raw_partition_and_records_hash() -> None:
+    raw = pd.DataFrame(
+        [{"driver_code": "AAA", "driver_number": "1", "lap_number": 1, "lap_start_sec": 1.0}]
+    )
+    staged = pd.DataFrame(
+        [{"driver_code": "BBB", "driver_number": "2", "lap_number": 1, "lap_start_sec": 2.0}]
+    )
+
+    selected, mapping, metadata = _select_openf1_anchor_laps(raw, staged)
+
+    assert selected["driver_code"].tolist() == ["AAA"]
+    assert mapping == {"1": "AAA"}
+    assert metadata["anchor_source"] == "raw.laps"
+    assert metadata["anchor_row_count"] == 1
+    assert len(str(metadata["anchor_sha256"])) == 64
+
+
+def test_anchor_selection_falls_back_to_staging_and_rejects_ambiguous_identity() -> None:
+    staged = pd.DataFrame(
+        [
+            {"driver_code": "AAA", "driver_number": "1", "lap_number": 1, "lap_start_sec": 1.0},
+            {"driver_code": "BBB", "driver_number": "1", "lap_number": 1, "lap_start_sec": 1.1},
+        ]
+    )
+
+    _, mapping, metadata = _select_openf1_anchor_laps(pd.DataFrame(), staged)
+
+    assert mapping == {}
+    assert metadata["anchor_source"] == "staging.stg_laps"
+    assert metadata["anchor_exclusion_reason"] == "Driver number/code mapping is not one-to-one"

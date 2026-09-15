@@ -100,33 +100,15 @@ select *,
         when pit_timing_class = 'unresolved' then 'Exact pit timing unavailable'
         else 'No stop in event window'
     end as pit_duration_display,
-    driver_code || ' · ' || driver_name || ' · ' || cast(story_count as varchar)
-        || '/' || cast(story_total as varchar) || ' story' as driver_label
-from (
-    select *,
-        case when pit_eligible
-                or (gap_eligible and abs(field_adjusted_gap_gain_s) >= 0.5)
-                or (position_eligible and coalesce(positions_gained, 0) <> 0)
-                or coalesce(tyre_changed_during_suspension, false)
-                or exists (
-                    select 1 from f1.race_control_effects as restart
-                    where restart.event_id = driver.event_id
-                        and restart.driver_code = driver.driver_code
-                        and restart.effect_type in (
-                            'restart_position_change', 'restart_gap_change'
-                        )
-                        and restart.eligible
-                        and abs(restart.value) >= case
-                            when restart.unit = 'positions' then 1 else 0.5
-                        end
-                )
-            then 1 else 0
-        end as story_count,
-        1 as story_total
-    from f1.race_control_impact as driver
-    where event_id = '${inputs.event.value}'
-        and season = ${inputs.season.value} and round = ${inputs.race.value}
-) as driver_story
+    driver_code || ' · ' || driver_name || ' · '
+        || case story_status
+            when 'material_impact' then '1/1 · Material ' || story_direction
+            when 'context_only' then '0/1 · Context only'
+            else '0/1 · No material effect'
+        end as driver_label
+from f1.race_control_impact
+where event_id = '${inputs.event.value}'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 order by focus_rank, position_before
 ```
 
@@ -139,7 +121,7 @@ order by focus_rank, position_before
 
 {#if driver_evidence.length > 0}
 
-<FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable. The selector shows 1/1 when that driver has a material pit, gap, restart, position or tyre story in this event, otherwise 0/1.">
+<FilterBar title="Driver story" description="The model opens the strongest substantiated intervention story; every driver remains selectable. Material effects clear explicit position/time thresholds or a one-sided pit uncertainty interval. Context-only means an action or evidence limitation remains relevant; no-material-effect means at least one component was genuinely evaluated below threshold.">
     <DependentDropdown data={driver_evidence} name=driver value=driver_code label=driver_label order="focus_rank asc" title="Driver" season={inputs.season.value} round={inputs.race.value} scopeKey={inputs.event.value} defaultValue={selected_event[0]?.focus_driver_code} />
 </FilterBar>
 
@@ -186,6 +168,10 @@ qualify row_number() over (order by effect.eligible desc nulls last) = 1
 ```
 
 ## {inputs.driver.value}'s intervention story
+
+<KeyInsight label="Story verdict">
+{focus_driver[0]?.story_reason}. Direction: {focus_driver[0]?.story_direction}. Material components: {focus_driver[0]?.material_effect_count || 0}/{focus_driver[0]?.evaluated_effect_count || 0} evaluated.
+</KeyInsight>
 
 <Grid cols=4>
     <BigValue data={focus_driver} value=position_before_display title="Position at deployment" />
@@ -318,6 +304,9 @@ No driver passes the comparable-field and verified-recovery rules for this inter
 <ExpandableSection title="All drivers and unavailable components">
 <DataTable data={driver_evidence} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
+    <Column id=story_status title="Story status" />
+    <Column id=story_direction title="Direction" />
+    <Column id=story_reason title="Story reason" />
     <Column id=position_before_display title="Before" />
     <Column id=position_after_display title="After" />
     <Column id=position_evidence_class title="Position evidence" />

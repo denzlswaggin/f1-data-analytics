@@ -54,6 +54,15 @@ def main() -> None:
                 and effect_type in ('observed_gap_change', 'field_adjusted_gap_change',
                     'restart_gap_change', 'estimated_vsc_pit_saving',
                     'estimated_safety_car_pit_saving')""",
+        "invalid_story_vocabulary": """select count(*) from marts.race_control_impact
+            where story_status not in ('material_impact', 'no_material_effect', 'context_only')
+                or story_direction not in ('benefit', 'loss', 'mixed', 'neutral', 'unknown')""",
+        "invalid_story_counts": """select count(*) from marts.race_control_impact
+            where material_effect_count < 0 or evaluated_effect_count < 0
+                or material_effect_count > evaluated_effect_count
+                or (story_status = 'material_impact' and material_effect_count = 0)
+                or (story_status != 'material_impact' and material_effect_count > 0)
+                or (story_status = 'no_material_effect' and evaluated_effect_count = 0)""",
     }
     with duckdb.connect(str(args.path), read_only=True) as connection:
         violations = {}

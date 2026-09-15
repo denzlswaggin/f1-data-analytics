@@ -111,6 +111,8 @@ def _warehouse(path: Path) -> None:
             "tyre_life_before": "integer",
             "tyre_life_after": "integer",
             "stop_count": "integer",
+            "material_effect_count": "integer",
+            "evaluated_effect_count": "integer",
             "race_date": "date",
             "rating": "double",
             "rating_lo": "double",
