@@ -14,7 +14,12 @@ import duckdb
 import numpy as np
 import pandas as pd
 import pytest
-from analytics.pipeline import build_race_replay, build_race_replay_incremental, build_race_replays
+from analytics.pipeline import (
+    _fallback_replay_positions,
+    build_race_replay,
+    build_race_replay_incremental,
+    build_race_replays,
+)
 from analytics.replay import replay_source_coverage, resample_race, validate_replay_sources
 from ingestion.config import Settings
 from ingestion.loaders.warehouse import read_query
@@ -39,6 +44,26 @@ EXPECTED_COLUMNS = [
     "gap_confidence",
     "gap_observed_t_s",
 ]
+
+
+def test_existing_replay_geometry_recovers_missing_raw_position_clock() -> None:
+    laps = pd.DataFrame({"lap_start_sec": [1000.0, 1100.0]})
+    existing = pd.DataFrame(
+        {
+            "driver_code": ["A", "A"],
+            "t_s": [0.0, 1.0],
+            "x": [10.0, 11.0],
+            "y": [20.0, 21.0],
+        }
+    )
+
+    recovered = _fallback_replay_positions(pd.DataFrame(), laps, existing)
+
+    assert recovered["session_time_sec"].tolist() == [1000.0, 1001.0]
+    assert recovered[["driver_code", "x", "y"]].to_dict("records") == [
+        {"driver_code": "A", "x": 10.0, "y": 20.0},
+        {"driver_code": "A", "x": 11.0, "y": 21.0},
+    ]
 
 
 def _synthetic_race() -> tuple[pd.DataFrame, pd.DataFrame]:

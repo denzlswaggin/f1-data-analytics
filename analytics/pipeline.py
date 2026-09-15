@@ -361,7 +361,25 @@ def _replay_laps_query(season: int, rnd: int) -> str:
     """
 
 
-def _optional_openf1_replay_source(table: str, season: int, rnd: int, settings: Settings) -> pd.DataFrame:
+def _fallback_replay_positions(
+    positions: pd.DataFrame, laps: pd.DataFrame, existing_replay: pd.DataFrame
+) -> pd.DataFrame:
+    """Recover coordinate samples from a prior replay when raw geometry is absent."""
+    if not positions.empty or laps.empty or existing_replay.empty:
+        return positions
+    race_start = pd.to_numeric(laps["lap_start_sec"], errors="coerce").min()
+    if pd.isna(race_start):
+        return positions
+    recovered = existing_replay.loc[:, ["driver_code", "t_s", "x", "y"]].copy()
+    recovered["session_time_sec"] = pd.to_numeric(recovered.pop("t_s"), errors="coerce") + float(
+        race_start
+    )
+    return recovered.dropna(subset=["driver_code", "session_time_sec", "x", "y"])
+
+
+def _optional_openf1_replay_source(
+    table: str, season: int, rnd: int, settings: Settings
+) -> pd.DataFrame:
     columns = (
         "driver_code, session_time_sec, position"
         if table == "stg_openf1_positions"
@@ -404,12 +422,25 @@ def _build_one_replay(
     """
     positions = read_query(_replay_positions_query(season, rnd), settings)
     laps = read_query(_replay_laps_query(season, rnd), settings)
-    source_order = _optional_openf1_replay_source(
-        "stg_openf1_positions", season, rnd, settings
-    )
-    source_intervals = _optional_openf1_replay_source(
-        "stg_openf1_intervals", season, rnd, settings
-    )
+    if positions.empty:
+        try:
+            existing = read_query(
+                "select driver_code, t_s, x, y from marts.race_replay "
+                f"where season = {int(season)} and round = {int(rnd)}",
+                settings,
+            )
+        except Exception:
+            existing = pd.DataFrame()
+        positions = _fallback_replay_positions(positions, laps, existing)
+        if not positions.empty:
+            log.info(
+                "replay.recovered_existing_geometry",
+                season=season,
+                round=rnd,
+                rows=len(positions),
+            )
+    source_order = _optional_openf1_replay_source("stg_openf1_positions", season, rnd, settings)
+    source_intervals = _optional_openf1_replay_source("stg_openf1_intervals", season, rnd, settings)
     validate_replay_sources(positions, laps)
     replay = resample_race(
         positions,
@@ -473,13 +504,16 @@ def build_race_replay_incremental(
     replay = _build_one_replay(
         season, rnd, tick_s, buf, settings.replay_retire_max_linger_s, settings
     )
-    replace_table_partition(
-        replay,
-        schema="marts",
-        table="race_replay",
-        partition={"season": season, "round": rnd},
-        settings=settings,
-    )
+    if replay.empty:
+        log.warning("replay.empty_partition_preserved", season=season, round=rnd)
+    else:
+        replace_table_partition(
+            replay,
+            schema="marts",
+            table="race_replay",
+            partition={"season": season, "round": rnd},
+            settings=settings,
+        )
     log.info(
         "replay.materialised_partition",
         season=season,
