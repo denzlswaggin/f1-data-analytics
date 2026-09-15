@@ -65,3 +65,25 @@ def test_client_explains_live_session_restriction_without_credentials() -> None:
 
     with pytest.raises(OpenF1AuthenticationError, match="F1_OPENF1_USERNAME"):
         client.race_sessions(2026)
+
+
+@pytest.mark.parametrize(
+    ("method", "endpoint"),
+    [
+        ("drivers", "drivers"),
+        ("positions", "position"),
+        ("intervals", "intervals"),
+        ("laps", "laps"),
+        ("race_control", "race_control"),
+    ],
+)
+def test_timing_methods_query_one_session(method: str, endpoint: str) -> None:
+    client = OpenF1Client(base_url="https://example.test/v1", min_interval_s=0)
+    session: Any = Mock()
+    session.get.return_value = _response(200, [{"session_key": 123}])
+    client._session = session
+
+    assert getattr(client, method)(123) == [{"session_key": 123}]
+    session.get.assert_called_once_with(
+        f"https://example.test/v1/{endpoint}", params={"session_key": 123}, timeout=30
+    )

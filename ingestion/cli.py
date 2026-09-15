@@ -27,6 +27,7 @@ from ingestion.pipeline import backfill as run_backfill
 from ingestion.pipeline import (
     ingest_ergast_laps,
     ingest_laps,
+    ingest_openf1_timing,
     ingest_pitstops,
     ingest_positions,
     ingest_race_control,
@@ -406,6 +407,27 @@ def team_radio(
     log.info("cli.team_radio.start", season=season, rounds=rounds, session=session)
     rows = ingest_team_radio(season, rounds, session)
     _echo_rounds(rows, season, rounds, "team-radio clips")
+
+
+@app.command("openf1-timing")
+def openf1_timing(
+    season: Annotated[int, typer.Option(help="Season to load OpenF1 timing evidence for.")],
+    from_round: FromRoundOpt = 1,
+    to_round: ToRoundOpt = None,
+    session: SessionOpt = "R",
+    incremental: IncrementalOpt = False,
+) -> None:
+    """Ingest aligned OpenF1 positions, intervals and race-control evidence."""
+    configure_logging()
+    rounds = _resolve_rounds(
+        season, from_round, to_round, incremental=incremental, table="openf1_timing_audit"
+    )
+    if not rounds:
+        typer.echo(f"{season}: OpenF1 timing already up to date — nothing new to load.")
+        return
+    log.info("cli.openf1_timing.start", season=season, rounds=rounds, session=session)
+    rows = ingest_openf1_timing(season, rounds, session)
+    _echo_rounds(rows, season, rounds, "OpenF1 timing rows")
 
 
 if __name__ == "__main__":

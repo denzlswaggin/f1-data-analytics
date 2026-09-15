@@ -181,3 +181,40 @@ models:
         data_tests: [unique, not_null]
       - name: recording_url
         data_tests: [not_null]
+
+  - name: stg_openf1_positions
+    description: OpenF1 position-state changes aligned to the FastF1 session clock.
+    columns:
+      - name: openf1_position_key
+        data_tests: [unique, not_null]
+      - name: driver_code
+        data_tests: [not_null]
+      - name: position
+        data_tests: [not_null]
+
+  - name: stg_openf1_intervals
+    description: OpenF1 leader and ahead gaps aligned to the FastF1 session clock.
+    columns:
+      - name: openf1_interval_key
+        data_tests: [unique, not_null]
+      - name: driver_code
+        data_tests: [not_null]
+
+  - name: stg_openf1_race_control
+    description: Secondary OpenF1 race-control messages for intervention reconciliation.
+    columns:
+      - name: openf1_control_key
+        data_tests: [unique, not_null]
+
+  - name: stg_openf1_timing_audit
+    description: Per-race OpenF1 clock-alignment, coverage and admission decision.
+    columns:
+      - name: season
+        data_tests: [not_null]
+      - name: round
+        data_tests: [not_null]
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['verified', 'rejected', 'unavailable']

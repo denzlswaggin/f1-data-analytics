@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
+import json
 import re
 from typing import Any
 
@@ -395,6 +397,273 @@ def ingest_team_radio(
     radio = pd.concat(frames, ignore_index=True)
     write_parquet(radio, "team_radio", season, settings, partition_by=("round", "session"))
     return load_dataframe(radio, "team_radio", season, settings, replace_rounds=True)
+
+
+def _openf1_digest(rows: list[dict[str, Any]]) -> str:
+    payload = json.dumps(rows, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _openf1_gap(value: object) -> tuple[float | None, int | None]:
+    """Split OpenF1 numeric gaps from structured '+N LAP(S)' states."""
+    if isinstance(value, (int, float)) and pd.notna(value) and float(value) >= 0:
+        return float(value), None
+    match = re.fullmatch(r"\+(\d+)\s+LAPS?", str(value or "").strip().upper())
+    return (None, int(match.group(1))) if match else (None, None)
+
+
+def _openf1_clock_audit(
+    source_laps: list[dict[str, Any]],
+    local_laps: pd.DataFrame,
+    t0: object,
+    number_to_code: dict[str, str],
+) -> dict[str, object]:
+    """Validate the OpenF1 UTC/FastF1 session-clock mapping with lap anchors."""
+    anchors = []
+    for row in source_laps:
+        number = str(row.get("driver_number") or "")
+        code = number_to_code.get(number)
+        when = row.get("date_start")
+        lap = row.get("lap_number")
+        if not code or not when or not isinstance(lap, int):
+            continue
+        anchors.append({"driver_code": code, "lap_number": lap, "source_utc": when})
+    if not anchors or local_laps.empty:
+        return {
+            "status": "unavailable",
+            "anchor_count": 0,
+            "inlier_anchor_count": 0,
+            "anchor_driver_count": 0,
+            "inlier_ratio": 0.0,
+            "alignment_p95_s": None,
+            "exclusion_reason": "Missing lap anchors for clock alignment",
+        }
+    source = pd.DataFrame(anchors)
+    source["source_utc"] = pd.to_datetime(source["source_utc"], utc=True, format="ISO8601")
+    local = local_laps[["driver_code", "lap_number", "lap_start_sec"]].copy()
+    merged = local.merge(source, on=["driver_code", "lap_number"], how="inner")
+    t0_ts = pd.Timestamp(t0)
+    if t0_ts.tzinfo is not None:
+        t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
+    merged["source_session_time_sec"] = (
+        merged["source_utc"].dt.tz_localize(None) - t0_ts
+    ).dt.total_seconds()
+    residual = (merged["source_session_time_sec"] - merged["lap_start_sec"]).abs()
+    finite = residual[pd.notna(residual)]
+    inliers = finite.le(1.0)
+    inlier_rows = merged.loc[inliers.index[inliers]]
+    ratio = float(inliers.mean()) if len(inliers) else 0.0
+    driver_count = int(inlier_rows["driver_code"].nunique()) if not inlier_rows.empty else 0
+    valid = len(inlier_rows) >= 8 and driver_count >= 4 and ratio >= 0.9
+    return {
+        "status": "verified" if valid else "rejected",
+        "anchor_count": len(finite),
+        "inlier_anchor_count": int(inliers.sum()),
+        "anchor_driver_count": driver_count,
+        "inlier_ratio": ratio,
+        "alignment_p95_s": (
+            float(finite.loc[inliers].quantile(0.95)) if bool(inliers.any()) else None
+        ),
+        "exclusion_reason": "" if valid else "Clock alignment failed the 8-anchor/4-driver/90% gate",
+    }
+
+
+def ingest_openf1_timing(
+    season: int, rounds: list[int], session: str = "R", settings: Settings | None = None
+) -> int:
+    """Ingest aligned OpenF1 order, intervals and control evidence for race replay."""
+    settings = settings or get_settings()
+    from ingestion.clients.fastf1_client import FastF1Client
+    from ingestion.clients.openf1 import OpenF1Client
+
+    source = OpenF1Client(
+        username=settings.openf1_username,
+        password=settings.openf1_password.get_secret_value(),
+        access_token=settings.openf1_access_token.get_secret_value(),
+    )
+    sessions = {
+        str(row.get("date_start") or "")[:10]: row
+        for row in source.race_sessions(season)
+        if row.get("session_key") is not None
+    }
+    races = read_query(f"select round, date from raw.races where season = {int(season)}", settings)
+    dates = {int(row.round): str(row.date)[:10] for row in races.itertuples(index=False)}
+    fastf1 = FastF1Client(settings)
+    position_frames: list[pd.DataFrame] = []
+    interval_frames: list[pd.DataFrame] = []
+    control_frames: list[pd.DataFrame] = []
+    audit_rows: list[dict[str, object]] = []
+
+    for rnd in rounds:
+        session_row = sessions.get(dates.get(rnd, ""))
+        if session_row is None:
+            audit_rows.append(
+                {
+                    "season": season,
+                    "round": rnd,
+                    "session": session,
+                    "session_key": None,
+                    "meeting_key": None,
+                    "status": "unavailable",
+                    "anchor_count": 0,
+                    "inlier_anchor_count": 0,
+                    "anchor_driver_count": 0,
+                    "inlier_ratio": 0.0,
+                    "alignment_p95_s": None,
+                    "position_row_count": 0,
+                    "interval_row_count": 0,
+                    "control_row_count": 0,
+                    "exclusion_reason": "OpenF1 race session not found",
+                }
+            )
+            continue
+        session_key = int(session_row["session_key"])
+        meeting_key = int(session_row.get("meeting_key") or 0)
+        raw_positions = source.positions(session_key)
+        raw_intervals = source.intervals(session_key)
+        raw_laps = source.laps(session_key)
+        raw_control = source.race_control(session_key)
+        t0, number_to_code = fastf1.session_reference(season, rnd, session)
+        local_laps = read_query(
+            # Read the freshly ingested raw partition: the scheduled round job
+            # deliberately runs dbt only after every external source has landed.
+            "select driver_code, lap_number, lap_start_sec from raw.laps "
+            f"where season = {season} and round = {rnd} and session = '{session}'",
+            settings,
+        )
+        audit = (
+            _openf1_clock_audit(raw_laps, local_laps, t0, number_to_code)
+            if t0 is not None
+            else {
+                "status": "unavailable",
+                "anchor_count": 0,
+                "inlier_anchor_count": 0,
+                "anchor_driver_count": 0,
+                "inlier_ratio": 0.0,
+                "alignment_p95_s": None,
+                "exclusion_reason": "FastF1 session clock unavailable",
+            }
+        )
+        if audit["status"] == "verified" and (not raw_positions or not raw_intervals):
+            audit = {
+                **audit,
+                "status": "rejected",
+                "exclusion_reason": "OpenF1 position or interval feed is empty",
+            }
+        audit_rows.append(
+            {
+                "season": season,
+                "round": rnd,
+                "session": session,
+                "session_key": session_key,
+                "meeting_key": meeting_key,
+                **audit,
+                "position_row_count": len(raw_positions),
+                "interval_row_count": len(raw_intervals),
+                "control_row_count": len(raw_control),
+            }
+        )
+        if audit["status"] != "verified" or t0 is None:
+            continue
+        t0_ts = pd.Timestamp(t0)
+        if t0_ts.tzinfo is not None:
+            t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
+
+        if raw_positions:
+            frame = pd.DataFrame(raw_positions)
+            utc = pd.to_datetime(frame["date"], utc=True, format="ISO8601")
+            numbers = frame["driver_number"].astype("string")
+            position_frames.append(
+                pd.DataFrame(
+                    {
+                        "season": season,
+                        "round": rnd,
+                        "session": session,
+                        "session_key": session_key,
+                        "meeting_key": meeting_key,
+                        "session_time_sec": (utc.dt.tz_localize(None) - t0_ts).dt.total_seconds(),
+                        "source_utc": utc.astype("string"),
+                        "driver_number": numbers,
+                        "driver_code": numbers.map(number_to_code).astype("string"),
+                        "position": pd.to_numeric(frame["position"], errors="coerce").astype("Int64"),
+                        "source_sha256": _openf1_digest(raw_positions),
+                    }
+                )
+            )
+        if raw_intervals:
+            frame = pd.DataFrame(raw_intervals)
+            utc = pd.to_datetime(frame["date"], utc=True, format="ISO8601")
+            numbers = frame["driver_number"].astype("string")
+            parsed_leader = frame["gap_to_leader"].map(_openf1_gap)
+            parsed_ahead = frame["interval"].map(_openf1_gap)
+            interval_frames.append(
+                pd.DataFrame(
+                    {
+                        "season": season,
+                        "round": rnd,
+                        "session": session,
+                        "session_key": session_key,
+                        "meeting_key": meeting_key,
+                        "session_time_sec": (utc.dt.tz_localize(None) - t0_ts).dt.total_seconds(),
+                        "source_utc": utc.astype("string"),
+                        "driver_number": numbers,
+                        "driver_code": numbers.map(number_to_code).astype("string"),
+                        "gap_to_leader_raw": frame["gap_to_leader"].astype("string"),
+                        "gap_to_ahead_raw": frame["interval"].astype("string"),
+                        "gap_to_leader_s": [value[0] for value in parsed_leader],
+                        "gap_to_ahead_s": [value[0] for value in parsed_ahead],
+                        "leader_lap_deficit": [value[1] for value in parsed_leader],
+                        "ahead_lap_deficit": [value[1] for value in parsed_ahead],
+                        "source_sha256": _openf1_digest(raw_intervals),
+                    }
+                )
+            )
+        if raw_control:
+            frame = pd.DataFrame(raw_control)
+            utc = pd.to_datetime(frame["date"], utc=True, format="ISO8601")
+            empty_text = pd.Series(pd.array([pd.NA] * len(frame), dtype="string"), index=frame.index)
+            empty_number = pd.Series(pd.array([pd.NA] * len(frame), dtype="Int64"), index=frame.index)
+            control_frames.append(
+                pd.DataFrame(
+                    {
+                        "season": season,
+                        "round": rnd,
+                        "session": session,
+                        "session_key": session_key,
+                        "meeting_key": meeting_key,
+                        "session_time_sec": (utc.dt.tz_localize(None) - t0_ts).dt.total_seconds(),
+                        "source_utc": utc.astype("string"),
+                        "category": frame.get("category", empty_text).astype("string"),
+                        "flag": frame.get("flag", empty_text).astype("string"),
+                        "message": frame.get("message", empty_text).astype("string"),
+                        "lap_number": pd.to_numeric(
+                            frame.get("lap_number", empty_number), errors="coerce"
+                        ).astype("Int64"),
+                        "source_sha256": _openf1_digest(raw_control),
+                    }
+                )
+            )
+
+    total = 0
+    resources = {
+        "openf1_positions": position_frames,
+        "openf1_intervals": interval_frames,
+        "openf1_race_control": control_frames,
+    }
+    for name, frames in resources.items():
+        if frames:
+            combined = pd.concat(frames, ignore_index=True)
+            write_parquet(combined, name, season, settings, partition_by=("round", "session"))
+            total += load_dataframe(combined, name, season, settings, replace_rounds=True)
+    audit_frame = pd.DataFrame(audit_rows)
+    if not audit_frame.empty:
+        write_parquet(
+            audit_frame, "openf1_timing_audit", season, settings, partition_by=("round", "session")
+        )
+        total += load_dataframe(
+            audit_frame, "openf1_timing_audit", season, settings, replace_rounds=True
+        )
+    return total
 
 
 def _extract_per_round(
