@@ -67,6 +67,24 @@ def test_client_explains_live_session_restriction_without_credentials() -> None:
         client.race_sessions(2026)
 
 
+def test_client_retries_rate_limits_with_bounded_backoff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = OpenF1Client(base_url="https://example.test/v1", min_interval_s=0)
+    session: Any = Mock()
+    session.get.side_effect = [
+        _response(429, {"detail": "slow down"}),
+        _response(200, [{"session_key": 123}]),
+    ]
+    client._session = session
+    sleeps: list[float] = []
+    monkeypatch.setattr("ingestion.clients.openf1.time.sleep", sleeps.append)
+
+    assert client.race_sessions(2026) == [{"session_key": 123}]
+    assert sleeps == [2.0]
+    assert session.get.call_count == 2
+
+
 @pytest.mark.parametrize(
     ("method", "endpoint"),
     [
