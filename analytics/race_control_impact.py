@@ -552,7 +552,47 @@ def _snapshot(frame: pd.DataFrame, target_t_s: float, *, before: bool) -> pd.Dat
     snapshot["capture_offset_s"] = (
         target_t_s - snapshot["t_s"] if before else snapshot["t_s"] - target_t_s
     )
-    return snapshot.loc[snapshot["capture_offset_s"].le(MAX_CAPTURE_OFFSET_S)]
+    snapshot = snapshot.loc[snapshot["capture_offset_s"].le(MAX_CAPTURE_OFFSET_S)].copy()
+    ranks = pd.to_numeric(snapshot["running_order"], errors="coerce")
+    coherent = (
+        len(snapshot) > 0
+        and ranks.notna().all()
+        and ranks.is_unique
+        and sorted(ranks.astype(int).tolist()) == list(range(1, len(snapshot) + 1))
+    )
+    if not coherent:
+        snapshot["running_order"] = np.nan
+        snapshot["running_order_source"] = ""
+        snapshot["running_order_confidence"] = ""
+        snapshot["running_order_observed_t_s"] = np.nan
+    return snapshot
+
+
+def _invalidate_incoherent_checkpoint_orders(rows: list[dict[str, object]]) -> None:
+    """Fail closed when separately captured drivers do not form one dense field."""
+    grouped: dict[tuple[str, int], list[dict[str, object]]] = {}
+    for row in rows:
+        if str(row["checkpoint_type"]) in {"pit_in", "pit_out"}:
+            continue
+        grouped.setdefault(
+            (str(row["checkpoint_type"]), int(str(row["checkpoint_order"]))), []
+        ).append(row)
+    for checkpoint_rows in grouped.values():
+        eligible = [row for row in checkpoint_rows if bool(row["eligible"])]
+        ranks = [_to_int(row.get("running_order")) for row in eligible]
+        coherent = (
+            len(eligible) == len(checkpoint_rows)
+            and all(rank is not None for rank in ranks)
+            and len(set(ranks)) == len(ranks)
+            and sorted(int(rank) for rank in ranks if rank is not None)
+            == list(range(1, len(ranks) + 1))
+        )
+        if coherent:
+            continue
+        for row in checkpoint_rows:
+            row["eligible"] = False
+            row["evidence_class"] = "unavailable"
+            row["exclusion_reason"] = "Checkpoint order is not a coherent dense field"
 
 
 def _interpolated_state(frame: pd.DataFrame, target_t_s: float) -> dict[str, object] | None:
@@ -1754,6 +1794,7 @@ def analyse_race_control_impact(
                                 source="fastf1_pit_timing+race_replay",
                             )
                         )
+                _invalidate_incoherent_checkpoint_orders(event_checkpoints)
 
             checkpoint_by_key = {
                 (row["driver_code"], row["checkpoint_type"]): row

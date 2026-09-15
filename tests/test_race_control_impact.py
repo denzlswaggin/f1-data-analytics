@@ -22,6 +22,7 @@ from analytics.race_control_impact import (
     _estimated_lap_deficits,
     _Event,
     _pit_effect_rows,
+    _snapshot,
     analyse_race_control_impact,
 )
 from ingestion.config import Settings
@@ -198,6 +199,16 @@ def test_unknown_order_provenance_withholds_position_story() -> None:
     ]
     assert not position_effects["eligible"].any()
     assert position_effects["value"].isna().all()
+
+
+def test_snapshot_withholds_an_entire_duplicate_rank_field() -> None:
+    replay = _replay()
+    replay.loc[replay["driver_code"].eq("BBB"), "running_order"] = 1
+
+    snapshot = _snapshot(replay, 100.0, before=True)
+
+    assert snapshot["running_order"].isna().all()
+    assert snapshot["running_order_source"].eq("").all()
 
 
 @pytest.mark.parametrize(
