@@ -24,6 +24,12 @@ from ingestion.config import Settings, get_settings
 from ingestion.logging import get_logger
 
 log = get_logger(__name__)
+_ADDITIVE_RAW_TABLES = {
+    "openf1_positions",
+    "openf1_intervals",
+    "openf1_race_control",
+    "openf1_timing_audit",
+}
 
 
 def _portable_sql_type(series: pd.Series) -> str:
@@ -47,8 +53,7 @@ def _add_missing_frame_columns(
     for column in frame.columns:
         sql_type = _portable_sql_type(frame[column])
         statement = (
-            f'ALTER TABLE "{schema}"."{table}" ADD COLUMN IF NOT EXISTS '
-            f'"{column}" {sql_type}'
+            f'ALTER TABLE "{schema}"."{table}" ADD COLUMN IF NOT EXISTS "{column}" {sql_type}'
         )
         connection.execute(statement)
 
@@ -147,6 +152,8 @@ def _load_duckdb(
         con.execute(
             f'CREATE TABLE IF NOT EXISTS raw."{table}" AS SELECT * FROM incoming WHERE 1 = 0'
         )
+        if table in _ADDITIVE_RAW_TABLES:
+            _add_missing_frame_columns(con, "raw", table, df)
         if table == "laps":
             for column in ("pit_in_time_sec", "pit_out_time_sec"):
                 con.execute(f'ALTER TABLE raw."laps" ADD COLUMN IF NOT EXISTS {column} DOUBLE')
@@ -233,6 +240,13 @@ def _load_postgres(
             conn.exec_driver_sql(f'CREATE SCHEMA IF NOT EXISTS "{schema}"')
             # head(0) append creates the table if missing, else no-op.
             df.head(0).to_sql(table, conn, schema=schema, if_exists="append", index=False)
+            if table in _ADDITIVE_RAW_TABLES:
+                for column in df.columns:
+                    sql_type = _portable_sql_type(df[column])
+                    conn.exec_driver_sql(
+                        f'ALTER TABLE "{schema}"."{table}" ADD COLUMN IF NOT EXISTS '
+                        f'"{column}" {sql_type}'
+                    )
             if table == "laps":
                 for column in ("pit_in_time_sec", "pit_out_time_sec"):
                     conn.exec_driver_sql(

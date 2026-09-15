@@ -27,7 +27,7 @@
             meeting_key bigint, status varchar, anchor_count integer,
             inlier_anchor_count integer, anchor_driver_count integer,
             inlier_ratio double precision, alignment_p95_s double precision,
-            exclusion_reason varchar, position_row_count bigint,
+            clock_zero_utc varchar, exclusion_reason varchar, position_row_count bigint,
             interval_row_count bigint, control_row_count bigint
         )
     {% endset %}

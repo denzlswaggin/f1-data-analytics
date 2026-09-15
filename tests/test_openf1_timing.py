@@ -36,13 +36,14 @@ def test_clock_audit_accepts_many_consistent_anchors_and_one_red_flag_outlier() 
                 }
             )
 
-    result = _openf1_clock_audit(source_rows, pd.DataFrame(local_rows), t0, codes)
+    result = _openf1_clock_audit(source_rows, pd.DataFrame(local_rows), codes)
 
     assert result["status"] == "verified"
     assert result["anchor_count"] == 12
     assert result["inlier_anchor_count"] == 11
     assert result["anchor_driver_count"] == 4
-    assert 0.19 <= float(result["alignment_p95_s"]) <= 0.21
+    assert float(result["alignment_p95_s"]) <= 0.01
+    assert str(result["clock_zero_utc"]).startswith("2026-09-06T12:00:00.200")
 
 
 def test_clock_audit_rejects_insufficient_driver_coverage() -> None:
@@ -61,7 +62,6 @@ def test_clock_audit_rejects_insufficient_driver_coverage() -> None:
                 for lap in range(1, 9)
             ]
         ),
-        pd.Timestamp("2026-01-01T00:00:00Z"),
         {"1": "A"},
     )
 

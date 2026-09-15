@@ -415,7 +415,6 @@ def _openf1_gap(value: object) -> tuple[float | None, int | None]:
 def _openf1_clock_audit(
     source_laps: list[dict[str, Any]],
     local_laps: pd.DataFrame,
-    t0: object,
     number_to_code: dict[str, str],
 ) -> dict[str, object]:
     """Validate the OpenF1 UTC/FastF1 session-clock mapping with lap anchors."""
@@ -436,18 +435,30 @@ def _openf1_clock_audit(
             "anchor_driver_count": 0,
             "inlier_ratio": 0.0,
             "alignment_p95_s": None,
+            "clock_zero_utc": None,
             "exclusion_reason": "Missing lap anchors for clock alignment",
         }
     source = pd.DataFrame(anchors)
     source["source_utc"] = pd.to_datetime(source["source_utc"], utc=True, format="ISO8601")
     local = local_laps[["driver_code", "lap_number", "lap_start_sec"]].copy()
     merged = local.merge(source, on=["driver_code", "lap_number"], how="inner")
-    t0_ts = pd.Timestamp(t0)
-    if t0_ts.tzinfo is not None:
-        t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
-    merged["source_session_time_sec"] = (
-        merged["source_utc"].dt.tz_localize(None) - t0_ts
-    ).dt.total_seconds()
+    merged = merged.dropna(subset=["source_utc", "lap_start_sec"])
+    if merged.empty:
+        return {
+            "status": "unavailable",
+            "anchor_count": 0,
+            "inlier_anchor_count": 0,
+            "anchor_driver_count": 0,
+            "inlier_ratio": 0.0,
+            "alignment_p95_s": None,
+            "clock_zero_utc": None,
+            "exclusion_reason": "No matching finite lap anchors for clock alignment",
+        }
+    candidate_zero_ns = merged["source_utc"].astype("int64") - (
+        pd.to_numeric(merged["lap_start_sec"], errors="coerce") * 1_000_000_000
+    )
+    t0_ts = pd.Timestamp(int(candidate_zero_ns.median()), tz="UTC")
+    merged["source_session_time_sec"] = (merged["source_utc"] - t0_ts).dt.total_seconds()
     residual = (merged["source_session_time_sec"] - merged["lap_start_sec"]).abs()
     finite = residual[pd.notna(residual)]
     inliers = finite.le(1.0)
@@ -464,7 +475,10 @@ def _openf1_clock_audit(
         "alignment_p95_s": (
             float(finite.loc[inliers].quantile(0.95)) if bool(inliers.any()) else None
         ),
-        "exclusion_reason": "" if valid else "Clock alignment failed the 8-anchor/4-driver/90% gate",
+        "clock_zero_utc": t0_ts.isoformat(),
+        "exclusion_reason": ""
+        if valid
+        else "Clock alignment failed the 8-anchor/4-driver/90% gate",
     }
 
 
@@ -473,7 +487,6 @@ def ingest_openf1_timing(
 ) -> int:
     """Ingest aligned OpenF1 order, intervals and control evidence for race replay."""
     settings = settings or get_settings()
-    from ingestion.clients.fastf1_client import FastF1Client
     from ingestion.clients.openf1 import OpenF1Client
 
     source = OpenF1Client(
@@ -488,7 +501,6 @@ def ingest_openf1_timing(
     }
     races = read_query(f"select round, date from raw.races where season = {int(season)}", settings)
     dates = {int(row.round): str(row.date)[:10] for row in races.itertuples(index=False)}
-    fastf1 = FastF1Client(settings)
     position_frames: list[pd.DataFrame] = []
     interval_frames: list[pd.DataFrame] = []
     control_frames: list[pd.DataFrame] = []
@@ -510,6 +522,7 @@ def ingest_openf1_timing(
                     "anchor_driver_count": 0,
                     "inlier_ratio": 0.0,
                     "alignment_p95_s": None,
+                    "clock_zero_utc": None,
                     "position_row_count": 0,
                     "interval_row_count": 0,
                     "control_row_count": 0,
@@ -523,27 +536,20 @@ def ingest_openf1_timing(
         raw_intervals = source.intervals(session_key)
         raw_laps = source.laps(session_key)
         raw_control = source.race_control(session_key)
-        t0, number_to_code = fastf1.session_reference(season, rnd, session)
         local_laps = read_query(
             # Read the freshly ingested raw partition: the scheduled round job
             # deliberately runs dbt only after every external source has landed.
-            "select driver_code, lap_number, lap_start_sec from raw.laps "
+            "select driver_code, driver_number, lap_number, lap_start_sec from raw.laps "
             f"where season = {season} and round = {rnd} and session = '{session}'",
             settings,
         )
-        audit = (
-            _openf1_clock_audit(raw_laps, local_laps, t0, number_to_code)
-            if t0 is not None
-            else {
-                "status": "unavailable",
-                "anchor_count": 0,
-                "inlier_anchor_count": 0,
-                "anchor_driver_count": 0,
-                "inlier_ratio": 0.0,
-                "alignment_p95_s": None,
-                "exclusion_reason": "FastF1 session clock unavailable",
-            }
-        )
+        number_to_code = {
+            str(row.driver_number): str(row.driver_code)
+            for row in local_laps.dropna(subset=["driver_number", "driver_code"])
+            .drop_duplicates("driver_number")
+            .itertuples(index=False)
+        }
+        audit = _openf1_clock_audit(raw_laps, local_laps, number_to_code)
         if audit["status"] == "verified" and (not raw_positions or not raw_intervals):
             audit = {
                 **audit,
@@ -563,11 +569,9 @@ def ingest_openf1_timing(
                 "control_row_count": len(raw_control),
             }
         )
-        if audit["status"] != "verified" or t0 is None:
+        if audit["status"] != "verified":
             continue
-        t0_ts = pd.Timestamp(t0)
-        if t0_ts.tzinfo is not None:
-            t0_ts = t0_ts.tz_convert("UTC").tz_localize(None)
+        t0_ts = pd.Timestamp(audit["clock_zero_utc"]).tz_convert("UTC").tz_localize(None)
 
         if raw_positions:
             frame = pd.DataFrame(raw_positions)
@@ -585,7 +589,9 @@ def ingest_openf1_timing(
                         "source_utc": utc.astype("string"),
                         "driver_number": numbers,
                         "driver_code": numbers.map(number_to_code).astype("string"),
-                        "position": pd.to_numeric(frame["position"], errors="coerce").astype("Int64"),
+                        "position": pd.to_numeric(frame["position"], errors="coerce").astype(
+                            "Int64"
+                        ),
                         "source_sha256": _openf1_digest(raw_positions),
                     }
                 )
@@ -621,8 +627,12 @@ def ingest_openf1_timing(
         if raw_control:
             frame = pd.DataFrame(raw_control)
             utc = pd.to_datetime(frame["date"], utc=True, format="ISO8601")
-            empty_text = pd.Series(pd.array([pd.NA] * len(frame), dtype="string"), index=frame.index)
-            empty_number = pd.Series(pd.array([pd.NA] * len(frame), dtype="Int64"), index=frame.index)
+            empty_text = pd.Series(
+                pd.array([pd.NA] * len(frame), dtype="string"), index=frame.index
+            )
+            empty_number = pd.Series(
+                pd.array([pd.NA] * len(frame), dtype="Int64"), index=frame.index
+            )
             control_frames.append(
                 pd.DataFrame(
                     {
