@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 from analytics.driver_dna import DriverDNAResult
+from analytics.driver_track import DriverTrackResult
 from analytics.pace_consistency import PaceConsistencyResult
 from analytics.pit_timing import PitTimingSensitivityResult
 from analytics.race_control_impact import RaceControlImpactResult
@@ -39,6 +40,14 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
             evidence=pd.DataFrame(index=range(21)),
             profile=pd.DataFrame(index=range(22)),
             microsectors=pd.DataFrame(index=range(23)),
+        )
+
+    def driver_track(*, settings: Settings) -> DriverTrackResult:
+        calls.append(("driver_track", settings))
+        return DriverTrackResult(
+            archetypes=pd.DataFrame(index=range(24)),
+            driver_fit=pd.DataFrame(index=range(25)),
+            dna_stability=pd.DataFrame(index=range(26)),
         )
 
     def replay(season: int, rnd: int, *, settings: Settings) -> pd.DataFrame:
@@ -103,6 +112,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     monkeypatch.setattr(round_refresh, "build_driver_ratings_v2", ratings_v2)
     monkeypatch.setattr(round_refresh, "build_driver_pace_profile", pace_profile)
     monkeypatch.setattr(round_refresh, "build_driver_dna_incremental", driver_dna)
+    monkeypatch.setattr(round_refresh, "build_driver_track_insights", driver_track)
     monkeypatch.setattr(round_refresh, "build_race_replay_incremental", replay)
     monkeypatch.setattr(round_refresh, "build_pit_lap_context_incremental", pit_context)
     monkeypatch.setattr(round_refresh, "build_traffic_adjusted_pace_incremental", traffic)
@@ -124,6 +134,9 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "driver_dna_evidence": 21,
         "driver_dna_profiles": 22,
         "driver_dna_microsectors": 23,
+        "driver_track_archetypes": 24,
+        "driver_track_fit": 25,
+        "driver_dna_stability": 26,
         "replay_rows": 5,
         "pit_context_laps": 20,
         "traffic_pace_drivers": 7,
@@ -145,6 +158,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
         "ratings_v2",
         "pace_profile",
         "driver_dna",
+        "driver_track",
         "replay",
         "pit_context",
         "traffic",
@@ -158,7 +172,7 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     ]
     assert calls[2][1] == (PACE_PROFILE_FROM_SEASON, settings)
     assert calls[3][1] == (2026, 12, settings)
-    assert calls[4][1] == (2026, 12, settings)
+    assert calls[4][1] == settings
     assert calls[5][1] == (2026, 12, settings)
     assert calls[6][1] == (2026, 12, settings)
     assert calls[7][1] == (2026, 12, settings)
@@ -167,3 +181,4 @@ def test_round_refresh_rebuilds_every_dashboard_analytics_mart(
     assert calls[10][1] == (2026, 12, settings)
     assert calls[11][1] == (2026, 12, settings)
     assert calls[12][1] == (2026, 12, settings)
+    assert calls[13][1] == (2026, 12, settings)

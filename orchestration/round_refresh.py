@@ -14,6 +14,7 @@ from analytics.pipeline import (
     build_driver_pace_profile,
     build_driver_ratings,
     build_driver_ratings_v2,
+    build_driver_track_insights,
     build_pace_consistency_incremental,
     build_pit_lap_context_incremental,
     build_pit_timing_sensitivity_incremental,
@@ -180,6 +181,7 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         settings=settings,
     )
     driver_dna = build_driver_dna_incremental(season, rnd, settings=settings)
+    driver_track = build_driver_track_insights(settings=settings)
     replay = build_race_replay_incremental(season, rnd, settings=settings)
     pit_context = build_pit_lap_context_incremental(season, rnd, settings=settings)
     traffic = build_traffic_adjusted_pace_incremental(season, rnd, settings=settings)
@@ -197,6 +199,9 @@ def _build_round_analytics(season: int, rnd: int, settings: Settings) -> dict[st
         "driver_dna_evidence": len(driver_dna.evidence),
         "driver_dna_profiles": len(driver_dna.profile),
         "driver_dna_microsectors": len(driver_dna.microsectors),
+        "driver_track_archetypes": len(driver_track.archetypes),
+        "driver_track_fit": len(driver_track.driver_fit),
+        "driver_dna_stability": len(driver_track.dna_stability),
         "replay_rows": len(replay),
         "pit_context_laps": len(pit_context),
         "traffic_pace_drivers": len(traffic.summary),

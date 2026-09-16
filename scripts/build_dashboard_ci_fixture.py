@@ -64,6 +64,9 @@ def build_fixture(source: Path, output: Path, *, season: int, round_number: int)
             elif "season" in columns:
                 predicate = "season = ?"
                 parameters = [season]
+            elif {"from_season", "to_season"}.issubset(columns):
+                predicate = "to_season = ?"
+                parameters = [season]
             else:
                 predicate = "true"
                 parameters = []

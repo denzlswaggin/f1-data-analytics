@@ -50,7 +50,11 @@
                         <line class="interval" x1={x(row.lo)} x2={x(row.hi)} y1={cy} y2={cy} stroke={COLORS[index % COLORS.length]} />
                     {/if}
                     <circle cx={x(row.estimate)} cy={cy} r="5" fill={COLORS[index % COLORS.length]} tabindex="0">
-                        <title>{row.driver_name} · {metric}: {row.estimate.toFixed(2)} ({row.lo?.toFixed(2) ?? '—'} to {row.hi?.toFixed(2) ?? '—'})</title>
+                        {#if row.lo != null && row.hi != null}
+                            <title>{row.driver_name} · {metric}: {row.estimate.toFixed(2)} ({row.lo.toFixed(2)} to {row.hi.toFixed(2)})</title>
+                        {:else}
+                            <title>{row.driver_name} · {metric}: {row.estimate.toFixed(2)}</title>
+                        {/if}
                     </circle>
                 {/each}
             {/each}
