@@ -154,7 +154,10 @@ def validate_driver_track(result: DriverTrackResult) -> None:
         and result.driver_fit.duplicated(["driver_code", "circuit_archetype"]).any()
     ):
         raise ValueError("driver-track fit rows are not unique")
-    if not result.dna_stability.empty and result.dna_stability.duplicated(
-        ["from_season", "to_season", "driver_code", "metric"]
-    ).any():
+    if (
+        not result.dna_stability.empty
+        and result.dna_stability.duplicated(
+            ["from_season", "to_season", "driver_code", "metric"]
+        ).any()
+    ):
         raise ValueError("Driver DNA stability rows are not unique by season window")

@@ -115,8 +115,8 @@ def build_stability_windows(evidence: pd.DataFrame, *, min_races: int = 5) -> pd
                 stability["from_season"] = from_season
                 stability["to_season"] = to_season
                 frames.append(stability)
-    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(
-        columns=STABILITY_COLUMNS
+    return (
+        pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=STABILITY_COLUMNS)
     )
 
 
