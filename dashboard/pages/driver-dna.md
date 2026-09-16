@@ -83,6 +83,139 @@ order by driver_name
     <Column id=confidence title="Confidence" />
 </DataTable>
 
+## Driver vs. season average
+
+Compare one published season profile with an equally weighted average of every
+other driver who reached the five-race publication threshold in that season.
+The peer benchmark excludes the selected driver, so it remains an independent
+reference rather than partially averaging the driver back into their own comparison.
+
+```sql benchmark_seasons
+select from_season as season
+from f1.driver_dna_profile
+where from_season = to_season
+group by from_season
+having count(*) >= 2
+order by season desc
+```
+
+```sql benchmark_drivers
+select from_season as season, driver_code, driver_name
+from f1.driver_dna_profile
+where from_season = to_season
+order by season desc, driver_name
+```
+
+<FilterBar title="Compare with the season field" description="Only drivers with at least five eligible teammate comparisons enter the equally weighted peer average.">
+    <Dropdown data={benchmark_seasons} name=benchmark_season value=season title="Season" defaultValue={2025} />
+    <DependentDropdown data={benchmark_drivers} name=benchmark_driver value=driver_code label=driver_name title="Driver" season={inputs.benchmark_season.value} defaultValue="VER" />
+</FilterBar>
+
+```sql selected_benchmark_profile
+select *
+from f1.driver_dna_profile
+where from_season = ${inputs.benchmark_season.value}
+    and to_season = ${inputs.benchmark_season.value}
+    and driver_code = '${inputs.benchmark_driver.value}'
+```
+
+```sql benchmark_profile_rows
+select
+    1 as series_order,
+    driver_name,
+    full_throttle_share,
+    full_throttle_share_lo,
+    full_throttle_share_hi,
+    coasting_share,
+    coasting_share_lo,
+    coasting_share_hi,
+    braking_share,
+    braking_share_lo,
+    braking_share_hi,
+    brake_onset_speed_kph,
+    brake_onset_speed_kph_lo,
+    brake_onset_speed_kph_hi,
+    low_speed_kph,
+    low_speed_kph_lo,
+    low_speed_kph_hi
+from ${selected_benchmark_profile}
+union all
+select
+    2,
+    'Season peer average',
+    avg(full_throttle_share),
+    null::double,
+    null::double,
+    avg(coasting_share),
+    null::double,
+    null::double,
+    avg(braking_share),
+    null::double,
+    null::double,
+    avg(brake_onset_speed_kph),
+    null::double,
+    null::double,
+    avg(low_speed_kph),
+    null::double,
+    null::double
+from f1.driver_dna_profile
+where from_season = ${inputs.benchmark_season.value}
+    and to_season = ${inputs.benchmark_season.value}
+    and driver_code <> '${inputs.benchmark_driver.value}'
+having count(*) > 0
+```
+
+```sql benchmark_profile_axes
+select series_order, driver_name, 1 as metric_order, 'Full throttle distance' as metric_label,
+       full_throttle_share as estimate, full_throttle_share_lo as lo, full_throttle_share_hi as hi
+from ${benchmark_profile_rows}
+union all
+select series_order, driver_name, 2, 'Coasting distance', coasting_share, coasting_share_lo, coasting_share_hi from ${benchmark_profile_rows}
+union all
+select series_order, driver_name, 3, 'Braking distance', braking_share, braking_share_lo, braking_share_hi from ${benchmark_profile_rows}
+union all
+select series_order, driver_name, 4, 'Brake-onset speed', brake_onset_speed_kph, brake_onset_speed_kph_lo, brake_onset_speed_kph_hi from ${benchmark_profile_rows}
+union all
+select series_order, driver_name, 5, 'Low-speed corner speed', low_speed_kph, low_speed_kph_lo, low_speed_kph_hi from ${benchmark_profile_rows}
+order by metric_order, series_order
+```
+
+<DriverDNAProfile data={benchmark_profile_axes} title="Season technique vs. qualified peer average" />
+
+```sql benchmark_summary
+select
+    selected.from_season as season,
+    selected.driver_name,
+    selected.n_comparisons as eligible_races,
+    selected.confidence,
+    peers.peer_drivers
+from ${selected_benchmark_profile} as selected
+cross join (
+    select count(*) as peer_drivers
+    from f1.driver_dna_profile
+    where from_season = ${inputs.benchmark_season.value}
+        and to_season = ${inputs.benchmark_season.value}
+        and driver_code <> '${inputs.benchmark_driver.value}'
+) as peers
+```
+
+{#if benchmark_summary.length > 0}
+<DataTable data={benchmark_summary} rows=1>
+    <Column id=season />
+    <Column id=driver_name title="Driver" />
+    <Column id=eligible_races title="Eligible races" />
+    <Column id=confidence title="Confidence" />
+    <Column id=peer_drivers title="Drivers in peer average" />
+</DataTable>
+{:else}
+<div class="dna-empty"><strong>No season benchmark:</strong> the selected season and driver do not have enough published teammate evidence.</div>
+{/if}
+
+The selected driver's line is their 90% race-cluster bootstrap interval. The peer
+average is a point benchmark: individual profile intervals cannot be combined into
+a valid interval for their mean from the published summary columns alone. Both
+series remain on the teammate-normalised robust-z scale; this is not a field ranking.
+
 ## Race-by-race signature
 
 Choose one technique axis. Each cell is a robust standard deviation from that race's actual teammate: teal means more, red means less. This is the evidence beneath the multi-race median, not a combined score.
