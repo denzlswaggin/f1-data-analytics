@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from analytics.driver_dna_validation import profile_stability
+from analytics.driver_dna_validation import build_stability_windows
 
 METHODOLOGY_VERSION = "driver-track-v1-descriptive"
 
@@ -132,7 +132,7 @@ def analyse_driver_track(evidence: pd.DataFrame, microsectors: pd.DataFrame) -> 
     """Build circuit, driver-fit and stability outputs from Driver DNA evidence."""
     archetypes = classify_circuit_archetypes(microsectors)
     fit = build_driver_track_fit(microsectors, archetypes)
-    stability = profile_stability(evidence)
+    stability = build_stability_windows(evidence)
     return DriverTrackResult(archetypes, fit, stability)
 
 
@@ -154,3 +154,7 @@ def validate_driver_track(result: DriverTrackResult) -> None:
         and result.driver_fit.duplicated(["driver_code", "circuit_archetype"]).any()
     ):
         raise ValueError("driver-track fit rows are not unique")
+    if not result.dna_stability.empty and result.dna_stability.duplicated(
+        ["from_season", "to_season", "driver_code", "metric"]
+    ).any():
+        raise ValueError("Driver DNA stability rows are not unique by season window")

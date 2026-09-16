@@ -27,6 +27,9 @@ mart. The command reports:
 A driver-axis is labelled stable only with at least five races, split movement
 at or below 1.0 robust-z, leave-one-out movement at or below 0.75 robust-z and
 at least 60% sign agreement. These are publication diagnostics, not p-values.
+The published stability mart evaluates every contiguous available season window,
+so dashboard diagnostics always match the season range used by the corresponding
+Driver DNA profile.
 
 ## Interpretation
 

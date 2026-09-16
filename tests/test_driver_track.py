@@ -81,3 +81,5 @@ def test_complete_driver_track_result_validates() -> None:
 
     validate_driver_track(result)
     assert len(result.dna_stability) == 2 * len(METRICS)
+    assert set(result.dna_stability["from_season"]) == {2025}
+    assert set(result.dna_stability["to_season"]) == {2025}

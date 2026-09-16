@@ -10,6 +10,8 @@ import pandas as pd
 from analytics.driver_dna import METHODOLOGY_VERSION, METRICS, analyse_driver_dna
 
 STABILITY_COLUMNS = [
+    "from_season",
+    "to_season",
     "driver_code",
     "driver_name",
     "metric",
@@ -37,6 +39,10 @@ def profile_stability(evidence: pd.DataFrame, *, min_races: int = 5) -> pd.DataF
     if evidence.empty:
         return pd.DataFrame(columns=STABILITY_COLUMNS)
     eligible = evidence[evidence["eligible"].fillna(False)].copy()
+    if eligible.empty:
+        return pd.DataFrame(columns=STABILITY_COLUMNS)
+    from_season = int(eligible["season"].min())
+    to_season = int(eligible["season"].max())
     rows: list[dict[str, object]] = []
     for driver_code, group in eligible.groupby("driver_code", sort=True):
         group = group.sort_values(["season", "round"])
@@ -75,6 +81,8 @@ def profile_stability(evidence: pd.DataFrame, *, min_races: int = 5) -> pd.DataF
             )
             rows.append(
                 {
+                    "from_season": from_season,
+                    "to_season": to_season,
                     "driver_code": driver_code,
                     "driver_name": group["driver_name"].dropna().iloc[0],
                     "metric": metric,
@@ -90,6 +98,26 @@ def profile_stability(evidence: pd.DataFrame, *, min_races: int = 5) -> pd.DataF
                 }
             )
     return pd.DataFrame(rows, columns=STABILITY_COLUMNS)
+
+
+def build_stability_windows(evidence: pd.DataFrame, *, min_races: int = 5) -> pd.DataFrame:
+    """Publish stability diagnostics for every contiguous available season window."""
+    if evidence.empty:
+        return pd.DataFrame(columns=STABILITY_COLUMNS)
+    eligible = evidence[evidence["eligible"].fillna(False)]
+    seasons = sorted(int(season) for season in eligible["season"].dropna().unique())
+    frames: list[pd.DataFrame] = []
+    for start_index, from_season in enumerate(seasons):
+        for to_season in seasons[start_index:]:
+            scoped = evidence[evidence["season"].between(from_season, to_season)]
+            stability = profile_stability(scoped, min_races=min_races)
+            if not stability.empty:
+                stability["from_season"] = from_season
+                stability["to_season"] = to_season
+                frames.append(stability)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(
+        columns=STABILITY_COLUMNS
+    )
 
 
 def permutation_negative_control(

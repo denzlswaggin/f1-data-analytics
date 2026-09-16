@@ -1008,6 +1008,8 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "methodology_version",
     },
     ("marts", "driver_dna_stability"): {
+        "from_season",
+        "to_season",
         "driver_code",
         "driver_name",
         "metric",
