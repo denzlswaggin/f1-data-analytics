@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { SvelteURL } from 'svelte/reactivity';
 	import {
 		buildDrivers,
 		buildEvents,
@@ -153,7 +154,7 @@
 
 	onMount(() => {
 		if (['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location.hostname)) {
-			const localDashboard = new URL('/f1-data-analytics/', window.location.href);
+			const localDashboard = new SvelteURL('/f1-data-analytics/', window.location.href);
 			localDashboard.port = '3000';
 			dashboardUrl = localDashboard.href;
 		}
@@ -630,13 +631,22 @@
 
 <div class="app-shell" bind:this={root}>
 	<header class="topbar">
-		<a class="brand" href={dashboardUrl} aria-label="F1 Analytics home" data-sveltekit-reload
+		<!-- The Evidence dashboard is outside this SvelteKit app and its base path. -->
+		<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+		<a
+			class="brand"
+			href={dashboardUrl}
+			aria-label="F1 Analytics home"
+			rel="external"
+			data-sveltekit-reload
 			><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span
 				><strong>F1</strong> ANALYTICS</span
 			></a
 		>
 		<nav aria-label="Primary navigation">
-			<a href={dashboardUrl} data-sveltekit-reload
+			<!-- Navigate to the separate Evidence app without applying the replay base path. -->
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+			<a href={dashboardUrl} rel="external" data-sveltekit-reload
 				><svg
 					width="18"
 					height="18"
