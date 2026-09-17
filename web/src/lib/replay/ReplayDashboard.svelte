@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { resolve } from '$app/paths';
 	import {
 		buildDrivers,
 		buildEvents,
@@ -40,7 +39,7 @@
 	const SPEEDS = [1, 2, 4, 6, 12, 24, 48];
 	const PAD = 44;
 	let manifest = $state<ReplayManifest | null>(null);
-	let cockpitLink: HTMLAnchorElement;
+	let dashboardUrl = $state('/f1-data-analytics/');
 	let selectedSeason = $state(0),
 		selectedRaceKey = $state('');
 	let loaded = $state<LoadedRace | null>(null),
@@ -153,8 +152,10 @@
 	);
 
 	onMount(() => {
-		if (['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
-			cockpitLink.href = `${window.location.protocol}//${window.location.hostname}:3000/f1-data-analytics/race-cockpit/`;
+		if (['localhost', '127.0.0.1', '[::1]', '::1'].includes(window.location.hostname)) {
+			const localDashboard = new URL('/f1-data-analytics/', window.location.href);
+			localDashboard.port = '3000';
+			dashboardUrl = localDashboard.href;
 		}
 		resizeObserver = new ResizeObserver(resizeCanvas);
 		window.addEventListener('keydown', onKeyDown);
@@ -629,16 +630,23 @@
 
 <div class="app-shell" bind:this={root}>
 	<header class="topbar">
-		<a class="brand" href={resolve('/')} aria-label="F1 Analytics home"
+		<a class="brand" href={dashboardUrl} aria-label="F1 Analytics home" data-sveltekit-reload
 			><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span
 				><strong>F1</strong> ANALYTICS</span
 			></a
 		>
 		<nav aria-label="Primary navigation">
-			<a
-				bind:this={cockpitLink}
-				href="https://denzlswaggin.github.io/f1-data-analytics/race-cockpit/">Race cockpit</a
-			><a href="#replay">Race replay</a>
+			<a href={dashboardUrl} data-sveltekit-reload
+				><svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14" /></svg
+				>Back to home</a
+			>
 		</nav>
 		<div class="snapshot">
 			<span></span> Snapshot · {formatDate(manifest?.snapshot.generated_at)}
@@ -1212,12 +1220,15 @@
 		width: 11px;
 	}
 	nav {
+		display: flex;
 		align-self: stretch;
 	}
 	nav a {
 		position: relative;
-		display: grid;
-		place-items: center;
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		white-space: nowrap;
 		height: 100%;
 		color: var(--text);
 		font-size: var(--text-small);
