@@ -64,16 +64,18 @@ select * from ${race_matchups} where eligible
 ```
 
 ```sql strongest_early
-select matchup, net_time_gain_sec
+select early_driver_code as beneficiary, matchup, net_time_gain_sec as gain_sec
 from ${eligible_matchups}
-order by net_time_gain_sec desc
+where net_time_gain_sec > 0
+order by gain_sec desc, matchup
 limit 1
 ```
 
 ```sql strongest_late
-select matchup, net_time_gain_sec
+select late_driver_code as beneficiary, matchup, -net_time_gain_sec as gain_sec
 from ${eligible_matchups}
-order by net_time_gain_sec asc
+where net_time_gain_sec < 0
+order by gain_sec desc, matchup
 limit 1
 ```
 
@@ -84,8 +86,16 @@ where position_flip
 ```
 
 <Grid cols=3>
-    <BigValue data={strongest_early} value=matchup comparison=net_time_gain_sec comparisonFmt="+0.00;-0.00 s" title="Largest early-stop gain" />
-    <BigValue data={strongest_late} value=matchup comparison=net_time_gain_sec comparisonFmt="+0.00;-0.00 s" title="Largest late-stop gain" />
+    {#if strongest_early.length > 0}
+    <BigValue data={strongest_early} value=beneficiary comparison=gain_sec comparisonFmt="0.00 s" title="Largest early-stop gain" />
+    {:else}
+    <KeyInsight label="No early-stop gain">No eligible window shows a positive gain for the early stopper.</KeyInsight>
+    {/if}
+    {#if strongest_late.length > 0}
+    <BigValue data={strongest_late} value=beneficiary comparison=gain_sec comparisonFmt="0.00 s" title="Largest late-stop gain" />
+    {:else}
+    <KeyInsight label="No late-stop gain">No eligible window shows a positive gain for the late stopper.</KeyInsight>
+    {/if}
     <BigValue data={completed_moves} value=moves title="Completed position flips" />
 </Grid>
 
@@ -102,6 +112,7 @@ order by abs(net_time_gain_sec) desc
 limit 20
 ```
 
+{#if ranked_matchups.length > 0}
 <BarChart
     data={ranked_matchups}
     x=matchup
@@ -114,6 +125,7 @@ limit 20
 >
     <ReferenceLine y=0 label="no time swing" />
 </BarChart>
+{/if}
 
 ## Timing versus the rest of the pit cycle
 
@@ -132,6 +144,7 @@ select * from ${eligible_matchups}
 where on_track_gain_sec is not null
 ```
 
+{#if decomposed.length > 0}
 <ScatterPlot
     data={decomposed}
     x=stop_duration_delta_sec
@@ -145,6 +158,9 @@ where on_track_gain_sec is not null
     <ReferenceLine x=0 label="equal pit-lane duration" />
     <ReferenceLine y=0 label="no remaining swing" />
 </ScatterPlot>
+{:else}
+<KeyInsight label="No duration decomposition">No eligible window has the pit-lane durations needed for this comparison.</KeyInsight>
+{/if}
 
 ## Pairwise evidence
 
@@ -177,7 +193,7 @@ the selected method. Excluded candidates remain available below.
 select * from ${race_matchups} where not eligible
 ```
 
-<ExpandableSection title="See excluded windows and the v1 method">
+<ExpandableSection title="See excluded windows and the pairwise method">
 {#if excluded_matchups.length > 0}
 <DataTable data={excluded_matchups} rows=30 search=true>
     <Column id=matchup title="Early → late" />

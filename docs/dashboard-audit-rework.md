@@ -110,7 +110,7 @@ Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
 
 ## Sections 3 and 4 execution checklist
 
-- [ ] Correct directional Pit Window headlines and empty chart states.
+- [x] Correct directional Pit Window headlines and empty chart states. Four page tests pass, including executed SQL for positive-only, negative-only, zero, null, empty and mixed samples. Render verification remains part of the final build gate.
 - [ ] Unify Race Pace with the shared robust peer baseline, retaining historical scope.
 - [ ] Expand Driver DNA matched-lap evidence without relaxing eligibility.
 - [ ] Match telemetry comparisons jointly and expose lap context.
