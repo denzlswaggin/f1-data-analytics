@@ -156,7 +156,9 @@ repeated battles, or selection from interrupted and unresolved episodes.
 select
     driver_code,
     'Attack conversion' as role,
-    attack_conversion_pct as rate_pct
+    attack_conversion_pct as rate_pct,
+    attack_conversion_p05_pct as lower_pct, attack_conversion_p95_pct as upper_pct,
+    attacking_opportunities as opportunities
 from ${race_drivers}
 where offense_eligible
 
@@ -165,22 +167,15 @@ union all
 select
     driver_code,
     'Defence hold' as role,
-    defence_hold_pct as rate_pct
+    defence_hold_pct as rate_pct,
+    defence_hold_p05_pct as lower_pct, defence_hold_p95_pct as upper_pct,
+    defensive_opportunities as opportunities
 from ${race_drivers}
 where defense_eligible
 ```
 
 {#if role_rates.length > 0}
-<BarChart
-    data={role_rates}
-    x=driver_code
-    y=rate_pct
-    series=role
-    yAxisTitle="eligible battles converted / held (%)"
-    labels=true
-    sort=false
-    chartAreaHeight=390
-/>
+<EvidenceIntervalChart data={role_rates} title="Resolved episodes: rates, 90% Wilson intervals and denominators" />
 {:else}
 <KeyInsight label="More resolved opportunities needed">
 No driver reached five resolved opportunities in either role in this scope.

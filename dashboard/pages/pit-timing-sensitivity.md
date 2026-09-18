@@ -44,7 +44,8 @@ order by round
 </FilterBar>
 
 ```sql coverage
-select *, observed_stops as sample_rows, drivers as entity_count,
+select *, observed_stops as sample_rows, eligible_stops as usable_samples,
+    'stops' as sample_unit, 'stops' as usable_unit, drivers as entity_count,
     1 as race_count, season as first_season, season as last_season,
     race_date as latest_event_date
 from f1.pit_timing_races
@@ -90,6 +91,7 @@ select
     old_compound || ' → ' || new_compound as compound_change,
     case
         when not eligible then 'Excluded'
+        when boundary_minimum then 'Range-edge minimum; no optimum established'
         else timing_signal
     end as displayed_signal
 from f1.pit_timing_sensitivity
@@ -104,9 +106,9 @@ select * from ${race_stops} where eligible
 ```sql largest_supported_gain
 select
     arg_max(stop_label, estimated_gain_vs_actual_sec)
-        filter (where timing_signal <> 'No meaningful directional signal') as stop_label,
+        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as stop_label,
     max(estimated_gain_vs_actual_sec)
-        filter (where timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
+        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
 from ${supported_stops}
 ```
 
@@ -114,12 +116,14 @@ from ${supported_stops}
 select
     count(*) as observed_stops,
     count(*) filter (where eligible) as eligible_stops,
-    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal
+    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal,
+    count(*) filter (where eligible and boundary_minimum) as boundary_stops
 from ${race_stops}
 ```
 
-<Grid cols=3>
-    <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest supported timing signal" />
+<Grid cols=4>
+    <BigValue data={evidence_summary} value=boundary_stops title="Eligible minima at tested boundary" />
+    <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest interior timing signal" />
     <BigValue data={evidence_summary} value=eligible_stops comparison=observed_stops comparisonFmt="0 observed stops" title="Eligible stops" />
     <BigValue data={evidence_summary} value=no_signal title="No meaningful directional signal" />
 </Grid>
