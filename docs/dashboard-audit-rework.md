@@ -114,7 +114,7 @@ Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
 - [x] Unify Race Pace with the shared robust peer baseline, retaining historical scope. Uses published Traffic lap deltas directly; raw timing remains selectable for older races without replay-backed evidence. Executed query tests verify identical deltas, phase minima and historical availability; render verification is pending.
 - [ ] Expand Driver DNA matched-lap evidence without relaxing eligibility.
 - [x] Match telemetry comparisons jointly and expose lap context. Candidate pool includes fastest available and eligible DNA laps; race-lap/tyre-age gaps are capped at three with green dry non-pit laps only. Five executed SQL cases verify matching and integrated delta; build/render gates remain pending.
-- [ ] Clarify Warmup, Traffic and Consistency usable samples and limitations.
+- [x] Clarify Warmup, Traffic and Consistency usable samples and limitations. Separate warmup outcomes and offset sample counts; show metric-specific Traffic eligibility and Consistency exclusion reasons. Guard empty headlines/charts and contain wide tables. Page/query tests pass; responsive build gate remains pending.
 - [ ] Rework Ratings and Comparison around supported scopes and uncertainty.
 - [ ] Consolidate Cockpit/Latest and improve homepage navigation and coverage.
 - [ ] Present replay provenance and polish Race Control evidence.

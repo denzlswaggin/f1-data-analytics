@@ -72,3 +72,20 @@ def test_summary_sql_preserves_observation_schema_and_typed_sentinel(populated: 
     else:
         assert pd.isna(result.iloc[0]["first_observed_confirmation_laps"])
         assert result.iloc[0]["settling_status"] == "unavailable"
+
+
+def test_outcome_counts_do_not_double_count_pairs_with_earlier_gaps() -> None:
+    import re
+
+    match = re.search(r"```sql outcome_counts\n(.*?)```", PAGE.read_text(encoding="utf-8"), re.S)
+    assert match is not None
+    with duckdb.connect() as connection:
+        connection.execute("""create table race_stints as select * from (values
+            (true, 'observed', false, true),
+            (false, 'observed_incomplete', false, true),
+            (false, 'right_censored', true, true),
+            (false, 'incomplete', false, true),
+            (false, 'excluded', false, false)
+        ) t(confirmation_history_complete, settling_status, right_censored, warmup_eligible)""")
+        row = connection.execute(match.group(1).replace("${race_stints}", "race_stints")).fetchone()
+    assert row == (1, 1, 1, 1, 1)

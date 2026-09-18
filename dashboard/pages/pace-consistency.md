@@ -85,14 +85,26 @@ limit 1
 ```
 
 ```sql evidence_count
-select count(*) as drivers, sum(modelled_laps) as laps
+select count(*) as drivers, coalesce(sum(modelled_laps), 0) as laps
 from ${eligible_results}
 ```
 
 <Grid cols=3>
-    <BigValue data={most_repeatable} value=driver_code comparison=robust_consistency_sec comparisonFmt="0.000 s" title="Most repeatable pace" />
-    <BigValue data={largest_tail} value=driver_code comparison=slow_lap_cost_per_10_laps_sec comparisonFmt="0.000 s / 10 laps" title="Largest observed slow tail" />
-    <BigValue data={evidence_count} value=drivers comparison=laps comparisonFmt="0 modelled laps" title="Eligible drivers" />
+    {#if most_repeatable.length > 0}
+<BigValue data={most_repeatable} value=driver_code comparison=robust_consistency_sec comparisonFmt="0.000 s" title="Most repeatable pace" />
+{:else}
+<KeyInsight label="Most repeatable pace">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if largest_tail.length > 0}
+<BigValue data={largest_tail} value=driver_code comparison=slow_lap_cost_per_10_laps_sec comparisonFmt="0.000 s / 10 laps" title="Largest observed slow tail" />
+{:else}
+<KeyInsight label="Largest observed slow tail">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if evidence_count.length > 0}
+<BigValue data={evidence_count} value=drivers comparison=laps comparisonFmt="0 modelled laps" title="Eligible drivers" />
+{:else}
+<KeyInsight label="Eligible drivers">Insufficient eligible evidence.</KeyInsight>
+{/if}
 </Grid>
 
 Headline comparisons require medium or high heuristic evidence; low-evidence
@@ -107,6 +119,7 @@ The robust spread is 1.4826 × the median absolute deviation of model residuals.
 Each stint has its own trend, so normal tyre degradation and different absolute
 pace levels do not inflate the ranking. Lower is more repeatable.
 
+{#if eligible_results.length > 0}
 <BarChart
     data={eligible_results}
     x=driver_code
@@ -116,6 +129,9 @@ pace levels do not inflate the ranking. Lower is more repeatable.
     labels=true
     sort=false
 />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 
 ## Repeatability versus the slow-lap tail
 
@@ -123,6 +139,7 @@ The horizontal axis measures ordinary lap-to-lap spread. The vertical axis is
 the accumulated excess above the driver's threshold, normalised to ten eligible
 laps so different sample sizes remain comparable.
 
+{#if eligible_results.length > 0}
 <ScatterPlot
     data={eligible_results}
     x=robust_consistency_sec
@@ -134,9 +151,14 @@ laps so different sample sizes remain comparable.
     pointSize=28
     chartAreaHeight=390
 />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_results} rows=25 search=true download=true>
     <Column id=consistency_rank title="Rank" />
+</div>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
     <Column id=robust_consistency_sec title="Consistency (s)" fmt="0.000" />
@@ -144,7 +166,11 @@ laps so different sample sizes remain comparable.
     <Column id=p90_slow_tail_sec title="P90 residual (s)" fmt="+0.000;-0.000" />
     <Column id=slow_lap_cost_per_10_laps_sec title="Slow-tail cost / 10 (s)" fmt="0.000" />
     <Column id=unexplained_slow_laps title="Slow-tail laps" />
+    <Column id=candidate_laps title="Candidate laps" />
     <Column id=modelled_laps title="Modelled laps" />
+    <Column id=excluded_laps title="Excluded laps" />
+    <Column id=consistency_eligible title="Eligible" />
+    <Column id=exclusion_reason title="Why unavailable" />
     <Column id=modelled_stints title="Stints" />
     <Column id=replay_coverage_pct title="Replay coverage (%)" fmt="0.0" />
     <Column id=confidence title="Evidence" />
@@ -181,6 +207,7 @@ order by lap_number
 select * from ${lap_evidence} where lap_eligible
 ```
 
+{#if modelled_laps.length > 0}
 <BarChart
     data={modelled_laps}
     x=lap_number
@@ -192,6 +219,9 @@ select * from ${lap_evidence} where lap_eligible
     chartAreaHeight=360
 >
     <ReferenceLine y=0 label="stint trend" />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 </BarChart>
 
 ```sql stint_models
@@ -206,8 +236,10 @@ group by stint
 order by stint
 ```
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={stint_models} rows=10>
     <Column id=stint title="Stint" />
+</div>
     <Column id=compound title="Compound" />
     <Column id=clean_laps title="Clean laps" />
     <Column id=trend_sec_per_tyre_lap title="Modelled trend (s/tyre lap)" fmt="+0.000;-0.000" />
@@ -220,7 +252,9 @@ where not lap_eligible
 ```
 
 <ExpandableSection title="See excluded laps and the robust-peer method">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={excluded_laps} rows=60 search=true />
+</div>
 
 A stint needs at least five clean-air laps, four distinct tyre-age values and a
 span of at least four tyre-life laps on one compound. Driver results need at

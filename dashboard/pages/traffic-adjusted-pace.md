@@ -71,6 +71,7 @@ limit 1
 ```sql exposure_leader
 select driver_code, traffic_exposure_pct
 from ${race_results}
+where traffic_exposure_pct is not null
 order by traffic_exposure_pct desc nulls last
 limit 1
 ```
@@ -84,10 +85,44 @@ limit 1
 ```
 
 <Grid cols=3>
-    <BigValue data={clean_air_leader} value=driver_code title="Fastest clean-air pace" />
-    <BigValue data={exposure_leader} value=driver_code title="Highest traffic exposure" />
-    <BigValue data={association_leader} value=driver_code title="Largest traffic association" />
+    {#if clean_air_leader.length > 0}
+<BigValue data={clean_air_leader} value=driver_code title="Fastest clean-air pace" />
+{:else}
+<KeyInsight label="Fastest clean-air pace">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if exposure_leader.length > 0}
+<BigValue data={exposure_leader} value=driver_code title="Highest traffic exposure" />
+{:else}
+<KeyInsight label="Highest traffic exposure">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if association_leader.length > 0}
+<BigValue data={association_leader} value=driver_code title="Largest traffic association" />
+{:else}
+<KeyInsight label="Largest traffic association">Insufficient eligible evidence.</KeyInsight>
+{/if}
 </Grid>
+
+```sql metric_samples
+select count(*) as candidate_drivers,
+    count(*) filter (where clean_air_eligible) as clean_air_drivers,
+    count(*) filter (where traffic_association_eligible) as association_drivers,
+    coalesce(sum(clean_air_laps), 0) as clean_laps,
+    coalesce(sum(matched_traffic_laps), 0) as matched_laps
+from ${race_results}
+```
+
+<DataTable data={metric_samples}>
+    <Column id=candidate_drivers title="Candidate drivers" />
+    <Column id=clean_air_drivers title="Clean-air eligible" />
+    <Column id=association_drivers title="Association eligible" />
+    <Column id=clean_laps title="Clean laps" />
+    <Column id=matched_laps title="Matched traffic laps" />
+</DataTable>
+
+Clean-air and association eligibility differ. A blank association is missing
+evidence, not a measured zero effect. Lap counts are observations within drivers,
+not independent race replications. Rankings use point estimates, without evidence
+that adjacent drivers are statistically distinguishable.
 
 ## Clean-air pace ranking — {inputs.season.value} {inputs.race.label}
 
@@ -103,6 +138,7 @@ select * from ${race_results}
 where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
 ```
 
+{#if clean_air_results.length > 0}
 <BarChart
     data={clean_air_results}
     x=driver_code
@@ -111,6 +147,9 @@ where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
     labels=true
 >
     <ReferenceLine y=0 label="peer median" />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 </BarChart>
 
 ## Traffic exposure versus associated pace
@@ -127,6 +166,7 @@ from ${race_results}
 where traffic_association_eligible and traffic_associated_delta_sec_per_lap is not null
 ```
 
+{#if association.length > 0}
 <ScatterPlot
     data={association}
     x=traffic_exposure_pct
@@ -137,10 +177,15 @@ where traffic_association_eligible and traffic_associated_delta_sec_per_lap is n
     chartAreaHeight=380
 >
     <ReferenceLine y=0 label="no observed association" />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 </ScatterPlot>
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_results} rows=25 search=true download=true>
     <Column id=clean_air_rank title="Rank" />
+</div>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
     <Column id=traffic_adjusted_pace_delta_sec title="Clean-air pace (s)" fmt="+0.000;-0.000" />
@@ -188,6 +233,7 @@ where season = ${inputs.season.value}
 order by lap_number
 ```
 
+{#if lap_evidence.length > 0}
 <LineChart
     data={lap_evidence}
     x=lap_number
@@ -197,10 +243,15 @@ order by lap_number
     chartAreaHeight=340
 >
     <ReferenceLine y=0 label="peer median" />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 </LineChart>
 
 <ExpandableSection title="See every included lap and the method">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={lap_evidence} rows=80 download=true />
+</div>
 
 Traffic is at least 50% of valid replay ticks within 1.5 seconds of a car ahead.
 Clean air is at least 80% leading or three seconds clear, with no more than 10%
@@ -240,8 +291,10 @@ Pit visits are excluded even when the tyre stint does not change. Evidence
 combines available pit-entry/exit timestamps, recorded pit laps and inferred
 stint boundaries. Missing pit records do not prove that no pit visit occurred.
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={excluded_pit_laps} rows=40 search=true download=true>
     <Column id=driver_code title="Driver" />
+</div>
     <Column id=lap_number title="Lap" />
     <Column id=pit_context_source title="Evidence source" />
     <Column id=pit_exclusion_reason title="Exclusion" />
