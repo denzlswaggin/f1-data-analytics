@@ -91,7 +91,9 @@ order by top_speed_kph desc
 select distinct season from f1.weather_degradation order by season desc
 ```
 
-<Dropdown data={weather_seasons} name=weather_season value=season title="Weather season (independent of speed race)" />
+This season filter is independent of the speed-race selection above.
+
+<Dropdown data={weather_seasons} name=weather_season value=season title="Weather season" />
 
 ```sql weather_coverage
 select sum(sample_rows) as sample_rows, sum(usable_samples) as usable_samples,
