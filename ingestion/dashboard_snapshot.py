@@ -36,7 +36,13 @@ DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 # columns, so their absence is always a broken pipeline rather than "no data".
 DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
     ("marts", "source_coverage"): {
-        "resource", "season", "round", "status", "row_count", "provenance", "reason",
+        "resource",
+        "season",
+        "round",
+        "status",
+        "row_count",
+        "provenance",
+        "reason",
     },
     ("marts", "racecraft_processing"): RECEIPT_COLUMNS,
     ("marts", "pit_lap_context"): {
@@ -166,6 +172,11 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "n_comparisons",
     },
     ("marts", "driver_pace_profile"): {
+        "delta_lo",
+        "delta_hi",
+        "bootstrap_valid_samples",
+        "bootstrap_samples",
+        "interval_eligible",
         "delta_rank",
         "driver_id",
         "driver_name",
@@ -988,6 +999,9 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "cliff_signal",
     },
     ("marts", "driver_track_archetypes"): {
+        "speed_high_kph",
+        "brake_high_pct",
+        "low_speed_high_pct",
         "season",
         "round",
         "race_name",
@@ -1001,6 +1015,9 @@ DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
         "methodology_version",
     },
     ("marts", "driver_track_fit"): {
+        "median_gain_lo",
+        "median_gain_hi",
+        "interval_eligible",
         "driver_code",
         "driver_name",
         "circuit_archetype",
@@ -1155,7 +1172,9 @@ def _copy_duckdb(source: Path, target: Path) -> dict[str, int]:
                 _scalar(connection, f"select count(*) from {qualified}")
             )
         materialize_source_coverage(connection)
-        rows["marts.source_coverage"] = int(_scalar(connection, "select count(*) from marts.source_coverage"))
+        rows["marts.source_coverage"] = int(
+            _scalar(connection, "select count(*) from marts.source_coverage")
+        )
         connection.execute("detach f1")
     finally:
         connection.close()
@@ -1205,7 +1224,9 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
                         target_connection.unregister("snapshot_chunk")
                     rows[f"{schema}.{table_name}"] = count
         materialize_source_coverage(target_connection)
-        rows["marts.source_coverage"] = int(_scalar(target_connection, "select count(*) from marts.source_coverage"))
+        rows["marts.source_coverage"] = int(
+            _scalar(target_connection, "select count(*) from marts.source_coverage")
+        )
     finally:
         target_connection.close()
         engine.dispose()
@@ -1411,7 +1432,9 @@ def build_dashboard_snapshot(
             else _copy_postgres(settings, temporary)
         )
         latest_event_date = validate_dashboard_snapshot(temporary)
-        validate_partition_preservation(output_dir / "latest.duckdb", temporary, coverage_exceptions)
+        validate_partition_preservation(
+            output_dir / "latest.duckdb", temporary, coverage_exceptions
+        )
         git_sha = _git_sha()
         package_versions = _package_versions()
         methodology_versions = _methodology_versions(temporary)

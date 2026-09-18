@@ -14,7 +14,7 @@ from ingestion.logging import get_logger
 
 from analytics.overtakes import MAX_PERSISTENCE_GAP_S, detect_overtakes
 from analytics.pace_consistency import PaceConsistencyResult, analyse_pace_consistency
-from analytics.pace_profile import build_pace_profile
+from analytics.pace_profile import bootstrap_pace_difference, build_pace_profile
 from analytics.pipelines.driver_dna import build_driver_dna as build_driver_dna
 from analytics.pipelines.driver_dna import (
     build_driver_dna_incremental as build_driver_dna_incremental,
@@ -264,7 +264,7 @@ def _race_gaps_query(from_season: int | None, to_season: int | None) -> str:
         where.append(f"season <= {int(to_season)}")
     clause = f" where {' and '.join(where)}" if where else ""
     return (
-        "select driver_id, teammate_id, pace_gap, season "
+        "select race_key, driver_id, teammate_id, pace_gap, season "
         f"from intermediate.int_teammate_race_gaps{clause}"
     )
 
@@ -287,7 +287,7 @@ def build_driver_pace_profile(
     settings = settings or get_settings()
 
     race_gaps = read_query(_race_gaps_query(from_season, to_season), settings)
-    quali_gaps = read_query(GAPS_QUERY, settings)
+    quali_gaps = read_query(GAPS_V2_QUERY, settings)
     drivers = read_query(DRIVERS_QUERY, settings)
 
     result = build_pace_profile(quali_gaps, race_gaps)
@@ -327,6 +327,8 @@ def build_driver_pace_profile(
         ]
     )
 
+    intervals = bootstrap_pace_difference(quali_gaps, race_gaps)
+    enriched = enriched.merge(intervals, on="driver_id", how="left")
     replace_table(enriched, schema="marts", table="driver_pace_profile", settings=settings)
     log.info(
         "pace_profile.materialised",

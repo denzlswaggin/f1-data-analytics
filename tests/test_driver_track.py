@@ -83,3 +83,24 @@ def test_complete_driver_track_result_validates() -> None:
     assert len(result.dna_stability) == 2 * len(METRICS)
     assert set(result.dna_stability["from_season"]) == {2025}
     assert set(result.dna_stability["to_season"]) == {2025}
+
+
+def test_track_intervals_require_five_races_and_repeat_deterministically() -> None:
+    micro = _microsectors()
+    archetypes = classify_circuit_archetypes(micro)
+    thin = build_driver_track_fit(micro, archetypes)
+    assert not thin.interval_eligible.any()
+    assert thin.median_gain_lo.isna().all()
+    copies = []
+    for rnd in range(1, 6):
+        part = micro[micro["round"] == 1].copy()
+        part["round"] = rnd
+        part["race_name"] = f"Race {rnd}"
+        part["segment_delta_sec"] *= rnd
+        copies.append(part)
+    micro = pd.concat(copies)
+    archetypes = classify_circuit_archetypes(micro)
+    first = build_driver_track_fit(micro, archetypes)
+    pd.testing.assert_frame_equal(first, build_driver_track_fit(micro, archetypes))
+    assert first.interval_eligible.all()
+    assert (first.median_gain_lo <= first.median_gain_hi).all()

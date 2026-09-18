@@ -20,43 +20,14 @@ lap across the available microsectors. Car, setup and race state remain in the
 signal, so this is evidence for investigation rather than a universal rating.
 </KeyInsight>
 
-```sql canonical_segments
-select * from f1.driver_dna_microsectors
-where driver_code < teammate_code
-```
-
-```sql race_features
-select season, round, race_name,
-    avg((driver_speed_kph + teammate_speed_kph) / 2) as average_speed_kph,
-    avg((driver_brake_share + teammate_brake_share) / 2) * 100 as braking_density_pct,
-    avg(case when (driver_throttle + teammate_throttle) / 2 >= 99 then 1 else 0 end) * 100 as full_throttle_pct,
-    avg(case when (driver_speed_kph + teammate_speed_kph) / 2 <= 160 then 1 else 0 end) * 100 as low_speed_segment_pct,
-    count(*) as segments
-from ${canonical_segments}
-group by season, round, race_name
-```
-
-```sql feature_thresholds
-select
-    quantile_cont(average_speed_kph, 0.67) as speed_high,
-    quantile_cont(braking_density_pct, 0.67) as brake_high,
-    quantile_cont(low_speed_segment_pct, 0.67) as low_speed_high
-from ${race_features}
-```
-
 ```sql archetypes
-select features.*,
-    case
-        when average_speed_kph >= thresholds.speed_high
-            and braking_density_pct < thresholds.brake_high then 'High-speed flow'
-        when braking_density_pct >= thresholds.brake_high then 'Heavy braking'
-        when low_speed_segment_pct >= thresholds.low_speed_high then 'Low-speed traction'
-        else 'Balanced'
-    end as circuit_archetype
-from ${race_features} as features
-cross join ${feature_thresholds} as thresholds
+select *, cast(season as varchar) || ' R' || cast(round as varchar) || ' ' || race_name as race_label
+from f1.driver_track_archetypes
 order by season desc, round desc
 ```
+
+Classifications and their 67th-percentile thresholds are fixed in each published
+snapshot under methodology `driver-track-v2-race-bootstrap`; page filters do not recalculate them.
 
 ## Circuit map from the data
 
@@ -65,7 +36,7 @@ order by season desc, round desc
     x=average_speed_kph
     y=braking_density_pct
     series=circuit_archetype
-    tooltipTitle=race_name
+    tooltipTitle=race_label
     xAxisTitle="pair-average speed (km/h)"
     yAxisTitle="braking sample density (%)"
     pointSize=30
@@ -117,12 +88,9 @@ group by micro.season, micro.round, micro.race_name, archetypes.circuit_archetyp
 ```
 
 ```sql driver_archetype_fit
-select circuit_archetype, count(*) as races,
-    median(teammate_relative_gain_sec) as median_gain_sec,
-    avg(teammate_relative_gain_sec) as mean_gain_sec,
-    avg(case when teammate_relative_gain_sec > 0 then 1 else 0 end) * 100 as positive_race_pct
-from ${driver_race_gain}
-group by circuit_archetype order by median_gain_sec desc
+select * from f1.driver_track_fit
+where driver_code = '${inputs.track_driver.value}' and interval_eligible
+order by median_gain_sec desc
 ```
 
 ## Teammate-relative time by circuit archetype
@@ -131,8 +99,23 @@ group by circuit_archetype order by median_gain_sec desc
     <ReferenceLine y=0 label="matched teammate lap" />
 </BarChart>
 
+Only groups with at least five races appear above. Intervals are descriptive 90%
+race-bootstrap intervals (1,000 draws, seed 0), not predictions for another circuit.
+
+<DataTable data={driver_archetype_fit}>
+    <Column id=circuit_archetype title="Archetype" />
+    <Column id=n_races title="Races" />
+    <Column id=median_gain_sec title="Median (s)" fmt="0.000" />
+    <Column id=median_gain_lo title="90% lower (s)" fmt="0.000" />
+    <Column id=median_gain_hi title="90% upper (s)" fmt="0.000" />
+</DataTable>
+
+Individual races, including groups below the threshold:
+<DataTable data={driver_race_gain} rows=10 />
+
 ```sql technique_by_race
 select evidence.season, evidence.round, evidence.race_name, archetypes.circuit_archetype,
+    cast(evidence.season as varchar) || ' R' || cast(evidence.round as varchar) || ' ' || evidence.race_name as race_label,
     case '${inputs.track_metric.value}'
         when 'full_throttle_share' then full_throttle_share_z
         when 'coasting_share' then coasting_share_z
@@ -148,7 +131,7 @@ order by evidence.season, evidence.round
 
 ## Stability of the selected technique
 
-<BarChart data={technique_by_race} x=race_name y=technique_z series=circuit_archetype sort=false>
+<BarChart data={technique_by_race} x=race_label y=technique_z series=circuit_archetype sort=false>
     <ReferenceLine y=0 label="teammate baseline" />
 </BarChart>
 
@@ -162,7 +145,7 @@ from ${technique_by_race}
 <Grid cols=3>
     <BigValue data={stability_summary} value=races title="Comparable races" />
     <BigValue data={stability_summary} value=median_z title="Median robust-z" fmt="+0.00;-0.00" />
-    <BigValue data={stability_summary} value=direction_agreement_pct title="Direction agreement" fmt="0%" />
+    <BigValue data={stability_summary} value=direction_agreement_pct title="Direction agreement (%)" fmt="0.0" />
 </Grid>
 
 The pipeline validation command adds split-season, leave-one-race-out and

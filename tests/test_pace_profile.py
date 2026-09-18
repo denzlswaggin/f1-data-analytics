@@ -110,3 +110,27 @@ def test_empty_race_gaps_yield_an_empty_profile() -> None:
     assert result.profile.empty
     assert list(result.profile.columns) == PROFILE_COLUMNS
     assert result.seasons == []
+
+
+def test_joint_bootstrap_preserves_identical_weekend_effects() -> None:
+    from analytics.pace_profile import bootstrap_pace_difference
+
+    rows = []
+    for season in (2024, 2025):
+        for rnd in range(6):
+            for driver, teammate, sign in (("a", "b", 1), ("b", "a", -1)):
+                rows.append(
+                    dict(
+                        season=season,
+                        race_key=f"{season}-{rnd}",
+                        driver_id=driver,
+                        teammate_id=teammate,
+                        pace_gap=sign * (rnd + 1) / 10,
+                    )
+                )
+    gaps = pd.DataFrame(rows)
+    intervals = bootstrap_pace_difference(gaps, gaps, samples=30)
+    assert intervals.interval_eligible.all()
+    assert (intervals.bootstrap_valid_samples == 30).all()
+    assert (intervals[["delta_lo", "delta_hi"]] == 0).all().all()
+    pd.testing.assert_frame_equal(intervals, bootstrap_pace_difference(gaps, gaps, samples=30))
