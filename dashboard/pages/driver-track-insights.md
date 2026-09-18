@@ -47,6 +47,7 @@ select circuit_archetype, count(*) as races
 from ${archetypes} group by circuit_archetype order by races desc
 ```
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={archetypes} rows=20 search=true download=true>
     <Column id=season />
     <Column id=round />
@@ -58,6 +59,7 @@ from ${archetypes} group by circuit_archetype order by races desc
     <Column id=low_speed_segment_pct title="Low-speed %" fmt="0.0" />
     <Column id=segments />
 </DataTable>
+</div>
 
 ```sql drivers
 select distinct driver_code, driver_name
@@ -107,6 +109,7 @@ Only groups with at least five races appear above. Intervals are descriptive 90%
 race-bootstrap intervals (1,000 draws, seed 0), not predictions for another circuit.
 
 {#if driver_archetype_fit.length > 0}
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={driver_archetype_fit}>
     <Column id=circuit_archetype title="Archetype" />
     <Column id=n_races title="Races" />
@@ -114,10 +117,13 @@ race-bootstrap intervals (1,000 draws, seed 0), not predictions for another circ
     <Column id=median_gain_lo title="90% lower (s)" fmt="0.000" />
     <Column id=median_gain_hi title="90% upper (s)" fmt="0.000" />
 </DataTable>
+</div>
 {/if}
 
 Individual races, including groups below the threshold:
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={driver_race_gain} rows=10 />
+</div>
 
 ```sql technique_by_race
 select evidence.season, evidence.round, evidence.race_name, archetypes.circuit_archetype,

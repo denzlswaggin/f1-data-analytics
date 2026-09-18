@@ -20,7 +20,7 @@ The model moves the same observed stop and tyre-set transition. It does not know
 <KeyInsight label="Temporal diagnostic: the fitted trend did not beat a constant baseline">
 On snapshot 20260918-audit-core-pages, 871 stints had enough evidence for the
 first-eight-laps training protocol. Holdout MAE was **1.136 s** for the production
-Theil?Sen fitting kernel versus **0.652 s** for the training-median baseline
+Theil-Sen fitting kernel versus **0.652 s** for the training-median baseline
 (lower is better). This is a retrospective component diagnostic, not validation
 of the complete counterfactual strategy model. Treat scenario gains as exploratory.
 </KeyInsight>

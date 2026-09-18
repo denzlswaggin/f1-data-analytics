@@ -15,11 +15,11 @@
             {/each}
             {#each rows as row, i}
                 <g transform={`translate(0, ${43 + i * 30})`}>
-                    <title>{row.driver_code} {row.role}: {Number(row.rate_pct).toFixed(1)}%, 90% interval {Number(row.lower_pct).toFixed(1)}?{Number(row.upper_pct).toFixed(1)}%, n={row.opportunities}</title>
-                    <text x="0" y="4">{row.driver_code} ? {row.role}</text>
+                    <title>{row.driver_code} {row.role}: {Number(row.rate_pct).toFixed(1)}%, 90% interval {Number(row.lower_pct).toFixed(1)}–{Number(row.upper_pct).toFixed(1)}%, n={row.opportunities}</title>
+                    <text x="0" y="4">{row.driver_code} · {row.role}</text>
                     <line x1={x(row.lower_pct)} x2={x(row.upper_pct)} y1="0" y2="0" class="interval" />
                     <circle cx={x(row.rate_pct)} cy="0" r="4" />
-                    <text x="710" y="4">{Number(row.rate_pct).toFixed(1)}% ? n={row.opportunities}</text>
+                    <text x="710" y="4">{Number(row.rate_pct).toFixed(1)}% · n={row.opportunities}</text>
                 </g>
             {/each}
         </svg>

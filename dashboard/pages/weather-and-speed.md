@@ -75,12 +75,14 @@ order by top_speed_kph desc
 />
 
 <ExpandableSection title="View straight-line speed data">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_speed} rows=12>
     <Column id=driver_name title="Driver" />
     <Column id=team title="Team" />
     <Column id=top_speed_kph title="Top (km/h)" fmt='0.0' />
     <Column id=avg_speed_kph title="Avg (km/h)" fmt='0.0' />
 </DataTable>
+</div>
 </ExpandableSection>
 
 ## Observed lap-time slope by track conditions
@@ -94,7 +96,9 @@ select distinct season from f1.weather_degradation order by season desc
 ```sql weather_coverage
 select sum(sample_rows) as sample_rows, sum(usable_samples) as usable_samples,
     count(*) as race_count, min(first_season) as first_season, max(last_season) as last_season,
-    max(latest_event_date) as latest_event_date, max(entity_count) as entity_count,
+    max(latest_event_date) as latest_event_date,
+    (select count(distinct compound) from f1.weather_degradation
+     where season = ${inputs.weather_season.value}) as entity_count,
     'fits' as sample_unit, 'fits' as usable_unit
 from f1.data_coverage where section = 'weather_slope'
     and season = ${inputs.weather_season.value}
@@ -139,6 +143,7 @@ order by compound, weather_bucket
 
 {#if deg_by_weather.length > 0}
 <ExpandableSection title="View weather slope data">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={deg_by_weather}>
     <Column id=compound title="Compound" />
     <Column id=weather_bucket title="Conditions" />
@@ -146,6 +151,7 @@ order by compound, weather_bucket
     <Column id=races title="Races" />
     <Column id=laps title="Laps" />
 </DataTable>
+</div>
 </ExpandableSection>
 
 {/if}
@@ -159,6 +165,8 @@ order by round, compound, weather_bucket
 
 Individual fits remain available even when a group has fewer than five races.
 Blank conditions mean no aligned weather sample.
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={weather_samples} rows=10 search=true />
+</div>
 
 <RelatedAnalysis section="race" current="weather-and-speed" season={inputs.season.value} race={inputs.race.value} />

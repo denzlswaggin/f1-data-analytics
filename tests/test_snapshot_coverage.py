@@ -51,7 +51,7 @@ def test_coverage_gate_requires_attempt_receipt_and_correct_count() -> None:
 
 def test_lost_session_is_a_regression_even_if_race_remains(tmp_path: Path) -> None:
     old, new = tmp_path / "old.duckdb", tmp_path / "new.duckdb"
-    for path, sessions in [(old, "('R'),('Q')"), (new, "('R')")]:
+    for path, sessions in [(old, "('R'),('Q'),(null)"), (new, "('R')")]:
         with duckdb.connect(str(path)) as c:
             c.execute("create schema staging")
             c.execute(

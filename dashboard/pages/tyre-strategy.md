@@ -14,7 +14,7 @@ max_width: 1600
 />
 
 <KeyInsight label="How to read the strategy chart">
-Blocks show compound and stint length. Darkening indicates observed fall-off, while the relative chart below compares cars on the same lap and compound.
+Blocks show compound and stint length; ticks mark stint changes, including changes during red flags. Darkening indicates observed fall-off, while the relative chart below compares cars on the same lap and compound.
 </KeyInsight>
 
 ```sql seasons

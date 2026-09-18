@@ -84,7 +84,7 @@ def validate_partition_preservation(
                 (table, *key) for key in before - after if (table, key[0], key[1]) not in allowed
             )
         if lost:
-            raise ValueError(f"Snapshot would lose published partitions: {sorted(lost)}")
+            raise ValueError(f"Snapshot would lose published partitions: {sorted(lost, key=repr)}")
 
 
 def validate_source_coverage(c: duckdb.DuckDBPyConnection) -> None:

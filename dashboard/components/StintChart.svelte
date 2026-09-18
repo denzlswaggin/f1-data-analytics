@@ -1,7 +1,7 @@
 <script>
     // Tyre-strategy gantt: one horizontal row per driver (ordered by finishing
     // position), each row segmented into compound-coloured stints on an absolute
-    // lap axis, with a pit-stop tick at every stint boundary. Pure SVG so it
+    // lap axis, with a tick at every stint boundary. Pure SVG so it
     // prerenders cleanly under Evidence SSR (no canvas / requestAnimationFrame);
     // the only client-only bit is the responsive width via bind:clientWidth,
     // which falls back to a default during prerender. Fed by the `stint_strategy`
@@ -109,7 +109,7 @@
                 {compoundOf(key).name}
             </span>
         {/each}
-        <span class="sc-legend-item"><span class="sc-pit-swatch"></span> pit stop</span>
+        <span class="sc-legend-item"><span class="sc-pit-swatch"></span> stint change</span>
         {#if shade}
             <span class="sc-legend-item"><span class="sc-deg-swatch"></span> lower → higher observed slope</span>
         {/if}
