@@ -8,7 +8,6 @@
     const groups = {
         race: [
             ['Race cockpit', 'race-cockpit'],
-            ['Race story', 'latest-race'],
             ['Race replay', 'race-replay'],
             ['Race pace', 'race-pace'],
             ['Traffic-adjusted pace', 'traffic-adjusted-pace'],

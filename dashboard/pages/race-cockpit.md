@@ -13,7 +13,7 @@ max_width: 1600
     accent="race"
 >
     <div slot="actions">
-        <a href="/f1-data-analytics/race-replay/">Watch selected race</a>
+        <RaceContextLink path="race-replay" season={inputs.season.value} race={inputs.race.value} label="Watch selected race" />
         <a href="/f1-data-analytics/methodology/">How to trust this</a>
     </div>
 </PageHeader>
@@ -130,7 +130,7 @@ The middle position is a rank of observed peer-relative pace. The
 last step also contains reliability, penalties, pit timing, traffic and race
 incidents, so the flow is diagnostic rather than causal.
 
-## Why the order changed
+## Strategy and race-control observations
 
 ```sql strategy_summary
 select count(*) filter (where eligible) as windows,
@@ -183,10 +183,18 @@ group by event_type order by events desc
 ```
 
 <Grid cols=2>
+{#if strongest_windows.length > 0}
 <BarChart data={strongest_windows} x=matchup y=net_time_gain_sec series=outcome_label title="Largest observed pit-window swings" swapXY=true sort=false>
     <ReferenceLine y=0 label="no swing" />
 </BarChart>
+{:else}
+<p>No eligible pit-window comparison.</p>
+{/if}
+{#if intervention_mix.length > 0}
 <BarChart data={intervention_mix} x=event_type y=events title="Race-control interventions" labels=true />
+{:else}
+<p>No published intervention events. See Race Control for audited source coverage.</p>
+{/if}
 </Grid>
 
 ## Evidence trail

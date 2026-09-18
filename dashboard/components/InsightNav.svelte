@@ -3,7 +3,7 @@
         {
             title: 'Race analysis',
             links: [
-                ['How did the latest race unfold?', 'latest-race', 'Result, controlled pace, execution and key evidence'],
+                ['How did the race unfold?', 'race-cockpit', 'Recorded result, peer-relative pace and evidence coverage'],
                 ['Where was the race won?', 'race-pace', 'Compare drivers and race phases without a 20-car spaghetti chart'],
                 ['Which pit cycles changed the race?', 'pit-strategy', 'Separate stop speed, position swing and race-control context'],
                 ['Was the stop timed near its best lap?', 'pit-timing-sensitivity', 'Compare the observed stop with ±3-lap clean-air counterfactuals'],
@@ -13,7 +13,7 @@
         {
             title: 'Driver analysis',
             links: [
-                ['Who is fastest beyond the car?', 'driver-ratings', 'Teammate-normalised career pace and current form'],
+                ['How do teammates compare?', 'driver-ratings', 'Teammate-normalised career pace and current form'],
                 ['Compare two drivers honestly', 'driver-comparison', 'Season form with uncertainty and shared-season evidence'],
                 ['Who repeats their pace most reliably?', 'pace-consistency', 'Clean-air consistency and unexplained slow-lap tail'],
                 ['Who gains on Sunday?', 'saturday-vs-sunday', 'Qualifying pace versus controlled race pace'],

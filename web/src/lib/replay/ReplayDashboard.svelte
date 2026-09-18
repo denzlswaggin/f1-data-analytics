@@ -23,7 +23,7 @@
 		formatGap,
 		formatWeather
 	} from './format';
-	import { latestRaceForSeason } from './selection';
+	import { initialRace, latestRaceForSeason } from './selection';
 	import type {
 		LoadedRace,
 		RadioPhase,
@@ -174,8 +174,7 @@
 	async function initialise() {
 		try {
 			manifest = await loadManifest();
-			const initial =
-				manifest.races.find((r) => r.key === manifest?.default_race) ?? manifest.races[0];
+			const initial = initialRace(manifest.races, manifest.default_race, new SvelteURL(window.location.href).searchParams);
 			selectedSeason = initial.season;
 			selectedRaceKey = initial.key;
 			await selectRace(initial);

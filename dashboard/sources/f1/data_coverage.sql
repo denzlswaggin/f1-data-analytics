@@ -43,6 +43,13 @@ fastest_telemetry_laps as (
     group by t.season, t.round, t.driver_code
 ),
 
+telemetry_selections as (
+    select * from fastest_telemetry_laps
+    union
+    select season, round, driver_code, driver_lap_number as lap_number
+    from marts.driver_dna_evidence where eligible
+),
+
 coverage as (
     select
         'driver_rating' as section,
@@ -68,8 +75,11 @@ coverage as (
 
     select
         'race_pace', season, round, cast(season as varchar) || ' ' || race_name,
-        count(*), count(distinct driver_code), 1, count(*), season, season
-    from marts.mart_lap_times
+        count(*), count(distinct driver_code), 1,
+        (select count(*) from marts.traffic_adjusted_laps as peer
+         where peer.season = laps.season and peer.round = laps.round
+           and peer.controlled_pace_delta_sec is not null), season, season
+    from marts.mart_lap_times as laps
     group by season, round, race_name
 
     union all
@@ -121,8 +131,8 @@ coverage as (
 
     select
         'telemetry', f.season, f.round, cast(f.season as varchar) || ' ' || r.race_name,
-        count(*), count(distinct f.driver_code), 1, count(*), f.season, f.season
-    from fastest_telemetry_laps f
+        count(*), count(distinct f.driver_code), 1, cast(null as bigint), f.season, f.season
+    from telemetry_selections f
     join races r on r.season = f.season and r.round = f.round
     group by f.season, f.round, r.race_name
 
