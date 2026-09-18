@@ -134,3 +134,29 @@ def test_joint_bootstrap_preserves_identical_weekend_effects() -> None:
     assert (intervals.bootstrap_valid_samples == 30).all()
     assert (intervals[["delta_lo", "delta_hi"]] == 0).all().all()
     pd.testing.assert_frame_equal(intervals, bootstrap_pace_difference(gaps, gaps, samples=30))
+
+
+def test_bootstrap_withholds_interval_for_intermittently_disconnected_driver() -> None:
+    from analytics.pace_profile import bootstrap_pace_difference
+
+    rows = []
+    for rnd in range(10):
+        pairs = [("a", "b"), ("b", "a")]
+        if rnd == 0:
+            pairs += [("b", "c"), ("c", "b")]
+        for driver, teammate in pairs:
+            rows.append(
+                {
+                    "season": 2026,
+                    "race_key": str(rnd),
+                    "driver_id": driver,
+                    "teammate_id": teammate,
+                    "pace_gap": 0.0,
+                }
+            )
+    gaps = pd.DataFrame(rows)
+    result = bootstrap_pace_difference(gaps, gaps, samples=100).set_index("driver_id")
+    assert result.loc["a", "interval_eligible"]
+    assert not result.loc["c", "interval_eligible"]
+    assert result.loc["c", "bootstrap_valid_samples"] < 90
+    assert pd.isna(result.loc["c", "delta_lo"])

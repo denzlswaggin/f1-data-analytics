@@ -485,3 +485,22 @@ def test_racecraft_sources_execute_empty_and_populated_schema(tmp_path: Path, ta
             assert result.iloc[0]["pressure_seconds"] == 24.0
             assert result.iloc[0]["longest_pressure_run_s"] == 12.0
             assert result.iloc[0]["release_run_s"] == 15.0
+
+
+def test_rejected_coverage_regression_does_not_replace_latest(tmp_path: Path) -> None:
+    source = tmp_path / "source.duckdb"
+    _warehouse(source)
+    settings = Settings(warehouse="duckdb", duckdb_path=source)
+    output = tmp_path / "snapshots"
+    with duckdb.connect(str(source)) as c:
+        c.execute("insert into staging.stg_weather (season, round, session) values (2026, 13, 'R')")
+    build_dashboard_snapshot(output, settings=settings, version="before")
+    snapshot = (output / "latest.duckdb").read_bytes()
+    manifest = (output / "latest.json").read_bytes()
+    with duckdb.connect(str(source)) as c:
+        c.execute("delete from staging.stg_weather")
+    with pytest.raises(ValueError, match="lose published"):
+        build_dashboard_snapshot(output, settings=settings, version="rejected")
+    assert (output / "latest.duckdb").read_bytes() == snapshot
+    assert (output / "latest.json").read_bytes() == manifest
+    assert not (output / "f1-dashboard-rejected.duckdb").exists()
