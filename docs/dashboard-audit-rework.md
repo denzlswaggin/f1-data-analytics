@@ -1,7 +1,7 @@
 # Dashboard audit remediation
 
 Baseline: `20260918-current`, main `1643162`, through Madrid 2026 R14.
-Branch: `fix/audit-data-and-core-pages`. Implement audit sections 1 and 2 only.
+Branch: `fix/audit-data-and-core-pages`. Sections 1 and 2 complete; now implement sections 3 and 4 on the same branch.
 Approach: correct demonstrated errors, validate existing models, expose uncertainty;
 do not introduce new model families or claim independent accuracy from source agreement.
 
@@ -29,7 +29,7 @@ paired bootstrap and changed contracts. Run relevant dbt/Python checks, all serv
 strict Evidence build, replay build and browser checks for seven affected pages.
 Commit completed logical units; do not automatically merge or deploy.
 
-## Deferred audit sections 3 and 4
+## Active audit sections 3 and 4
 
 Driver DNA sample expansion; telemetry matching; Race Pace baseline unification;
 Tyre Warmup/Traffic/Pace Consistency presentation; Pit Window headline correction;
@@ -105,4 +105,21 @@ used the generated Evidence project's Vite preview server; the generic Python
 HTTP server reset module connections on this Windows environment. The final
 bundle passes the 275 MB total / 60 MB single-file budget.
 
-All scoped tasks are complete. Deferred sections 3 and 4 remain listed above.
+Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
+
+
+## Sections 3 and 4 execution checklist
+
+- [ ] Correct directional Pit Window headlines and empty chart states.
+- [ ] Unify Race Pace with the shared robust peer baseline, retaining historical scope.
+- [ ] Expand Driver DNA matched-lap evidence without relaxing eligibility.
+- [ ] Match telemetry comparisons jointly and expose lap context.
+- [ ] Clarify Warmup, Traffic and Consistency usable samples and limitations.
+- [ ] Rework Ratings and Comparison around supported scopes and uncertainty.
+- [ ] Consolidate Cockpit/Latest and improve homepage navigation and coverage.
+- [ ] Present replay provenance and polish Race Control evidence.
+- [ ] Restructure Methodology around metric definitions and validation limits.
+- [ ] Refresh affected data; verify builds, tests, coverage and responsive pages.
+
+Commit each verified logical unit on `fix/audit-data-and-core-pages`.
+Preserve Madrid 2026 and existing historical partitions; do not merge or deploy.
