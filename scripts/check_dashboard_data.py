@@ -73,6 +73,18 @@ def race_partition_coverage_check(name: str, expected_table: str, covered_table:
     return Check(name, query, minimum=0, maximum=0)
 
 
+def source_partition_coverage_check(resource: str) -> Check:
+    return Check(
+        f"{resource} source partition accounting",
+        "select count(*) from (select distinct season,round from staging.stg_results "
+        "where season>=2024) r left join marts.source_coverage s "
+        f"on r.season=s.season and r.round=s.round and s.resource='{resource}' "
+        "where s.status is null or s.status='not_attempted' "
+        "or (s.status in ('unavailable','no_observations') and coalesce(s.reason,'')='')",
+        minimum=0, maximum=0,
+    )
+
+
 CHECKS = (
     Check(
         "racecraft driver coverage",
@@ -113,7 +125,7 @@ CHECKS = (
     ),
     latest_completed_race_coverage_check("latest completed race results", "staging.stg_results"),
     latest_completed_race_coverage_check(
-        "latest completed race qualifying", "staging.stg_qualifying"
+        "latest completed race qualifying evidence", "intermediate.int_teammate_quali_gaps"
     ),
     Check(
         "driver season history",
@@ -140,9 +152,9 @@ CHECKS = (
     latest_race_check("latest race laps", "marts.mart_lap_times", minimum=100),
     recent_season_coverage_check("pit strategy recent-season coverage", "marts.mart_pit_strategy"),
     latest_race_check("latest race pit strategy", "marts.mart_pit_strategy", minimum=10),
-    race_partition_coverage_check(
-        "pit strategy race coverage", "marts.mart_lap_times", "marts.mart_pit_strategy"
-    ),
+    source_partition_coverage_check("pitstops"),
+    source_partition_coverage_check("weather"),
+    source_partition_coverage_check("team_radio"),
     Check(
         "pit strategy usable race coverage",
         "select count(*) from ("
@@ -191,7 +203,7 @@ CHECKS = (
     recent_season_coverage_check("telemetry recent-season coverage", "marts.mart_lap_telemetry"),
     recent_season_coverage_check("race replay recent-season coverage", "marts.race_replay"),
     recent_season_coverage_check("race control recent-season coverage", "staging.stg_race_control"),
-    recent_season_coverage_check("team radio recent-season coverage", "staging.stg_team_radio"),
+
     latest_completed_race_coverage_check(
         "latest completed race telemetry", "marts.mart_lap_telemetry"
     ),

@@ -51,6 +51,7 @@ def restore(snapshot: Path, warehouse: Path, output: Path, *, fetch: bool = Fals
     records: list[dict[str, object]] = []
     with duckdb.connect(str(output)) as c:
         c.execute("create schema if not exists raw")
+        c.execute("create table raw.races as select *, race_date as date from staging.stg_races")
         races = c.execute("""select distinct season, round from staging.stg_results
             where season >= 2024 order by season, round""").fetchall()
         for resource, query in RESOURCES.items():
@@ -80,6 +81,8 @@ def restore(snapshot: Path, warehouse: Path, output: Path, *, fetch: bool = Fals
                         count = fn(int(season), [int(rnd)], settings=settings)
                         status = "available" if count else "no_observations"
                         reason = "" if count else "Ingest returned no observations; not evidence of zero events"
+                    except duckdb.Error:
+                        raise
                     except Exception as exc:
                         status, reason = "unavailable", str(exc)[:500]
             records.append(dict(resource=resource, season=season, round=rnd,

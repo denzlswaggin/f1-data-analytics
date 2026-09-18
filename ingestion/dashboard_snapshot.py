@@ -26,6 +26,7 @@ from analytics.racecraft_integrity import RECEIPT_COLUMNS, validate_snapshot_pro
 from sqlalchemy import create_engine, inspect, text
 
 from ingestion.config import Settings, get_settings
+from ingestion.snapshot_coverage import materialize_source_coverage, validate_partition_preservation
 
 DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 
@@ -34,6 +35,9 @@ DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 # database. Optional datasets still materialise an empty table with the declared
 # columns, so their absence is always a broken pipeline rather than "no data".
 DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
+    ("marts", "source_coverage"): {
+        "resource", "season", "round", "status", "row_count", "provenance", "reason",
+    },
     ("marts", "racecraft_processing"): RECEIPT_COLUMNS,
     ("marts", "pit_lap_context"): {
         "season",
@@ -1044,6 +1048,7 @@ class SnapshotManifest:
     git_sha: str | None = None
     package_versions: dict[str, str] = field(default_factory=dict)
     methodology_versions: dict[str, list[str]] = field(default_factory=dict)
+    coverage_exceptions: list[dict] = field(default_factory=list)
 
 
 def _quote(identifier: str) -> str:
@@ -1137,16 +1142,20 @@ def _copy_duckdb(source: Path, target: Path) -> dict[str, int]:
                 list(DASHBOARD_SCHEMAS),
             ).fetchall()
         }
-        missing = sorted(set(DASHBOARD_CONTRACT) - available)
+        missing = sorted(set(DASHBOARD_CONTRACT) - available - {("marts", "source_coverage")})
         if missing:
             raise ValueError(f"warehouse is missing dashboard contract tables: {missing}")
         for schema, table in sorted(DASHBOARD_CONTRACT):
+            if table == "source_coverage" and (schema, table) not in available:
+                continue
             connection.execute(f"create schema if not exists {_quote(schema)}")
             qualified = f"{_quote(schema)}.{_quote(table)}"
             connection.execute(f"create table {qualified} as select * from f1.{qualified}")
             rows[f"{schema}.{table}"] = int(
                 _scalar(connection, f"select count(*) from {qualified}")
             )
+        materialize_source_coverage(connection)
+        rows["marts.source_coverage"] = int(_scalar(connection, "select count(*) from marts.source_coverage"))
         connection.execute("detach f1")
     finally:
         connection.close()
@@ -1169,12 +1178,14 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
                 required = sorted(
                     table for table_schema, table in DASHBOARD_CONTRACT if table_schema == schema
                 )
-                missing = sorted(set(required) - available)
+                missing = sorted(set(required) - available - {"source_coverage"})
                 if missing:
                     raise ValueError(
                         f"warehouse is missing dashboard contract tables in {schema}: {missing}"
                     )
                 for table_name in required:
+                    if table_name == "source_coverage" and table_name not in available:
+                        continue
                     qualified = f"{_quote(schema)}.{_quote(table_name)}"
                     count = 0
                     first = True
@@ -1193,6 +1204,8 @@ def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
                         count += len(frame)
                         target_connection.unregister("snapshot_chunk")
                     rows[f"{schema}.{table_name}"] = count
+        materialize_source_coverage(target_connection)
+        rows["marts.source_coverage"] = int(_scalar(target_connection, "select count(*) from marts.source_coverage"))
     finally:
         target_connection.close()
         engine.dispose()
@@ -1374,6 +1387,7 @@ def build_dashboard_snapshot(
     version: str | None = None,
     publish_uri: str | None = None,
     now: dt.datetime | None = None,
+    coverage_exceptions: list[dict] | None = None,
 ) -> SnapshotManifest:
     """Build, validate and atomically publish one versioned dashboard snapshot."""
     settings = settings or get_settings()
@@ -1397,6 +1411,7 @@ def build_dashboard_snapshot(
             else _copy_postgres(settings, temporary)
         )
         latest_event_date = validate_dashboard_snapshot(temporary)
+        validate_partition_preservation(output_dir / "latest.duckdb", temporary, coverage_exceptions)
         git_sha = _git_sha()
         package_versions = _package_versions()
         methodology_versions = _methodology_versions(temporary)
@@ -1426,6 +1441,7 @@ def build_dashboard_snapshot(
         git_sha=git_sha,
         package_versions=package_versions,
         methodology_versions=methodology_versions,
+        coverage_exceptions=coverage_exceptions or [],
     )
     manifest_path = output_dir / f"f1-dashboard-{version}.json"
     _write_json(asdict(manifest), manifest_path)
