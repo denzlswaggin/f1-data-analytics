@@ -70,9 +70,29 @@ order by a.season
 select * from ${shared_comparison} order by season desc limit 1
 ```
 
+```sql pair_scope
+select count(*) as shared_seasons, min(season) as first_season,
+    max(season) as last_season
+from ${shared_comparison}
+```
+
+<div style="overflow-x: auto; max-width: 100%;">
+<DataTable data={pair_scope}>
+    <Column id=shared_seasons title="Shared seasons" />
+</div>
+    <Column id=first_season title="First" fmt="0000" />
+    <Column id=last_season title="Last" fmt="0000" />
+</DataTable>
+
+Shared seasons align the displayed years, not the set of race weekends or
+teammates. These drivers need not have raced in the same car, and the fitted
+network links can be indirect. Sample counts below belong to each driver's
+own observations; they are not a count of direct A-versus-B contests.
+
 ## Latest shared-season model comparison
 
 {#if latest_comparison.length > 0}
+<p>Season: <Value data={latest_comparison} column=season fmt="0000" /></p>
 <div class="metric-grid">
 <BigValue data={latest_comparison} value=rating_delta title="Model rating difference (A minus B)" fmt="+0.000;-0.000" />
 </div>
@@ -88,8 +108,10 @@ does not calculate a probability of either driver being faster or an interval fo
 the difference. Overlapping or separated individual ranges are not a paired test.
 
 <ExpandableSection title="View shared-season estimates and sample counts">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={shared_comparison} rows=30>
     <Column id=season fmt="0000" />
+</div>
     <Column id=rating_delta title="Model A minus B" fmt="+0.000;-0.000" />
     <Column id=a_lo title="A: 90% lower" fmt="0.000" />
     <Column id=a_hi title="A: 90% upper" fmt="0.000" />
@@ -101,8 +123,10 @@ the difference. Overlapping or separated individual ranges are not a paired test
 </ExpandableSection>
 
 <ExpandableSection title="View and download season ratings">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={comparison} rows=40 download=true>
     <Column id=season fmt="0000" />
+</div>
     <Column id=driver_name title="Driver" />
     <Column id=rating fmt="0.000" />
     <Column id=rating_lo title="90% resampling lower" fmt="0.000" />
@@ -114,6 +138,9 @@ the difference. Overlapping or separated individual ranges are not a paired test
 
 ## Career model benchmark
 
+Career estimates pool each driver's full observed history, which can differ in
+years and sample size. They are a separate context from the shared-season comparison.
+
 ```sql career
 select driver_name, rank, rating, rating_lo, rating_hi, n_comparisons, first_season, last_season
 from f1.driver_ratings
@@ -122,7 +149,9 @@ order by rating desc
 ```
 
 <ExpandableSection title="View career benchmark">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={career} rows=2 download=true />
+</div>
 </ExpandableSection>
 
 <RelatedAnalysis section="drivers" current="driver-comparison" />
