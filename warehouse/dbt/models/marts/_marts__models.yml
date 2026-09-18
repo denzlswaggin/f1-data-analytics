@@ -110,17 +110,16 @@ models:
 
   - name: mart_weather_degradation
     description: >
-      Tyre degradation (sec/lap) per race and compound, segmented by a race-day
+      Tyre degradation (sec/lap) per race, compound and lap-aligned
       weather bucket (wet/hot/cool). FastF1-sourced (2018+).
     data_tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns: [season, round, compound]
+          combination_of_columns: [season, round, compound, weather_bucket]
     columns:
       - name: deg_sec_per_lap
         description: Slope of lap time vs tyre life; higher = faster fall-off.
-        data_tests: [not_null]
       - name: weather_bucket
-        description: Race-day weather class (null if weather not ingested for the race).
+        description: Conditions observed within each lap (null when no weather sample aligns).
         data_tests:
           - accepted_values:
               values: ["wet", "hot", "cool"]

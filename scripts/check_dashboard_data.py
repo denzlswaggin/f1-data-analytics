@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -81,7 +82,8 @@ def source_partition_coverage_check(resource: str) -> Check:
         f"on r.season=s.season and r.round=s.round and s.resource='{resource}' "
         "where s.status is null or s.status='not_attempted' "
         "or (s.status in ('unavailable','no_observations') and coalesce(s.reason,'')='')",
-        minimum=0, maximum=0,
+        minimum=0,
+        maximum=0,
     )
 
 
@@ -203,7 +205,6 @@ CHECKS = (
     recent_season_coverage_check("telemetry recent-season coverage", "marts.mart_lap_telemetry"),
     recent_season_coverage_check("race replay recent-season coverage", "marts.race_replay"),
     recent_season_coverage_check("race control recent-season coverage", "staging.stg_race_control"),
-
     latest_completed_race_coverage_check(
         "latest completed race telemetry", "marts.mart_lap_telemetry"
     ),
@@ -245,6 +246,12 @@ CHECKS = (
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--scope", choices=["serving", "warehouse"], default="serving")
+    args = parser.parse_args()
+    checks = CHECKS
+    if args.scope == "warehouse":
+        checks += (latest_race_check("latest warehouse qualifying", "staging.stg_qualifying"),)
     warehouse = Path(os.getenv("F1_DUCKDB_PATH", "data/warehouse/f1.duckdb"))
     failures: list[str] = []
 
@@ -254,7 +261,7 @@ def main() -> None:
             print("PASS Racecraft processing integrity")
         except (ValueError, duckdb.Error) as exc:
             failures.append(f"Racecraft processing integrity: {exc}")
-        for check in CHECKS:
+        for check in checks:
             try:
                 row = connection.execute(check.query).fetchone()
             except duckdb.Error as exc:

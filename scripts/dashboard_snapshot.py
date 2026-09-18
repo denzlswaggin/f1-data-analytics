@@ -18,8 +18,11 @@ def main() -> None:
     build.add_argument("--output-dir", type=Path, default=Path("data/dashboard"))
     build.add_argument("--version")
     build.add_argument("--publish-uri")
-    build.add_argument("--coverage-exceptions", type=Path,
-                       help="JSON list of explicit table/season/round/reason exceptions")
+    build.add_argument(
+        "--coverage-exceptions",
+        type=Path,
+        help="JSON list of explicit table/season/round/reason exceptions",
+    )
 
     fetch = subparsers.add_parser("fetch", help="install the latest published snapshot")
     fetch.add_argument("--uri", required=True)
@@ -28,9 +31,14 @@ def main() -> None:
     args = parser.parse_args()
     if args.command == "build":
         manifest = build_dashboard_snapshot(
-            args.output_dir, version=args.version, publish_uri=args.publish_uri,
-            coverage_exceptions=(json.loads(args.coverage_exceptions.read_text())
-                                 if args.coverage_exceptions else None),
+            args.output_dir,
+            version=args.version,
+            publish_uri=args.publish_uri,
+            coverage_exceptions=(
+                json.loads(args.coverage_exceptions.read_text())
+                if args.coverage_exceptions
+                else None
+            ),
         )
     else:
         manifest = fetch_dashboard_snapshot(args.uri, args.output)

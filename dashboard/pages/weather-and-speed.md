@@ -92,7 +92,11 @@ select distinct season from f1.weather_degradation order by season desc
 <Dropdown data={weather_seasons} name=weather_season value=season title="Weather season (independent of speed race)" />
 
 ```sql weather_coverage
-select * from f1.data_coverage where section = 'weather_slope'
+select sum(sample_rows) as sample_rows, sum(usable_samples) as usable_samples,
+    count(*) as race_count, min(first_season) as first_season, max(last_season) as last_season,
+    max(latest_event_date) as latest_event_date, max(entity_count) as entity_count,
+    'fits' as sample_unit, 'fits' as usable_unit
+from f1.data_coverage where section = 'weather_slope'
     and season = ${inputs.weather_season.value}
 ```
 

@@ -6,12 +6,12 @@ from pathlib import Path
 import duckdb
 
 
-def model(name):
+def model(name: str) -> str:
     sql = Path(f"warehouse/dbt/models/marts/{name}.sql").read_text(encoding="utf-8")
     return re.sub(r"\{\{ ref\('([^']+)'\) \}\}", r"\1", sql)
 
 
-def test_pit_visits_survive_missing_position_windows():
+def test_pit_visits_survive_missing_position_windows() -> None:
     with duckdb.connect() as c:
         c.execute(
             "create table stg_pitstops as select 2026 season, 14 round, 'a' driver_id, 1 stop_number, 1 pit_lap, 22.0 duration_sec"
@@ -28,7 +28,7 @@ def test_pit_visits_survive_missing_position_windows():
         assert result.positions_gained.isna().all()
 
 
-def test_rain_outside_lap_window_does_not_make_dry_laps_wet():
+def test_rain_outside_lap_window_does_not_make_dry_laps_wet() -> None:
     with duckdb.connect() as c:
         c.execute(
             "create table mart_lap_times as select 2026 season, 14 round, 'Madrid' race_name, 'AAA' driver_code, i lap_number, 'MEDIUM' compound, i tyre_life, 90.0 lap_time_sec from range(2,12) t(i)"

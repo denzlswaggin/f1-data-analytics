@@ -44,8 +44,7 @@ def restore(snapshot: Path, warehouse: Path, output: Path, *, fetch: bool = Fals
     output.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(snapshot, output)
     source_hashes = {
-        str(path): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in (snapshot, warehouse)
+        str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in (snapshot, warehouse)
     }
     settings = Settings(warehouse="duckdb", duckdb_path=output)
     records: list[dict[str, object]] = []
@@ -76,18 +75,34 @@ def restore(snapshot: Path, warehouse: Path, output: Path, *, fetch: bool = Fals
                 if fetch:
                     origin = "source_api"
                     try:
-                        fn = {"pitstops": ingest_pitstops, "weather": ingest_weather,
-                              "team_radio": ingest_team_radio}[resource]
+                        fn = {
+                            "pitstops": ingest_pitstops,
+                            "weather": ingest_weather,
+                            "team_radio": ingest_team_radio,
+                        }[resource]
                         count = fn(int(season), [int(rnd)], settings=settings)
                         status = "available" if count else "no_observations"
-                        reason = "" if count else "Ingest returned no observations; not evidence of zero events"
+                        reason = (
+                            ""
+                            if count
+                            else "Ingest returned no observations; not evidence of zero events"
+                        )
                     except duckdb.Error:
                         raise
                     except Exception as exc:
                         status, reason = "unavailable", str(exc)[:500]
-            records.append(dict(resource=resource, season=season, round=rnd,
-                status=status, row_count=count, provenance=origin,
-                source_sha256=source_hashes.get(origin), reason=reason))
+            records.append(
+                {
+                    "resource": resource,
+                    "season": season,
+                    "round": rnd,
+                    "status": status,
+                    "row_count": count,
+                    "provenance": origin,
+                    "source_sha256": source_hashes.get(origin),
+                    "reason": reason,
+                }
+            )
             print(resource, season, rnd, status, count, flush=True)
     with duckdb.connect(str(output)) as c:
         coverage = pd.DataFrame(records)

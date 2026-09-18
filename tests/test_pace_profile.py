@@ -120,13 +120,13 @@ def test_joint_bootstrap_preserves_identical_weekend_effects() -> None:
         for rnd in range(6):
             for driver, teammate, sign in (("a", "b", 1), ("b", "a", -1)):
                 rows.append(
-                    dict(
-                        season=season,
-                        race_key=f"{season}-{rnd}",
-                        driver_id=driver,
-                        teammate_id=teammate,
-                        pace_gap=sign * (rnd + 1) / 10,
-                    )
+                    {
+                        "season": season,
+                        "race_key": f"{season}-{rnd}",
+                        "driver_id": driver,
+                        "teammate_id": teammate,
+                        "pace_gap": sign * (rnd + 1) / 10,
+                    }
                 )
     gaps = pd.DataFrame(rows)
     intervals = bootstrap_pace_difference(gaps, gaps, samples=30)

@@ -31,7 +31,7 @@
     </summary>
     <div class="details" aria-label="Data coverage and method">
         <span><strong>Coverage</strong> {seasons}</span>
-        <span><strong>Sample</strong> {number(row.sample_rows)} {sampleLabel}</span>
+        <span><strong>Sample</strong> {number(row.sample_rows)} {inputUnit}</span>
         {#if usable != null}
         <span><strong>Usable</strong> {number(usable)} {usableUnit}{#if comparable && hasData} ({(100 * Number(usable) / Number(row.sample_rows)).toFixed(1)}%){/if}</span>
         {/if}

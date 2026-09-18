@@ -103,10 +103,11 @@ coverage as (
     union all
 
     select
-        'weather_slope', null, null, null, count(*), count(distinct compound),
-        count(distinct case when weather_bucket is not null then cast(season as varchar) || '-' || cast(round as varchar) end),
-        count(case when weather_bucket is not null then 1 end), min(season), max(season)
+        'weather_slope', season, round, cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct compound), 1,
+        count(case when weather_bucket is not null and deg_sec_per_lap is not null then 1 end), season, season
     from marts.mart_weather_degradation
+    group by season, round, race_name
 
     union all
 

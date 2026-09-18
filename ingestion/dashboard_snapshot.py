@@ -26,7 +26,11 @@ from analytics.racecraft_integrity import RECEIPT_COLUMNS, validate_snapshot_pro
 from sqlalchemy import create_engine, inspect, text
 
 from ingestion.config import Settings, get_settings
-from ingestion.snapshot_coverage import materialize_source_coverage, validate_partition_preservation
+from ingestion.snapshot_coverage import (
+    materialize_source_coverage,
+    validate_partition_preservation,
+    validate_source_coverage,
+)
 
 DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 
@@ -36,6 +40,7 @@ DASHBOARD_SCHEMAS = ("staging", "intermediate", "marts")
 # columns, so their absence is always a broken pipeline rather than "no data".
 DASHBOARD_CONTRACT: dict[tuple[str, str], set[str]] = {
     ("marts", "source_coverage"): {
+        "source_sha256",
         "resource",
         "season",
         "round",
@@ -1065,7 +1070,7 @@ class SnapshotManifest:
     git_sha: str | None = None
     package_versions: dict[str, str] = field(default_factory=dict)
     methodology_versions: dict[str, list[str]] = field(default_factory=dict)
-    coverage_exceptions: list[dict] = field(default_factory=list)
+    coverage_exceptions: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _quote(identifier: str) -> str:
@@ -1311,6 +1316,7 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
                 "dashboard snapshot has incompatible columns: " + "; ".join(broken_columns)
             )
         validate_recorded_story(connection)
+        validate_source_coverage(connection)
         validate_snapshot_processing(connection)
         if _scalar(connection, "select count(*) from marts.driver_ratings") == 0:
             raise ValueError("dashboard snapshot contains no driver ratings")
@@ -1408,7 +1414,7 @@ def build_dashboard_snapshot(
     version: str | None = None,
     publish_uri: str | None = None,
     now: dt.datetime | None = None,
-    coverage_exceptions: list[dict] | None = None,
+    coverage_exceptions: list[dict[str, Any]] | None = None,
 ) -> SnapshotManifest:
     """Build, validate and atomically publish one versioned dashboard snapshot."""
     settings = settings or get_settings()
