@@ -202,7 +202,7 @@ coverage as (
 
 select
     coverage.*,
-    case section
+    case coverage.section
         when 'driver_rating' then 'directed comparisons'
         when 'pace_profile' then 'directed comparisons'
         when 'race_pace' then 'laps'
@@ -219,7 +219,7 @@ select
         when 'race_replay' then 'ticks'
         when 'race_control' then 'events'
         else 'driver summaries' end as sample_unit,
-    case section
+    case coverage.section
         when 'pace_profile' then 'matched lap observations'
         when 'race_replay' then 'seconds'
         when 'race_control' then 'eligible driver-event observations'
