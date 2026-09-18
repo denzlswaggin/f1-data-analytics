@@ -37,7 +37,7 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · '
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '')
         || ' · ' || cast(eligible_stops as integer) || '/' || cast(observed_stops as integer)
         || ' supported stops' as race_label

@@ -38,7 +38,7 @@ def test_every_race_dropdown_is_scoped_by_season_and_round() -> None:
         assert "<Dropdown data={tel_races} name=race" not in content
         assert "where season = ${inputs.season.value}" in content
         assert "order by round" in content
-        assert "lpad(cast(round as varchar), 2, '0')" in content
+        assert "lpad(cast(cast(round as integer) as varchar), 2, '0')" in content
         assert 'defaultValue="2024 Bahrain Grand Prix"' not in content
         assert "race_label = '${inputs.race.value}'" not in content
         assert "race_name = '${inputs.race.value}'" not in content

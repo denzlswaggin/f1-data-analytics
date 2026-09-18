@@ -28,7 +28,7 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.telemetry_laps
 where season = ${inputs.season.value}
 order by round
@@ -144,7 +144,7 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code, distance_m
 ```
 
-{#if matched_pair.length > 0}
+{#if speed_trace.length > 0}
 <LineChart
     data={speed_trace}
     x=distance_m
@@ -210,7 +210,7 @@ order by distance_m
 The line integrates resampled speed over distance. It is an approximation, not official split timing. Only common distance samples are compared; differing lap endpoints and interpolation can change the final delta. Positive means Driver B is behind
 Driver A; a rising section is where A gains, and a falling section is where B gains.
 
-{#if matched_pair.length > 0}
+{#if time_delta.length > 0}
 <LineChart
     data={time_delta}
     x=distance_m
@@ -232,7 +232,7 @@ order by driver_code, distance_m
 ```
 
 <ExpandableSection title="Compare pedal inputs">
-{#if matched_pair.length > 0}
+{#if inputs_trace.length > 0}
 <LineChart
     data={inputs_trace}
     x=distance_m

@@ -9,9 +9,16 @@ try {
     const page = await browser.newPage({ viewport: { width, height: 1000 } });
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
     await page.goto(`${origin}/race-pace/?season=2022&race=1`, {
       waitUntil: "networkidle",
     });
+    await page
+      .getByText(/R0?1\.? \u00b7 Bahrain/)
+      .first()
+      .waitFor({ timeout: 60000 });
     assert.equal(
       await page
         .getByText("No comparable laps for this duel", { exact: true })
@@ -22,6 +29,17 @@ try {
       `${origin}/telemetry/?season=2024&race=1&driver_a=VER&driver_b=VER`,
       { waitUntil: "networkidle" },
     );
+    await page
+      .getByText(/R0?1\.? \u00b7 Bahrain/)
+      .first()
+      .waitFor({ timeout: 60000 });
+    await page.waitForFunction(() =>
+      ["Driver A", "Driver B"].every((label) =>
+        document
+          .querySelector(`[aria-label="${label}"]`)
+          ?.textContent.includes("Max Verstappen"),
+      ),
+    );
     assert.equal(
       await page.getByText("No matched lap pair", { exact: true }).count(),
       1,
@@ -30,10 +48,19 @@ try {
       `${origin}/telemetry/?season=2024&race=1&driver_a=VER&driver_b=PER`,
       { waitUntil: "networkidle" },
     );
+    await page
+      .getByText(/R0?1\.? \u00b7 Bahrain/)
+      .first()
+      .waitFor({ timeout: 60000 });
+    await page
+      .getByText("No matched lap pair", { exact: true })
+      .waitFor({ state: "hidden", timeout: 60000 });
     assert.equal(
       await page.getByText("No matched lap pair", { exact: true }).count(),
       0,
     );
+    // Allow the chart animation to finish before visual capture.
+    await page.waitForTimeout(1500);
     await page.screenshot({
       path: `data/telemetry-matched-${width}.png`,
       fullPage: true,
@@ -55,6 +82,8 @@ try {
         .count(),
       1,
     );
+    // Allow the chart animation to finish before visual capture.
+    await page.waitForTimeout(1500);
     await page.screenshot({
       path: `data/ratings-intervals-${width}.png`,
       fullPage: true,
@@ -67,6 +96,8 @@ try {
       (await page.locator("table").first().locator("tr").count()) > 10,
       true,
     );
+    // Allow the chart animation to finish before visual capture.
+    await page.waitForTimeout(1500);
     await page.screenshot({
       path: `data/methodology-${width}.png`,
       fullPage: true,
