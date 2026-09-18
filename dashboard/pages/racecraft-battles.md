@@ -32,6 +32,14 @@ race footage. Evidence labels are rule-based, not probabilities of correctness.
 External validation is limited; use these views to inspect episodes, not rank driver skill.
 </KeyInsight>
 
+<KeyInsight label="Reference checks on the current snapshot">
+The 16 frozen reference cases and four additional 2024 pass annotations agree
+with the detector within the reference protocol's tolerances on snapshot
+20260918-audit-core-pages. These are selected cases, not an exhaustive or random
+sample. Existing independent-feed disagreement reports remain part of the
+validation record; these matches do not establish population precision or recall.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.racecraft_coverage

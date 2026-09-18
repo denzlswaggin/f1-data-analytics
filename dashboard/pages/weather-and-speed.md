@@ -122,6 +122,7 @@ having count(distinct round) >= 5
 order by compound, weather_bucket
 ```
 
+{#if deg_by_weather.length > 0}
 <BarChart
     data={deg_by_weather}
     x=compound
@@ -132,7 +133,11 @@ order by compound, weather_bucket
 >
     <ReferenceLine y=0 label="stable lap-time slope" />
 </BarChart>
+{:else}
+<KeyInsight label="More weather-covered races needed">No compound and condition group has five fitted races in this season. Individual fits remain below.</KeyInsight>
+{/if}
 
+{#if deg_by_weather.length > 0}
 <ExpandableSection title="View weather slope data">
 <DataTable data={deg_by_weather}>
     <Column id=compound title="Compound" />
@@ -142,6 +147,8 @@ order by compound, weather_bucket
     <Column id=laps title="Laps" />
 </DataTable>
 </ExpandableSection>
+
+{/if}
 
 ```sql weather_samples
 select season, round, race_name, compound, weather_bucket, n_laps, deg_sec_per_lap

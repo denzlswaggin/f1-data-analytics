@@ -121,7 +121,7 @@ does not isolate stationary service time or mechanic performance.
     <ReferenceLine y=0 label="position held" />
 </ScatterPlot>
 
-Compare matched rival cycles in <a href={`../pit-window-effectiveness/?season=${inputs.season.value}&race=${inputs.race.value}`}>Pit Window Analysis</a>.
+<PitWindowLink season={inputs.season.value} race={inputs.race.value} />
 
 ## Every stop
 

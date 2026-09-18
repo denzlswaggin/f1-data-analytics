@@ -17,6 +17,14 @@ max_width: 1600
 The model moves the same observed stop and tyre-set transition. It does not know the traffic, pit loss, tyre inventory or race-control state that would have occurred in the alternate future. A supported shift is evidence that timing mattered in the observed pace window—not proof that the team should have made that call.
 </KeyInsight>
 
+<KeyInsight label="Temporal diagnostic: the fitted trend did not beat a constant baseline">
+On snapshot 20260918-audit-core-pages, 871 stints had enough evidence for the
+first-eight-laps training protocol. Holdout MAE was **1.136 s** for the production
+Theil?Sen fitting kernel versus **0.652 s** for the training-median baseline
+(lower is better). This is a retrospective component diagnostic, not validation
+of the complete counterfactual strategy model. Treat scenario gains as exploratory.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.pit_timing_races
@@ -105,8 +113,9 @@ select * from ${race_stops} where eligible
 
 ```sql largest_supported_gain
 select
-    arg_max(stop_label, estimated_gain_vs_actual_sec)
-        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as stop_label,
+    coalesce(arg_max(stop_label, estimated_gain_vs_actual_sec)
+        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal'),
+        'No interior estimate') as stop_label,
     max(estimated_gain_vs_actual_sec)
         filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
 from ${supported_stops}

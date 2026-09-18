@@ -95,13 +95,18 @@ order by median_gain_sec desc
 
 ## Teammate-relative time by circuit archetype
 
+{#if driver_archetype_fit.length > 0}
 <BarChart data={driver_archetype_fit} x=circuit_archetype y=median_gain_sec swapXY=true sort=false labels=true>
     <ReferenceLine y=0 label="matched teammate lap" />
 </BarChart>
+{:else}
+<KeyInsight label="More races needed">No circuit group has five comparable races for this driver. Inspect the individual races below.</KeyInsight>
+{/if}
 
 Only groups with at least five races appear above. Intervals are descriptive 90%
 race-bootstrap intervals (1,000 draws, seed 0), not predictions for another circuit.
 
+{#if driver_archetype_fit.length > 0}
 <DataTable data={driver_archetype_fit}>
     <Column id=circuit_archetype title="Archetype" />
     <Column id=n_races title="Races" />
@@ -109,6 +114,7 @@ race-bootstrap intervals (1,000 draws, seed 0), not predictions for another circ
     <Column id=median_gain_lo title="90% lower (s)" fmt="0.000" />
     <Column id=median_gain_hi title="90% upper (s)" fmt="0.000" />
 </DataTable>
+{/if}
 
 Individual races, including groups below the threshold:
 <DataTable data={driver_race_gain} rows=10 />
