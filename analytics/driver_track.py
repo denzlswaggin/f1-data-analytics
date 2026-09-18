@@ -9,7 +9,7 @@ import pandas as pd
 
 from analytics.driver_dna_validation import build_stability_windows
 
-METHODOLOGY_VERSION = "driver-track-v1-descriptive"
+METHODOLOGY_VERSION = "driver-track-v2-race-bootstrap"
 
 ARCHETYPE_COLUMNS = [
     "season",
@@ -20,6 +20,9 @@ ARCHETYPE_COLUMNS = [
     "braking_density_pct",
     "full_throttle_pct",
     "low_speed_segment_pct",
+    "speed_high_kph",
+    "brake_high_pct",
+    "low_speed_high_pct",
     "segments",
     "confidence",
     "methodology_version",
@@ -30,6 +33,9 @@ FIT_COLUMNS = [
     "driver_name",
     "circuit_archetype",
     "n_races",
+    "interval_eligible",
+    "median_gain_lo",
+    "median_gain_hi",
     "median_gain_sec",
     "mean_gain_sec",
     "gain_direction_agreement_pct",
@@ -84,6 +90,9 @@ def classify_circuit_archetypes(microsectors: pd.DataFrame) -> pd.DataFrame:
     grouped["braking_density_pct"] = grouped.pop("braking_density") * 100
     grouped["full_throttle_pct"] = grouped.pop("full_throttle_share") * 100
     grouped["low_speed_segment_pct"] = grouped.pop("low_speed_share") * 100
+    grouped["speed_high_kph"] = speed_high
+    grouped["brake_high_pct"] = brake_high * 100
+    grouped["low_speed_high_pct"] = low_speed_high * 100
     grouped["confidence"] = np.where(grouped["segments"] >= 100, "strong", "limited")
     grouped["methodology_version"] = METHODOLOGY_VERSION
     return grouped[ARCHETYPE_COLUMNS].reset_index(drop=True)
@@ -112,12 +121,21 @@ def build_driver_track_fit(microsectors: pd.DataFrame, archetypes: pd.DataFrame)
         median = float(group["race_gain_sec"].median())
         agreement = float((np.sign(group["race_gain_sec"]) == np.sign(median)).mean() * 100)
         count = len(group)
+        low = high = np.nan
+        if count >= 5:
+            samples = np.random.default_rng(0).choice(
+                group["race_gain_sec"].to_numpy(), size=(1000, count), replace=True
+            )
+            low, high = np.quantile(np.median(samples, axis=1), [0.05, 0.95])
         rows.append(
             {
                 "driver_code": driver_code,
                 "driver_name": driver_name,
                 "circuit_archetype": archetype,
                 "n_races": count,
+                "interval_eligible": count >= 5,
+                "median_gain_lo": low,
+                "median_gain_hi": high,
                 "median_gain_sec": median,
                 "mean_gain_sec": float(group["race_gain_sec"].mean()),
                 "gain_direction_agreement_pct": agreement,

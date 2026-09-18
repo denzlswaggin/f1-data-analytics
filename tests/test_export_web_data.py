@@ -133,3 +133,23 @@ def test_exports_deterministic_per_race_bundle(tmp_path: Path) -> None:
         table = reader.read_all()
     assert table.num_rows == 2
     assert table.column("driver_code")[0].as_py() == "NOR"
+
+    assert table.column("running_order_source").to_pylist() == [None, None]
+    assert table.column("gap_source").to_pylist() == [None, None]
+
+
+def test_export_retains_order_and_gap_provenance_separately(tmp_path: Path) -> None:
+    snapshot = tmp_path / "source.duckdb"
+    _snapshot(snapshot)
+    with duckdb.connect(str(snapshot)) as connection:
+        connection.execute("alter table marts.race_replay add column running_order_source varchar")
+        connection.execute("alter table marts.race_replay add column gap_source varchar")
+        connection.execute(
+            "update marts.race_replay set running_order_source = 'openf1_recorded', "
+            "gap_source = 'lap_progress_estimate' where t_s = 0"
+        )
+    export_web_data(snapshot, tmp_path / "web-data")
+    with ipc.open_file(tmp_path / "web-data/races/2026-01/positions.arrow") as reader:
+        table = reader.read_all()
+    assert table.column("running_order_source").to_pylist() == ["openf1_recorded", None]
+    assert table.column("gap_source").to_pylist() == ["lap_progress_estimate", None]

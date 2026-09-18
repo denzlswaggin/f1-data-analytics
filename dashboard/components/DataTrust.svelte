@@ -12,18 +12,30 @@
             : `${row.first_season}–${row.last_season}`;
     $: latest = row.latest_event_date == null ? '—' : String(row.latest_event_date);
     $: hasData = Number(row.sample_rows || 0) > 0;
+    $: usable = row.usable_samples;
+    $: hasUsable = usable != null && Number(usable) > 0;
+    $: inputUnit = row.sample_unit || sampleLabel;
+    $: usableUnit = row.usable_unit || 'usable observations';
+    $: comparable = row.sample_unit && row.sample_unit === row.usable_unit;
+    $: status = !hasData ? 'No published data'
+        : usable != null && !hasUsable ? 'Insufficient usable evidence' : 'Data coverage';
     const number = (value) => value == null ? '—' : Number(value).toLocaleString('en-US');
 </script>
 
 <details class="data-trust">
     <summary>
         <span class="status" class:empty={!hasData} aria-hidden="true"></span>
-        <strong>{hasData ? 'Data coverage' : 'No published data'}</strong>
-        <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${sampleLabel}` : 'Try another selection'}</span>
+        <strong>{status}</strong>
+        <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${inputUnit}` : 'Try another selection'}</span>
+        {#if usable != null}<span>→ {number(usable)} {usableUnit}</span>{/if}
     </summary>
     <div class="details" aria-label="Data coverage and method">
         <span><strong>Coverage</strong> {seasons}</span>
-        <span><strong>Sample</strong> {number(row.sample_rows)} {sampleLabel}</span>
+        <span><strong>Sample</strong> {number(row.sample_rows)} {inputUnit}</span>
+        {#if usable != null}
+        <span><strong>Usable</strong> {number(usable)} {usableUnit}{#if comparable && hasData} ({(100 * Number(usable) / Number(row.sample_rows)).toFixed(1)}%){/if}</span>
+        {/if}
+        {#if row.coverage_reason}<span><strong>Limitation</strong> {row.coverage_reason}</span>{/if}
         <span><strong>{entityLabel}</strong> {number(row.entity_count)}</span>
         <span><strong>Races</strong> {number(row.race_count)}</span>
         <span><strong>Latest event</strong> {latest}</span>

@@ -346,6 +346,7 @@ def main() -> None:
     )
     parser.add_argument("--output", type=Path, help="Also write the JSON report to this path.")
     args = parser.parse_args()
+    snapshot_hash = hashlib.sha256(args.snapshot.read_bytes()).hexdigest()
     # Git may check out CRLF on Windows; hash the UTF-8, LF-normalized reference.
     content = args.reference.read_text(encoding="utf-8").encode("utf-8")
     with duckdb.connect(str(args.snapshot), read_only=True) as connection:
@@ -353,6 +354,9 @@ def main() -> None:
         result["snapshot_metadata"] = connection.execute(
             "select version, generated_at from dashboard.snapshot_metadata"
         ).fetchall()
+    if hashlib.sha256(args.snapshot.read_bytes()).hexdigest() != snapshot_hash:
+        raise ValueError("Snapshot changed during evaluation")
+    result["snapshot_sha256"] = snapshot_hash
     result["reference_sha256"] = hashlib.sha256(content).hexdigest()
     rendered = json.dumps(result, indent=2, default=str, allow_nan=False)
     if args.output is not None:

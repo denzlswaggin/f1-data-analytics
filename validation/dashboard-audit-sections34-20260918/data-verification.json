@@ -1,0 +1,121 @@
+{
+  "snapshot_version": "20260918-audit-pages34",
+  "snapshot_sha256": "6b320289160b54308d126d40ddc0b9f4878e60a7fa64162c8c61a2d082e57f30",
+  "latest_event_date": "2026-09-13",
+  "coverage_exceptions": [],
+  "sources_checked": [
+    "adjusted_stint_degradation.sql",
+    "data_coverage.sql",
+    "driver_dna_evidence.sql",
+    "driver_dna_microsectors.sql",
+    "driver_dna_profile.sql",
+    "driver_dna_stability.sql",
+    "driver_pace_profile.sql",
+    "driver_ratings.sql",
+    "driver_ratings_v2.sql",
+    "driver_track_archetypes.sql",
+    "driver_track_fit.sql",
+    "lap_times.sql",
+    "latest_race.sql",
+    "pace_consistency.sql",
+    "pace_consistency_laps.sql",
+    "pit_lap_context.sql",
+    "pit_strategy.sql",
+    "pit_timing_races.sql",
+    "pit_timing_scenarios.sql",
+    "pit_timing_sensitivity.sql",
+    "pit_window_effectiveness.sql",
+    "race_control.sql",
+    "race_control_checkpoints.sql",
+    "race_control_effects.sql",
+    "race_control_events.sql",
+    "race_control_impact.sql",
+    "race_control_races.sql",
+    "race_overtakes.sql",
+    "race_replay_laps.sql",
+    "race_replay_meta.sql",
+    "race_story.sql",
+    "racecraft_battles.sql",
+    "racecraft_coverage.sql",
+    "racecraft_driver_summary.sql",
+    "racecraft_profiles.sql",
+    "season_pace.sql",
+    "snapshot_metadata.sql",
+    "source_coverage.sql",
+    "speed_trap.sql",
+    "stint_strategy.sql",
+    "strategy_impact.sql",
+    "team_radio.sql",
+    "telemetry_laps.sql",
+    "traffic_adjusted_laps.sql",
+    "traffic_adjusted_pace.sql",
+    "tyre_degradation.sql",
+    "tyre_warmup.sql",
+    "tyre_warmup_laps.sql",
+    "weather_degradation.sql"
+  ],
+  "stats": {
+    "lap_races": [
+      [
+        2022,
+        22
+      ],
+      [
+        2023,
+        22
+      ],
+      [
+        2024,
+        24
+      ],
+      [
+        2025,
+        24
+      ],
+      [
+        2026,
+        14
+      ]
+    ],
+    "dna": [
+      [
+        1064,
+        840,
+        59
+      ]
+    ],
+    "telemetry": [
+      [
+        754175,
+        3851,
+        60
+      ]
+    ],
+    "duplicate_telemetry_keys": 0
+  },
+  "checks": {
+    "python_tests": 807,
+    "python_warning": "Existing pandas mismatched null-like values FutureWarning in test_racecraft",
+    "mypy_source_files": 135,
+    "serving_sql_sources": 49,
+    "serving_data_checks": 45,
+    "replay_tests": 28,
+    "replay_typecheck": "0 errors / 0 warnings",
+    "replay_lint": "passed",
+    "replay_build": "passed",
+    "replay_browser": "passed at 1440 and 390; explicit supported and unavailable race links; provenance sources",
+    "evidence_build": "passed strict production build",
+    "evidence_browser": "passed all 21 routes at 1440 and 390; no console errors or page overflow",
+    "evidence_interactions": "passed at 1440 and 390: historical baseline empty state, same-driver exclusion, matched telemetry, scoped cockpit link, rating intervals, methodology anchors; no browser console errors",
+    "dependent_dropdown_tests": 6,
+    "bundle": {
+      "files": 711,
+      "total_mb": 105.2,
+      "largest_file_mb": 37.5,
+      "max_total_mb": 275,
+      "max_file_mb": 60
+    },
+    "snapshot_hash_agreement": "database, manifest and replay export match",
+    "visual_review": "telemetry, ratings and methodology mobile screenshots; ratings desktop and replay provenance mobile screenshots"
+  }
+}

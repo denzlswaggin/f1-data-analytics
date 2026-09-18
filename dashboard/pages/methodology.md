@@ -25,7 +25,63 @@ select * from f1.snapshot_metadata
 
 <SnapshotStatus data={snapshot} />
 
-## Validation status — exploratory, not certified
+## Start with the evidence type
+
+[Metric definitions](#metric-definitions) · [Uncertainty and missing data](#uncertainty-and-missing-data) · [Validation status](#validation-status) · [Published data contract](#published-data-contract)
+
+1. **Source observations:** recorded classification, lap timing, messages,
+   weather and radio. Coverage and clock alignment can still be incomplete.
+2. **Derived comparisons:** teammate ratings, peer-relative pace, stint trends,
+   technique profiles and detected passes. Filters define which observations enter.
+3. **Counterfactual estimates:** pit-timing scenarios and neutralised pit savings.
+   These require extra assumptions and do not attribute the final race result.
+4. **Animation:** replay motion and pit-lane paths interpolate or project sampled
+   data. The displayed path does not verify a physical overtake or racing line.
+
+## Metric definitions
+
+A sample count is meaningful only with its unit. Driver laps within a race,
+mirrored teammate comparisons and replay ticks are correlated observations.
+
+<div style="overflow-x: auto; max-width: 100%;">
+
+| Analysis | What the value means | Publication evidence | Main limitation |
+| --- | --- | --- | --- |
+| Ratings / Driver Comparison | Higher fitted qualifying rating means faster within the teammate network | Career display: at least 40 directed comparisons; season estimates show their counts and 90% intervals | Shared years are not identical weekends or direct head-to-heads; car effects remain |
+| Saturday vs Sunday | Difference between fitted qualifying and race ratings | Joint weekend resampling within seasons; interval needs at least 900 valid draws out of 1,000 | Correlated estimates require joint resampling; this is not a finish prediction |
+| Race Pace / Traffic | Seconds relative to the median of other drivers on the same lap and compound; lower is faster | At least three other peers; clean-air summary needs five clean laps; traffic association also needs five matched traffic laps | Tyre age, car and context differ; replay gaps can be estimated |
+| Pace Consistency | Robust residual spread in seconds after a stint trend; lower is more repeatable | Valid clean-air stint fits and at least eight modelled laps per driver | Slow-tail cost is unexplained residual time, not a count of driver mistakes |
+| Tyre Warmup | Seconds relative to the later mature trend; confirming lap of two consecutive laps within +/-0.50 s | Clean-air reference and complete history through the confirming pair | A fully observed six-lap window without confirmation is a >6 bound; gaps remain unknown |
+| Driver DNA | Robust standardised technique differences on selected teammate lap pairs | Same dry compound, green track, race-lap and tyre-age gaps at most three; at least 100 common points and 95% valid coverage | Selected fast laps are not a full-race technique census; mirrored rows are one pair |
+| Track Fit | Difference in technique profile by inferred track archetype | At least five eligible races per driver/archetype; 90% race-bootstrap interval | Snapshot-level archetype thresholds and small samples affect grouping |
+| Pit Window | Signed observed time swing; positive favours the early stopper | Nearby rivals with complete green timing windows and stops one to three laps apart | Pit-lane duration includes entry/exit; residual is not isolated mechanic or strategy performance |
+| Pit Timing | Retrospective seconds relative to nearby stop-lap scenarios | Complete supported clean-air/reference windows; interior versus boundary minimum shown separately | The fitted pace component underperforms a constant baseline; boundary minima do not locate an optimum |
+| Race Control | Separate position, gap, pit, tyre and recovery observations/estimates | Each component has its own eligibility, unit, reference count and source class | Components overlap and must not be added into a total causal race-result effect |
+| Racecraft / Replay passes | Experimental resolved battle or pass detections | Continuity and event rules; rate denominators and Wilson intervals shown | Timing-source agreement is not independent footage validation or population accuracy |
+| Weather / Speed | Compound/weather lap summaries and observed speed samples | Weather aligned within lap windows; aggregate weather comparison needs five races | Association is not weather causality; speed and weather have separate source scope |
+
+</div>
+
+Exact filters and excluded observations are available on each analysis page.
+The cockpit brings those results together; it does not create a new causal score.
+
+## Uncertainty and missing data
+
+- **Resampling interval:** variability under the stated sampling/model procedure.
+  It does not include every source error or model misspecification. Individual
+  intervals cannot be subtracted to obtain a paired interval or win probability.
+- **P25/P75:** the middle half of observed values, not a confidence interval.
+- **Heuristic evidence grade:** a rule based on coverage and sample counts, not
+  a calibrated probability of correctness.
+- **Missing / excluded:** no supported estimate. This is different from an
+  observed zero. Source ingestion with no returned rows does not establish that
+  no pit visit, radio message or other real-world event occurred.
+- **Censored bound:** only a limit is observed, such as settling beyond six laps.
+  It must not be ranked as an exact duration.
+
+## Validation status
+
+These analyses are exploratory, not certified.
 
 ### Latest documented review: 14 September 2026
 
@@ -53,13 +109,13 @@ Within-lap exchanges, timing errors and incomplete pit observations remain open.
 · [Persistence audit](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/overtake-persistence.md)
 · [Pit-interval audit](https://github.com/denzlswaggin/f1-data-analytics/blob/main/docs/overtake-pit-intervals.md)
 
-### Current-snapshot fitting diagnostic
+### Latest completed fitting diagnostic: 18 September 2026
 
-On `20260914-source-classification`, the actual robust fitting kernel used in
-pit timing was refitted on the first eight eligible clean-air laps of each stint
-and evaluated on later laps. Across 825 stints and 8,578 later laps, mean absolute
-error was **1.146 s**, compared with **1.198 s** for OLS and **0.653 s** for the
-training-median constant. Both fitted trends were worse than that baseline.
+On `20260918-audit-core-pages`, the production robust fitting kernel used in
+pit timing was fitted on the first eight eligible clean-air laps of each stint
+and evaluated on later laps. Across 871 stints and 9,041 later laps, mean absolute
+error was **1.136 s**, compared with **0.652 s** for the training-median constant.
+The fitted trend was worse than that baseline.
 
 This evaluates a fitting component under the diagnostic's selection rules, not
 the complete production strategy model. It uses already inspected races and
@@ -139,13 +195,15 @@ driver rows as independent observations.
 </DataTable>
 
 ```sql coverage
-select section, season, round, race_label, sample_rows, entity_count, race_count, usable_samples,
+select section, season, round, race_label, sample_rows, sample_unit, entity_count, race_count, usable_samples, usable_unit, coverage_reason,
        first_season, last_season, latest_event_date
 from f1.data_coverage
 order by section, race_label desc
 ```
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={coverage} rows=50 download=true />
+</div>
 
 Every deployment consumes an immutable DuckDB snapshot. Its SHA-256 is checked
 before the site builds, and the data contract blocks publication when required

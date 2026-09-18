@@ -162,6 +162,11 @@ PROFILE_EXPECTED_COLUMNS = [
     "n_seasons",
     "first_season",
     "last_season",
+    "delta_lo",
+    "delta_hi",
+    "bootstrap_valid_samples",
+    "bootstrap_samples",
+    "interval_eligible",
 ]
 
 
@@ -260,6 +265,9 @@ def test_build_driver_pace_profile_materialises_mart(tmp_path: Path) -> None:
     result = build_driver_pace_profile(settings=settings)
 
     assert list(result.columns) == PROFILE_EXPECTED_COLUMNS
+    assert (result.bootstrap_samples == 1000).all()
+    assert (result.interval_eligible == (result.bootstrap_valid_samples >= 900)).all()
+    assert result.loc[~result.interval_eligible, "delta_lo"].isna().all()
     assert len(result) == 3
     assert sorted(result["delta_rank"]) == [1, 2, 3]
 

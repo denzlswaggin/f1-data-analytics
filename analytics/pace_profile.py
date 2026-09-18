@@ -32,6 +32,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 from ingestion.logging import get_logger
 
@@ -135,3 +136,72 @@ def build_pace_profile(
         race_component=race.main_component_size,
     )
     return PaceProfileResult(profile, quali, race, seasons)
+
+
+def bootstrap_pace_difference(
+    quali_gaps: pd.DataFrame,
+    race_gaps: pd.DataFrame,
+    *,
+    samples: int = 1000,
+    seed: int = 0,
+    prior_weight: float = 8.0,
+) -> pd.DataFrame:
+    """Joint weekend bootstrap, stratified by season, preserving paired directions.
+
+    A draw is valid only if both solves converge and contain the driver. The 90%
+    interval is withheld when fewer than 90% of draws are valid.
+    """
+    if samples < 1:
+        raise ValueError("samples must be positive")
+    for frame in (quali_gaps, race_gaps):
+        _check(frame, "bootstrap gaps")
+        if "race_key" not in frame or frame["race_key"].isna().any():
+            raise ValueError("bootstrap requires non-null race_key")
+    quali_gaps = quali_gaps[quali_gaps.season.isin(race_gaps.season.unique())]
+    weekends = pd.concat([quali_gaps, race_gaps])[["season", "race_key"]].drop_duplicates()
+    strata = [group.sort_values("race_key") for _, group in weekends.groupby("season", sort=True)]
+    drivers = sorted(set(quali_gaps.driver_id) & set(race_gaps.driver_id))
+    differences: dict[str, list[float]] = {driver: [] for driver in drivers}
+    rng = np.random.default_rng(seed)
+    for _ in range(samples):
+        if not strata:
+            break
+        draw = pd.concat([group.iloc[rng.integers(0, len(group), len(group))] for group in strata])
+        q = compute_ratings(
+            draw.merge(quali_gaps, on=["season", "race_key"]), prior_weight=prior_weight
+        )
+        r = compute_ratings(
+            draw.merge(race_gaps, on=["season", "race_key"]), prior_weight=prior_weight
+        )
+        if not q.converged or not r.converged:
+            continue
+        paired = q.ratings.merge(r.ratings, on="driver_id", suffixes=("_q", "_r"))
+        for row in paired.itertuples():
+            delta = row.rating_r - row.rating_q
+            if row.driver_id in differences and np.isfinite(delta):
+                differences[row.driver_id].append(delta)
+    rows = []
+    for driver, values in differences.items():
+        eligible = len(values) >= 0.9 * samples
+        low, high = np.quantile(values, [0.05, 0.95]) if eligible else (np.nan, np.nan)
+        rows.append(
+            {
+                "driver_id": driver,
+                "delta_lo": low,
+                "delta_hi": high,
+                "bootstrap_valid_samples": len(values),
+                "bootstrap_samples": samples,
+                "interval_eligible": eligible,
+            }
+        )
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "driver_id",
+            "delta_lo",
+            "delta_hi",
+            "bootstrap_valid_samples",
+            "bootstrap_samples",
+            "interval_eligible",
+        ],
+    )

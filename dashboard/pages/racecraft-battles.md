@@ -32,6 +32,14 @@ race footage. Evidence labels are rule-based, not probabilities of correctness.
 External validation is limited; use these views to inspect episodes, not rank driver skill.
 </KeyInsight>
 
+<KeyInsight label="Reference checks on the current snapshot">
+The 16 frozen reference cases and four additional 2024 pass annotations agree
+with the detector within the reference protocol's tolerances on snapshot
+20260918-audit-core-pages. These are selected cases, not an exhaustive or random
+sample. Existing independent-feed disagreement reports remain part of the
+validation record; these matches do not establish population precision or recall.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.racecraft_coverage
@@ -49,7 +57,7 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · '
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') as race_label
 from f1.racecraft_coverage
 where season = ${inputs.season.value}
@@ -57,8 +65,8 @@ order by round
 ```
 
 <FilterBar title="Choose your scope" description="Season combines the covered races. The race selection applies in Race view; drivers with zero eligible battles remain visible.">
-    <Dropdown data={view_modes} name=view value=view label=label title="View" defaultValue="season" />
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={view_modes} name=view value=view label=label title="View" defaultValue="season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -156,7 +164,9 @@ repeated battles, or selection from interrupted and unresolved episodes.
 select
     driver_code,
     'Attack conversion' as role,
-    attack_conversion_pct as rate_pct
+    attack_conversion_pct as rate_pct,
+    attack_conversion_p05_pct as lower_pct, attack_conversion_p95_pct as upper_pct,
+    attacking_opportunities as opportunities
 from ${race_drivers}
 where offense_eligible
 
@@ -165,22 +175,15 @@ union all
 select
     driver_code,
     'Defence hold' as role,
-    defence_hold_pct as rate_pct
+    defence_hold_pct as rate_pct,
+    defence_hold_p05_pct as lower_pct, defence_hold_p95_pct as upper_pct,
+    defensive_opportunities as opportunities
 from ${race_drivers}
 where defense_eligible
 ```
 
 {#if role_rates.length > 0}
-<BarChart
-    data={role_rates}
-    x=driver_code
-    y=rate_pct
-    series=role
-    yAxisTitle="eligible battles converted / held (%)"
-    labels=true
-    sort=false
-    chartAreaHeight=390
-/>
+<EvidenceIntervalChart data={role_rates} title="Resolved episodes: rates, 90% Wilson intervals and denominators" />
 {:else}
 <KeyInsight label="More resolved opportunities needed">
 No driver reached five resolved opportunities in either role in this scope.

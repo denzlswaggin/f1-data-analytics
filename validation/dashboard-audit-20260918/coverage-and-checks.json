@@ -1,0 +1,2187 @@
+{
+  "snapshot": {
+    "version": "20260918-audit-core-pages",
+    "sha256": "570ba59a8846ab413850ae664787c50f29ff1bd5d77203206a8688c20252b6e7",
+    "latest_event_date": "2026-09-13",
+    "git_sha": "7bac4589ac0dee23a4a2327f89c78e6044a9ecb7"
+  },
+  "baseline_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+  "coverage_exceptions": [],
+  "source_queries": 49,
+  "dbt_data_tests_passed": 31,
+  "serving_checks": [
+    {
+      "name": "racecraft driver coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "driver ratings",
+      "value": 55,
+      "minimum": 15,
+      "maximum": null
+    },
+    {
+      "name": "driver rating intervals",
+      "value": 55,
+      "minimum": 15,
+      "maximum": null
+    },
+    {
+      "name": "latest dynamic rating intervals",
+      "value": 23,
+      "minimum": 15,
+      "maximum": null
+    },
+    {
+      "name": "dynamic ratings recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "season pace recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race results",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race qualifying evidence",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "driver season history",
+      "value": 12,
+      "minimum": 1,
+      "maximum": null
+    },
+    {
+      "name": "Saturday vs Sunday profile",
+      "value": 14,
+      "minimum": 1,
+      "maximum": null
+    },
+    {
+      "name": "Driver DNA eligible evidence",
+      "value": 144,
+      "minimum": 10,
+      "maximum": null
+    },
+    {
+      "name": "Driver DNA comparable pairs",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "race pace recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race laps",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest race laps",
+      "value": 1013,
+      "minimum": 100,
+      "maximum": null
+    },
+    {
+      "name": "pit strategy recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest race pit strategy",
+      "value": 25,
+      "minimum": 10,
+      "maximum": null
+    },
+    {
+      "name": "pitstops source partition accounting",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "weather source partition accounting",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "team_radio source partition accounting",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "pit strategy usable race coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "tyre strategy recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest race tyre strategy",
+      "value": 47,
+      "minimum": 10,
+      "maximum": null
+    },
+    {
+      "name": "tyre strategy race coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "speed trap recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest race speed trap",
+      "value": 22,
+      "minimum": 15,
+      "maximum": null
+    },
+    {
+      "name": "speed trap race coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "weather recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "weather degradation",
+      "value": 323,
+      "minimum": 1,
+      "maximum": null
+    },
+    {
+      "name": "weather-covered races",
+      "value": 62,
+      "minimum": 1,
+      "maximum": null
+    },
+    {
+      "name": "weather race coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "race story coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest telemetry drivers",
+      "value": 22,
+      "minimum": 10,
+      "maximum": null
+    },
+    {
+      "name": "telemetry recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "race replay recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "race control recent-season coverage",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race telemetry",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race replay",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest completed race control",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest replay rows",
+      "value": 113613,
+      "minimum": 10000,
+      "maximum": null
+    },
+    {
+      "name": "latest replay drivers",
+      "value": 22,
+      "minimum": 10,
+      "maximum": null
+    },
+    {
+      "name": "latest replay duration",
+      "value": 5760.0,
+      "minimum": 1800,
+      "maximum": null
+    },
+    {
+      "name": "complete replay partitions",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    {
+      "name": "latest race overtakes",
+      "value": 49,
+      "minimum": 1,
+      "maximum": null
+    },
+    {
+      "name": "latest completed race overtakes",
+      "value": 0,
+      "minimum": 0,
+      "maximum": 0
+    }
+  ],
+  "sources": [
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 1,
+      "status": "available",
+      "row_count": 43,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 2,
+      "status": "available",
+      "row_count": 19,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 3,
+      "status": "available",
+      "row_count": 36,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 4,
+      "status": "available",
+      "row_count": 54,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 5,
+      "status": "available",
+      "row_count": 40,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 6,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 7,
+      "status": "available",
+      "row_count": 27,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 8,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 9,
+      "status": "available",
+      "row_count": 42,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 10,
+      "status": "available",
+      "row_count": 42,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 11,
+      "status": "available",
+      "row_count": 45,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 12,
+      "status": "available",
+      "row_count": 45,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 13,
+      "status": "available",
+      "row_count": 40,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 14,
+      "status": "available",
+      "row_count": 34,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 15,
+      "status": "available",
+      "row_count": 26,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 16,
+      "status": "available",
+      "row_count": 30,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 17,
+      "status": "available",
+      "row_count": 22,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 18,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 19,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 20,
+      "status": "available",
+      "row_count": 21,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 21,
+      "status": "available",
+      "row_count": 35,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 22,
+      "status": "available",
+      "row_count": 39,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 23,
+      "status": "available",
+      "row_count": 60,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2024,
+      "round": 24,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 1,
+      "status": "available",
+      "row_count": 82,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 2,
+      "status": "available",
+      "row_count": 25,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 3,
+      "status": "available",
+      "row_count": 21,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 4,
+      "status": "available",
+      "row_count": 42,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 5,
+      "status": "available",
+      "row_count": 19,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 6,
+      "status": "available",
+      "row_count": 18,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 7,
+      "status": "available",
+      "row_count": 37,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 8,
+      "status": "available",
+      "row_count": 40,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 9,
+      "status": "available",
+      "row_count": 54,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 10,
+      "status": "available",
+      "row_count": 82,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 11,
+      "status": "available",
+      "row_count": 32,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 12,
+      "status": "available",
+      "row_count": 35,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 13,
+      "status": "available",
+      "row_count": 26,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 14,
+      "status": "available",
+      "row_count": 29,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 15,
+      "status": "available",
+      "row_count": 40,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 16,
+      "status": "available",
+      "row_count": 19,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 17,
+      "status": "available",
+      "row_count": 21,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 18,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 19,
+      "status": "available",
+      "row_count": 21,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 20,
+      "status": "available",
+      "row_count": 27,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 21,
+      "status": "available",
+      "row_count": 37,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 22,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 23,
+      "status": "available",
+      "row_count": 41,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2025,
+      "round": 24,
+      "status": "available",
+      "row_count": 27,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 1,
+      "status": "available",
+      "row_count": 32,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 2,
+      "status": "available",
+      "row_count": 19,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 3,
+      "status": "available",
+      "row_count": 29,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 4,
+      "status": "available",
+      "row_count": 22,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 5,
+      "status": "available",
+      "row_count": 34,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 6,
+      "status": "available",
+      "row_count": 86,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 7,
+      "status": "available",
+      "row_count": 48,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 8,
+      "status": "available",
+      "row_count": 41,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 9,
+      "status": "available",
+      "row_count": 51,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 10,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 11,
+      "status": "available",
+      "row_count": 45,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 12,
+      "status": "available",
+      "row_count": 65,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 13,
+      "status": "available",
+      "row_count": 30,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "pitstops",
+      "season": 2026,
+      "round": 14,
+      "status": "available",
+      "row_count": 25,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 1,
+      "status": "available",
+      "row_count": 137,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 2,
+      "status": "available",
+      "row_count": 54,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 3,
+      "status": "available",
+      "row_count": 120,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 4,
+      "status": "available",
+      "row_count": 144,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 5,
+      "status": "available",
+      "row_count": 142,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 6,
+      "status": "available",
+      "row_count": 152,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 7,
+      "status": "available",
+      "row_count": 79,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 8,
+      "status": "available",
+      "row_count": 48,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 9,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 10,
+      "status": "available",
+      "row_count": 132,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 11,
+      "status": "available",
+      "row_count": 100,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 12,
+      "status": "available",
+      "row_count": 41,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 13,
+      "status": "available",
+      "row_count": 144,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 14,
+      "status": "available",
+      "row_count": 146,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 15,
+      "status": "available",
+      "row_count": 108,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 16,
+      "status": "available",
+      "row_count": 60,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 17,
+      "status": "available",
+      "row_count": 62,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 18,
+      "status": "available",
+      "row_count": 76,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 19,
+      "status": "available",
+      "row_count": 148,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 20,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 21,
+      "status": "available",
+      "row_count": 61,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 22,
+      "status": "no_observations",
+      "row_count": 0,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": "Ingest returned no observations; not evidence of zero events"
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 23,
+      "status": "available",
+      "row_count": 169,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2024,
+      "round": 24,
+      "status": "available",
+      "row_count": 53,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 1,
+      "status": "available",
+      "row_count": 20,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 2,
+      "status": "available",
+      "row_count": 44,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 3,
+      "status": "available",
+      "row_count": 32,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 4,
+      "status": "available",
+      "row_count": 39,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 5,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 6,
+      "status": "available",
+      "row_count": 31,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 7,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 8,
+      "status": "available",
+      "row_count": 34,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 9,
+      "status": "available",
+      "row_count": 29,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 10,
+      "status": "available",
+      "row_count": 30,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 11,
+      "status": "available",
+      "row_count": 37,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 12,
+      "status": "available",
+      "row_count": 43,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 13,
+      "status": "available",
+      "row_count": 25,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 14,
+      "status": "available",
+      "row_count": 37,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 15,
+      "status": "available",
+      "row_count": 32,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 16,
+      "status": "available",
+      "row_count": 32,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 17,
+      "status": "available",
+      "row_count": 21,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 18,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 19,
+      "status": "available",
+      "row_count": 18,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 20,
+      "status": "available",
+      "row_count": 28,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 21,
+      "status": "available",
+      "row_count": 24,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 22,
+      "status": "available",
+      "row_count": 78,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 23,
+      "status": "available",
+      "row_count": 30,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2025,
+      "round": 24,
+      "status": "available",
+      "row_count": 22,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 1,
+      "status": "no_observations",
+      "row_count": 0,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": "Ingest returned no observations; not evidence of zero events"
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 2,
+      "status": "no_observations",
+      "row_count": 0,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": "Ingest returned no observations; not evidence of zero events"
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 3,
+      "status": "no_observations",
+      "row_count": 0,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": "Ingest returned no observations; not evidence of zero events"
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 4,
+      "status": "no_observations",
+      "row_count": 0,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": "Ingest returned no observations; not evidence of zero events"
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 5,
+      "status": "available",
+      "row_count": 33,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 6,
+      "status": "available",
+      "row_count": 36,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 7,
+      "status": "available",
+      "row_count": 40,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 8,
+      "status": "available",
+      "row_count": 23,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 9,
+      "status": "available",
+      "row_count": 20,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 10,
+      "status": "available",
+      "row_count": 29,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 11,
+      "status": "available",
+      "row_count": 36,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 12,
+      "status": "available",
+      "row_count": 31,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 13,
+      "status": "available",
+      "row_count": 24,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "team_radio",
+      "season": 2026,
+      "round": 14,
+      "status": "available",
+      "row_count": 26,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 1,
+      "status": "available",
+      "row_count": 157,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 2,
+      "status": "available",
+      "row_count": 146,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 3,
+      "status": "available",
+      "row_count": 144,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 4,
+      "status": "available",
+      "row_count": 181,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 5,
+      "status": "available",
+      "row_count": 165,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 6,
+      "status": "available",
+      "row_count": 150,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 7,
+      "status": "available",
+      "row_count": 143,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 8,
+      "status": "available",
+      "row_count": 200,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 9,
+      "status": "available",
+      "row_count": 113,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 10,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 11,
+      "status": "available",
+      "row_count": 143,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 12,
+      "status": "available",
+      "row_count": 147,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 13,
+      "status": "available",
+      "row_count": 155,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 14,
+      "status": "available",
+      "row_count": 137,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 15,
+      "status": "available",
+      "row_count": 153,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 16,
+      "status": "available",
+      "row_count": 133,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 17,
+      "status": "available",
+      "row_count": 152,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 18,
+      "status": "available",
+      "row_count": 160,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 19,
+      "status": "available",
+      "row_count": 155,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 20,
+      "status": "available",
+      "row_count": 159,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 21,
+      "status": "available",
+      "row_count": 201,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 22,
+      "status": "available",
+      "row_count": 143,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 23,
+      "status": "available",
+      "row_count": 151,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2024,
+      "round": 24,
+      "status": "available",
+      "row_count": 148,
+      "provenance": "source_api",
+      "source_sha256": null,
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 1,
+      "status": "available",
+      "row_count": 178,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 2,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 3,
+      "status": "available",
+      "row_count": 140,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 4,
+      "status": "available",
+      "row_count": 158,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 5,
+      "status": "available",
+      "row_count": 142,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 6,
+      "status": "available",
+      "row_count": 149,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 7,
+      "status": "available",
+      "row_count": 150,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 8,
+      "status": "available",
+      "row_count": 160,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 9,
+      "status": "available",
+      "row_count": 155,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 10,
+      "status": "available",
+      "row_count": 167,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 11,
+      "status": "available",
+      "row_count": 161,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 12,
+      "status": "available",
+      "row_count": 155,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 13,
+      "status": "available",
+      "row_count": 223,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 14,
+      "status": "available",
+      "row_count": 157,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 15,
+      "status": "available",
+      "row_count": 159,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 16,
+      "status": "available",
+      "row_count": 144,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 17,
+      "status": "available",
+      "row_count": 156,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 18,
+      "status": "available",
+      "row_count": 161,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 19,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 20,
+      "status": "available",
+      "row_count": 162,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 21,
+      "status": "available",
+      "row_count": 152,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 22,
+      "status": "available",
+      "row_count": 141,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 23,
+      "status": "available",
+      "row_count": 149,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2025,
+      "round": 24,
+      "status": "available",
+      "row_count": 154,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 1,
+      "status": "available",
+      "row_count": 148,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 2,
+      "status": "available",
+      "row_count": 152,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 3,
+      "status": "available",
+      "row_count": 156,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 4,
+      "status": "available",
+      "row_count": 168,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 5,
+      "status": "available",
+      "row_count": 160,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 6,
+      "status": "available",
+      "row_count": 208,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 7,
+      "status": "available",
+      "row_count": 150,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 8,
+      "status": "available",
+      "row_count": 149,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 9,
+      "status": "available",
+      "row_count": 156,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 10,
+      "status": "available",
+      "row_count": 146,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 11,
+      "status": "available",
+      "row_count": 157,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 12,
+      "status": "available",
+      "row_count": 191,
+      "provenance": "data\\warehouse\\f1.duckdb",
+      "source_sha256": "a4caf1bb0502069a517e1915e274464fea80ab3fb426527391235a193a979c30",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 13,
+      "status": "available",
+      "row_count": 176,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    },
+    {
+      "resource": "weather",
+      "season": 2026,
+      "round": 14,
+      "status": "available",
+      "row_count": 161,
+      "provenance": "data\\dashboard\\latest.duckdb",
+      "source_sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
+      "reason": ""
+    }
+  ],
+  "pit_timing_2024_onward": {
+    "analysed_transitions": 2197,
+    "eligible": 85,
+    "boundary_minima": 73
+  },
+  "track_fit": {
+    "groups": 72,
+    "groups_with_five_races": 5
+  },
+  "pace_profile": {
+    "drivers": 15,
+    "valid_intervals": 12,
+    "inconclusive_intervals": 7
+  },
+  "classification_mismatches": 0,
+  "racecraft": {
+    "episodes": 12488,
+    "eligible_resolved_episodes": 2939
+  },
+  "lap_races_by_season": [
+    {
+      "season": 2022,
+      "races": 22
+    },
+    {
+      "season": 2023,
+      "races": 22
+    },
+    {
+      "season": 2024,
+      "races": 24
+    },
+    {
+      "season": 2025,
+      "races": 24
+    },
+    {
+      "season": 2026,
+      "races": 14
+    }
+  ]
+}

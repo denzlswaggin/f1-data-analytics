@@ -43,6 +43,13 @@ fastest_telemetry_laps as (
     group by t.season, t.round, t.driver_code
 ),
 
+telemetry_selections as (
+    select * from fastest_telemetry_laps
+    union
+    select season, round, driver_code, driver_lap_number as lap_number
+    from marts.driver_dna_evidence where eligible
+),
+
 coverage as (
     select
         'driver_rating' as section,
@@ -68,8 +75,11 @@ coverage as (
 
     select
         'race_pace', season, round, cast(season as varchar) || ' ' || race_name,
-        count(*), count(distinct driver_code), 1, count(*), season, season
-    from marts.mart_lap_times
+        count(*), count(distinct driver_code), 1,
+        (select count(*) from marts.traffic_adjusted_laps as peer
+         where peer.season = laps.season and peer.round = laps.round
+           and peer.controlled_pace_delta_sec is not null), season, season
+    from marts.mart_lap_times as laps
     group by season, round, race_name
 
     union all
@@ -103,10 +113,11 @@ coverage as (
     union all
 
     select
-        'weather_slope', null, null, null, count(*), count(distinct compound),
-        count(distinct case when weather_bucket is not null then cast(season as varchar) || '-' || cast(round as varchar) end),
-        count(case when weather_bucket is not null then 1 end), min(season), max(season)
+        'weather_slope', season, round, cast(season as varchar) || ' ' || race_name,
+        count(*), count(distinct compound), 1,
+        count(case when weather_bucket is not null and deg_sec_per_lap is not null then 1 end), season, season
     from marts.mart_weather_degradation
+    group by season, round, race_name
 
     union all
 
@@ -120,8 +131,8 @@ coverage as (
 
     select
         'telemetry', f.season, f.round, cast(f.season as varchar) || ' ' || r.race_name,
-        count(*), count(distinct f.driver_code), 1, count(*), f.season, f.season
-    from fastest_telemetry_laps f
+        count(*), count(distinct f.driver_code), 1, cast(null as bigint), f.season, f.season
+    from telemetry_selections f
     join races r on r.season = f.season and r.round = f.round
     group by f.season, f.round, r.race_name
 
@@ -201,6 +212,34 @@ coverage as (
 
 select
     coverage.*,
+    case coverage.section
+        when 'driver_rating' then 'directed comparisons'
+        when 'pace_profile' then 'directed comparisons'
+        when 'race_pace' then 'laps'
+        when 'pace_consistency' then 'laps'
+        when 'traffic_pace' then 'laps'
+        when 'pit_cycle' then 'stops'
+        when 'pit_timing' then 'stops'
+        when 'tyre_strategy' then 'stints'
+        when 'tyre_warmup' then 'stints'
+        when 'pit_window' then 'windows'
+        when 'weather_slope' then 'compound-race fits'
+        when 'telemetry' then 'selected laps'
+        when 'racecraft' then 'episodes'
+        when 'race_replay' then 'ticks'
+        when 'race_control' then 'events'
+        else 'driver summaries' end as sample_unit,
+    case coverage.section
+        when 'pace_profile' then 'matched lap observations'
+        when 'race_replay' then 'seconds'
+        when 'race_control' then 'eligible driver-event observations'
+        when 'speed_trap' then 'laps'
+        when 'race_story' then 'laps'
+        else sample_unit end as usable_unit,
+    case when usable_samples = 0 then 'No usable observations under this method'
+        when sample_rows > usable_samples and sample_unit = usable_unit
+            then 'Some observations do not pass the method or source-availability rules'
+        else '' end as coverage_reason,
     max(case when coverage.season is null then global_evidence_dates.latest_event_date
         else races.race_date end) as latest_event_date
 from coverage

@@ -157,7 +157,14 @@ def _load_duckdb(
         if table == "laps":
             for column in ("pit_in_time_sec", "pit_out_time_sec"):
                 con.execute(f'ALTER TABLE raw."laps" ADD COLUMN IF NOT EXISTS {column} DOUBLE')
-        if rounds is not None:
+        if rounds is not None and "session" in df.columns:
+            for load in partition_loads:
+                con.execute(
+                    f'DELETE FROM raw."{table}" WHERE season = ? AND round = ? '
+                    'AND session IS NOT DISTINCT FROM ?',
+                    [season, load.round, load.session],
+                )
+        elif rounds is not None:
             placeholders = ", ".join("?" for _ in rounds)
             con.execute(
                 f'DELETE FROM raw."{table}" WHERE season = ? AND round IN ({placeholders})',
@@ -253,7 +260,17 @@ def _load_postgres(
                         f'ALTER TABLE "{schema}"."laps" '
                         f"ADD COLUMN IF NOT EXISTS {column} DOUBLE PRECISION"
                     )
-            if rounds is not None:
+            if rounds is not None and "session" in df.columns:
+                for load in partition_loads:
+                    conn.execute(
+                        text(
+                            f'DELETE FROM "{schema}"."{table}" '
+                            "WHERE season = :season AND round = :round "
+                            "AND session IS NOT DISTINCT FROM :session"
+                        ),
+                        {"season": season, "round": load.round, "session": load.session},
+                    )
+            elif rounds is not None:
                 conn.execute(
                     text(
                         f'DELETE FROM "{schema}"."{table}" '

@@ -1,0 +1,220 @@
+{
+  "counts": {
+    "true_positive": 14,
+    "true_negative": 2,
+    "false_positive": 0,
+    "false_negative": 0,
+    "uncovered": 0,
+    "matched": 0,
+    "mismatch": 0,
+    "expected_unavailable": 0,
+    "unexpected_coverage": 0
+  },
+  "exact_positive_matches": 14,
+  "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
+  "annotated_cases": 16,
+  "covered_cases": 16,
+  "annotated_positive_recall": 1.0,
+  "annotated_precision": 1.0,
+  "population_precision": null,
+  "population_false_positive_rate": null,
+  "limitations": "Purposive, non-exhaustive, single-reviewer annotations. Unmentioned events are unknown, not false positives. No population accuracy or calibrated interval.",
+  "cases": [
+    {
+      "id": "spa-piastri-norris",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        5
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-hamilton-sainz",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        7
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-hamilton-colapinto",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        8
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-hamilton-hulkenberg",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        8
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-hamilton-gasly",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        9
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-antonelli-alonso",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        27
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-verstappen-leclerc-negative",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    },
+    {
+      "id": "spa-pit-ham",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        11
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-pit-pia",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        12
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spa-pit-nor",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        13
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-verstappen-norris",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        4
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-piastri-leclerc",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        6
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-pit-ver",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        37
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-pit-pia",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        45
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-pit-nor",
+      "kind": "pit_entry",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        46
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "monza-team-order-not-competitive",
+      "kind": "competitive_conversion",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": false,
+      "tolerant_match": false,
+      "detected_pair_laps": [],
+      "outcome": "true_negative"
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260918-audit-core-pages",
+      "2026-09-18 15:25:49.906913+02:00"
+    ]
+  ],
+  "snapshot_sha256": "570ba59a8846ab413850ae664787c50f29ff1bd5d77203206a8688c20252b6e7",
+  "reference_sha256": "c97ee86d5fd4d172bfc25a3ad4cd7c441ec6798d49f9f306daf58119c193b245"
+}

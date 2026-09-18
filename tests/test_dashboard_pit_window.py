@@ -41,3 +41,35 @@ def test_pit_pages_do_not_label_full_duration_as_mechanic_service_time() -> None
     assert "a positive value means the earlier stop took longer" in page
     assert "adds this difference" in page
     assert "versus race median" in strategy
+
+
+def test_directional_headlines_use_actual_beneficiary_and_positive_magnitude() -> None:
+    import re
+
+    import duckdb
+
+    page = PAGE.read_text(encoding="utf-8")
+    with duckdb.connect() as connection:
+        connection.execute(
+            "create table eligible_matchups (matchup varchar, early_driver_code varchar, "
+            "late_driver_code varchar, net_time_gain_sec double)"
+        )
+        for values in ([2.0, 4.0], [-2.0, -4.0], [0.0], [], [None], [-3.0, 5.0]):
+            connection.execute("delete from eligible_matchups")
+            for index, value in enumerate(values):
+                connection.execute(
+                    "insert into eligible_matchups values (?, 'EAR', 'LAT', ?)",
+                    [str(index), value],
+                )
+            for direction, sign, driver in (("early", 1, "EAR"), ("late", -1, "LAT")):
+                match = re.search(r"```sql strongest_" + direction + r"\n(.*?)```", page, re.S)
+                assert match is not None
+                sql = match.group(1).replace("${eligible_matchups}", "eligible_matchups")
+                rows = connection.execute(sql).fetchall()
+                gains = [sign * value for value in values if value is not None and sign * value > 0]
+                if gains:
+                    assert len(rows) == 1
+                    assert rows[0][0] == driver
+                    assert rows[0][2] == max(gains)
+                else:
+                    assert rows == []

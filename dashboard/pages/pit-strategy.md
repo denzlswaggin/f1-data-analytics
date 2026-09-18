@@ -28,34 +28,24 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · ' || replace(race_name, ' Grand Prix', '') as race_label
 from f1.pit_strategy
 where season = ${inputs.season.value}
 order by round
 ```
 
 <FilterBar title="Choose a race" description="Inspect every pit cycle in the selected Grand Prix.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql pit_coverage
-select
-    count(*) as sample_rows,
-    count(distinct driver_id) as entity_count,
-    count(distinct cast(season as varchar) || '-' || cast(round as varchar)) as race_count,
-    count(positions_gained) as usable_samples,
-    min(season) as first_season,
-    max(season) as last_season,
-    (
-        select max(latest_event_date)
-        from f1.data_coverage
-        where section = 'pit_cycle'
-    ) as latest_event_date
-from f1.pit_strategy
+select * from f1.data_coverage
+where section = 'pit_cycle'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
-<DataTrust data={pit_coverage} sampleLabel="pit stops across the published races" entityLabel="Drivers" method="descriptive window; not counterfactual" />
+<DataTrust data={pit_coverage} sampleLabel="recorded pit visits" entityLabel="Drivers" method="descriptive window; not counterfactual" />
 
 ```sql race_stops
 select
@@ -131,7 +121,12 @@ does not isolate stationary service time or mechanic performance.
     <ReferenceLine y=0 label="position held" />
 </ScatterPlot>
 
+<PitWindowLink season={inputs.season.value} race={inputs.race.value} />
+
 ## Every stop
+
+The position window runs from one lap before to two laps after the visit.
+Stops without both positions remain listed; their swing is unknown.
 
 <ExpandableSection title="View every stop">
 <DataTable data={race_stops} rows=20>

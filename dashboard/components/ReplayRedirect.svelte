@@ -12,11 +12,11 @@
         if (isLocal) {
             current.port = '5173';
             current.pathname = '/';
-            current.search = '';
+            // Preserve the selected season and race when entering the replay.
             current.hash = '';
             target = current.toString();
         } else {
-            target = productionTarget;
+            target = productionTarget + current.search;
         }
 
         window.location.replace(target);

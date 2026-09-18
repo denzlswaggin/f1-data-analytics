@@ -31,10 +31,10 @@ order by driver_name
 ```
 
 <FilterBar title="Compare technique profiles" description="The default 2025–2026 window balances recency with enough teammate evidence.">
-    <Dropdown data={seasons} name=from_season value=season title="From season" defaultValue={2025} />
-    <Dropdown data={seasons} name=to_season value=season title="To season" defaultValue={2026} />
-    <Dropdown data={drivers} name=driver_a value=driver_code label=driver_name title="Driver A" defaultValue="VER" />
-    <Dropdown data={drivers} name=driver_b value=driver_code label=driver_name title="Driver B" defaultValue="NOR" />
+    <QueryDropdown data={seasons} name=from_season value=season title="From season" defaultValue={2025} />
+    <QueryDropdown data={seasons} name=to_season value=season title="To season" defaultValue={2026} />
+    <QueryDropdown data={drivers} name=driver_a value=driver_code label=driver_name title="Driver A" defaultValue="VER" />
+    <QueryDropdown data={drivers} name=driver_b value=driver_code label=driver_name title="Driver B" defaultValue="NOR" />
 </FilterBar>
 
 ```sql selected_profiles
@@ -370,7 +370,7 @@ order by season desc, driver_name
 ```
 
 <FilterBar title="Compare with the season field" description="Only drivers with at least five eligible teammate comparisons enter the equally weighted peer average.">
-    <Dropdown data={benchmark_seasons} name=benchmark_season value=season title="Season" defaultValue={2025} />
+    <QueryDropdown data={benchmark_seasons} name=benchmark_season value=season title="Season" defaultValue={2025} />
     <DependentDropdown data={benchmark_drivers} name=benchmark_driver value=driver_code label=driver_name title="Driver" season={inputs.benchmark_season.value} defaultValue="VER" />
 </FilterBar>
 
@@ -494,7 +494,7 @@ select * from (values
 ```
 
 <FilterBar title="Choose one technique" description="Keeping axes separate avoids hiding contradictory behaviours in a composite score.">
-    <Dropdown data={techniques} name=technique value=metric label=label title="Technique" defaultValue="low_speed_kph_z" />
+    <QueryDropdown data={techniques} name=technique value=metric label=label title="Technique" defaultValue="low_speed_kph_z" />
 </FilterBar>
 
 ```sql race_heatmap
@@ -549,7 +549,7 @@ order by season desc, round desc
 ```
 
 <FilterBar title="Choose a representative lap" description="Only laps passing every same-compound, green-status and telemetry-coverage gate appear.">
-    <Dropdown data={dna_races} name=dna_race value=race_key label=race_label title="Race and teammate" />
+    <QueryDropdown data={dna_races} name=dna_race value=race_key label=race_label title="Race and teammate" />
 </FilterBar>
 
 ```sql selected_lap

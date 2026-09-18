@@ -23,24 +23,10 @@ driver_codes as (
     select season, driver_code, driver_id, driver_name from {{ ref('stg_driver_codes') }}
 ),
 
--- Finishing order for the chart's row sort: the position recorded on each
--- driver's final lap (rn = 1 by descending lap number). Portable — avoids the
--- DuckDB-only arg_max.
+-- Official recorded classification, including classified retirements.
 finishing as (
-    select season, round, driver_code, position as finish_position
-    from (
-        select
-            season,
-            round,
-            driver_code,
-            position,
-            row_number() over (
-                partition by season, round, driver_code
-                order by lap_number desc
-            ) as rn
-        from laps
-    ) ranked
-    where rn = 1
+    select season, round, driver_code, finish_position
+    from {{ ref('stg_results') }}
 ),
 
 stints as (

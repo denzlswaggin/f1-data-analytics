@@ -34,6 +34,8 @@ export async function loadRace(summary: RaceSummary, signal?: AbortSignal): Prom
 	const order = table.getChild('running_order');
 	const leaderGap = table.getChild('gap_to_leader_s');
 	const aheadGap = table.getChild('gap_to_ahead_s');
+	const orderSource = table.getChild('running_order_source');
+	const gapSource = table.getChild('gap_source');
 	if (!code || !time || !x || !y || !order || !leaderGap || !aheadGap) {
 		throw new Error('The replay position bundle has an incompatible schema.');
 	}
@@ -41,6 +43,8 @@ export async function loadRace(summary: RaceSummary, signal?: AbortSignal): Prom
 	for (let index = 0; index < table.numRows; index += 1) {
 		positions[index] = {
 			driver_code: String(code.get(index)),
+			running_order_source: orderSource?.get(index) ?? null,
+			gap_source: gapSource?.get(index) ?? null,
 			t_s: Number(time.get(index)),
 			x: Number(x.get(index)),
 			y: Number(y.get(index)),

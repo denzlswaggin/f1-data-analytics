@@ -72,3 +72,19 @@ def test_cockpit_distinguishes_processed_zero_from_unavailable_analysis() -> Non
                 query("race-cockpit", "pass_summary", {"season": "2025", "race": str(rnd)})
             ).df()
             assert result.passes.tolist() == expected
+
+
+def test_cockpit_control_zero_requires_observed_messages() -> None:
+    with duckdb.connect() as conn:
+        conn.execute("create schema f1")
+        conn.execute("""create table f1.race_control_races as
+            select 2025 as season, 1 as round, 0 as message_count, 0 as event_count
+            union all select 2025, 2, 12, 0
+            union all select 2025, 3, 12, 1""")
+        conn.execute("""create table f1.race_control_events as
+            select 2025 as season, 3 as round, 2 as intervention_stop_count,
+                   3 as position_gainer_count""")
+        for rnd, expected in ((1, []), (2, [(0, 0, 0)]), (3, [(1, 2, 3)])):
+            result = conn.execute(query("race-cockpit", "control_summary",
+                                        {"season": "2025", "race": str(rnd)})).fetchall()
+            assert result == expected

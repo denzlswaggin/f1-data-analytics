@@ -29,7 +29,7 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · '
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '') as race_label
 from f1.tyre_warmup
 where season = ${inputs.season.value}
@@ -37,7 +37,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Available races have lap timing plus sufficient replay-derived traffic context.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -87,15 +87,40 @@ select
     count(*) filter (where confirmation_history_complete) as achieved,
     count(*) filter (where settling_status = 'observed_incomplete') as observed_incomplete,
     count(*) filter (where right_censored) as beyond_six,
-    count(*) filter (where warmup_eligible and not crossover_eligible) as incomplete
+    count(*) filter (where settling_status = 'incomplete') as incomplete,
+    count(*) filter (where not warmup_eligible) as excluded
 from ${race_stints}
 ```
 
 <Grid cols=3>
-    <BigValue data={fastest_settling} value=driver_stint comparison=time_to_pace_laps comparisonFmt="0 laps" title="Earliest confirmation, complete history" />
-    <BigValue data={largest_first_lap_loss} value=driver_stint comparison=first_flying_warmup_loss_sec comparisonFmt="+0.00;-0.00 s" title="Largest first-flying loss" />
-    <BigValue data={outcome_counts} value=achieved comparison=beyond_six comparisonFmt="0 censored beyond lap 6" title="Complete-history confirmations" />
+    {#if fastest_settling.length > 0}
+<BigValue data={fastest_settling} value=driver_stint comparison=time_to_pace_laps comparisonFmt="0 laps" title="Earliest confirmation, complete history" />
+{:else}
+<KeyInsight label="Earliest confirmation, complete history">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if largest_first_lap_loss.length > 0}
+<BigValue data={largest_first_lap_loss} value=driver_stint comparison=first_flying_warmup_loss_sec comparisonFmt="+0.00;-0.00 s" title="Largest first-flying loss" />
+{:else}
+<KeyInsight label="Largest first-flying loss">Insufficient eligible evidence.</KeyInsight>
+{/if}
+    {#if outcome_counts.length > 0}
+<BigValue data={outcome_counts} value=achieved comparison=beyond_six comparisonFmt="0 censored beyond lap 6" title="Complete-history confirmations" />
+{:else}
+<KeyInsight label="Complete-history confirmations">Insufficient eligible evidence.</KeyInsight>
+{/if}
 </Grid>
+
+<DataTable data={outcome_counts}>
+    <Column id=achieved title="Complete history" />
+    <Column id=observed_incomplete title="Pair after earlier gaps" />
+    <Column id=beyond_six title="Beyond six (bound)" />
+    <Column id=incomplete title="Unknown, incomplete" />
+    <Column id=excluded title="Excluded" />
+</DataTable>
+
+These are separate outcomes. A bound or missing observation is never assigned an
+exact settling time. Compound curves can contain different stints at each offset;
+their sample counts below are needed when comparing the medians.
 
 ## Settling curve — {inputs.season.value} {inputs.race.label}
 
@@ -118,6 +143,7 @@ group by compound, post_stop_offset
 order by post_stop_offset, compound
 ```
 
+{#if compound_curve.length > 0}
 <LineChart
     data={compound_curve}
     x=post_stop_offset
@@ -131,6 +157,18 @@ order by post_stop_offset, compound
     <ReferenceLine y=0.5 label="stable-band ceiling" />
     <ReferenceLine y=-0.5 label="stable-band floor" />
 </LineChart>
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
+
+<ExpandableSection title="Curve sample counts">
+<DataTable data={compound_curve} rows=30>
+    <Column id=compound title="Compound" />
+    <Column id=post_stop_offset title="Offset" />
+    <Column id=samples title="Observed stints" />
+    <Column id=median_settling_loss_sec title="Median loss (s)" fmt="+0.000;-0.000" />
+</DataTable>
+</ExpandableSection>
 
 ## Observed confirmation with complete history
 
@@ -146,6 +184,7 @@ where confirmation_history_complete and time_to_pace_laps is not null
 order by time_to_pace_laps desc, first_flying_warmup_loss_sec desc
 ```
 
+{#if completed_stints.length > 0}
 <ScatterPlot
     data={completed_stints}
     x=first_flying_warmup_loss_sec
@@ -156,6 +195,9 @@ order by time_to_pace_laps desc, first_flying_warmup_loss_sec desc
     tooltipTitle=driver_stint
     pointSize=26
 />
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 
 ```sql ranked_losses
 select * from ${race_stints}
@@ -164,6 +206,7 @@ order by first_flying_warmup_loss_sec desc
 limit 24
 ```
 
+{#if ranked_losses.length > 0}
 <BarChart
     data={ranked_losses}
     x=driver_stint
@@ -174,6 +217,9 @@ limit 24
 >
     <ReferenceLine y=0 label="mature trajectory" />
 </BarChart>
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 
 ## Stint evidence
 
@@ -183,6 +229,7 @@ laps after the confirming pair do not invalidate its complete earlier history.
 With six eligible observed laps and no pair, **>6** is a right-censored bound,
 not a measured settling time; a window with gaps and no pair remains unknown.
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_stints} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
     <Column id=stint title="Stint" />
@@ -200,6 +247,7 @@ not a measured settling time; a window with gaps and no pair remains unknown.
     <Column id=baseline_slope_sec_per_lap title="Mature slope (s/lap)" fmt="+0.000;-0.000" />
     <Column id=confidence title="Heuristic evidence quality" />
 </DataTable>
+</div>
 
 ```sql excluded_stints
 select driver_stint, compound, out_lap, stint_laps, exclusion_reason
@@ -208,7 +256,9 @@ where not warmup_eligible
 ```
 
 <ExpandableSection title="See excluded stints and the robust-peer observation method">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={excluded_stints} rows=30 search=true />
+</div>
 
 The inferred out-lap (offset 0) is never timed because its lap time can include
 stationary pit time. A candidate needs a contiguous stint change, at least 11

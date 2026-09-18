@@ -17,6 +17,14 @@ max_width: 1600
 The model moves the same observed stop and tyre-set transition. It does not know the traffic, pit loss, tyre inventory or race-control state that would have occurred in the alternate future. A supported shift is evidence that timing mattered in the observed pace window—not proof that the team should have made that call.
 </KeyInsight>
 
+<KeyInsight label="Temporal diagnostic: the fitted trend did not beat a constant baseline">
+On snapshot 20260918-audit-core-pages, 871 stints had enough evidence for the
+first-eight-laps training protocol. Holdout MAE was **1.136 s** for the production
+Theil-Sen fitting kernel versus **0.652 s** for the training-median baseline
+(lower is better). This is a retrospective component diagnostic, not validation
+of the complete counterfactual strategy model. Treat scenario gains as exploratory.
+</KeyInsight>
+
 ```sql seasons
 select distinct season
 from f1.pit_timing_races
@@ -29,7 +37,7 @@ select distinct
     season,
     round,
     race_name,
-    'R' || lpad(cast(round as varchar), 2, '0') || ' · '
+    'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '')
         || ' · ' || cast(eligible_stops as integer) || '/' || cast(observed_stops as integer)
         || ' supported stops' as race_label
@@ -39,12 +47,13 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Races are ordered by championship round; excluded stops remain visible with their evidence gap.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
 ```sql coverage
-select *, observed_stops as sample_rows, drivers as entity_count,
+select *, observed_stops as sample_rows, eligible_stops as usable_samples,
+    'stops' as sample_unit, 'stops' as usable_unit, drivers as entity_count,
     1 as race_count, season as first_season, season as last_season,
     race_date as latest_event_date
 from f1.pit_timing_races
@@ -90,6 +99,7 @@ select
     old_compound || ' → ' || new_compound as compound_change,
     case
         when not eligible then 'Excluded'
+        when boundary_minimum then 'Range-edge minimum; no optimum established'
         else timing_signal
     end as displayed_signal
 from f1.pit_timing_sensitivity
@@ -103,10 +113,11 @@ select * from ${race_stops} where eligible
 
 ```sql largest_supported_gain
 select
-    arg_max(stop_label, estimated_gain_vs_actual_sec)
-        filter (where timing_signal <> 'No meaningful directional signal') as stop_label,
+    coalesce(arg_max(stop_label, estimated_gain_vs_actual_sec)
+        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal'),
+        'No interior estimate') as stop_label,
     max(estimated_gain_vs_actual_sec)
-        filter (where timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
+        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
 from ${supported_stops}
 ```
 
@@ -114,12 +125,14 @@ from ${supported_stops}
 select
     count(*) as observed_stops,
     count(*) filter (where eligible) as eligible_stops,
-    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal
+    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal,
+    count(*) filter (where eligible and boundary_minimum) as boundary_stops
 from ${race_stops}
 ```
 
-<Grid cols=3>
-    <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest supported timing signal" />
+<Grid cols=4>
+    <BigValue data={evidence_summary} value=boundary_stops title="Eligible minima at tested boundary" />
+    <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest interior timing signal" />
     <BigValue data={evidence_summary} value=eligible_stops comparison=observed_stops comparisonFmt="0 observed stops" title="Eligible stops" />
     <BigValue data={evidence_summary} value=no_signal title="No meaningful directional signal" />
 </Grid>

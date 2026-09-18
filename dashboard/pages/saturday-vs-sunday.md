@@ -32,14 +32,14 @@ Positive means stronger relative race pace; negative means stronger relative qua
 select * from f1.data_coverage where section = 'pace_profile'
 ```
 
-<DataTrust data={profile_coverage} sampleLabel="directed race comparisons" entityLabel="Drivers" method="matched-season point estimates; interval pending" />
+<DataTrust data={profile_coverage} sampleLabel="directed race comparisons" entityLabel="Drivers" method="joint weekend bootstrap; 90% intervals" />
 
 ```sql min_races_options
 select 5 as n union all select 10 union all select 20 union all select 30
 ```
 
 <FilterBar title="Set evidence threshold" description="Higher thresholds trade coverage for stability.">
-    <Dropdown data={min_races_options} name=minraces value=n defaultValue={10} title="Min. race comparisons" />
+    <QueryDropdown data={min_races_options} name=minraces value=n defaultValue={10} title="Min. race comparisons" />
 </FilterBar>
 
 ```sql pace
@@ -90,15 +90,12 @@ the diagonal *is* the delta.
 ## Biggest movers
 
 ```sql movers
-select *
-from (
-    select *, 'top' as end_of_list from ${pace} order by delta desc limit 10
+select * from (
+    select *, row_number() over (order by delta desc, driver_id) as top_rank,
+        row_number() over (order by delta asc, driver_id) as bottom_rank
+    from ${pace}
 )
-union all
-select *
-from (
-    select *, 'bottom' as end_of_list from ${pace} order by delta asc limit 10
-)
+where top_rank <= 10 or bottom_rank <= 10
 order by delta desc
 ```
 
@@ -118,6 +115,11 @@ line is the field average, not "no change".
     <ReferenceLine y=0 label="field average" />
 </BarChart>
 
+Labels require the **90% difference interval** to exclude zero; otherwise the
+result is inconclusive. Both ratings use the same resampled weekends within each
+season (1,000 draws, seed 0). Intervals require at least 900 valid paired solves.
+These intervals describe sampling variation, not causal improvement.
+
 ## Full table
 
 <ExpandableSection title="View the full driver table">
@@ -125,6 +127,10 @@ line is the field average, not "no change".
     <Column id=delta_rank title="#" />
     <Column id=driver_name title="Driver" />
     <Column id=delta title="Delta" fmt='+0.000' contentType=colorscale colorScale={['#f7c948', '#26303d', '#32d3f4']} />
+    <Column id=delta_lo title="90% lower" fmt="0.000" />
+    <Column id=delta_hi title="90% upper" fmt="0.000" />
+    <Column id=profile title="Evidence" />
+    <Column id=bootstrap_valid_samples title="Valid draws / 1000" />
     <Column id=quali_rating title="Quali" fmt='0.000' />
     <Column id=race_rating title="Race" fmt='0.000' />
     <Column id=quali_rank title="Quali #" />

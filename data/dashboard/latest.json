@@ -1,7 +1,8 @@
 {
-  "database_file": "f1-dashboard-20260918-current.duckdb",
-  "generated_at": "2026-09-18T12:30:05.299357+00:00",
-  "git_sha": "ff4b9095b7f2e67eb470993e5611055c0e15d625",
+  "coverage_exceptions": [],
+  "database_file": "f1-dashboard-20260918-audit-pages34.duckdb",
+  "generated_at": "2026-09-18T14:46:04.939517+00:00",
+  "git_sha": "efe69becfd4c1d35de334157cf9629d0e5956f71",
   "latest_event_date": "2026-09-13",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -17,10 +18,10 @@
       "driver-dna-v2-joint-pairing"
     ],
     "marts.driver_track_archetypes": [
-      "driver-track-v1-descriptive"
+      "driver-track-v2-race-bootstrap"
     ],
     "marts.driver_track_fit": [
-      "driver-track-v1-descriptive"
+      "driver-track-v2-race-bootstrap"
     ],
     "marts.mart_race_story": [
       "recorded-results-v1"
@@ -72,8 +73,8 @@
     ]
   },
   "package_versions": {
-    "dagster": "1.13.19",
-    "dbt-core": "1.11.14",
+    "dagster": "1.13.18",
+    "dbt-core": "1.11.13",
     "duckdb": "1.5.5",
     "f1-data-analytics": "0.1.0",
     "fastf1": "3.8.3",
@@ -81,37 +82,37 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "1aaf36e79e90d19986ca94a8f39763ac04a456e367aeb836442d8b5fe0c2a4f0",
-  "size_bytes": 157036544,
+  "sha256": "6b320289160b54308d126d40ddc0b9f4878e60a7fa64162c8c61a2d082e57f30",
+  "size_bytes": 166473728,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8464,
     "intermediate.int_teammate_race_gaps": 1384,
-    "marts.driver_dna_evidence": 742,
-    "marts.driver_dna_microsectors": 3640,
-    "marts.driver_dna_profile": 38,
-    "marts.driver_dna_stability": 680,
+    "marts.driver_dna_evidence": 1064,
+    "marts.driver_dna_microsectors": 21820,
+    "marts.driver_dna_profile": 138,
+    "marts.driver_dna_stability": 730,
     "marts.driver_pace_profile": 15,
     "marts.driver_ratings": 101,
     "marts.driver_ratings_v2": 490,
-    "marts.driver_track_archetypes": 29,
-    "marts.driver_track_fit": 72,
+    "marts.driver_track_archetypes": 59,
+    "marts.driver_track_fit": 109,
     "marts.mart_adjusted_stint_degradation": 4833,
     "marts.mart_driver_season_pace": 494,
-    "marts.mart_lap_telemetry": 623479,
+    "marts.mart_lap_telemetry": 754175,
     "marts.mart_lap_times": 104467,
-    "marts.mart_pit_strategy": 98,
+    "marts.mart_pit_strategy": 2201,
     "marts.mart_race_story": 2146,
     "marts.mart_speed_trap": 2076,
     "marts.mart_stint_strategy": 6038,
     "marts.mart_tyre_degradation": 295,
-    "marts.mart_weather_degradation": 295,
+    "marts.mart_weather_degradation": 323,
     "marts.pace_consistency": 1186,
     "marts.pace_consistency_laps": 52697,
     "marts.pit_lap_context": 117545,
-    "marts.pit_timing_scenarios": 15379,
-    "marts.pit_timing_sensitivity": 2197,
-    "marts.pit_window_effectiveness": 386,
+    "marts.pit_timing_scenarios": 27377,
+    "marts.pit_timing_sensitivity": 3911,
+    "marts.pit_window_effectiveness": 732,
     "marts.race_control_checkpoints": 8048,
     "marts.race_control_effects": 10722,
     "marts.race_control_events": 87,
@@ -121,18 +122,19 @@
     "marts.racecraft_battles": 12488,
     "marts.racecraft_driver_summary": 1229,
     "marts.racecraft_processing": 61,
+    "marts.source_coverage": 186,
     "marts.traffic_adjusted_laps": 52697,
     "marts.traffic_adjusted_pace": 1186,
-    "marts.tyre_warmup": 2197,
-    "marts.tyre_warmup_laps": 22276,
+    "marts.tyre_warmup": 3911,
+    "marts.tyre_warmup_laps": 39992,
     "staging.constructor_colors": 20,
     "staging.stg_driver_codes": 494,
     "staging.stg_laps": 117545,
     "staging.stg_race_control": 6865,
     "staging.stg_races": 422,
     "staging.stg_results": 8697,
-    "staging.stg_team_radio": 187,
-    "staging.stg_weather": 494
+    "staging.stg_team_radio": 3547,
+    "staging.stg_weather": 9749
   },
-  "version": "20260918-current"
+  "version": "20260918-audit-pages34"
 }
