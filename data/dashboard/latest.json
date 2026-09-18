@@ -1,8 +1,8 @@
 {
   "coverage_exceptions": [],
-  "database_file": "f1-dashboard-20260918-audit-core-pages.duckdb",
-  "generated_at": "2026-09-18T13:25:49.906913+00:00",
-  "git_sha": "7bac4589ac0dee23a4a2327f89c78e6044a9ecb7",
+  "database_file": "f1-dashboard-20260918-audit-pages34.duckdb",
+  "generated_at": "2026-09-18T14:46:04.939517+00:00",
+  "git_sha": "efe69becfd4c1d35de334157cf9629d0e5956f71",
   "latest_event_date": "2026-09-13",
   "methodology_versions": {
     "marts.driver_dna_evidence": [
@@ -82,24 +82,24 @@
     "pyarrow": "25.0.1"
   },
   "schema_version": 2,
-  "sha256": "570ba59a8846ab413850ae664787c50f29ff1bd5d77203206a8688c20252b6e7",
-  "size_bytes": 159395840,
+  "sha256": "6b320289160b54308d126d40ddc0b9f4878e60a7fa64162c8c61a2d082e57f30",
+  "size_bytes": 166473728,
   "source": "duckdb",
   "table_rows": {
     "intermediate.int_teammate_quali_gaps": 8464,
     "intermediate.int_teammate_race_gaps": 1384,
-    "marts.driver_dna_evidence": 742,
-    "marts.driver_dna_microsectors": 3640,
-    "marts.driver_dna_profile": 38,
-    "marts.driver_dna_stability": 680,
+    "marts.driver_dna_evidence": 1064,
+    "marts.driver_dna_microsectors": 21820,
+    "marts.driver_dna_profile": 138,
+    "marts.driver_dna_stability": 730,
     "marts.driver_pace_profile": 15,
     "marts.driver_ratings": 101,
     "marts.driver_ratings_v2": 490,
-    "marts.driver_track_archetypes": 29,
-    "marts.driver_track_fit": 72,
+    "marts.driver_track_archetypes": 59,
+    "marts.driver_track_fit": 109,
     "marts.mart_adjusted_stint_degradation": 4833,
     "marts.mart_driver_season_pace": 494,
-    "marts.mart_lap_telemetry": 623479,
+    "marts.mart_lap_telemetry": 754175,
     "marts.mart_lap_times": 104467,
     "marts.mart_pit_strategy": 2201,
     "marts.mart_race_story": 2146,
@@ -136,5 +136,5 @@
     "staging.stg_team_radio": 3547,
     "staging.stg_weather": 9749
   },
-  "version": "20260918-audit-core-pages"
+  "version": "20260918-audit-pages34"
 }
