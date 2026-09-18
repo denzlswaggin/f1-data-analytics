@@ -1,0 +1,81 @@
+{
+  "counts": {
+    "true_positive": 4,
+    "true_negative": 0,
+    "false_positive": 0,
+    "false_negative": 0,
+    "uncovered": 0,
+    "matched": 0,
+    "mismatch": 0,
+    "expected_unavailable": 0,
+    "unexpected_coverage": 0
+  },
+  "exact_positive_matches": 4,
+  "coverage_basis": "At least one source row per annotated driver-lap; control probes also require a race-control source partition. Not continuous feed completeness.",
+  "annotated_cases": 4,
+  "covered_cases": 4,
+  "annotated_positive_recall": 1.0,
+  "annotated_precision": 1.0,
+  "population_precision": null,
+  "population_false_positive_rate": null,
+  "limitations": "Purposive, non-exhaustive, single-reviewer annotations. Unmentioned events are unknown, not false positives. No population accuracy or calibrated interval.",
+  "cases": [
+    {
+      "id": "china-2024-perez-leclerc",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        39
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spain-2024-norris-hamilton",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        32
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "spain-2024-norris-russell",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        35,
+        35
+      ],
+      "outcome": "true_positive"
+    },
+    {
+      "id": "netherlands-2024-norris-verstappen",
+      "kind": "overtake",
+      "annotation_group": null,
+      "covered": true,
+      "exact_match": true,
+      "tolerant_match": true,
+      "detected_pair_laps": [
+        18
+      ],
+      "outcome": "true_positive"
+    }
+  ],
+  "snapshot_metadata": [
+    [
+      "20260918-audit-core-pages",
+      "2026-09-18 15:25:49.906913+02:00"
+    ]
+  ],
+  "snapshot_sha256": "570ba59a8846ab413850ae664787c50f29ff1bd5d77203206a8688c20252b6e7",
+  "reference_sha256": "89be98a16eb02fc5703a8367d6d1a89861d86794ac362e6d7b3966fe269416c0"
+}
