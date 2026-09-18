@@ -112,7 +112,7 @@ Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
 
 - [x] Correct directional Pit Window headlines and empty chart states. Four page tests pass, including executed SQL for positive-only, negative-only, zero, null, empty and mixed samples. Render verification remains part of the final build gate.
 - [x] Unify Race Pace with the shared robust peer baseline, retaining historical scope. Uses published Traffic lap deltas directly; raw timing remains selectable for older races without replay-backed evidence. Executed query tests verify identical deltas, phase minima and historical availability; render verification is pending.
-- [ ] Expand Driver DNA matched-lap evidence without relaxing eligibility.
+- [x] Expand Driver DNA matched-lap evidence without relaxing eligibility. Added 633 cached matched laps; 26 unavailable requests are recorded, never fabricated. Candidate has 840 eligible directed comparisons (420 independent pairs), up from 144 (72 pairs). Rebuilt profiles, track fits and robustness diagnostics; preserved every original telemetry point with zero duplicate keys. Snapshot publication remains in the final gate.
 - [x] Match telemetry comparisons jointly and expose lap context. Candidate pool includes fastest available and eligible DNA laps; race-lap/tyre-age gaps are capped at three with green dry non-pit laps only. Five executed SQL cases verify matching and integrated delta; build/render gates remain pending.
 - [x] Clarify Warmup, Traffic and Consistency usable samples and limitations. Separate warmup outcomes and offset sample counts; show metric-specific Traffic eligibility and Consistency exclusion reasons. Guard empty headlines/charts and contain wide tables. Page/query tests pass; responsive build gate remains pending.
 - [x] Rework Ratings and Comparison around supported scopes and uncertainty. Rating interval plots replace bare bars, show per-driver counts and missing intervals; season selector retains all published drivers. Comparison exposes shared-year scope and distinguishes indirect model differences from direct contests. Four relevant tests and component compilation pass; final rendering remains pending.
@@ -123,3 +123,14 @@ Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
 
 Commit each verified logical unit on `fix/audit-data-and-core-pages`.
 Preserve Madrid 2026 and existing historical partitions; do not merge or deploy.
+
+
+### Sections 3/4 data reproduction
+
+`python scripts/expand_dna_telemetry.py --database data/warehouse/audit-remediation/f1.duckdb --report data/dna-expansion-report.json`
+reads only local FastF1 cache and adds previously missing jointly selected laps.
+It never replaces original telemetry. Then run `build_driver_dna(2024, 2026)`,
+`build_driver_track_insights()` and `build_driver_dna_validation(2024, 2026)`
+with settings pointing to that candidate (1,000 bootstrap draws, 200 permutations,
+seed 0). The matching limits remain three race laps / three tyre-age laps;
+physical-channel cleaning and 95% common-coverage checks remain unchanged.

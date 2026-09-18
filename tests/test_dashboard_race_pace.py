@@ -41,8 +41,8 @@ def test_shared_baseline_and_historical_timing_scope() -> None:
                     sql = sql.replace("${inputs." + key + ".value}", str(value))
                 sql = sql.replace("${comparable_laps}", "comparable_laps")
                 db.execute(f"create or replace temp table {name} as {sql}")
-            assert db.execute("select count(*) from races").fetchone()[0] == 1
-            assert db.execute("select count(*) from compound_pace").fetchone()[0] == 1
+            assert db.execute("select count(*) from races").fetchall()[0][0] == 1
+            assert db.execute("select count(*) from compound_pace").fetchall()[0][0] == 1
             rows = db.execute("select controlled_delta_sec from race_laps").fetchall()
             if season == 2026:
                 assert len(rows) == 13
@@ -53,4 +53,4 @@ def test_shared_baseline_and_historical_timing_scope() -> None:
                 ).fetchall() == [("Middle", 9)]
             else:
                 assert rows == []
-                assert db.execute("select count(*) from phase_pace").fetchone()[0] == 0
+                assert db.execute("select count(*) from phase_pace").fetchall()[0][0] == 0

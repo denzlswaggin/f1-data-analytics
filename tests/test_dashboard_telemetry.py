@@ -17,7 +17,9 @@ PAGE = Path(__file__).parents[1] / "dashboard/pages/telemetry.md"
         (31, 5, "HARD", "4", 0),
     ],
 )
-def test_duel_uses_jointly_matched_laps(lap_b, age_b, compound_b, status_b, expected):
+def test_duel_uses_jointly_matched_laps(
+    lap_b: int, age_b: int, compound_b: str, status_b: str, expected: int
+) -> None:
     queries = dict(re.findall(r"```sql (\w+)\n(.*?)```", PAGE.read_text(encoding="utf-8"), re.S))
     with duckdb.connect() as db:
         db.execute("create schema f1")
@@ -50,13 +52,13 @@ def test_duel_uses_jointly_matched_laps(lap_b, age_b, compound_b, status_b, expe
             for dependency in ("candidate_laps", "matched_pair", "selected_telemetry"):
                 sql = sql.replace("${" + dependency + "}", dependency)
             db.execute(f"create temp table {name} as {sql}")
-        assert db.execute("select count(*) from matched_pair").fetchone()[0] == expected
+        assert db.execute("select count(*) from matched_pair").fetchall()[0][0] == expected
         if expected:
             assert db.execute("select lap_a, lap_b from matched_pair").fetchone() == (30, 31)
             delta = db.execute(
                 "select delta_sec from time_delta order by distance_m desc limit 1"
-            ).fetchone()[0]
+            ).fetchall()[0][0]
             assert delta == pytest.approx(2975 / 50 - 2975 / (200 / 3.6))
         else:
-            assert db.execute("select count(*) from selected_telemetry").fetchone()[0] == 0
-            assert db.execute("select count(*) from time_delta").fetchone()[0] == 0
+            assert db.execute("select count(*) from selected_telemetry").fetchall()[0][0] == 0
+            assert db.execute("select count(*) from time_delta").fetchall()[0][0] == 0
