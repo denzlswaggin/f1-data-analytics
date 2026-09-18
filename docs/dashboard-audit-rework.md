@@ -111,7 +111,7 @@ Sections 1 and 2 are complete. Sections 3 and 4 are in progress below.
 ## Sections 3 and 4 execution checklist
 
 - [x] Correct directional Pit Window headlines and empty chart states. Four page tests pass, including executed SQL for positive-only, negative-only, zero, null, empty and mixed samples. Render verification remains part of the final build gate.
-- [ ] Unify Race Pace with the shared robust peer baseline, retaining historical scope.
+- [x] Unify Race Pace with the shared robust peer baseline, retaining historical scope. Uses published Traffic lap deltas directly; raw timing remains selectable for older races without replay-backed evidence. Executed query tests verify identical deltas, phase minima and historical availability; render verification is pending.
 - [ ] Expand Driver DNA matched-lap evidence without relaxing eligibility.
 - [ ] Match telemetry comparisons jointly and expose lap context.
 - [ ] Clarify Warmup, Traffic and Consistency usable samples and limitations.
