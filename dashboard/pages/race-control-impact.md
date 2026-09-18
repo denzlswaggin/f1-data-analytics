@@ -9,7 +9,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Race intelligence"
     title="How did race control reshape a driver's race?"
-    description="Inspect the exact intervention timeline, pit opportunity, position, gaps, tyres and recovery separately—with facts kept distinct from counterfactual estimates."
+    description="Inspect the recorded intervention timeline, pit opportunity, position, gaps, tyres and recovery separately—with facts kept distinct from counterfactual estimates."
     accent="race"
 />
 
@@ -46,7 +46,12 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```sql coverage
 select message_count as sample_rows, event_count as entity_count,
     1 as race_count, season as first_season, season as last_season,
-    race_date as latest_event_date
+    race_date as latest_event_date,
+    'race-control messages' as sample_unit,
+    (select count(*) from f1.race_control_effects
+     where season = ${inputs.season.value} and round = ${inputs.race.value}
+       and eligible) as usable_samples,
+    'eligible driver-effect observations' as usable_unit
 from ${selected_race}
 ```
 
@@ -131,7 +136,10 @@ where driver_code = '${inputs.driver.value}'
 ```
 
 ```sql focus_effects
-select *
+select * exclude (value, lower_bound, upper_bound),
+    case when eligible then value end as value,
+    case when eligible then lower_bound end as lower_bound,
+    case when eligible then upper_bound end as upper_bound
 from f1.race_control_effects
 where event_id = '${inputs.event.value}' and driver_code = '${inputs.driver.value}'
     and season = ${inputs.season.value} and round = ${inputs.race.value}
@@ -192,12 +200,14 @@ The timing model is calculated independently of article prose. The frozen golden
 
 {#if pit_saving.length > 0}
 <KeyInsight label="Estimated pit opportunity—not race-result causality">
-Against supported clean green-flag stops from this race, the stop saved an estimated <Value data={pit_saving} column=value fmt="0.00" /> s. The 90% interval is <Value data={pit_saving} column=lower_bound fmt="0.00" /> to <Value data={pit_saving} column=upper_bound fmt="0.00" /> s and includes a one-second timing-resolution allowance. Later racing remains unattributed.
+Against supported clean green-flag stops from this race, the stop saved an estimated <Value data={pit_saving} column=value fmt="0.00" /> s. The 90% interval is <Value data={pit_saving} column=lower_bound fmt="0.00" /> to <Value data={pit_saving} column=upper_bound fmt="0.00" /> s and includes a one-second timing-resolution allowance. The reference sample contains <Value data={pit_saving} column=sample_size /> observations. Later racing remains unattributed.
 </KeyInsight>
 {:else}
 {#if pit_unavailable.length > 0}
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={pit_unavailable} rows=3>
     <Column id=exclusion_reason title="Why no pit-saving estimate is published" />
+</div>
 </DataTable>
 {:else}
 <KeyInsight label="No pit-saving estimate applies">
@@ -237,8 +247,10 @@ order by checkpoint_order
 
 ### Audit timeline
 
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={focus_checkpoints} rows=12>
     <Column id=checkpoint_label title="Checkpoint" />
+</div>
     <Column id=checkpoint_t_s title="Race clock (s)" fmt="0.000" />
     <Column id=position_display title="Position" />
     <Column id=position_source_display title="Position source" />
@@ -256,15 +268,24 @@ order by checkpoint_order
 
 ### Component verdicts
 
+Each row has its own unit, time window and eligibility rule. Do not add position,
+gap, tyre and pit effects together: their windows and reference groups can overlap.
+Evidence grades are heuristic quality labels; only a displayed numeric interval
+quantifies the model's stated resampling uncertainty. Blank values are withheld,
+not zero effects.
+
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={focus_effects} rows=30 download=true>
     <Column id=effect_type title="Effect" />
+</div>
     <Column id=effect_scope title="Window" />
     <Column id=value title="Value" fmt="0.00" />
     <Column id=lower_bound title="90% low" fmt="0.00" />
     <Column id=upper_bound title="90% high" fmt="0.00" />
     <Column id=unit title="Unit" />
     <Column id=evidence_class title="Evidence class" />
-    <Column id=confidence title="Confidence" />
+    <Column id=confidence title="Evidence grade" />
+    <Column id=eligible title="Eligible" />
     <Column id=sample_size title="Sample" />
     <Column id=exclusion_reason title="Why unavailable" />
 </DataTable>
@@ -302,8 +323,10 @@ No driver passes the comparable-field and verified-recovery rules for this inter
 {/if}
 
 <ExpandableSection title="All drivers and unavailable components">
+<div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={driver_evidence} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
+</div>
     <Column id=story_status title="Story status" />
     <Column id=story_direction title="Direction" />
     <Column id=story_reason title="Story reason" />

@@ -110,6 +110,8 @@ export type RaceBundle = {
 };
 
 export type PositionRow = {
+	running_order_source?: string | null;
+	gap_source?: string | null;
 	driver_code: string;
 	t_s: number;
 	x: number;
@@ -120,6 +122,8 @@ export type PositionRow = {
 };
 
 export type ReplaySample = {
+	orderSource?: string | null;
+	gapSource?: string | null;
 	t: number;
 	x: number;
 	y: number;
@@ -172,6 +176,8 @@ export type PitLanePath = TrackPath & {
 };
 
 export type TimingRow = {
+	orderSource?: string | null;
+	gapSource?: string | null;
 	code: string;
 	name: string;
 	team: string;

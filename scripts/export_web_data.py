@@ -169,8 +169,13 @@ def validate_contract(connection: duckdb.DuckDBPyConnection) -> None:
 def _export_positions(
     connection: duckdb.DuckDBPyConnection, season: int, round_number: int, path: Path
 ) -> int:
+    columns = {row[0] for row in connection.execute("describe marts.race_replay").fetchall()}
+    provenance = ", ".join(
+        column if column in columns else f"cast(null as varchar) as {column}"
+        for column in ("running_order_source", "gap_source")
+    )
     rows = connection.execute(
-        """
+        f"""
         select
             cast(driver_code as varchar) as driver_code,
             cast(t_s as float) as t_s,
@@ -178,7 +183,8 @@ def _export_positions(
             cast(y as float) as y,
             cast(running_order as tinyint) as running_order,
             cast(gap_to_leader_s as float) as gap_to_leader_s,
-            cast(gap_to_ahead_s as float) as gap_to_ahead_s
+            cast(gap_to_ahead_s as float) as gap_to_ahead_s,
+            {provenance}
         from marts.race_replay
         where season = ? and round = ?
         order by driver_code, t_s
@@ -190,6 +196,9 @@ def _export_positions(
         "driver_code",
         rows.column("driver_code").combine_chunks().dictionary_encode(),
     )
+    for name in ("running_order_source", "gap_source"):
+        index = rows.schema.get_field_index(name)
+        rows = rows.set_column(index, name, rows.column(name).combine_chunks().dictionary_encode())
     with path.open("wb") as sink, ipc.new_file(sink, rows.schema) as writer:
         writer.write_table(rows)
     return rows.num_rows
