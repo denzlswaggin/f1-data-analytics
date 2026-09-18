@@ -98,8 +98,8 @@ test('race changes select the first event, including delayed results and return 
     dom.window.close();
 });
 
-function mountDropdown(props, initial = {}) {
-    const dom = new JSDOM('<main></main>');
+function mountDropdown(props, initial = {}, url = 'https://example.test/') {
+    const dom = new JSDOM('<main></main>', { url });
     globalThis.window = dom.window;
     globalThis.document = dom.window.document;
     const inputs = writable(initial);
@@ -172,5 +172,35 @@ test('Evidence suspends dependent queries until the new options arrive', async (
     await tick();
     assert.equal(get(f.inputs).race.value, 12);
     assert.equal(hasUnsetValues`${get(f.inputs).race.value}`, false);
+    f.close();
+});
+
+
+test('URL selection waits for the requested parent scope and is consumed once', async () => {
+    const races = (season) => [1, 14].map(round => ({season, round}));
+    const f = mountDropdown({name:'race', value:'round', title:'Race', season:2026,
+        data:races(2026), latest:true}, {}, 'https://example.test/?season=2022&race=1');
+    await tick();
+    assert.equal(get(f.inputs).race.value,14);
+    f.component.$set({season:2022,data:[]});
+    await tick();
+    f.component.$set({data:races(2022)});
+    await tick();
+    assert.equal(get(f.inputs).race.value,1);
+    f.component.$set({season:2026,data:races(2026)});
+    await tick();
+    assert.equal(get(f.inputs).race.value,14);
+    f.component.$set({season:2022,data:races(2022)});
+    await tick();
+    assert.equal(get(f.inputs).race.value,14,'later manual changes do not reapply the initial URL');
+    f.close();
+});
+
+test('root dropdowns restore valid URL values after mounting', async () => {
+    const f = mountDropdown({name:'season',value:'season',title:'Season',
+        data:[{season:2026},{season:2022}]}, {}, 'https://example.test/?season=2022');
+    await tick();
+    assert.equal(get(f.inputs).season.value,2022);
+    assert.equal(document.querySelector('select').value,'2022');
     f.close();
 });

@@ -34,7 +34,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Completed races remain selectable even when no intervention or publishable estimate is available.">
-    <Dropdown data={seasons} name=season value=season title="Season" defaultValue={2026} />
+    <QueryDropdown data={seasons} name=season value=season title="Season" defaultValue={2026} />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -207,8 +207,8 @@ Against supported clean green-flag stops from this race, the stop saved an estim
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={pit_unavailable} rows=3>
     <Column id=exclusion_reason title="Why no pit-saving estimate is published" />
-</div>
 </DataTable>
+</div>
 {:else}
 <KeyInsight label="No pit-saving estimate applies">
 {pit_card[0]?.pit_saving_display || 'No supported same-race counterfactual'}. A numeric saving is only estimated for a stop observed during the intervention.
@@ -250,7 +250,6 @@ order by checkpoint_order
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={focus_checkpoints} rows=12>
     <Column id=checkpoint_label title="Checkpoint" />
-</div>
     <Column id=checkpoint_t_s title="Race clock (s)" fmt="0.000" />
     <Column id=position_display title="Position" />
     <Column id=position_source_display title="Position source" />
@@ -265,6 +264,7 @@ order by checkpoint_order
     <Column id=source title="Checkpoint construction" />
     <Column id=exclusion_reason title="Evidence gap" />
 </DataTable>
+</div>
 
 ### Component verdicts
 
@@ -277,7 +277,6 @@ not zero effects.
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={focus_effects} rows=30 download=true>
     <Column id=effect_type title="Effect" />
-</div>
     <Column id=effect_scope title="Window" />
     <Column id=value title="Value" fmt="0.00" />
     <Column id=lower_bound title="90% low" fmt="0.00" />
@@ -289,6 +288,7 @@ not zero effects.
     <Column id=sample_size title="Sample" />
     <Column id=exclusion_reason title="Why unavailable" />
 </DataTable>
+</div>
 
 ```sql position_drivers
 select * from ${driver_evidence} where position_eligible
@@ -326,7 +326,6 @@ No driver passes the comparable-field and verified-recovery rules for this inter
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={driver_evidence} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
-</div>
     <Column id=story_status title="Story status" />
     <Column id=story_direction title="Direction" />
     <Column id=story_reason title="Story reason" />
@@ -344,6 +343,7 @@ No driver passes the comparable-field and verified-recovery rules for this inter
     <Column id=time_exclusion_reason title="Gap evidence gap" />
     <Column id=exclusion_reason title="Legacy window exclusion" />
 </DataTable>
+</div>
 
 `race-control-impact-v3` pairs exact official intervention messages and evaluates position, gap, pit, tyre and recovery evidence independently. Recorded order is only used after the OpenF1-to-FastF1 clock passes an 8-anchor, 4-driver and 90%-inlier gate and the replay sees a coherent full-field ranking. Missing timing never advances an unfinished lap. Gap publication still requires at least five comparable drivers and verified green recovery. Pit estimates require exact pit timestamps, at least one stable non-pitting peer, five clean same-race green stops from at least four drivers, and a stable reference distribution. Red flags suppress gap estimates across the suspension.
 </ExpandableSection>

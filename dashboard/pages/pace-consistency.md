@@ -37,7 +37,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Available races have sufficient lap timing and replay-derived clean-air context.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -158,7 +158,6 @@ laps so different sample sizes remain comparable.
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_results} rows=25 search=true download=true>
     <Column id=consistency_rank title="Rank" />
-</div>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
     <Column id=robust_consistency_sec title="Consistency (s)" fmt="0.000" />
@@ -175,6 +174,7 @@ laps so different sample sizes remain comparable.
     <Column id=replay_coverage_pct title="Replay coverage (%)" fmt="0.0" />
     <Column id=confidence title="Evidence" />
 </DataTable>
+</div>
 
 ```sql drivers
 select distinct season, round, driver_code
@@ -219,10 +219,10 @@ select * from ${lap_evidence} where lap_eligible
     chartAreaHeight=360
 >
     <ReferenceLine y=0 label="stint trend" />
+</BarChart>
 {:else}
 <KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
 {/if}
-</BarChart>
 
 ```sql stint_models
 select
@@ -239,11 +239,11 @@ order by stint
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={stint_models} rows=10>
     <Column id=stint title="Stint" />
-</div>
     <Column id=compound title="Compound" />
     <Column id=clean_laps title="Clean laps" />
     <Column id=trend_sec_per_tyre_lap title="Modelled trend (s/tyre lap)" fmt="+0.000;-0.000" />
 </DataTable>
+</div>
 
 ```sql excluded_laps
 select lap_number, stint, compound, air_state, replay_coverage_pct, lap_exclusion_reason

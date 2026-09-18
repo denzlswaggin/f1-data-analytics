@@ -1,4 +1,5 @@
 <script>
+    import { onMount } from 'svelte';
     import { Dropdown } from '@evidence-dev/core-components';
     import { getInputContext } from '@evidence-dev/sdk/utils/svelte';
 
@@ -8,7 +9,7 @@
     export let label = value;
     export let title;
     export let order = undefined;
-    export let season;
+    export let season = undefined;
     export let round = undefined;
     export let scopeKey = undefined;
     export let defaultValue = undefined;
@@ -22,24 +23,35 @@
     let previousScope;
     let previousOptions;
     let generation = 0;
+    let urlRequest;
+    onMount(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has(name)) urlRequest = {
+            value: params.get(name), season: params.get('season'), round: params.get('race')
+        };
+    });
 
     $: scope = JSON.stringify([season, round, scopeKey]);
     // Ignore an earlier query response while the parent selection is changing.
-    $: rows = Array.from(data ?? []).filter(row => same(row.season, season)
+    $: rows = Array.from(data ?? []).filter(row => (season === undefined || same(row.season, season))
         && (round === undefined || same(row.round, round)));
     $: optionsKey = JSON.stringify(rows.map(row => [row[value], row[label]]));
     $: {
         const scopeChanged = scope !== previousScope;
         if (scopeChanged && previousScope !== undefined) initialValue = undefined;
+        const urlReady = urlRequest && rows.length
+            && (season === undefined || urlRequest.season === null || same(season, urlRequest.season))
+            && (round === undefined || urlRequest.round === null || same(round, urlRequest.round));
         const current = $inputs[name]?.value;
         const valid = rows.find(row => same(row[value], current));
-        if (scopeChanged || optionsKey !== previousOptions || (!valid && rows.length)) {
+        if (urlReady || scopeChanged || optionsKey !== previousOptions || (!valid && rows.length)) {
+            const linked = urlReady ? rows.find(row => same(row[value], urlRequest.value)) : undefined;
             const requested = rows.find(row => same(row[value], initialValue));
             const preferred = rows.find(row => same(row[value], defaultValue));
             const fallback = latest
                 ? rows.reduce((last, row) => !last || Number(row[value]) > Number(last[value]) ? row : last, undefined)
                 : rows[Math.min(fallbackIndex, rows.length - 1)];
-            const selected = (!scopeChanged && valid) || requested || preferred || fallback;
+            const selected = linked || (!scopeChanged && valid) || requested || preferred || fallback;
             if (selected) {
                 $inputs[name] = { value: selected[value], label: selected[label],
                     rawValues: [{ value: selected[value], label: selected[label], selected: true }] };
@@ -49,6 +61,7 @@
                 inputs.update(state => { delete state[name]; return state; });
             }
             if (rows.length) initialValue = undefined;
+            if (urlReady) urlRequest = undefined;
             previousScope = scope;
             previousOptions = optionsKey;
             generation += 1;

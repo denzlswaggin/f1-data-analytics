@@ -65,8 +65,8 @@ order by round
 ```
 
 <FilterBar title="Choose your scope" description="Season combines the covered races. The race selection applies in Race view; drivers with zero eligible battles remain visible.">
-    <Dropdown data={view_modes} name=view value=view label=label title="View" defaultValue="season" />
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={view_modes} name=view value=view label=label title="View" defaultValue="season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 

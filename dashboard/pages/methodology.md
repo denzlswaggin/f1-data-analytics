@@ -27,7 +27,7 @@ select * from f1.snapshot_metadata
 
 ## Start with the evidence type
 
-[Metric definitions](#metric-definitions) · [Uncertainty and missing data](#uncertainty-and-missing-data) · [Validation status](#validation-status-exploratory-not-certified) · [Published data contract](#published-data-contract)
+[Metric definitions](#metric-definitions) · [Uncertainty and missing data](#uncertainty-and-missing-data) · [Validation status](#validation-status) · [Published data contract](#published-data-contract)
 
 1. **Source observations:** recorded classification, lap timing, messages,
    weather and radio. Coverage and clock alignment can still be incomplete.
@@ -79,7 +79,9 @@ The cockpit brings those results together; it does not create a new causal score
 - **Censored bound:** only a limit is observed, such as settling beyond six laps.
   It must not be ranked as an exact duration.
 
-## Validation status — exploratory, not certified
+## Validation status
+
+These analyses are exploratory, not certified.
 
 ### Latest documented review: 14 September 2026
 

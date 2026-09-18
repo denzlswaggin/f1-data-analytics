@@ -503,15 +503,15 @@ describe('replay model', () => {
 	});
 });
 
-
 it('keeps order and gap provenance attached to the held timing sample', () => {
-    const rows = positions.map((row, index) => ({ ...row,
-        running_order_source: index === 0 ? 'openf1_recorded' : 'lap_progress_estimate',
-        gap_source: index === 0 ? 'lap_progress_estimate' : null
-    }));
-    const drivers = buildDrivers(rows, metadata, laps);
-    expect(timingAt(drivers, 0.5)[0].orderSource).toBe('openf1_recorded');
-    expect(timingAt(drivers, 0.5)[0].gapSource).toBe('lap_progress_estimate');
-    expect(timingAt(drivers, 1)[0].orderSource).toBe('lap_progress_estimate');
-    expect(timingAt(drivers, 1)[0].gapSource).toBeNull();
+	const rows = positions.map((row, index) => ({
+		...row,
+		running_order_source: index === 0 ? 'openf1_recorded' : 'lap_progress_estimate',
+		gap_source: index === 0 ? 'lap_progress_estimate' : null
+	}));
+	const drivers = buildDrivers(rows, metadata, laps);
+	expect(timingAt(drivers, 0.5)[0].orderSource).toBe('openf1_recorded');
+	expect(timingAt(drivers, 0.5)[0].gapSource).toBe('lap_progress_estimate');
+	expect(timingAt(drivers, 1)[0].orderSource).toBe('lap_progress_estimate');
+	expect(timingAt(drivers, 1)[0].gapSource).toBeNull();
 });

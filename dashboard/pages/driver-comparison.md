@@ -24,8 +24,8 @@ order by driver_name
 ```
 
 <FilterBar title="Choose drivers" description="Ratings use seasons shared by both drivers.">
-    <Dropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
-    <Dropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="hamilton" title="Driver B" />
+    <QueryDropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
+    <QueryDropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="hamilton" title="Driver B" />
 </FilterBar>
 
 ```sql comparison
@@ -79,10 +79,10 @@ from ${shared_comparison}
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={pair_scope}>
     <Column id=shared_seasons title="Shared seasons" />
-</div>
     <Column id=first_season title="First" fmt="0000" />
     <Column id=last_season title="Last" fmt="0000" />
 </DataTable>
+</div>
 
 Shared seasons align the displayed years, not the set of race weekends or
 teammates. These drivers need not have raced in the same car, and the fitted
@@ -111,7 +111,6 @@ the difference. Overlapping or separated individual ranges are not a paired test
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={shared_comparison} rows=30>
     <Column id=season fmt="0000" />
-</div>
     <Column id=rating_delta title="Model A minus B" fmt="+0.000;-0.000" />
     <Column id=a_lo title="A: 90% lower" fmt="0.000" />
     <Column id=a_hi title="A: 90% upper" fmt="0.000" />
@@ -120,13 +119,13 @@ the difference. Overlapping or separated individual ranges are not a paired test
     <Column id=a_comparisons title="A comparisons" />
     <Column id=b_comparisons title="B comparisons" />
 </DataTable>
+</div>
 </ExpandableSection>
 
 <ExpandableSection title="View and download season ratings">
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={comparison} rows=40 download=true>
     <Column id=season fmt="0000" />
-</div>
     <Column id=driver_name title="Driver" />
     <Column id=rating fmt="0.000" />
     <Column id=rating_lo title="90% resampling lower" fmt="0.000" />
@@ -134,6 +133,7 @@ the difference. Overlapping or separated individual ranges are not a paired test
     <Column id=form_delta title="YoY change" fmt="+0.000;-0.000" />
     <Column id=n_comparisons title="Model comparisons" />
 </DataTable>
+</div>
 </ExpandableSection>
 
 ## Career model benchmark

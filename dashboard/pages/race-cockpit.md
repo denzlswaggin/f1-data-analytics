@@ -38,7 +38,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Every panel below stays on the same season and round.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 

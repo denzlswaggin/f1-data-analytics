@@ -76,8 +76,8 @@ union all select 'low_speed_kph', 'Low-speed corner speed'
 ```
 
 <FilterBar title="Inspect a driver" description="Compare one technique axis and its microsector time direction across derived circuit groups.">
-    <Dropdown data={drivers} name=track_driver value=driver_code label=driver_name title="Driver" />
-    <Dropdown data={metrics} name=track_metric value=metric label=label title="Technique axis" />
+    <QueryDropdown data={drivers} name=track_driver value=driver_code label=driver_name title="Driver" />
+    <QueryDropdown data={metrics} name=track_metric value=metric label=label title="Technique axis" />
 </FilterBar>
 
 ```sql driver_race_gain

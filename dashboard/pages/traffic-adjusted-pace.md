@@ -36,7 +36,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Only races with both green-flag lap timing and replay gaps are available.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -147,10 +147,10 @@ where clean_air_eligible and traffic_adjusted_pace_delta_sec is not null
     labels=true
 >
     <ReferenceLine y=0 label="peer median" />
+</BarChart>
 {:else}
 <KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
 {/if}
-</BarChart>
 
 ## Traffic exposure versus associated pace
 
@@ -177,15 +177,14 @@ where traffic_association_eligible and traffic_associated_delta_sec_per_lap is n
     chartAreaHeight=380
 >
     <ReferenceLine y=0 label="no observed association" />
+</ScatterPlot>
 {:else}
 <KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
 {/if}
-</ScatterPlot>
 
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_results} rows=25 search=true download=true>
     <Column id=clean_air_rank title="Rank" />
-</div>
     <Column id=driver_code title="Driver" />
     <Column id=team title="Team" />
     <Column id=traffic_adjusted_pace_delta_sec title="Clean-air pace (s)" fmt="+0.000;-0.000" />
@@ -201,6 +200,7 @@ where traffic_association_eligible and traffic_associated_delta_sec_per_lap is n
     <Column id=traffic_association_eligible title="Association eligible" />
     <Column id=traffic_association_confidence title="Association sample strength" />
 </DataTable>
+</div>
 
 ```sql drivers
 select distinct season, round, driver_code
@@ -243,10 +243,10 @@ order by lap_number
     chartAreaHeight=340
 >
     <ReferenceLine y=0 label="peer median" />
+</LineChart>
 {:else}
 <KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
 {/if}
-</LineChart>
 
 <ExpandableSection title="See every included lap and the method">
 <div style="overflow-x: auto; max-width: 100%;">
@@ -294,11 +294,11 @@ stint boundaries. Missing pit records do not prove that no pit visit occurred.
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={excluded_pit_laps} rows=40 search=true download=true>
     <Column id=driver_code title="Driver" />
-</div>
     <Column id=lap_number title="Lap" />
     <Column id=pit_context_source title="Evidence source" />
     <Column id=pit_exclusion_reason title="Exclusion" />
 </DataTable>
+</div>
 </ExpandableSection>
 
 <RelatedAnalysis section="race" current="traffic-adjusted-pace" season={inputs.season.value} race={inputs.race.value} />

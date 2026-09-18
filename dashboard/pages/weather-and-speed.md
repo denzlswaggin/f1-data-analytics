@@ -35,7 +35,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Compare straight-line speed in the selected event.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -93,7 +93,7 @@ select distinct season from f1.weather_degradation order by season desc
 
 This season filter is independent of the speed-race selection above.
 
-<Dropdown data={weather_seasons} name=weather_season value=season title="Weather season" />
+<QueryDropdown data={weather_seasons} name=weather_season value=season title="Weather season" />
 
 ```sql weather_coverage
 select sum(sample_rows) as sample_rows, sum(usable_samples) as usable_samples,

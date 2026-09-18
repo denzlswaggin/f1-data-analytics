@@ -35,7 +35,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Matched-lap telemetry coverage varies by race.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 

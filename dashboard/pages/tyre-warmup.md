@@ -37,7 +37,7 @@ order by round
 ```
 
 <FilterBar title="Choose a race" description="Available races have lap timing plus sufficient replay-derived traffic context.">
-    <Dropdown data={seasons} name=season value=season title="Season" />
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
     <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
 </FilterBar>
 
@@ -154,12 +154,12 @@ order by post_stop_offset, compound
     chartAreaHeight=390
 >
     <ReferenceLine y=0 label="mature trajectory" />
-{:else}
-<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
-{/if}
     <ReferenceLine y=0.5 label="stable-band ceiling" />
     <ReferenceLine y=-0.5 label="stable-band floor" />
 </LineChart>
+{:else}
+<KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
+{/if}
 
 <ExpandableSection title="Curve sample counts">
 <DataTable data={compound_curve} rows=30>
@@ -216,10 +216,10 @@ limit 24
     labels=true
 >
     <ReferenceLine y=0 label="mature trajectory" />
+</BarChart>
 {:else}
 <KeyInsight label="Insufficient evidence">No eligible observations support this chart for the current selection. See the evidence and exclusions below.</KeyInsight>
 {/if}
-</BarChart>
 
 ## Stint evidence
 
@@ -232,7 +232,6 @@ not a measured settling time; a window with gaps and no pair remains unknown.
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={race_stints} rows=30 search=true download=true>
     <Column id=driver_code title="Driver" />
-</div>
     <Column id=stint title="Stint" />
     <Column id=compound title="Compound" />
     <Column id=out_lap title="Out-lap" />
@@ -248,6 +247,7 @@ not a measured settling time; a window with gaps and no pair remains unknown.
     <Column id=baseline_slope_sec_per_lap title="Mature slope (s/lap)" fmt="+0.000;-0.000" />
     <Column id=confidence title="Heuristic evidence quality" />
 </DataTable>
+</div>
 
 ```sql excluded_stints
 select driver_stint, compound, out_lap, stint_laps, exclusion_reason

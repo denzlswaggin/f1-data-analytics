@@ -175,7 +175,11 @@
 	async function initialise() {
 		try {
 			manifest = await loadManifest();
-			const initial = initialRace(manifest.races, manifest.default_race, new SvelteURL(window.location.href).searchParams);
+			const initial = initialRace(
+				manifest.races,
+				manifest.default_race,
+				new SvelteURL(window.location.href).searchParams
+			);
 			selectedSeason = initial.season;
 			selectedRaceKey = initial.key;
 			await selectRace(initial);
@@ -711,21 +715,29 @@
 					>{/if}
 			</section>
 		{:else if loaded}
-            <details class="provenance-panel">
-                <summary>Replay evidence: recorded, estimated and animated</summary>
-                <p>Timing tower: plain values use aligned OpenF1 samples, ≈ marks lap-progress estimates,
-                and ? means the source is unavailable. Values are held between source samples; missing
-                timing is not a measured zero. Hover a position or gap for its source.</p>
-                <p>The circuit shape comes from loaded position traces. Car movement is interpolated
-                and projected from lap progress; the pit-lane path and pit windows are inferred.
-                Animation is not an observed racing line or proof of a physical pass.</p>
-                <p>Pass events are experimental timing-model detections. Race-control messages,
-                weather samples and radio clips are source observations with separate coverage.</p>
-                <p>This race has {loaded.bundle.race_control.length} control messages,
-                {loaded.bundle.weather.length} weather samples and {loaded.bundle.radio.length} radio clips.
-                An empty feed means no observations in this bundle, not proof that no event occurred.</p>
-            </details>
-            <section class="replay-grid">
+			<details class="provenance-panel">
+				<summary>Replay evidence: recorded, estimated and animated</summary>
+				<p>
+					Timing tower: plain values use aligned OpenF1 samples, ≈ marks lap-progress estimates, and
+					? means the source is unavailable. Values are held between source samples; missing timing
+					is not a measured zero. Hover a position or gap for its source.
+				</p>
+				<p>
+					The circuit shape comes from loaded position traces. Car movement is interpolated and
+					projected from lap progress; the pit-lane path and pit windows are inferred. Animation is
+					not an observed racing line or proof of a physical pass.
+				</p>
+				<p>
+					Pass events are experimental timing-model detections. Race-control messages, weather
+					samples and radio clips are source observations with separate coverage.
+				</p>
+				<p>
+					This race has {loaded.bundle.race_control.length} control messages,
+					{loaded.bundle.weather.length} weather samples and {loaded.bundle.radio.length} radio clips.
+					An empty feed means no observations in this bundle, not proof that no event occurred.
+				</p>
+			</details>
+			<section class="replay-grid">
 				<aside
 					id="drivers"
 					class="timing-panel panel"
@@ -758,12 +770,18 @@
 										class="position"
 										title={sourceLabel(driver.orderSource)}
 										class:gain={(driver.positionChange ?? 0) > 0}
-										class:loss={(driver.positionChange ?? 0) < 0}>{sourceMarker(driver.orderSource)}{driver.order}</span
+										class:loss={(driver.positionChange ?? 0) < 0}
+										>{sourceMarker(driver.orderSource)}{driver.order}</span
 									><span class="team-line" style={`--team:${driver.color}`}></span><span
 										class="driver"><strong>{driver.code}</strong><small>{driver.team}</small></span
 									><span class="tyre {compoundCode(driver.compound).toLowerCase()}"
 										>{compoundCode(driver.compound)}</span
-									><span class="gap" title={sourceLabel(driver.gapSource)}>{driver.gap == null ? '' : sourceMarker(driver.gapSource)}{formatGap(driver.gap, true)}</span></button
+									><span class="gap" title={sourceLabel(driver.gapSource)}
+										>{driver.gap == null ? '' : sourceMarker(driver.gapSource)}{formatGap(
+											driver.gap,
+											true
+										)}</span
+									></button
 								>
 							</li>{/each}
 					</ol>
@@ -1192,9 +1210,23 @@
 </div>
 
 <style>
-    .provenance-panel { margin: 0 0 1rem; padding: .8rem 1rem; border: 1px solid #354052; border-radius: .6rem; color: #c7d0de; font-size: .85rem; }
-    .provenance-panel summary { cursor: pointer; font-weight: 600; }
-    .provenance-panel p { max-width: 90ch; margin: .7rem 0 0; line-height: 1.5; }
+	.provenance-panel {
+		margin: 0 0 1rem;
+		padding: 0.8rem 1rem;
+		border: 1px solid #354052;
+		border-radius: 0.6rem;
+		color: #c7d0de;
+		font-size: 0.85rem;
+	}
+	.provenance-panel summary {
+		cursor: pointer;
+		font-weight: 600;
+	}
+	.provenance-panel p {
+		max-width: 90ch;
+		margin: 0.7rem 0 0;
+		line-height: 1.5;
+	}
 
 	.app-shell {
 		min-height: 100vh;
