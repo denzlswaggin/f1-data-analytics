@@ -101,6 +101,20 @@ def test_replace_rounds_appends_new_rounds(tmp_path: Path) -> None:
     assert out["round"].tolist() == [1, 2, 3]
 
 
+def test_session_refresh_preserves_other_sessions_and_rounds(tmp_path: Path) -> None:
+    settings = _settings(tmp_path)
+    initial = pd.DataFrame({
+        "season": [2026] * 3, "round": [13, 14, 14],
+        "session": ["R", "Q", "R"], "val": [13, 140, 141],
+    })
+    load_dataframe(initial, "weather", 2026, settings, replace_rounds=True)
+    replacement = initial.iloc[[2]].assign(val=142)
+    load_dataframe(replacement, "weather", 2026, settings, replace_rounds=True)
+    load_dataframe(replacement, "weather", 2026, settings, replace_rounds=True)
+    result = read_query("select val from raw.weather order by val", settings)
+    assert result.val.tolist() == [13, 140, 142]
+
+
 def test_lap_pit_fields_migrate_legacy_table_without_losing_other_rounds(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
     with duckdb.connect(str(settings.duckdb_path)) as connection:
