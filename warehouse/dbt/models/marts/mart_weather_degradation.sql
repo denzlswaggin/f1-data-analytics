@@ -1,61 +1,33 @@
--- Tyre degradation segmented by race-day weather.
---
--- Summarises the per-minute weather to a race-grain bucket (wet / hot / cool),
--- then fits lap time vs tyre age (regr_slope) over green-flag laps within each
--- race + compound. Surfaces how fall-off shifts with track temperature and rain.
--- FastF1-sourced (2018+); mirrors mart_tyre_degradation with a weather join.
-with race_weather as (
-    select
-        season,
-        round,
-        avg(track_temp)                                     as avg_track_temp,
-        avg(air_temp)                                       as avg_air_temp,
-        max(case when is_raining then 1 else 0 end)         as any_rain
-    from {{ ref('stg_weather') }}
-    where session = 'R'
-    group by season, round
-),
-
-bucketed as (
-    select
-        season,
-        round,
-        avg_track_temp,
-        avg_air_temp,
-        case
-            when any_rain = 1 then 'wet'
-            when avg_track_temp >= 40 then 'hot'
-            else 'cool'
-        end                                                 as weather_bucket
-    from race_weather
-),
-
-laps as (
-    select * from {{ ref('mart_lap_times') }}
-    where tyre_life >= 2 and compound is not null
+-- Weather observations inside each green lap, on the shared session clock.
+-- Missing observations remain unknown; rain elsewhere in the session is irrelevant.
+with laps as (
+    select pace.*, timing.lap_start_sec
+    from {{ ref('mart_lap_times') }} as pace
+    join {{ ref('stg_laps') }} as timing
+        on timing.season = pace.season and timing.round = pace.round
+        and timing.driver_code = pace.driver_code and timing.lap_number = pace.lap_number
+        and timing.session = 'R'
+    where pace.tyre_life >= 2 and pace.compound is not null
+), aligned as (
+    select laps.season, laps.round, laps.race_name, laps.driver_code, laps.lap_number,
+        laps.compound, laps.tyre_life, laps.lap_time_sec,
+        avg(weather.track_temp) as track_temp, avg(weather.air_temp) as air_temp,
+        case when count(weather.time_sec) = 0 then null
+             when max(case when weather.is_raining then 1 else 0 end) = 1 then 'wet'
+             when avg(weather.track_temp) >= 40 then 'hot'
+             when avg(weather.track_temp) is not null then 'cool' end as weather_bucket
+    from laps
+    left join {{ ref('stg_weather') }} as weather
+        on weather.season = laps.season and weather.round = laps.round and weather.session = 'R'
+        and weather.time_sec >= laps.lap_start_sec
+        and weather.time_sec < laps.lap_start_sec + laps.lap_time_sec
+    group by laps.season, laps.round, laps.race_name, laps.driver_code, laps.lap_number,
+        laps.compound, laps.tyre_life, laps.lap_time_sec
 )
-
-select
-    laps.season,
-    laps.round,
-    laps.race_name,
-    laps.compound,
-    bucketed.weather_bucket,
-    bucketed.avg_track_temp,
-    bucketed.avg_air_temp,
-    count(*)                                                as n_laps,
-    regr_slope(laps.lap_time_sec, laps.tyre_life)           as deg_sec_per_lap,
-    avg(laps.lap_time_sec)                                  as avg_lap_sec
-from laps
-left join bucketed
-    on bucketed.season = laps.season
-    and bucketed.round = laps.round
-group by
-    laps.season,
-    laps.round,
-    laps.race_name,
-    laps.compound,
-    bucketed.weather_bucket,
-    bucketed.avg_track_temp,
-    bucketed.avg_air_temp
+select season, round, race_name, compound, weather_bucket,
+    avg(track_temp) as avg_track_temp, avg(air_temp) as avg_air_temp,
+    count(*) as n_laps, regr_slope(lap_time_sec, tyre_life) as deg_sec_per_lap,
+    avg(lap_time_sec) as avg_lap_sec
+from aligned
+group by season, round, race_name, compound, weather_bucket
 having count(*) >= 8

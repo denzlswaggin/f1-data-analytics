@@ -40,22 +40,12 @@ order by round
 </FilterBar>
 
 ```sql pit_coverage
-select
-    count(*) as sample_rows,
-    count(distinct driver_id) as entity_count,
-    count(distinct cast(season as varchar) || '-' || cast(round as varchar)) as race_count,
-    count(positions_gained) as usable_samples,
-    min(season) as first_season,
-    max(season) as last_season,
-    (
-        select max(latest_event_date)
-        from f1.data_coverage
-        where section = 'pit_cycle'
-    ) as latest_event_date
-from f1.pit_strategy
+select * from f1.data_coverage
+where section = 'pit_cycle'
+    and season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
-<DataTrust data={pit_coverage} sampleLabel="pit stops across the published races" entityLabel="Drivers" method="descriptive window; not counterfactual" />
+<DataTrust data={pit_coverage} sampleLabel="recorded pit visits" entityLabel="Drivers" method="descriptive window; not counterfactual" />
 
 ```sql race_stops
 select
@@ -131,7 +121,12 @@ does not isolate stationary service time or mechanic performance.
     <ReferenceLine y=0 label="position held" />
 </ScatterPlot>
 
+Compare matched rival cycles in [Pit Window Analysis](pit-window-effectiveness?season={inputs.season.value}&race={inputs.race.value}).
+
 ## Every stop
+
+The position window runs from one lap before to two laps after the visit.
+Stops without both positions remain listed; their swing is unknown.
 
 <ExpandableSection title="View every stop">
 <DataTable data={race_stops} rows=20>

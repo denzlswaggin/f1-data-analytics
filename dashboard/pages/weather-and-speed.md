@@ -85,13 +85,21 @@ order by top_speed_kph desc
 
 ## Observed lap-time slope by track conditions
 
+```sql weather_seasons
+select distinct season from f1.weather_degradation order by season desc
+```
+
+<Dropdown data={weather_seasons} name=weather_season value=season title="Weather season (independent of speed race)" />
+
 ```sql weather_coverage
 select * from f1.data_coverage where section = 'weather_slope'
+    and season = ${inputs.weather_season.value}
 ```
 
 <DataTrust data={weather_coverage} sampleLabel="compound-race fits" entityLabel="Compounds" method="descriptive; weather-covered races only" />
 
-For races with weather coverage, this is the average unadjusted lap-time slope
+Weather is aligned to each lap on the session clock; missing observations remain unknown.
+Groups need at least five distinct races. This is the average unadjusted lap-time slope
 per compound in each condition bucket (cool / hot / wet). It mixes tyre wear with
 fuel burn, traffic and track evolution and is therefore descriptive only.
 
@@ -100,10 +108,13 @@ select
     compound,
     weather_bucket,
     round(avg(deg_sec_per_lap), 3) as avg_deg_sec_per_lap,
+    count(distinct round) as races,
     sum(n_laps) as laps
 from f1.weather_degradation
-where weather_bucket is not null
+where weather_bucket is not null and deg_sec_per_lap is not null
+    and season = ${inputs.weather_season.value}
 group by compound, weather_bucket
+having count(distinct round) >= 5
 order by compound, weather_bucket
 ```
 
@@ -123,8 +134,20 @@ order by compound, weather_bucket
     <Column id=compound title="Compound" />
     <Column id=weather_bucket title="Conditions" />
     <Column id=avg_deg_sec_per_lap title="Avg slope (s/lap)" fmt='0.000' />
+    <Column id=races title="Races" />
     <Column id=laps title="Laps" />
 </DataTable>
 </ExpandableSection>
+
+```sql weather_samples
+select season, round, race_name, compound, weather_bucket, n_laps, deg_sec_per_lap
+from f1.weather_degradation
+where season = ${inputs.weather_season.value}
+order by round, compound, weather_bucket
+```
+
+Individual fits remain available even when a group has fewer than five races.
+Blank conditions mean no aligned weather sample.
+<DataTable data={weather_samples} rows=10 search=true />
 
 <RelatedAnalysis section="race" current="weather-and-speed" season={inputs.season.value} race={inputs.race.value} />

@@ -9,12 +9,12 @@ max_width: 1600
 <PageHeader
     eyebrow="Strategy analysis"
     title="Which tyres faded?"
-    description="See every compound choice and pit window on a true lap axis, then separate raw fall-off from fuel- and track-adjusted degradation."
+    description="See every compound choice and pit window on a true lap axis, then separate raw fall-off from relative same-lap degradation."
     accent="strategy"
 />
 
 <KeyInsight label="How to read the strategy chart">
-Blocks show compound and stint length. Darkening indicates observed fall-off, while the adjusted chart below removes much of the shared fuel and track trend.
+Blocks show compound and stint length. Darkening indicates observed fall-off, while the relative chart below compares cars on the same lap and compound.
 </KeyInsight>
 
 ```sql seasons
@@ -57,11 +57,11 @@ order by finish_position, stint
 
 <StintChart data={race_stints} title={`${inputs.season.value} ${inputs.race.label}`} />
 
-## Fuel- and track-adjusted fall-off
+## Relative fall-off
 
 Each lap is compared with other cars on the **same race lap and compound** before
-the tyre-age slope is fitted. This removes much of the shared fuel-burn and track-
-evolution trend that makes raw lap times look like tyre degradation.
+the tyre-age slope is fitted. This is a descriptive comparison, not an isolated tyre effect: fuel loads, traffic,
+driver pace and tyre age can still differ between cars.
 
 ```sql adjusted_deg
 select *
@@ -107,17 +107,27 @@ and final three comparable laps. It is a review signal, not a tyre-failure forec
 
 ## Strategy summary — {inputs.season.value} {inputs.race.label}
 
-Number of stops and the compound sequence each driver ran, in finishing order.
+Recorded pit visits and compound sequences, ordered by official classification.
+Stint changes during red flags are not counted as pit visits. A blank stop count means the source is unavailable.
 
 ```sql strategies
+with stops as (
+    select driver_id, count(*) as stops
+    from f1.pit_strategy
+    where season = ${inputs.season.value} and round = ${inputs.race.value}
+    group by driver_id
+)
 select
     min(finish_position) as pos,
     driver_code,
     driver_name,
-    count(*) - 1 as stops,
+    max(case when coverage.status = 'available' then coalesce(stops.stops, 0) end) as stops,
     string_agg(compound, ' → ' order by stint) as strategy
-from f1.stint_strategy
-where season = ${inputs.season.value} and round = ${inputs.race.value}
+from f1.stint_strategy as stints
+left join stops on stops.driver_id = stints.driver_id
+left join f1.source_coverage as coverage
+    on coverage.resource = 'pitstops' and coverage.season = stints.season and coverage.round = stints.round
+where stints.season = ${inputs.season.value} and stints.round = ${inputs.race.value}
 group by driver_code, driver_name
 order by pos
 ```

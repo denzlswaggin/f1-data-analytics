@@ -30,7 +30,7 @@ races as (
 ),
 
 drivers as (
-    select driver_id, driver_name from {{ ref('stg_drivers') }}
+    select distinct driver_id, driver_name from {{ ref('stg_driver_codes') }}
 ),
 
 joined as (
@@ -74,5 +74,7 @@ left join races
     and races.round = joined.round
 left join drivers
     on drivers.driver_id = joined.driver_id
-where joined.position_before is not null
-    or joined.position_after is not null
+where exists (
+    select 1 from {{ ref('stg_laps') }} as scope
+    where scope.season = joined.season and scope.round = joined.round and scope.session = 'R'
+)
