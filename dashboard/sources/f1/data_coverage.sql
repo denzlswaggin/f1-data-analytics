@@ -201,6 +201,34 @@ coverage as (
 
 select
     coverage.*,
+    case section
+        when 'driver_rating' then 'directed comparisons'
+        when 'pace_profile' then 'directed comparisons'
+        when 'race_pace' then 'laps'
+        when 'pace_consistency' then 'laps'
+        when 'traffic_pace' then 'laps'
+        when 'pit_cycle' then 'stops'
+        when 'pit_timing' then 'stops'
+        when 'tyre_strategy' then 'stints'
+        when 'tyre_warmup' then 'stints'
+        when 'pit_window' then 'windows'
+        when 'weather_slope' then 'compound-race fits'
+        when 'telemetry' then 'selected laps'
+        when 'racecraft' then 'episodes'
+        when 'race_replay' then 'ticks'
+        when 'race_control' then 'events'
+        else 'driver summaries' end as sample_unit,
+    case section
+        when 'pace_profile' then 'matched lap observations'
+        when 'race_replay' then 'seconds'
+        when 'race_control' then 'eligible driver-event observations'
+        when 'speed_trap' then 'laps'
+        when 'race_story' then 'laps'
+        else sample_unit end as usable_unit,
+    case when usable_samples = 0 then 'No usable observations under this method'
+        when sample_rows > usable_samples and sample_unit = usable_unit
+            then 'Some observations do not pass the method or source-availability rules'
+        else '' end as coverage_reason,
     max(case when coverage.season is null then global_evidence_dates.latest_event_date
         else races.race_date end) as latest_event_date
 from coverage
