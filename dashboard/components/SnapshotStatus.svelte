@@ -12,15 +12,16 @@
     $: row = data?.[0] || {};
     $: status = row.freshness_status || 'unknown';
     $: stale = status === 'stale';
+    $: current = status === 'current';
     $: dataThrough = formatDate(row.latest_event_date);
     $: calendarThrough = formatDate(row.latest_completed_event_date);
     $: lag = Number(row.freshness_lag_days || 0);
 </script>
 
-<aside class="snapshot-status" class:stale role={stale ? 'status' : undefined}>
+<aside class="snapshot-status" class:stale class:unknown={!stale && !current} role={stale ? 'status' : undefined}>
     <span class="indicator" aria-hidden="true"></span>
     <div>
-        <strong>{stale ? 'Snapshot needs a data refresh' : 'Snapshot is current'}</strong>
+        <strong>{stale ? 'Snapshot needs a data refresh' : current ? 'Snapshot is current' : 'Data freshness unverified'}</strong>
         <span>Data through {dataThrough}</span>
     </div>
     {#if stale}
@@ -48,6 +49,8 @@
         background: rgba(247, 201, 72, 0.08);
         color: #f4e8b4;
     }
+    .snapshot-status.unknown { border-color: var(--dashboard-border); background: rgba(148, 163, 184, 0.05); color: #c5cedb; }
+    .unknown .indicator { background: #9ba7ba; box-shadow: none; }
     .indicator {
         width: 0.58rem;
         height: 0.58rem;

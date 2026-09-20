@@ -20,10 +20,9 @@
         justify-content: space-between;
         gap: 1rem;
         margin: 1.1rem 0 1.4rem;
-        padding: 1rem 1.05rem;
-        border: 1px solid rgba(160, 174, 201, 0.2);
-        border-radius: 0.85rem;
-        background: linear-gradient(115deg, rgba(50, 211, 244, 0.075), rgba(255, 255, 255, 0.025));
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--dashboard-border);
+        background: transparent;
     }
     .filter-heading {
         display: flex;

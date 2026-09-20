@@ -36,7 +36,23 @@
         ]
     };
 
-    $: links = (groups[section] || groups.race).filter((item) => item[1] !== current);
+    const relatedPaths = {
+        'race-pace': ['traffic-adjusted-pace', 'pace-consistency', 'telemetry'],
+        'traffic-adjusted-pace': ['race-pace', 'pace-consistency', 'race-replay'],
+        'pit-strategy': ['pit-window-effectiveness', 'pit-timing-sensitivity', 'tyre-strategy'],
+        'pit-window-effectiveness': ['pit-strategy', 'pit-timing-sensitivity', 'race-control-impact'],
+        'pit-timing-sensitivity': ['pit-window-effectiveness', 'pit-strategy', 'tyre-strategy'],
+        'tyre-strategy': ['tyre-warmup', 'pit-strategy', 'race-pace'],
+        'tyre-warmup': ['tyre-strategy', 'race-pace', 'traffic-adjusted-pace'],
+        'telemetry': ['driver-dna', 'driver-comparison', 'race-pace'],
+        'driver-dna': ['driver-track-insights', 'driver-comparison', 'telemetry'],
+        'driver-ratings': ['driver-comparison', 'saturday-vs-sunday', 'driver-dna'],
+        'driver-comparison': ['driver-ratings', 'driver-dna', 'saturday-vs-sunday']
+    };
+    const allLinks = Object.values(groups).flat();
+    $: links = relatedPaths[current]
+        ? relatedPaths[current].map(path => allLinks.find(item => item[1] === path)).filter(Boolean)
+        : (groups[section] || groups.race).filter(item => item[1] !== current).slice(0, 3);
 
     function href(path) {
         const params = [];
@@ -59,7 +75,7 @@
         padding: 1.2rem;
         border: 1px solid rgba(160,174,201,.18);
         border-radius: .9rem;
-        background: linear-gradient(115deg, rgba(255,64,80,.06), rgba(255,255,255,.018));
+        background: rgba(255,255,255,.018);
     }
     .related > strong { display: block; margin-bottom: 0.7rem; color: #aeb8c7; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.1em; }
     .related div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -73,5 +89,6 @@
         font-size: 0.85rem;
         text-decoration: none;
     }
-    a:hover, a:focus-visible { border-color: #ff4050; color: #ff7180; outline: none; }
+    a:hover { border-color: #9ba7ba; color: #f8fafc; }
+    a:focus-visible { outline: 2px solid #9bc3ff; outline-offset: 2px; }
 </style>

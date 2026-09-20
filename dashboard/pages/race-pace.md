@@ -12,10 +12,6 @@ max_width: 1600
     description="Compare readable two-driver traces, peer-relative pace and race phases using green-flag FastF1 timing."
 />
 
-<KeyInsight label="How to read race pace">
-Negative deltas mean faster than the median of at least three other drivers on the same race lap and compound. This is the shared Traffic and Consistency baseline; it does not isolate driver skill or remove tyre-age and traffic effects.
-</KeyInsight>
-
 ```sql seasons
 select distinct season
 from f1.lap_times
@@ -106,6 +102,10 @@ Historical timing remains available in the raw compound summaries below;
 missing replay coverage is not evidence of equal pace.
 </KeyInsight>
 {/if}
+
+<KeyInsight label="How to read race pace">
+Negative deltas mean faster than the median of at least three other drivers on the same race lap and compound. This is the shared Traffic and Consistency baseline; it does not isolate driver skill or remove tyre-age and traffic effects.
+</KeyInsight>
 
 ```sql phase_pace
 with race as (

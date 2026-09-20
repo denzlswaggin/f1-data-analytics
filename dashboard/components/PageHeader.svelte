@@ -3,9 +3,10 @@
     export let title = '';
     export let description = '';
     export let accent = 'race';
+    export let hero = false;
 </script>
 
-<header class="page-header {accent}">
+<header class="page-header {accent}" class:hero>
     <div class="copy">
         <div class="eyebrow"><span aria-hidden="true"></span>{eyebrow}</div>
         <h1>{title}</h1>
@@ -63,7 +64,25 @@
             linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
     }
     .page-header.trust::after { border-color: rgba(70, 211, 154, 0.07); }
-    .copy { max-width: 54rem; }
+    .page-header:not(.hero) {
+        min-height: 0;
+        padding: 0.75rem 0 1.25rem;
+        margin-bottom: 1rem;
+        border: 0;
+        border-bottom: 1px solid var(--dashboard-border);
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+    }
+    .page-header:not(.hero)::after { display: none; }
+    .page-header:not(.hero) h1 {
+        max-width: 32ch;
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        line-height: 1.12;
+        letter-spacing: -0.035em;
+    }
+    .page-header:not(.hero) p { margin-top: 0.6rem; font-size: 1rem; }
+    .copy { max-width: 54rem; min-width: 0; }
     .eyebrow {
         display: flex;
         align-items: center;

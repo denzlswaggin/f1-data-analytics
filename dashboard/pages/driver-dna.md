@@ -13,6 +13,13 @@ max_width: 1600
     accent="drivers"
 />
 
+<nav class="section-nav" aria-label="On this page">
+    <a href="#technique-profile">Technique profile</a>
+    <a href="#season-comparison">Season comparison</a>
+    <a href="#race-signature">Race by race</a>
+    <a href="#lap-evidence">Lap evidence</a>
+</nav>
+
 <KeyInsight label="Technique evidence—not a universal driving-style score">
 Every point comes from the fastest telemetry-backed race lap available for both teammates, on the same dry compound, under green track status and within three laps and three tyre-life laps. The result describes this fast-race-lap sample; it does not separate the driver from setup, traffic history, fuel, tyre state or car behaviour.
 </KeyInsight>
@@ -82,6 +89,8 @@ order by driver_name
     <Column id=seasons title="Evidence span" />
     <Column id=confidence title="Confidence" />
 </DataTable>
+
+<div id="technique-profile" class="section-anchor"></div>
 
 ## What defines Driver A?
 
@@ -346,6 +355,8 @@ appears only when at least five races remain after removal.</p>
 </div>
 {/if}
 
+<div id="season-comparison" class="section-anchor"></div>
+
 ## Driver vs. season average
 
 Compare one published season profile with an equally weighted average of every
@@ -479,6 +490,8 @@ average is a point benchmark: individual profile intervals cannot be combined in
 a valid interval for their mean from the published summary columns alone. Both
 series remain on the teammate-normalised robust-z scale; this is not a field ranking.
 
+<div id="race-signature" class="section-anchor"></div>
+
 ## Race-by-race signature
 
 Choose one technique axis. Each cell is a robust standard deviation from that race's actual teammate: teal means more, red means less. This is the evidence beneath the multi-race median, not a combined score.
@@ -526,6 +539,8 @@ order by season, round, driver_name
 ```
 
 <DriverDNAHeatmap data={race_heatmap} title="Selected axis across eligible races" />
+
+<div id="lap-evidence" class="section-anchor"></div>
 
 ## Evidence in one lap
 

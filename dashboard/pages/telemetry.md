@@ -13,10 +13,6 @@ max_width: 1600
     accent="drivers"
 />
 
-<KeyInsight label="How to compare laps">
-The duel requires the same dry compound, green track status and no more than three laps of difference in race lap or tyre age. Traces describe the selected laps; car performance, traffic and driver choices remain mixed.
-</KeyInsight>
-
 ```sql seasons
 select distinct season
 from f1.telemetry_laps
@@ -155,6 +151,10 @@ order by driver_code, distance_m
     chartAreaHeight=360
 />
 {/if}
+
+<KeyInsight label="How to compare laps">
+The duel requires the same dry compound, green track status and no more than three laps of difference in race lap or tyre age. Traces describe the selected laps; car performance, traffic and driver choices remain mixed.
+</KeyInsight>
 
 ```sql time_delta
 with ordered as (

@@ -61,7 +61,9 @@
         list-style: none;
     }
     summary::-webkit-details-marker { display: none; }
-    summary::after { content: 'View coverage'; margin-left: auto; color: #aab6c6; font-size: 0.8rem; font-weight: 700; }
+    summary::after { content: ''; margin-left: auto; flex: none; width: 0.45rem; height: 0.45rem; border-right: 2px solid #9ba7ba; border-bottom: 2px solid #9ba7ba; transform: rotate(45deg); }
+    details[open] summary::after { transform: rotate(225deg); }
+    summary:hover { background: rgba(160, 174, 201, 0.06); }
     summary:focus-visible { outline: 2px solid var(--color-primary, #2563eb); outline-offset: 2px; }
     summary > span:not(.status) { color: #9facbc; }
     .status { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: #94a3b8; }
