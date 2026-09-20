@@ -13,9 +13,11 @@ max_width: 1600
     accent="drivers"
 />
 
-<KeyInsight label="How to compare laps">
-The duel requires the same dry compound, green track status and no more than three laps of difference in race lap or tyre age. Traces describe the selected laps; car performance, traffic and driver choices remain mixed.
-</KeyInsight>
+<nav class="section-nav" aria-label="On this page">
+    <a href="#speed-comparison">Speed comparison</a>
+    <a href="#time-difference">Time difference</a>
+    <a href="#gear-map">Gear map</a>
+</nav>
 
 ```sql seasons
 select distinct season
@@ -34,11 +36,6 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<FilterBar title="Choose a race" description="Matched-lap telemetry coverage varies by race.">
-    <QueryDropdown data={seasons} name=season value=season title="Season" />
-    <DependentDropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
-</FilterBar>
-
 ```sql telemetry_coverage
 select coverage.* exclude (sample_rows, usable_samples),
     (select count(distinct (driver_code, lap_number)) from f1.telemetry_laps
@@ -50,14 +47,6 @@ where section = 'telemetry'
     and round = cast(${inputs.race.value} as integer)
 ```
 
-<DataTrust data={telemetry_coverage} sampleLabel="driver selections" entityLabel="Drivers" method="selected telemetry laps; joint context matching" />
-
-## Speed trace — {inputs.season.value} {inputs.race.label}
-
-The published pool contains each driver's fastest available timed lap and eligible
-Driver DNA teammate laps. It is a sample, not every race lap. Pick two drivers. Limiting the trace to a duel makes braking, minimum speed and
-acceleration differences readable instead of overlaying the entire field.
-
 ```sql duel_drivers
 select distinct season, round, driver_code, driver_name
 from f1.telemetry_laps
@@ -65,10 +54,19 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<FilterBar title="Choose a duel" description="Select the closest supported fast-lap pair from the published pool.">
+<FilterBar title="Race and drivers" description="Compare the closest supported fast-lap pair from the published pool.">
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
+    <DependentDropdown data={tel_races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
     <DependentDropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" season={inputs.season.value} round={inputs.race.value} />
     <DependentDropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" season={inputs.season.value} round={inputs.race.value} fallbackIndex={1} />
 </FilterBar>
+
+<div id="speed-comparison" class="section-anchor"></div>
+
+## Speed trace — {inputs.season.value} {inputs.race.label}
+
+Matched laps from the published sample, not every race lap. Car performance,
+traffic and driver choices remain mixed.
 
 ```sql candidate_laps
 select driver_code, lap_number, compound, tyre_life, track_status, lap_time_sec,
@@ -112,6 +110,7 @@ where t.season = ${inputs.season.value} and t.round = ${inputs.race.value}
 ```
 
 {#if matched_pair.length > 0}
+<ExpandableSection title="Selected laps: timing, compound and tyre age">
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={matched_pair}>
     <Column id=driver_a title="Driver A" />
@@ -125,6 +124,7 @@ where t.season = ${inputs.season.value} and t.round = ${inputs.race.value}
     <Column id=compound title="Compound" />
 </DataTable>
 </div>
+</ExpandableSection>
 {:else}
 <KeyInsight label="No matched lap pair">
 Choose two different drivers. No pair in the published pool meets the compound,
@@ -155,6 +155,12 @@ order by driver_code, distance_m
     chartAreaHeight=360
 />
 {/if}
+
+<KeyInsight label="How to compare laps">
+The duel requires the same dry compound, green track status and no more than three laps of difference in race lap or tyre age. Traces describe the selected laps; car performance, traffic and driver choices remain mixed.
+</KeyInsight>
+
+<DataTrust data={telemetry_coverage} sampleLabel="driver selections" entityLabel="Drivers" method="selected telemetry laps; joint context matching" />
 
 ```sql time_delta
 with ordered as (
@@ -205,6 +211,8 @@ inner join driver_b using (distance_m)
 order by distance_m
 ```
 
+<div id="time-difference" class="section-anchor"></div>
+
 ## Estimated time difference along the lap
 
 The line integrates resampled speed over distance. It is an approximation, not official split timing. Only common distance samples are compared; differing lap endpoints and interpolation can change the final delta. Positive means Driver B is behind
@@ -254,6 +262,8 @@ order by driver_code, distance_m
 {/if}
 </ExpandableSection>
 
+<div id="gear-map" class="section-anchor"></div>
+
 ## Track map by gear
 
 Pick a driver to draw their fastest available timed lap as a racing line, each point coloured by the gear
@@ -266,7 +276,7 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<FilterBar title="Choose a driver" description="Colour the racing line by selected gear.">
+<FilterBar title="Choose a driver" scope="Gear map only" description="Colour the racing line by selected gear.">
     <DependentDropdown data={tel_drivers} name=driver value=driver_code label=driver_name title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 

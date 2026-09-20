@@ -14,6 +14,9 @@
 	--dashboard-border: rgba(160, 174, 201, 0.18);
 	--dashboard-muted: #9ba7ba;
 	--dashboard-shadow: 0 20px 55px rgba(0, 0, 0, 0.2);
+	--ui-focus: #9bc3ff;
+	--ui-control-radius: 8px;
+	--ui-control-height: 40px;
 	--ui-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -24,10 +27,7 @@ html {
 
 body {
 	min-width: 320px;
-	background:
-		radial-gradient(circle at 86% 2%, rgba(50, 211, 244, 0.08), transparent 25rem),
-		radial-gradient(circle at 8% 18%, rgba(255, 64, 80, 0.07), transparent 28rem),
-		#090c12;
+	background: #090c12;
 	font-family: var(--ui-font-family);
 	font-size: 17px;
 	color: var(--color-base-content, #e8edf5);
@@ -76,7 +76,7 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 }
 
 #evidence-main-article a.markdown {
-	color: var(--color-primary, var(--dashboard-red));
+	color: #b9d5f5;
 	font-weight: 650;
 	text-decoration-color: color-mix(in srgb, currentColor 42%, transparent);
 	text-underline-offset: 0.18em;
@@ -93,19 +93,9 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 }
 
 #evidence-main-article h2.markdown {
-	margin: 3.3rem 0 0.85rem;
+	margin: 2.25rem 0 0.85rem;
 	font-size: clamp(1.45rem, 2vw, 1.9rem);
 	font-weight: 760;
-}
-
-#evidence-main-article h2.markdown::before {
-	display: inline-block;
-	width: 0.3rem;
-	height: 0.9em;
-	margin-right: 0.65rem;
-	border-radius: 999px;
-	background: linear-gradient(180deg, var(--dashboard-red), #ff774f);
-	content: "";
 }
 
 #evidence-main-article h3.markdown {
@@ -123,34 +113,33 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 
 #evidence-main-article .metric-grid {
 	display: grid;
-	grid-template-columns: repeat(4, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
 	gap: 0.8rem;
 	margin: 1rem 0 1.5rem;
 }
 
-#evidence-main-article .metric-grid > div {
+/* Evidence BigValue renders this utility-class root in both Grid and plain layouts. */
+#evidence-main-article .metric-grid > div,
+#evidence-main-article .inline-block.font-sans.items-center.align-top {
 	min-width: 0 !important;
 	margin: 0 !important;
 	padding: 1rem 1.05rem 1.1rem !important;
 	border: 1px solid var(--dashboard-border);
 	border-radius: 0.85rem;
-	background: linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
-	box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12);
+	background: var(--dashboard-surface);
+	font-variant-numeric: tabular-nums;
 }
 
-#evidence-main-article .metric-grid > div:nth-child(4n + 1) { border-top-color: rgba(255, 64, 80, 0.72); }
-#evidence-main-article .metric-grid > div:nth-child(4n + 2) { border-top-color: rgba(50, 211, 244, 0.68); }
-#evidence-main-article .metric-grid > div:nth-child(4n + 3) { border-top-color: rgba(167, 139, 250, 0.7); }
-#evidence-main-article .metric-grid > div:nth-child(4n + 4) { border-top-color: rgba(247, 201, 72, 0.72); }
-
-#evidence-main-article .metric-grid p {
+#evidence-main-article .metric-grid p,
+#evidence-main-article .inline-block.font-sans.items-center.align-top > p {
 	font-size: 0.82rem !important;
 	font-weight: 650;
 	letter-spacing: 0.015em;
 	color: var(--dashboard-muted);
 }
 
-#evidence-main-article .metric-grid .text-xl {
+#evidence-main-article .metric-grid .text-xl,
+#evidence-main-article .inline-block.font-sans.items-center.align-top .text-xl {
 	font-size: clamp(1.35rem, 2vw, 1.75rem) !important;
 	font-weight: 760 !important;
 	letter-spacing: -0.025em;
@@ -164,7 +153,7 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 	border: 1px solid var(--dashboard-border);
 	border-radius: 0.95rem;
 	background: color-mix(in srgb, var(--dashboard-surface-raised) 92%, transparent);
-	box-shadow: var(--dashboard-shadow);
+	box-shadow: none;
 }
 
 #evidence-main-article .chart-container .chart {
@@ -177,19 +166,31 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 
 #evidence-main-article table {
 	font-size: 0.88rem;
+	font-variant-numeric: tabular-nums;
 }
 
 #evidence-main-article th {
-	font-size: 0.76rem !important;
+	font-size: 0.82rem !important;
 	font-weight: 750 !important;
 	letter-spacing: 0.035em;
-	text-transform: uppercase;
+	text-transform: none;
 }
 
 #evidence-main-article button,
 #evidence-main-article input,
 #evidence-main-article select {
 	font-size: 0.9rem;
+}
+
+#evidence-main-article :is(button, input, select, summary, a):focus-visible {
+	outline: 2px solid var(--ui-focus);
+	outline-offset: 2px;
+}
+
+#evidence-main-article .filter-controls :is([role="combobox"], select) {
+	min-width: 0;
+	min-height: var(--ui-control-height);
+	border-radius: var(--ui-control-radius);
 }
 
 #evidence-main-article code.markdown {
@@ -214,7 +215,7 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 	}
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1100px) {
 	#evidence-main-article { padding: 0.5rem 0 4rem; }
 }
 
@@ -234,3 +235,11 @@ main:has(#evidence-main-article) > .print\:hidden:first-child,
 	body { background: #fff; }
 	#evidence-main-article { width: 100%; }
 }
+
+.section-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: .75rem 0 1rem; }
+.section-nav a { padding: .5rem .75rem; border: 1px solid var(--dashboard-border); border-radius: .5rem; color: #c5cedb; font-size: .85rem; text-decoration: none; }
+.section-nav a:hover { background: var(--dashboard-surface-raised); }
+.section-nav a:focus-visible { outline: 2px solid #9bc3ff; outline-offset: 2px; }
+.section-anchor { scroll-margin-top: 6rem; }
+.selection-context { color: var(--dashboard-muted); font-size: .9rem; margin: -.25rem 0 .75rem; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }

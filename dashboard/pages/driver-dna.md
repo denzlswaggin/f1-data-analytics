@@ -13,6 +13,13 @@ max_width: 1600
     accent="drivers"
 />
 
+<nav class="section-nav" aria-label="On this page">
+    <a href="#technique-profile">Technique profile</a>
+    <a href="#season-comparison">Season comparison</a>
+    <a href="#race-signature">Race by race</a>
+    <a href="#lap-evidence">Lap evidence</a>
+</nav>
+
 <KeyInsight label="Technique evidence—not a universal driving-style score">
 Every point comes from the fastest telemetry-backed race lap available for both teammates, on the same dry compound, under green track status and within three laps and three tyre-life laps. The result describes this fast-race-lap sample; it does not separate the driver from setup, traffic history, fuel, tyre state or car behaviour.
 </KeyInsight>
@@ -30,7 +37,7 @@ from f1.driver_dna_profile
 order by driver_name
 ```
 
-<FilterBar title="Compare technique profiles" description="The default 2025–2026 window balances recency with enough teammate evidence.">
+<FilterBar title="Compare technique profiles" scope="Profiles, race-by-race signature and lap evidence" description="The default 2025–2026 window balances recency with enough teammate evidence. Season comparison has its own filters below.">
     <QueryDropdown data={seasons} name=from_season value=season title="From season" defaultValue={2025} />
     <QueryDropdown data={seasons} name=to_season value=season title="To season" defaultValue={2026} />
     <QueryDropdown data={drivers} name=driver_a value=driver_code label=driver_name title="Driver A" defaultValue="VER" />
@@ -82,6 +89,8 @@ order by driver_name
     <Column id=seasons title="Evidence span" />
     <Column id=confidence title="Confidence" />
 </DataTable>
+
+<div id="technique-profile" class="section-anchor"></div>
 
 ## What defines Driver A?
 
@@ -346,6 +355,8 @@ appears only when at least five races remain after removal.</p>
 </div>
 {/if}
 
+<div id="season-comparison" class="section-anchor"></div>
+
 ## Driver vs. season average
 
 Compare one published season profile with an equally weighted average of every
@@ -369,7 +380,7 @@ where from_season = to_season
 order by season desc, driver_name
 ```
 
-<FilterBar title="Compare with the season field" description="Only drivers with at least five eligible teammate comparisons enter the equally weighted peer average.">
+<FilterBar title="Compare with the season field" scope="This section only" description="Only drivers with at least five eligible teammate comparisons enter the equally weighted peer average.">
     <QueryDropdown data={benchmark_seasons} name=benchmark_season value=season title="Season" defaultValue={2025} />
     <DependentDropdown data={benchmark_drivers} name=benchmark_driver value=driver_code label=driver_name title="Driver" season={inputs.benchmark_season.value} defaultValue="VER" />
 </FilterBar>
@@ -479,7 +490,11 @@ average is a point benchmark: individual profile intervals cannot be combined in
 a valid interval for their mean from the published summary columns alone. Both
 series remain on the teammate-normalised robust-z scale; this is not a field ranking.
 
+<div id="race-signature" class="section-anchor"></div>
+
 ## Race-by-race signature
+
+<p class="selection-context">{inputs.driver_a.label} and {inputs.driver_b.label} · {Math.min(inputs.from_season.value, inputs.to_season.value)}–{Math.max(inputs.from_season.value, inputs.to_season.value)}</p>
 
 Choose one technique axis. Each cell is a robust standard deviation from that race's actual teammate: teal means more, red means less. This is the evidence beneath the multi-race median, not a combined score.
 
@@ -493,7 +508,7 @@ select * from (values
 ) as techniques(metric, label)
 ```
 
-<FilterBar title="Choose one technique" description="Keeping axes separate avoids hiding contradictory behaviours in a composite score.">
+<FilterBar title="Choose one technique" scope="Race-by-race section only" description="Keeping axes separate avoids hiding contradictory behaviours in a composite score.">
     <QueryDropdown data={techniques} name=technique value=metric label=label title="Technique" defaultValue="low_speed_kph_z" />
 </FilterBar>
 
@@ -527,6 +542,8 @@ order by season, round, driver_name
 
 <DriverDNAHeatmap data={race_heatmap} title="Selected axis across eligible races" />
 
+<div id="lap-evidence" class="section-anchor"></div>
+
 ## Evidence in one lap
 
 Select one of Driver A's eligible races. Their real teammate and representative lap are selected automatically; positive segment delta means Driver A gained time over that 200 m microsector.
@@ -548,7 +565,7 @@ where eligible
 order by season desc, round desc
 ```
 
-<FilterBar title="Choose a representative lap" description="Only laps passing every same-compound, green-status and telemetry-coverage gate appear.">
+<FilterBar title="Choose a representative lap" scope="Lap evidence section only" description="Only laps passing every same-compound, green-status and telemetry-coverage gate appear.">
     <QueryDropdown data={dna_races} name=dna_race value=race_key label=race_label title="Race and teammate" />
 </FilterBar>
 

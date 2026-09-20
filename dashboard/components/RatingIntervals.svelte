@@ -33,6 +33,21 @@
             {/each}
         </svg>
     </div>
+    <div class="compact">
+        {#each rows as row}
+            <div class="rating-row">
+                <strong>{row.driver_name}</strong><span>{Number(row.rating).toFixed(3)}</span>
+                <p>90% interval: {finite(row.rating_lo) && finite(row.rating_hi) ? `${Number(row.rating_lo).toFixed(3)} to ${Number(row.rating_hi).toFixed(3)}` : 'unavailable'} · {row.n_comparisons} comparisons</p>
+                <svg viewBox="195 -8 410 16" role="img" aria-label={`${row.driver_name}: rating ${Number(row.rating).toFixed(3)}`}>
+                    <line class="grid" x1={x(0)} x2={x(0)} y1="-8" y2="8" />
+                    {#if finite(row.rating_lo) && finite(row.rating_hi)}
+                        <line class="interval" x1={x(row.rating_lo)} x2={x(row.rating_hi)} y1="0" y2="0" />
+                    {/if}
+                    <circle cx={x(row.rating)} cy="0" r="4" />
+                </svg>
+            </div>
+        {/each}
+    </div>
     <p>Points are fitted ratings; lines are individual 90% resampling intervals. * Interval unavailable.</p>
     {:else}
     <p>No estimates meet the selected evidence filter.</p>
@@ -49,4 +64,9 @@
     .interval { stroke: #32d3f4; stroke-width: 3; }
     circle { fill: #f7c948; }
     p { color: #aab6c6; font-size: .85rem; }
+    .compact { display: none; }
+    .rating-row { display: grid; grid-template-columns: 1fr auto; gap: .4rem; padding: .85rem 0; border-bottom: 1px solid var(--dashboard-border); font-variant-numeric: tabular-nums; }
+    .rating-row p { grid-column: 1 / -1; margin: 0; }
+    .rating-row svg { grid-column: 1 / -1; min-width: 0; height: 24px; }
+    @media (max-width: 640px) { .scroll { display: none; } .compact { display: block; } }
 </style>

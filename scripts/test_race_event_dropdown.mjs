@@ -204,3 +204,42 @@ test('root dropdowns restore valid URL values after mounting', async () => {
     assert.equal(document.querySelector('select').value,'2022');
     f.close();
 });
+
+test('combined race and duel controls settle after dependent options arrive', async () => {
+    const filterSource = await readFile(new URL('components/FilterBar.svelte', dashboard), 'utf8');
+    await writeFile(moduleUrl('FilterBar.mjs'), compile(filterSource, { generate: 'dom' }).js.code);
+    const harness = `<script>
+        import { getContext } from 'svelte';
+        import FilterBar from './FilterBar.mjs';
+        import DependentDropdown from './DependentDropdown.mjs';
+        export let races = [], drivers = [];
+        const inputs = getContext('inputs');
+    </script>
+    <FilterBar title="Race and drivers">
+        <DependentDropdown name="season" value="season" title="Season" data={[{season:2026}]} />
+        <DependentDropdown name="race" value="round" title="Race" data={races} season={$inputs.season?.value} latest={true} />
+        <DependentDropdown name="driver_a" value="driver_code" title="Driver A" data={drivers} season={$inputs.season?.value} round={$inputs.race?.value} defaultValue="VER" />
+        <DependentDropdown name="driver_b" value="driver_code" title="Driver B" data={drivers} season={$inputs.season?.value} round={$inputs.race?.value} defaultValue="LEC" fallbackIndex={1} />
+    </FilterBar>`;
+    await writeFile(moduleUrl('DuelControls.mjs'), compile(harness, { generate: 'dom' }).js.code);
+    const { default: DuelControls } = await import(moduleUrl('DuelControls.mjs'));
+    const dom = new JSDOM('<main></main>', { url: 'https://example.test/' });
+    globalThis.window = dom.window;
+    globalThis.document = dom.window.document;
+    const inputs = writable({});
+    const component = new DuelControls({ target: document.querySelector('main'), context: new Map([['inputs', inputs]]) });
+    await tick();
+    assert.equal(get(inputs).season.value, 2026);
+    assert.equal(get(inputs).race, undefined);
+    component.$set({ races: [{ season: 2026, round: 13 }, { season: 2026, round: 14 }] });
+    await tick();
+    assert.equal(get(inputs).race.value, 14);
+    assert.equal(get(inputs).driver_a, undefined);
+    component.$set({ drivers: ['ALO', 'LEC', 'VER'].map(driver_code => ({ season: 2026, round: 14, driver_code })) });
+    await tick();
+    assert.equal(get(inputs).driver_a.value, 'VER');
+    assert.equal(get(inputs).driver_b.value, 'LEC');
+    assert.equal(document.querySelectorAll('.filter-controls select:not(:disabled)').length, 4);
+    component.$destroy();
+    dom.window.close();
+});

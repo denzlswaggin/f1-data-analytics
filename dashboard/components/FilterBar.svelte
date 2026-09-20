@@ -1,11 +1,13 @@
 <script>
     export let title = 'Filters';
     export let description = '';
+    export let scope = '';
 </script>
 
 <section class="filter-bar" aria-label={title}>
     <div class="filter-heading">
         <strong>{title}</strong>
+        {#if scope}<small class="scope">{scope}</small>{/if}
         {#if description}<span>{description}</span>{/if}
     </div>
     <div class="filter-controls"><slot /></div>
@@ -20,24 +22,24 @@
         justify-content: space-between;
         gap: 1rem;
         margin: 1.1rem 0 1.4rem;
-        padding: 1rem 1.05rem;
-        border: 1px solid rgba(160, 174, 201, 0.2);
-        border-radius: 0.85rem;
-        background: linear-gradient(115deg, rgba(50, 211, 244, 0.075), rgba(255, 255, 255, 0.025));
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--dashboard-border);
+        background: transparent;
     }
     .filter-heading {
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
-        flex: 1 1 16rem;
+        flex: 1 1 100%;
         min-width: 0;
     }
     .filter-heading strong { color: #f3f6fa; font-size: 0.92rem; }
+    .scope { color: #b9c5d5; font-size: .78rem; }
     .filter-heading span { max-width: 28rem; color: #9ba7ba; font-size: 0.81rem; line-height: 1.4; }
     .filter-controls {
         display: flex;
         align-items: flex-end;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 0.75rem;
         flex: 1;
         min-width: 0;
@@ -56,6 +58,8 @@
         .filter-bar { align-items: stretch; flex-direction: column; }
         .filter-heading { flex-basis: auto; }
         .filter-controls { align-items: stretch; justify-content: stretch; }
+        .filter-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
         :global(.filter-controls > *) { width: 100%; min-width: 0; }
+        :global(.filter-controls [role="combobox"]) { width: 100%; min-height: 2.75rem; }
     }
 </style>

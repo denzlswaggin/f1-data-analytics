@@ -12,6 +12,8 @@
     "dev:evidence": "evidence dev --open /",
     "test": "evidence build",
     "test:dropdown": "node --conditions=browser --test ../scripts/test_race_event_dropdown.mjs",
+    "test:presentation": "node --test ../scripts/test_dashboard_presentation.mjs",
+    "test:interactions": "node --conditions=browser --test ../scripts/test_dashboard_interactions.mjs",
     "sources": "evidence sources",
     "sources:strict": "evidence sources --strict",
     "preview": "evidence preview"

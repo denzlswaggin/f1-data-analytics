@@ -1359,7 +1359,7 @@
 		background: linear-gradient(145deg, #ff6972, #d91f35);
 		border-radius: 8px;
 		box-shadow: 0 5px 14px rgba(255, 77, 87, 0.2);
-		font-size: 11px;
+		font-size: var(--text-meta);
 		font-weight: 800;
 	}
 	.event-title p,
@@ -1991,7 +1991,7 @@
 		width: 34px;
 		height: 34px;
 		border-width: 4px;
-		font-size: 10px;
+		font-size: var(--text-caption);
 	}
 	.stint-card strong {
 		display: block;
@@ -2710,11 +2710,16 @@
 			border-color 0.16s ease,
 			box-shadow 0.16s ease;
 	}
+	.playback button, .lap-controls button, .filters button, .track-actions button,
+	.custom-audio-controls button, .race-picker select {
+		border-radius: var(--ui-control-radius);
+		min-height: var(--ui-control-height);
+	}
 	button:focus-visible,
 	a:focus-visible,
 	select:focus-visible,
 	input:focus-visible {
-		outline: 2px solid #80aaff;
+		outline: 2px solid var(--ui-focus);
 		outline-offset: 2px;
 	}
 	@media (max-width: 1120px) {
@@ -2746,6 +2751,10 @@
 		}
 	}
 	@media (max-width: 800px) {
+		.playback button, .lap-controls button, .filters button, .track-actions button,
+		.custom-audio-controls button, .timing-toggle, .race-picker select {
+			min-height: 44px;
+		}
 		.topbar {
 			padding: 0 14px;
 		}

@@ -8,8 +8,6 @@
             items: [
                 { label: 'Overview', path: '' },
                 { label: 'Race cockpit', path: 'race-cockpit' },
-                { label: 'Driver DNA', path: 'driver-dna' },
-                { label: 'Track fit & stability', path: 'driver-track-insights' },
                 { label: 'Methodology', path: 'methodology' }
             ]
         },
@@ -33,6 +31,7 @@
         {
             label: 'Driver intelligence',
             items: [
+                { label: 'Driver DNA', path: 'driver-dna' },
                 { label: 'Driver ratings', path: 'driver-ratings' },
                 { label: 'Compare drivers', path: 'driver-comparison' },
                 { label: 'Track fit & stability', path: 'driver-track-insights' },
@@ -74,9 +73,9 @@
     </div>
 
     <div id="analytics-navigation" class="nav-groups" class:open={mobileOpen}>
-        {#each groups as group}
-            <section>
-                <span class="group-label">{group.label}</span>
+        {#each groups as group, index}
+            <details open={index === 0 || group.items.some(item => item.path === current)}>
+                <summary class="group-label">{group.label}</summary>
                 <div class="links">
                     {#each group.items as item}
                         <a
@@ -90,11 +89,11 @@
                         </a>
                     {/each}
                 </div>
-            </section>
+            </details>
         {/each}
     </div>
 
-    <div class="nav-foot"><span aria-hidden="true"></span> Snapshot online</div>
+    <div class="nav-foot">Published race data</div>
 </nav>
 
 <style>
@@ -129,7 +128,7 @@
     }
     .brand-copy { display: flex; align-items: flex-start; flex-direction: column; gap: 0.05rem; }
     .brand-copy strong { color: #f8fafc; font-size: 1.02rem; letter-spacing: -0.04em; }
-    .brand-copy span { color: #9ba7ba; font-size: 0.68rem; font-weight: 720; letter-spacing: 0.09em; text-transform: uppercase; }
+    .brand-copy span { color: #9ba7ba; font-size: 0.75rem; font-weight: 650; letter-spacing: 0.04em; }
     .nav-groups {
         display: flex;
         flex-direction: column;
@@ -139,19 +138,28 @@
         overflow-y: auto;
         overflow-x: hidden;
         overscroll-behavior: contain;
-        scrollbar-width: none;
+        scrollbar-width: thin;
+        scrollbar-color: #566174 transparent;
     }
-    .nav-groups::-webkit-scrollbar { display: none; }
-    section { margin: 0; }
+    details { margin: 0; }
     .group-label {
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .5rem;
+        list-style: none;
         margin: 0 0 0.35rem 0.65rem;
-        color: #6f7b8e;
-        font-size: 0.65rem;
+        color: #aab6c6;
+        font-size: 0.75rem;
+        cursor: pointer;
+        padding: 0.5rem 0;
         font-weight: 780;
         letter-spacing: 0.11em;
         text-transform: uppercase;
     }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: ''; width: .4rem; height: .4rem; margin-right: .4rem; flex: none; border-right: 1px solid currentColor; border-bottom: 1px solid currentColor; transform: rotate(45deg); }
+    details[open] > summary::after { transform: rotate(225deg); }
     .links { display: flex; flex-direction: column; gap: 0.15rem; }
     .links a {
         display: flex;
@@ -172,12 +180,13 @@
         outline: none;
     }
     .links a.active {
-        border-color: rgba(255, 64, 80, 0.36);
-        background: rgba(255, 64, 80, 0.1);
-        color: #ff7180;
+        border-color: rgba(160, 174, 201, 0.3);
+        background: rgba(160, 174, 201, 0.12);
+        color: #f8fafc;
     }
     .dot { width: 0.35rem; height: 0.35rem; flex: none; border: 1px solid #657084; border-radius: 50%; }
-    .links a.active .dot { border-color: #ff4050; background: #ff4050; box-shadow: 0 0 0 3px rgba(255, 64, 80, 0.13); }
+    .links a.active .dot { border-color: #aab6c6; background: #aab6c6; }
+    .links a:focus-visible, summary:focus-visible, .menu-toggle:focus-visible { outline: 2px solid #9bc3ff; outline-offset: 2px; }
     .menu-toggle {
         display: none;
         align-items: center;
@@ -203,15 +212,14 @@
         font-size: 0.7rem;
         font-weight: 650;
     }
-    .nav-foot span { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #46d39a; box-shadow: 0 0 0 3px rgba(70, 211, 154, 0.1); }
-    @media (min-width: 1241px) and (max-height: 1100px) {
+    @media (min-width: 1101px) and (max-height: 1100px) {
         .app-nav { padding: 0.75rem; }
         .nav-groups { gap: 0.65rem; margin-top: 0.85rem; }
         .links a { padding: 0.32rem 0.55rem; line-height: 1.25; }
         .group-label { margin-bottom: 0.25rem; }
         .nav-foot { padding-top: 0.6rem; }
     }
-    @media (max-width: 1240px) {
+    @media (max-width: 1100px) {
         .app-nav {
             position: sticky;
             top: 0.5rem;

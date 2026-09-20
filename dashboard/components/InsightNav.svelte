@@ -1,4 +1,9 @@
 <script>
+    const featured = [
+        ['Explore the latest race', 'race-cockpit', 'Results, pace and strategy in one overview'],
+        ['Compare two drivers', 'driver-comparison', 'Shared-season form and uncertainty'],
+        ['Watch the race replay', 'race-replay', 'Positions, incidents and radio on one timeline']
+    ];
     const groups = [
         {
             title: 'Race analysis',
@@ -32,13 +37,17 @@
 </script>
 
 <div class="insight-nav">
+    <div class="featured">
+        {#each featured as link}
+            <a href={link[1]}><strong>{link[0]} <i aria-hidden="true">→</i></strong><span>{link[2]}</span></a>
+        {/each}
+    </div>
     {#each groups as group}
         <section>
             <h3>{group.title}</h3>
             <div class="cards">
-                {#each group.links as link, index}
+                {#each group.links.filter(link => !featured.some(item => item[1] === link[1])) as link}
                     <a href={link[1]}>
-                        <span class="index">0{index + 1}</span>
                         <strong>{link[0]} <i aria-hidden="true">→</i></strong>
                         <span>{link[2]}</span>
                     </a>
@@ -50,23 +59,16 @@
 
 <style>
     .insight-nav { margin: 1rem 0 2rem; }
-    section { margin-bottom: 2rem; }
-    h3 { margin: 0 0 0.75rem; color: #9ba7ba; font-size: 0.75rem; font-weight: 760; text-transform: uppercase; letter-spacing: 0.12em; }
-    .cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; }
-    a { position: relative; display: flex; flex-direction: column; gap: 0.42rem; min-height: 8.2rem; padding: 1rem; overflow: hidden; border: 1px solid rgba(160, 174, 201, 0.18); border-radius: 0.85rem; color: inherit; text-decoration: none; background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018)); transition: border-color 160ms ease, transform 160ms ease, background 160ms ease; }
-    a::after { position: absolute; right: -1.4rem; bottom: -2rem; width: 5rem; height: 5rem; border: 1rem solid rgba(255,64,80,.06); border-radius: 50%; content: ''; }
-    section:nth-child(2) a::after { border-color: rgba(50,211,244,.055); }
-    section:nth-child(3) a::after { border-color: rgba(167,139,250,.06); }
-    a:hover, a:focus-visible { border-color: rgba(255,64,80,.55); transform: translateY(-2px); background: linear-gradient(145deg, rgba(255,64,80,.1), rgba(255,255,255,.02)); outline: none; }
-    section:nth-child(2) a:hover, section:nth-child(2) a:focus-visible { border-color: rgba(50,211,244,.5); background: linear-gradient(145deg, rgba(50,211,244,.09), rgba(255,255,255,.02)); }
-    section:nth-child(3) a:hover, section:nth-child(3) a:focus-visible { border-color: rgba(167,139,250,.52); background: linear-gradient(145deg, rgba(167,139,250,.1), rgba(255,255,255,.02)); }
-    strong { display: flex; justify-content: space-between; gap: .5rem; color: #f4f7fb; font-size: 0.96rem; line-height: 1.35; }
-    strong i { color: #ff7180; font-style: normal; }
-    a > span:last-child { color: #9ba7ba; font-size: 0.82rem; line-height: 1.45; }
-    .index { color: #ff7180; font-family: ui-monospace, monospace; font-size: .68rem; font-weight: 780; letter-spacing: .08em; }
-    section:nth-child(2) .index, section:nth-child(2) strong i { color: #52dcf6; }
-    section:nth-child(3) .index, section:nth-child(3) strong i { color: #bda8fa; }
-    @media (max-width: 1050px) { .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } a { min-height: 0; } }
-    @media (prefers-reduced-motion: reduce) { a { transition: none; } }
+    .featured { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    section { margin-bottom: 1.5rem; }
+    h3 { margin: 0 0 .75rem; color: #aab6c6; font-size: .9rem; font-weight: 650; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .75rem; }
+    a { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; border: 1px solid var(--dashboard-border); border-radius: .75rem; color: inherit; text-decoration: none; background: var(--dashboard-surface); }
+    .featured a { padding: 1.25rem; background: var(--dashboard-surface-raised); }
+    strong { display: flex; justify-content: space-between; gap: .5rem; color: #f4f7fb; font-size: .95rem; line-height: 1.4; }
+    strong i { color: #aab6c6; font-style: normal; }
+    a > span { color: #aab6c6; font-size: .85rem; line-height: 1.5; }
+    a:hover { border-color: #64748b; background: #1b2230; }
+    a:focus-visible { outline: 2px solid #9bc3ff; outline-offset: 3px; }
+    @media (max-width: 700px) { .featured { grid-template-columns: 1fr; } }
 </style>

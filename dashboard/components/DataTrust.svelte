@@ -18,16 +18,18 @@
     $: usableUnit = row.usable_unit || 'usable observations';
     $: comparable = row.sample_unit && row.sample_unit === row.usable_unit;
     $: status = !hasData ? 'No published data'
-        : usable != null && !hasUsable ? 'Insufficient usable evidence' : 'Data coverage';
+        : usable != null && !hasUsable ? 'Insufficient usable evidence' : 'Data & methodology';
     const number = (value) => value == null ? '—' : Number(value).toLocaleString('en-US');
 </script>
 
 <details class="data-trust">
     <summary>
         <span class="status" class:empty={!hasData} aria-hidden="true"></span>
-        <strong>{status}</strong>
-        <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${inputUnit}` : 'Try another selection'}</span>
-        {#if usable != null}<span>→ {number(usable)} {usableUnit}</span>{/if}
+        <span class="summary-copy">
+            <strong>{status}</strong>
+            <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${inputUnit}` : 'Try another selection'}</span>
+            {#if usable != null}<span>→ {number(usable)} {usableUnit}</span>{/if}
+        </span>
     </summary>
     <div class="details" aria-label="Data coverage and method">
         <span><strong>Coverage</strong> {seasons}</span>
@@ -48,12 +50,14 @@
         margin: 0.9rem 0 1.35rem;
         border: 1px solid rgba(148, 163, 184, 0.22);
         border-radius: 0.75rem;
-        background: linear-gradient(115deg, rgba(148, 163, 184, 0.075), rgba(255,255,255,.018));
+        background: rgba(148, 163, 184, 0.035);
         color: #dbe5ee;
         font-size: 0.88rem;
+        font-variant-numeric: tabular-nums;
     }
     summary {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
         gap: 0.5rem;
         padding: 0.8rem 0.9rem;
@@ -61,9 +65,12 @@
         list-style: none;
     }
     summary::-webkit-details-marker { display: none; }
-    summary::after { content: 'View coverage'; margin-left: auto; color: #aab6c6; font-size: 0.8rem; font-weight: 700; }
-    summary:focus-visible { outline: 2px solid var(--color-primary, #2563eb); outline-offset: 2px; }
-    summary > span:not(.status) { color: #9facbc; }
+    summary::after { content: ''; margin-left: auto; flex: none; width: 0.45rem; height: 0.45rem; border-right: 2px solid #9ba7ba; border-bottom: 2px solid #9ba7ba; transform: rotate(45deg); }
+    details[open] summary::after { transform: rotate(225deg); }
+    summary:hover { background: rgba(160, 174, 201, 0.06); }
+    summary:focus-visible { outline: 2px solid var(--ui-focus, #9bc3ff); outline-offset: 2px; }
+    .summary-copy { display: flex; flex-wrap: wrap; column-gap: .5rem; row-gap: .15rem; }
+    .summary-copy > span { color: #9facbc; }
     .status { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: #94a3b8; }
     .status.empty { background: currentColor; box-shadow: none; opacity: 0.35; }
     .details {
@@ -74,8 +81,6 @@
         color: #aab6c6;
     }
     @media (max-width: 520px) {
-        summary { flex-wrap: wrap; }
-        summary::after { margin-left: 0; }
         .details { flex-direction: column; padding-left: 0.8rem; }
     }
 </style>

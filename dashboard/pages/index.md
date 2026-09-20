@@ -7,6 +7,7 @@ max_width: 1600
 <AppNav />
 
 <PageHeader
+    hero={true}
     eyebrow="Performance analytics"
     title="See beyond the result."
     description="Race pace, strategy, telemetry and teammate-normalised ratings — explore the recorded result and the limits of the available comparisons."

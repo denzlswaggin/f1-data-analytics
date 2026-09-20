@@ -10,16 +10,16 @@
 	color: #f7f8fb;
 	background: #07090d;
 	font-synthesis: none;
-	--bg: #07090d;
-	--panel: #10141b;
-	--panel-strong: #151a22;
+	--bg: #090c12;
+	--panel: #11151d;
+	--panel-strong: #171c26;
 	--panel-soft: #0c1016;
-	--line: rgba(255, 255, 255, 0.1);
+	--line: rgba(160, 174, 201, 0.18);
 	--line-strong: rgba(255, 255, 255, 0.18);
-	--muted: #7e8796;
+	--muted: #9ba7ba;
 	--muted-strong: #aab1bd;
 	--text: #f7f8fb;
-	--accent: #ff4d57;
+	--accent: #ff4050;
 	--accent-soft: rgba(255, 77, 87, 0.14);
 	--green: #46d49a;
 	--yellow: #f4c94f;
@@ -42,8 +42,8 @@
 	--status-live: var(--green);
 	--status-warning: var(--yellow);
 	--status-critical: var(--accent);
-	--text-caption: 10px;
-	--text-meta: 11px;
+	--text-caption: 12px;
+	--text-meta: 12px;
 	--text-small: 12px;
 	--text-body: 14px;
 	--text-title: 16px;
@@ -51,6 +51,9 @@
 	--radius-sm: 7px;
 	--radius: 12px;
 	--radius-lg: 18px;
+	--ui-focus: #9bc3ff;
+	--ui-control-radius: 8px;
+	--ui-control-height: 40px;
 }
 
 * {
@@ -82,7 +85,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 select:focus-visible {
-	outline: 2px solid #9bc3ff;
+	outline: 2px solid var(--ui-focus);
 	outline-offset: 2px;
 }
 button {

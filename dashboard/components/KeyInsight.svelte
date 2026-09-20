@@ -12,10 +12,9 @@
     .insight {
         margin: 1rem 0 1.35rem;
         padding: 1rem 1.1rem;
-        border: 1px solid rgba(50, 211, 244, 0.2);
-        border-left: 4px solid var(--color-info, #32d3f4);
-        border-radius: 0.75rem;
-        background: linear-gradient(105deg, rgba(50, 211, 244, 0.09), rgba(255,255,255,.018));
+        border-left: 2px solid #64748b;
+        border-radius: 0 0.5rem 0.5rem 0;
+        background: rgba(148, 163, 184, 0.04);
     }
     .insight.positive {
         border-left-color: var(--color-positive, #16a34a);
@@ -27,8 +26,8 @@
     }
     .label {
         margin-bottom: 0.25rem;
-        color: #7edff3;
-        font-size: 0.72rem;
+        color: #b9c5d5;
+        font-size: 0.78rem;
         font-weight: 750;
         letter-spacing: 0.06em;
         text-transform: uppercase;
