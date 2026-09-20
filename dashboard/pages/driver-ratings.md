@@ -48,6 +48,14 @@ order by rating desc
 limit 15
 ```
 
+<nav class="section-nav" aria-label="On this page">
+    <a href="#career-benchmark">Career benchmark</a>
+    <a href="#season-form">Season form</a>
+    <a href="#driver-history">Driver history</a>
+</nav>
+
+<div id="career-benchmark" class="section-anchor"></div>
+
 ## Career qualifying benchmark
 
 The career fit pools each driver's observed years. Different careers cover
@@ -72,6 +80,8 @@ Regularisation stabilises sparse connections but does not prove equal machinery.
 </div>
 </ExpandableSection>
 
+<div id="season-form" class="section-anchor"></div>
+
 ## Season form — dynamic model
 
 Unlike the career-wide benchmark above, this model estimates a separate rating
@@ -84,7 +94,7 @@ model, so read it as a form lens rather than a replacement leaderboard.
 select distinct season from f1.driver_ratings_v2 order by season desc
 ```
 
-<FilterBar title="Season rating" description="The year scopes the displayed driver-season estimates; the model is fitted jointly across years.">
+<FilterBar title="Season rating" scope="Season form only" description="The year scopes the displayed driver-season estimates; the model is fitted jointly across years.">
     <QueryDropdown data={rating_seasons} name=rating_season value=season title="Season" />
 </FilterBar>
 
@@ -122,6 +132,8 @@ limited support even when the regularised point estimate appears precise.
 </div>
 </ExpandableSection>
 
+<div id="driver-history" class="section-anchor"></div>
+
 ## Explore a driver's season-by-season pace
 
 ```sql drivers_list
@@ -130,7 +142,7 @@ from f1.season_pace
 order by driver_name
 ```
 
-<FilterBar title="Explore one driver" description="Follow season-by-season form and teammate gap.">
+<FilterBar title="Explore one driver" scope="Driver history only" description="Follow season-by-season form and teammate gap.">
     <QueryDropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver" />
 </FilterBar>
 

@@ -1,11 +1,13 @@
 <script>
     export let title = 'Filters';
     export let description = '';
+    export let scope = '';
 </script>
 
 <section class="filter-bar" aria-label={title}>
     <div class="filter-heading">
         <strong>{title}</strong>
+        {#if scope}<small class="scope">{scope}</small>{/if}
         {#if description}<span>{description}</span>{/if}
     </div>
     <div class="filter-controls"><slot /></div>
@@ -32,6 +34,7 @@
         min-width: 0;
     }
     .filter-heading strong { color: #f3f6fa; font-size: 0.92rem; }
+    .scope { color: #b9c5d5; font-size: .78rem; }
     .filter-heading span { max-width: 28rem; color: #9ba7ba; font-size: 0.81rem; line-height: 1.4; }
     .filter-controls {
         display: flex;

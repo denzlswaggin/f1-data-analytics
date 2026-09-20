@@ -13,6 +13,12 @@ max_width: 1600
     accent="drivers"
 />
 
+<nav class="section-nav" aria-label="On this page">
+    <a href="#speed-comparison">Speed comparison</a>
+    <a href="#time-difference">Time difference</a>
+    <a href="#gear-map">Gear map</a>
+</nav>
+
 ```sql seasons
 select distinct season
 from f1.telemetry_laps
@@ -54,6 +60,8 @@ order by driver_code
     <DependentDropdown data={duel_drivers} name=driver_a value=driver_code label=driver_name defaultValue="VER" title="Driver A" season={inputs.season.value} round={inputs.race.value} />
     <DependentDropdown data={duel_drivers} name=driver_b value=driver_code label=driver_name defaultValue="LEC" title="Driver B" season={inputs.season.value} round={inputs.race.value} fallbackIndex={1} />
 </FilterBar>
+
+<div id="speed-comparison" class="section-anchor"></div>
 
 ## Speed trace — {inputs.season.value} {inputs.race.label}
 
@@ -203,6 +211,8 @@ inner join driver_b using (distance_m)
 order by distance_m
 ```
 
+<div id="time-difference" class="section-anchor"></div>
+
 ## Estimated time difference along the lap
 
 The line integrates resampled speed over distance. It is an approximation, not official split timing. Only common distance samples are compared; differing lap endpoints and interpolation can change the final delta. Positive means Driver B is behind
@@ -252,6 +262,8 @@ order by driver_code, distance_m
 {/if}
 </ExpandableSection>
 
+<div id="gear-map" class="section-anchor"></div>
+
 ## Track map by gear
 
 Pick a driver to draw their fastest available timed lap as a racing line, each point coloured by the gear
@@ -264,7 +276,7 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<FilterBar title="Choose a driver" description="Colour the racing line by selected gear.">
+<FilterBar title="Choose a driver" scope="Gear map only" description="Colour the racing line by selected gear.">
     <DependentDropdown data={tel_drivers} name=driver value=driver_code label=driver_name title="Driver" season={inputs.season.value} round={inputs.race.value} />
 </FilterBar>
 
