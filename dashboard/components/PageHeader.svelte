@@ -89,7 +89,7 @@
         gap: 0.55rem;
         margin-bottom: 0.75rem;
         color: #b2bdcc;
-        font-size: 0.72rem;
+        font-size: 0.78rem;
         font-weight: 780;
         letter-spacing: 0.13em;
         text-transform: uppercase;
@@ -133,7 +133,7 @@
         min-height: 2.75rem;
         padding: 0.6rem 0.9rem;
         border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 0.65rem;
+        border-radius: var(--ui-control-radius, 8px);
         background: rgba(255, 255, 255, 0.06);
         color: #f8fafc !important;
         font-size: 0.86rem;
@@ -141,6 +141,8 @@
         text-decoration: none !important;
     }
     :global(.actions a:first-child) { border-color: transparent; background: #ff4050; }
+    :global(.actions a:hover) { filter: brightness(1.12); }
+    :global(.actions a:focus-visible) { outline: 2px solid var(--ui-focus, #9bc3ff); outline-offset: 3px; }
     @media (max-width: 760px) {
         .page-header { align-items: flex-start; flex-direction: column; min-height: 0; }
         .actions { width: 100%; }

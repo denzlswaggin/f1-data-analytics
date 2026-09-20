@@ -128,7 +128,7 @@
     }
     .brand-copy { display: flex; align-items: flex-start; flex-direction: column; gap: 0.05rem; }
     .brand-copy strong { color: #f8fafc; font-size: 1.02rem; letter-spacing: -0.04em; }
-    .brand-copy span { color: #9ba7ba; font-size: 0.68rem; font-weight: 720; letter-spacing: 0.09em; text-transform: uppercase; }
+    .brand-copy span { color: #9ba7ba; font-size: 0.75rem; font-weight: 650; letter-spacing: 0.04em; }
     .nav-groups {
         display: flex;
         flex-direction: column;

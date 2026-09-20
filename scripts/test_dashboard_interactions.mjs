@@ -15,6 +15,9 @@ const source = await readFile(new URL('components/DriverDNAHeatmap.svelte', dash
 const modulePath = `${directory}/Heatmap.mjs`;
 await writeFile(modulePath, compile(source, { generate: 'dom' }).js.code);
 const { default: Heatmap } = await import(pathToFileURL(modulePath));
+const navPath = `${directory}/AppNav.mjs`;
+await writeFile(navPath, compile(await readFile(new URL('components/AppNav.svelte', dashboard), 'utf8'), { generate: 'dom' }).js.code);
+const { default: AppNav } = await import(pathToFileURL(navPath));
 
 test('heatmap exposes detail by activation and clears stale selection when filters change', async () => {
     const dom = new JSDOM('<main></main>');
@@ -43,6 +46,28 @@ test('heatmap exposes detail by activation and clears stale selection when filte
     cell.click();
     await tick();
     assert.match(document.querySelector('[aria-live]').textContent, /2026 R15.*-0\.12/);
+    component.$destroy();
+    dom.window.close();
+});
+
+test('navigation opens the current category and exposes the mobile menu state', async () => {
+    const dom = new JSDOM('<main></main>', { url: 'https://example.test/f1-data-analytics/driver-dna/' });
+    globalThis.window = dom.window;
+    globalThis.document = dom.window.document;
+    const component = new AppNav({ target: document.querySelector('main') });
+    await tick();
+    const active = document.querySelector('[aria-current="page"]');
+    assert.equal(active.textContent.trim(), 'Driver DNA');
+    assert.equal(active.closest('details').open, true);
+    const toggle = document.querySelector('.menu-toggle');
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    toggle.click();
+    await tick();
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    assert.ok(document.querySelector('#analytics-navigation.open'));
+    toggle.click();
+    await tick();
+    assert.equal(toggle.getAttribute('aria-expanded'), 'false');
     component.$destroy();
     dom.window.close();
 });

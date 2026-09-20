@@ -11,22 +11,22 @@ theme:
   colorPalettes:
     default:
       light:
-        - "#d7192d"
         - "#007f9e"
         - "#7558c9"
         - "#c78d00"
         - "#16825a"
+        - "#d7192d"
         - "#cf5b2f"
         - "#3976ca"
         - "#c44a87"
         - "#68758a"
         - "#668a1e"
       dark:
-        - "#ff4050"
         - "#32d3f4"
         - "#a78bfa"
         - "#f7c948"
         - "#46d39a"
+        - "#ff4050"
         - "#ff8c5a"
         - "#6ea8fe"
         - "#f472b6"

@@ -33,7 +33,7 @@
     }
     summary:focus-visible {
         border-radius: 0.25rem;
-        outline: 2px solid var(--dashboard-muted, #9ba7ba);
+        outline: 2px solid var(--ui-focus, #9bc3ff);
         outline-offset: 2px;
     }
     summary::-webkit-details-marker { display: none; }
