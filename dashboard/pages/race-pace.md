@@ -29,11 +29,6 @@ where season = ${inputs.season.value}
 order by round
 ```
 
-<FilterBar title="Choose a race" description="The selection is preserved in links to related race analysis.">
-    <QueryDropdown data={seasons} name=season value=season title="Season" />
-    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
-</FilterBar>
-
 ```sql pace_coverage
 select coverage.* exclude (usable_samples, usable_unit),
     (select count(*) from f1.traffic_adjusted_laps
@@ -46,8 +41,6 @@ where section = 'race_pace'
     and round = cast(${inputs.race.value} as integer)
 ```
 
-<DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="shared leave-one-driver-out median; at least three peers" />
-
 ```sql drivers
 select distinct season, round, driver_code
 from f1.lap_times
@@ -55,7 +48,9 @@ where season = ${inputs.season.value} and round = ${inputs.race.value}
 order by driver_code
 ```
 
-<FilterBar title="Choose a duel" description="Two traces remain readable across a full race.">
+<FilterBar title="Race and drivers" description="Choose the race and two drivers for the pace comparison.">
+    <QueryDropdown data={seasons} name=season value=season title="Season" />
+    <DependentDropdown data={races} name=race value=round label=race_label order="round asc" title="Race" season={inputs.season.value} latest={true} preserveInitial={true} />
     <DependentDropdown data={drivers} name=driver_a value=driver_code defaultValue="VER" title="Driver A" season={inputs.season.value} round={inputs.race.value} />
     <DependentDropdown data={drivers} name=driver_b value=driver_code defaultValue="LEC" title="Driver B" season={inputs.season.value} round={inputs.race.value} fallbackIndex={1} />
 </FilterBar>
@@ -77,12 +72,8 @@ order by driver_code, lap_number
 
 ## Peer-relative pace duel
 
-The baseline excludes the selected driver and uses the median of at least three
-other drivers on the same lap and compound. Lap one, pit transitions, unknown
-compounds and tyres younger than two laps are excluded by the shared model.
-Replay context is required by this published dataset. Same-lap matching reduces
-some race-phase differences; fuel loads, tyre age, car performance and traffic
-can still differ. Different compounds also mean different comparison groups.
+Negative values mean faster than the same-lap, same-compound peer median.
+Tyre age, traffic and car performance can still differ.
 
 {#if race_laps.length > 0}
 <LineChart
@@ -106,6 +97,17 @@ missing replay coverage is not evidence of equal pace.
 <KeyInsight label="How to read race pace">
 Negative deltas mean faster than the median of at least three other drivers on the same race lap and compound. This is the shared Traffic and Consistency baseline; it does not isolate driver skill or remove tyre-age and traffic effects.
 </KeyInsight>
+
+<DataTrust data={pace_coverage} sampleLabel="green-flag laps" entityLabel="Drivers" method="shared leave-one-driver-out median; at least three peers" />
+
+<ExpandableSection title="Data & methodology: eligible laps and peer baseline">
+The baseline excludes the selected driver and uses the median of at least three
+other drivers on the same lap and compound. Lap one, pit transitions, unknown
+compounds and tyres younger than two laps are excluded by the shared model.
+Replay context is required by this published dataset. Same-lap matching reduces
+some race-phase differences; fuel loads, tyre age, car performance and traffic
+can still differ. Different compounds also mean different comparison groups.
+</ExpandableSection>
 
 ```sql phase_pace
 with race as (

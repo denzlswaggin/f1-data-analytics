@@ -28,7 +28,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.15rem;
-        flex: 1 1 16rem;
+        flex: 1 1 100%;
         min-width: 0;
     }
     .filter-heading strong { color: #f3f6fa; font-size: 0.92rem; }
@@ -36,7 +36,7 @@
     .filter-controls {
         display: flex;
         align-items: flex-end;
-        justify-content: flex-end;
+        justify-content: flex-start;
         gap: 0.75rem;
         flex: 1;
         min-width: 0;
@@ -55,6 +55,8 @@
         .filter-bar { align-items: stretch; flex-direction: column; }
         .filter-heading { flex-basis: auto; }
         .filter-controls { align-items: stretch; justify-content: stretch; }
+        .filter-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
         :global(.filter-controls > *) { width: 100%; min-width: 0; }
+        :global(.filter-controls [role="combobox"]) { width: 100%; min-height: 2.75rem; }
     }
 </style>
