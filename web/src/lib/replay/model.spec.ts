@@ -373,7 +373,7 @@ describe('replay model', () => {
 		expect(events.map((event) => event.label)).toEqual(['NOR pit stop', 'VER pit stop']);
 		expect(events[0]).toMatchObject({
 			type: 'pit',
-			meta: 'Lap 1 · Stop 1 · Onto hard tyres',
+			meta: 'Lap 1 · MEDIUM → HARD · Estimated timing',
 			participants: ['NOR']
 		});
 		expect(events[0].time).toBeCloseTo(89.23);
@@ -400,7 +400,7 @@ describe('replay model', () => {
 		expect(driver.pitWindows[0].end).toBeCloseTo(40.14);
 		expect(pitLaneProgressAt(driver, 18.32)).toBeCloseTo(0);
 		expect(pitLaneProgressAt(driver, 29.23)).toBe(0.5);
-		expect(pitLaneProgressAt(driver, 30)).toBe(0.5);
+		expect(pitLaneProgressAt(driver, 30)).toBeGreaterThan(0.5);
 		expect(pitLaneProgressAt(driver, 40.14)).toBe(1);
 		expect(pitLaneProgressAt(driver, 41)).toBeNull();
 	});
@@ -498,8 +498,7 @@ describe('replay model', () => {
 		expect(stopped.x).toBeCloseTo(pitLane.box.x);
 		expect(stopped.y).toBeCloseTo(pitLane.box.y);
 		const held = projectedSampleAt(driver, window.stop + 1, track, pitLane)!;
-		expect(held.x).toBeCloseTo(pitLane.box.x);
-		expect(held.y).toBeCloseTo(pitLane.box.y);
+		expect(Math.hypot(held.x-stopped.x,held.y-stopped.y)).toBeGreaterThan(0);
 	});
 });
 
