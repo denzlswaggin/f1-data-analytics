@@ -11,7 +11,9 @@ python -m analytics.cli validate      # backtest + shrinkage sweep + bootstrap C
 ```
 
 Code: `analytics/validation.py` (pure functions, unit-tested in `tests/test_validation.py`).
-Numbers below are over 2006–2026 (8,424 directed teammate gaps, 101 rated drivers).
+Numbers below describe the historical 2006–2026 evaluation (8,424 directed
+teammate gaps, 101 rated drivers). They are not automatically refreshed when
+a new serving snapshot is published.
 
 ## 1. Does the rating predict the *future*? (temporal backtest)
 
@@ -55,8 +57,11 @@ intended. `prior_weight = 8` is a safe middle, not a tuned-to-flatter choice.
 
 ## 3. How sure are we of each rating? (bootstrap CIs)
 
-Resample the teammate comparisons with replacement, refit, repeat — the percentile spread
-is each driver's confidence band (`bootstrap_ratings`, deterministic given a seed).
+Resample undirected teammate comparison edges with replacement, restore both
+directions, refit and repeat. The percentile spread is each driver's sampling
+interval (`bootstrap_ratings`, deterministic given a seed). This static-model
+procedure does not cluster different teams from the same weekend. The dynamic
+model uses a separate weekend-cluster bootstrap.
 
 | # | Driver | Rating | 90% CI | in-boot |
 | ---: | --- | ---: | --- | ---: |
@@ -68,17 +73,17 @@ is each driver's confidence band (`bootstrap_ratings`, deterministic given a see
 | 7 | Vettel | 0.462 | [0.33, 0.59] | 300 |
 | 9 | Norris | 0.433 | **[−0.07, 0.88]** | 300 |
 
-The bands are the point of the exercise. **Verstappen's #1 is robust** — a narrow,
-well-clear band on a densely-connected driver. The suspiciously high **Sato / Davidson**
-sit on **wide bands** (thin, weakly-connected samples), so their nominal top-3 placing is
-*not* trustworthy — precisely the failure mode the shrinkage prior is there to temper, made
-explicit. A driver like **Norris** whose band still straddles 0 simply hasn't accumulated
-enough comparisons for a confident cross-era placing yet.
+The intervals describe uncertainty in individual ratings, not the probability
+of occupying an exact rank. Verstappen has the highest point estimate in this
+historical fit, but these intervals alone do not establish a robust number-one
+position. Sato and Davidson have wide intervals and sparse network connections;
+their nominal positions should be treated cautiously. Norris's interval crosses
+the model's zero baseline; this is not a test of every pairwise ranking.
 
 ## Takeaway
 
-The leaderboard is a **validated ranking, not a black box**: it predicts out-of-sample
-teammate battles well above chance, its order is stable to the one hyperparameter, and every
-rating ships with an honest uncertainty band that flags which entries to trust. The metric's
-limits (single-race magnitude, thin-sample drivers) are measured and stated rather than
-hidden.
+The historical backtest supports some directional predictive signal, while
+single-session magnitude prediction does not beat the zero-gap baseline. The
+reported sensitivity checks and individual intervals help assess uncertainty;
+they do not certify exact rank order, isolate driver talent or establish future
+accuracy on a newly published snapshot.

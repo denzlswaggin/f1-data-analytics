@@ -62,10 +62,13 @@ same machinery**.
 For each qualifying session, the last segment completed by both teammates becomes a
 direct pace comparison. Those gaps form a connected teammate graph, which is solved
 into one cross-era leaderboard with a Massey-style least-squares fit. Empirical-Bayes
-shrinkage stops thin samples from dominating, while a race-weekend cluster bootstrap
-makes uncertainty visible.
+shrinkage tempers thin samples. Static career intervals resample undirected
+teammate comparison edges; dynamic season intervals resample complete weekends
+within seasons. Neither establishes exact-rank probabilities.
 
-**Fastest qualifiers, 2006–2026** — drivers with at least 40 head-to-heads:
+**Historical qualifying benchmark, 2006–2026** — figures from the documented
+validation run, not a live snapshot table. Drivers shown have at least 40
+directed comparisons:
 
 | Global rank | Driver | Rating | Head-to-heads | Seasons |
 | ---: | --- | ---: | ---: | --- |
@@ -82,10 +85,10 @@ makes uncertainty visible.
 
 These are relative teammate margins, not a GOAT list or an absolute lap-time
 prediction. Global-rank gaps belong to lower-sample drivers omitted by the filter.
-Hamilton's position is a useful illustration of the metric: Alonso, Rosberg and
-Russell are unusually strong benchmarks, so beating the teammate baseline is harder.
+The network fit depends on teammate connections, era, regularisation and observed
+gaps. Its point ordering is not a direct comparison of all drivers in equal cars.
 
-The claim is tested rather than assumed. In expanding-window evaluation, the static
+In the documented historical expanding-window evaluation, the static
 rating picks the winner of an unseen individual qualifying comparison **60.5%** of the
 time and the winner of a season-long teammate battle **68.0%** of the time. It does not
 predict the exact single-session gap better than a zero-gap baseline, so the product

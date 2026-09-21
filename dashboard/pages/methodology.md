@@ -182,8 +182,10 @@ change in teammate strength.
 
 The career model answers “who was consistently fast relative to teammates?”.
 The dynamic model answers “how did that relative form change by season?”. Its
-90% intervals resample complete race weekends rather than treating mirrored
-driver rows as independent observations.
+90% intervals resample complete race weekends within seasons. Static career
+intervals instead resample undirected teammate comparison edges: mirrored rows
+stay together, but different teams at one weekend are not clustered together.
+These are individual estimate intervals, not exact-rank probabilities.
 
 ## Published data contract
 
