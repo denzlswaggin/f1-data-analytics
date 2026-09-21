@@ -32,7 +32,14 @@ point estimate alone does not establish a supported difference.
 </KeyInsight>
 
 ```sql profile_coverage
-select * from f1.data_coverage where section = 'pace_profile'
+select coalesce(sum(n_race_comparisons), 0) as sample_rows,
+    'published directed race comparisons' as sample_unit,
+    count(*) as usable_samples, 'driver profiles' as usable_unit,
+    count(distinct driver_id) as entity_count, null::integer as race_count,
+    min(first_season) as first_season, max(last_season) as last_season,
+    null::date as latest_event_date,
+    'Counts describe all published profiles before the display threshold. Independent weekend count and latest input event are unavailable from these summaries.' as coverage_reason
+from f1.driver_pace_profile
 ```
 
 <DataTrust data={profile_coverage} sampleLabel="directed race comparisons" entityLabel="Drivers" method="joint weekend bootstrap; 90% intervals" />
@@ -93,8 +100,9 @@ from ${pace}
     title="Race minus qualifying: estimates and paired 90% intervals"
     note="Points are fitted differences; lines are paired 90% weekend-bootstrap intervals. * Interval unavailable. Counts are directed race comparisons." />
 
-The intervals use the same resampled weekends within each season (1,000 draws,
-seed 0) and require at least 900 valid paired solves. Missing intervals are not
+The default export uses the same resampled weekends within each season (1,000
+draws, seed 0). Intervals require at least 90% valid paired solves: 900 of 1,000
+under the default policy. The full table shows requested and valid counts. Missing intervals are not
 zero-width certainty. Intervals touching or crossing zero are inconclusive about
 the direction, even if the point estimate is large.
 
@@ -106,10 +114,14 @@ on the model and sample, not evidence of causal improvement.
 
 <ExpandableSection title="Inspect the fitted qualifying and race ratings">
 The diagonal marks equal fitted ratings, not equal real-world driver ability.
+{#if pace.length > 0}
 <ScatterPlot data={pace} x=quali_rating y=race_rating series=profile pointSize=30
     xAxisTitle="Qualifying rating" yAxisTitle="Race rating" tooltipTitle=driver_name>
     <ReferenceLine data={diagonal} x=x1 y=y1 x2=x2 y2=y2 label="equal fitted ratings" />
 </ScatterPlot>
+{:else}
+<p>No paired ratings meet this evidence threshold.</p>
+{/if}
 </ExpandableSection>
 
 ## Full table
@@ -122,7 +134,8 @@ The diagonal marks equal fitted ratings, not equal real-world driver ability.
     <Column id=delta_lo title="90% lower" fmt="0.000" />
     <Column id=delta_hi title="90% upper" fmt="0.000" />
     <Column id=profile title="Evidence" />
-    <Column id=bootstrap_valid_samples title="Valid draws / 1000" />
+    <Column id=bootstrap_valid_samples title="Valid paired draws" />
+    <Column id=bootstrap_samples title="Requested draws" />
     <Column id=quali_rating title="Quali" fmt='0.000' />
     <Column id=race_rating title="Race" fmt='0.000' />
     <Column id=quali_rank title="Quali #" />

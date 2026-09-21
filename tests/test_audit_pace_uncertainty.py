@@ -46,6 +46,13 @@ def test_actual_serving_classification(
         result = c.execute(match[1].replace("${pace}", "pace")).fetchone()
         assert result is not None
         assert result[2:4] == ((None, None) if expected == "Interval unavailable" else (low, high))
+        c.execute("create schema f1; create table f1.driver_pace_profile as select * from pace")
+        coverage = re.search(r"```sql profile_coverage\n(.*?)\n```", page, re.S)
+        assert coverage
+        row = c.execute(coverage[1]).fetchone()
+        assert row is not None
+        assert (row[0], row[2]) == (20, 1)
+        assert row[5:9] == (None, 2024, 2026, None)
 
 
 def test_primary_display_uses_paired_intervals_without_specialist_labels() -> None:

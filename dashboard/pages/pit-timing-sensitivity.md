@@ -29,10 +29,21 @@ Theil-Sen fitting kernel versus **0.652 s** for the training-median baseline
 of the complete counterfactual strategy model. Treat scenario gains as exploratory.
 </KeyInsight>
 
+```sql model_scope
+select count(*) as analysed, count(*) filter (where eligible) as eligible,
+    count(*) filter (where eligible and boundary_minimum) as boundary
+from f1.pit_timing_sensitivity where season >= 2024
+```
+
+Across the loaded seasons from 2024, only <Value data={model_scope} column=eligible />
+of <Value data={model_scope} column=analysed /> analysed transitions pass the model
+rules; <Value data={model_scope} column=boundary /> eligible minima lie at the
+edge of the tested range. These live counts describe availability, not accuracy.
+
 ```sql seasons
 select distinct season
 from f1.pit_timing_races
-where season between 2024 and 2026
+where season >= 2024
 order by season desc
 ```
 
@@ -255,6 +266,7 @@ Negative Δ is a lower modelled cost than the observed timing; positive Δ is a
 higher modelled cost. The pit/out-lap transition is held constant. This compares
 assumed stint extensions; it does not isolate a real-world strategy effect.
 
+{#if supported_curve.length > 0}
 <BarChart
     data={supported_curve}
     x=shift_label
@@ -267,6 +279,9 @@ assumed stint extensions; it does not isolate a real-world strategy effect.
 >
     <ReferenceLine y=0 label="actual timing" />
 </BarChart>
+{:else}
+<p>Scenario curve is not available yet for this selection.</p>
+{/if}
 
 {:else}
 

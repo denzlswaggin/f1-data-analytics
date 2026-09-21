@@ -22,6 +22,7 @@
                 <line class="grid" x1={x(value)} x2={x(value)} y1="26" y2={rows.length * 32 + 28} />
                 <text x={x(value)} y="15" text-anchor="middle">{value.toFixed(2)}</text>
             {/each}
+            <line class="zero" x1={x(0)} x2={x(0)} y1="26" y2={rows.length * 32 + 28}><title>Zero reference</title></line>
             {#each rows as row, index}
                 <g transform={`translate(0, ${44 + index * 32})`}>
                     <title>{row.driver_name}: {Number(row.rating).toFixed(3)}; 90% interval {row.rating_lo ?? 'unavailable'} to {row.rating_hi ?? 'unavailable'}; {row.n_comparisons} comparisons</title>
@@ -63,6 +64,7 @@
     svg { width: 100%; min-width: 760px; }
     text { fill: currentColor; font-size: 12px; }
     .grid { stroke: currentColor; opacity: .15; }
+    .zero { stroke: currentColor; opacity: .5; stroke-dasharray: 3 3; }
     .interval { stroke: #32d3f4; stroke-width: 3; }
     circle { fill: #f7c948; }
     p { color: #aab6c6; font-size: .85rem; }

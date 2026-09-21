@@ -44,7 +44,7 @@ async function waitForServer(page) {
 	throw new Error(`Dashboard server did not start at ${origin}`);
 }
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, channel: process.env.PLAYWRIGHT_CHANNEL || undefined });
 try {
 	for (const viewport of [
 		{ width: 1440, height: 1000 },
@@ -97,7 +97,7 @@ try {
 				assert.equal(
 					await page
 						.locator('.data-trust summary')
-						.getByText('Data coverage', { exact: true })
+						.getByText('Data & methodology', { exact: true })
 						.count(),
 					1
 				);
