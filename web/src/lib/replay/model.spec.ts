@@ -498,7 +498,7 @@ describe('replay model', () => {
 		expect(stopped.x).toBeCloseTo(pitLane.box.x);
 		expect(stopped.y).toBeCloseTo(pitLane.box.y);
 		const held = projectedSampleAt(driver, window.stop + 1, track, pitLane)!;
-		expect(Math.hypot(held.x-stopped.x,held.y-stopped.y)).toBeGreaterThan(0);
+		expect(Math.hypot(held.x - stopped.x, held.y - stopped.y)).toBeGreaterThan(0);
 	});
 });
 

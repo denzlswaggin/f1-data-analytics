@@ -155,12 +155,17 @@ export type ReplayDriver = {
 };
 
 export type PitVisit = {
-    id: string; driver: string; lap: number;
-    entry: number | null; exit: number | null;
-    window: PitWindow | null;
-    source: 'recorded' | 'estimated' | 'incomplete';
-    fromCompound: string | null; toCompound: string | null;
-    tyreChange: boolean; raw: LapRow;
+	id: string;
+	driver: string;
+	lap: number;
+	entry: number | null;
+	exit: number | null;
+	window: PitWindow | null;
+	source: 'recorded' | 'estimated' | 'incomplete';
+	fromCompound: string | null;
+	toCompound: string | null;
+	tyreChange: boolean;
+	raw: LapRow;
 };
 
 export type PitWindow = { start: number; stop: number; end: number };

@@ -65,60 +65,116 @@ function pitWindowForTransition(previous: LapRow, lap: LapRow, profile: PitLaneP
 
 /** A shared source for pit motion and events. Missing boundaries remain missing. */
 export function buildPitVisits(laps: LapRow[], circuitName = ''): PitVisit[] {
-    const result: PitVisit[] = [];
-    for (const code of new Set(laps.map(row => row.driver_code))) {
-        const rows = laps.filter(row => row.driver_code === code).sort((a,b) => a.lap_number-b.lap_number);
-        const visits: PitVisit[] = [];
-        const boundaries = rows.flatMap(row => [
-            {time: row.pit_entry_t_s, kind: 'entry', row},
-            {time: row.pit_exit_t_s, kind: 'exit', row}
-        ]).filter(b => b.time != null && Number.isFinite(b.time) && b.time >= 0)
-          .sort((a,b) => a.time! - b.time! || a.kind.localeCompare(b.kind));
-        let pending: typeof boundaries[number] | null = null;
-        const add = (entry: typeof pending, exit: typeof pending) => {
-            const first = (entry ?? exit)!;
-            const start = entry?.time ?? null, end = exit?.time ?? null;
-            const window = start != null && end != null && end > start ? {start, end, stop:(start+end)/2} : null;
-            const tyreChange = Boolean(entry && exit && entry.row.stint != null && exit.row.stint != null && exit.row.stint > entry.row.stint);
-            visits.push({id:`pit|${code}|${first.kind}|${first.time}`, driver:code, lap:first.row.lap_number,
-                entry:start, exit:end, window, source:window ? 'recorded':'incomplete',
-                fromCompound:entry?.row.compound ?? null, toCompound:tyreChange ? exit?.row.compound ?? null : null,
-                tyreChange, raw:first.row});
-        };
-        const seen = new Set<string>();
-        for (const boundary of boundaries) {
-            const key = `${boundary.kind}|${boundary.time}`;
-            if (seen.has(key)) continue;
-            seen.add(key);
-            if (boundary.kind === 'entry') {
-                if (pending) add(pending, null);
-                pending = boundary;
-            } else if (pending && boundary.time! > pending.time!) {
-                add(pending, boundary); pending = null;
-            } else { add(null, boundary); }
-        }
-        if (pending) add(pending, null);
-        for (let i=1; i<rows.length; i++) {
-            const previous=rows[i-1], row=rows[i];
-            if (previous.stint == null || row.stint == null || row.stint <= previous.stint || !Number.isFinite(row.lap_start_t_s)) continue;
-            const inferred=pitWindowForTransition(previous,row,pitLaneProfileFor(circuitName));
-            const match=visits.find(v => v.lap === previous.lap_number ||
-                (v.entry == null && v.raw.lap_number === row.lap_number) ||
-                (v.entry != null && v.exit != null && v.entry <= row.lap_start_t_s && v.exit >= row.lap_start_t_s));
-            if (match) {
-                match.tyreChange=true; match.fromCompound=previous.compound; match.toCompound=row.compound;
-                // Preserve partial recorded timestamps; use the estimate only for playback.
-                if (!match.window) {
-                    const start=match.entry ?? inferred.start, end=match.exit ?? inferred.end;
-                    if (end>start) match.window={start,end,stop:(start+end)/2};
-                }
-            } else visits.push({id:`pit|${code}|inferred|${row.lap_number}`,driver:code,lap:previous.lap_number,
-                entry:null,exit:null,window:inferred,source:'estimated',fromCompound:previous.compound,
-                toCompound:row.compound,tyreChange:true,raw:row});
-        }
-        result.push(...visits);
-    }
-    return result.sort((a,b) => (a.window?.start ?? a.entry ?? a.exit ?? 0)-(b.window?.start ?? b.entry ?? b.exit ?? 0));
+	const result: PitVisit[] = [];
+	for (const code of new Set(laps.map((row) => row.driver_code))) {
+		const rows = laps
+			.filter((row) => row.driver_code === code)
+			.sort((a, b) => a.lap_number - b.lap_number);
+		const visits: PitVisit[] = [];
+		const boundaries = rows
+			.flatMap((row) => [
+				{ time: row.pit_entry_t_s, kind: 'entry', row },
+				{ time: row.pit_exit_t_s, kind: 'exit', row }
+			])
+			.filter((b) => b.time != null && Number.isFinite(b.time) && b.time >= 0)
+			.sort((a, b) => a.time! - b.time! || a.kind.localeCompare(b.kind));
+		let pending: (typeof boundaries)[number] | null = null;
+		const add = (entry: typeof pending, exit: typeof pending) => {
+			const first = (entry ?? exit)!;
+			const start = entry?.time ?? null,
+				end = exit?.time ?? null;
+			const window =
+				start != null && end != null && end > start
+					? { start, end, stop: (start + end) / 2 }
+					: null;
+			const tyreChange = Boolean(
+				entry &&
+				exit &&
+				entry.row.stint != null &&
+				exit.row.stint != null &&
+				exit.row.stint > entry.row.stint
+			);
+			visits.push({
+				id: `pit|${code}|${first.kind}|${first.time}`,
+				driver: code,
+				lap: first.row.lap_number,
+				entry: start,
+				exit: end,
+				window,
+				source: window ? 'recorded' : 'incomplete',
+				fromCompound: entry?.row.compound ?? null,
+				toCompound: tyreChange ? (exit?.row.compound ?? null) : null,
+				tyreChange,
+				raw: first.row
+			});
+		};
+		const seen = new Set<string>();
+		for (const boundary of boundaries) {
+			const key = `${boundary.kind}|${boundary.time}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			if (boundary.kind === 'entry') {
+				if (pending) add(pending, null);
+				pending = boundary;
+			} else if (pending && boundary.time! > pending.time!) {
+				add(pending, boundary);
+				pending = null;
+			} else {
+				add(null, boundary);
+			}
+		}
+		if (pending) add(pending, null);
+		for (let i = 1; i < rows.length; i++) {
+			const previous = rows[i - 1],
+				row = rows[i];
+			if (
+				previous.stint == null ||
+				row.stint == null ||
+				row.stint <= previous.stint ||
+				!Number.isFinite(row.lap_start_t_s)
+			)
+				continue;
+			const inferred = pitWindowForTransition(previous, row, pitLaneProfileFor(circuitName));
+			const match = visits.find(
+				(v) =>
+					v.lap === previous.lap_number ||
+					(v.entry == null && v.raw.lap_number === row.lap_number) ||
+					(v.entry != null &&
+						v.exit != null &&
+						v.entry <= row.lap_start_t_s &&
+						v.exit >= row.lap_start_t_s)
+			);
+			if (match) {
+				match.tyreChange = true;
+				match.fromCompound = previous.compound;
+				match.toCompound = row.compound;
+				// Preserve partial recorded timestamps; use the estimate only for playback.
+				if (!match.window) {
+					const start = match.entry ?? inferred.start,
+						end = match.exit ?? inferred.end;
+					if (end > start) match.window = { start, end, stop: (start + end) / 2 };
+				}
+			} else
+				visits.push({
+					id: `pit|${code}|inferred|${row.lap_number}`,
+					driver: code,
+					lap: previous.lap_number,
+					entry: null,
+					exit: null,
+					window: inferred,
+					source: 'estimated',
+					fromCompound: previous.compound,
+					toCompound: row.compound,
+					tyreChange: true,
+					raw: row
+				});
+		}
+		result.push(...visits);
+	}
+	return result.sort(
+		(a, b) =>
+			(a.window?.start ?? a.entry ?? a.exit ?? 0) - (b.window?.start ?? b.entry ?? b.exit ?? 0)
+	);
 }
 
 function alignPitLapProgress(
@@ -264,15 +320,15 @@ export function buildDrivers(
 	return [...groups.entries()].map(([code, samples]) => {
 		samples.sort((a, b) => a.t - b.t);
 		smoothPositionHolds(samples);
-        const driverLaps = lapGroups.get(code) ?? [];
-        const visits = buildPitVisits(driverLaps, circuitName);
-        const pitWindows = visits.flatMap(v => v.window ? [v.window] : []);
-        const transitions = visits.flatMap(v => {
-            const previous = driverLaps.find(row => row.lap_number === v.lap);
-            const lap = driverLaps.find(row => row.lap_number === v.lap + 1);
-            return previous && lap && v.window ? [{previous, lap, window:v.window}] : [];
-        });
-        alignPitLapProgress(samples, transitions, pitProfile);
+		const driverLaps = lapGroups.get(code) ?? [];
+		const visits = buildPitVisits(driverLaps, circuitName);
+		const pitWindows = visits.flatMap((v) => (v.window ? [v.window] : []));
+		const transitions = visits.flatMap((v) => {
+			const previous = driverLaps.find((row) => row.lap_number === v.lap);
+			const lap = driverLaps.find((row) => row.lap_number === v.lap + 1);
+			return previous && lap && v.window ? [{ previous, lap, window: v.window }] : [];
+		});
+		alignPitLapProgress(samples, transitions, pitProfile);
 		const info = meta.get(code);
 		return {
 			code,
@@ -488,12 +544,14 @@ export function buildPitLanePath(track: TrackPath, circuitName = ''): PitLanePat
 
 /** Schematic travel only: no stationary service duration is inferred. */
 export function pitLaneProgressAt(driver: ReplayDriver, time: number): number | null {
-    const window = driver.pitWindows.find(({start,end}) => time>=start && time<=end);
-    return window ? Math.max(0, Math.min(1, (time-window.start)/(window.end-window.start))) : null;
+	const window = driver.pitWindows.find(({ start, end }) => time >= start && time <= end);
+	return window
+		? Math.max(0, Math.min(1, (time - window.start) / (window.end - window.start)))
+		: null;
 }
 function pitLaneBlendAt(driver: ReplayDriver, time: number) {
-    const progress=pitLaneProgressAt(driver,time);
-    return progress == null ? 0 : smoothstep(Math.min(1,progress*4,(1-progress)*4));
+	const progress = pitLaneProgressAt(driver, time);
+	return progress == null ? 0 : smoothstep(Math.min(1, progress * 4, (1 - progress) * 4));
 }
 
 /** Project a car continuously between the racing line and pit lane without endpoint jumps. */
@@ -666,12 +724,19 @@ export function buildEvents(
 		});
 	});
 	events.push(...radioEventsForPhase(radio, 'race'));
-    for (const visit of buildPitVisits(laps, circuitName)) {
-        events.push({id:visit.id,time:visit.window?.stop ?? visit.entry ?? visit.exit ?? 0,
-            type:'pit',subtype:'pit',label:`${visit.driver} ${visit.tyreChange ? 'pit stop':'pit visit'}`,
-            meta:`Lap ${visit.lap} · ${visit.tyreChange ? `${visit.fromCompound ?? '?'} → ${visit.toCompound ?? '?'}` : 'Tyre change unconfirmed'} · ${visit.source === 'recorded' ? 'Recorded entry / exit' : visit.source === 'estimated' ? 'Estimated timing' : 'Incomplete timing'}`,
-            participants:[visit.driver],raw:visit.raw,pitVisit:visit});
-    }
+	for (const visit of buildPitVisits(laps, circuitName)) {
+		events.push({
+			id: visit.id,
+			time: visit.window?.stop ?? visit.entry ?? visit.exit ?? 0,
+			type: 'pit',
+			subtype: 'pit',
+			label: `${visit.driver} ${visit.tyreChange ? 'pit stop' : 'pit visit'}`,
+			meta: `Lap ${visit.lap} · ${visit.tyreChange ? `${visit.fromCompound ?? '?'} → ${visit.toCompound ?? '?'}` : 'Tyre change unconfirmed'} · ${visit.source === 'recorded' ? 'Recorded entry / exit' : visit.source === 'estimated' ? 'Estimated timing' : 'Incomplete timing'}`,
+			participants: [visit.driver],
+			raw: visit.raw,
+			pitVisit: visit
+		});
+	}
 	return events
 		.filter((event) => event.time >= 0 && event.time <= duration)
 		.sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
