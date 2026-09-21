@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import PitInspector from './PitInspector.svelte';
 	import { SvelteURL } from 'svelte/reactivity';
 	import {
 		buildDrivers,
@@ -34,6 +35,7 @@
 		ReplayManifest,
 		RaceSummary,
 		PitLanePath,
+		PitVisit,
 		TrackPath,
 		TimingRow
 	} from './types';
@@ -99,6 +101,67 @@
 		gap: number | null;
 		ahead: number | null;
 	};
+
+	let selectedPit = $state<PitVisit | null>(null);
+	let clipEnd = $state<number | null>(null);
+	let savedSpeed = $state<number | null>(null);
+	let markerWidth = $state(800);
+	let markerChoices = $state<ReplayEvent[]>([]);
+	let pitVisits = $derived(allEvents.flatMap((e) => (e.pitVisit ? [e.pitVisit] : [])));
+	let scopedPits = $derived(pitVisits.filter((v) => !selectedCode || v.driver === selectedCode));
+	let markerGroups = $derived.by(() => {
+		const groups: ReplayEvent[][] = [];
+		for (const event of [...filteredEvents].sort((a, b) => a.time - b.time)) {
+			const last = groups.at(-1);
+			if (last && ((event.time - last[0].time) / Math.max(1, duration)) * markerWidth < 44)
+				last.push(event);
+			else groups.push([event]);
+		}
+		return groups;
+	});
+	function isPitting(code: string, time: number) {
+		return pitVisits.some(
+			(v) => v.driver === code && v.window && time >= v.window.start && time <= v.window.end
+		);
+	}
+	function cancelClip() {
+		clipEnd = null;
+		if (savedSpeed != null) {
+			speed = savedSpeed;
+			savedSpeed = null;
+		}
+	}
+	async function selectPit(visit: PitVisit) {
+		cancelClip();
+		selectedPit = visit;
+		if (selectedCode && selectedCode !== visit.driver) selectedCode = visit.driver;
+		markerChoices = [];
+		await tick();
+		const heading = root?.querySelector<HTMLElement>('.pit-inspector h2');
+		heading?.focus({ preventScroll: true });
+		heading?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	}
+	function closePit() {
+		cancelClip();
+		playing = false;
+		selectedPit = null;
+	}
+	function watchPit() {
+		if (!selectedPit?.window) return;
+		const restore = savedSpeed ?? speed;
+		seek(selectedPit.window.start - 5);
+		savedSpeed = restore;
+		speed = 1;
+		selectedCode = selectedPit.driver;
+		view.zoom = 1;
+		resetView();
+		clipEnd = Math.min(duration, selectedPit.window.end + 5);
+		playing = true;
+	}
+	function continueRace() {
+		cancelClip();
+		playing = true;
+	}
 
 	let seasons = $derived([...new Set(manifest?.races.map((race) => race.season) ?? [])]);
 	let seasonRaces = $derived(
@@ -194,6 +257,8 @@
 		abortController = controller;
 		resizeObserver?.disconnect();
 		loading = true;
+		closePit();
+		markerChoices = [];
 		loadError = '';
 		playing = false;
 		stopRadio();
@@ -356,14 +421,22 @@
 			context.strokeStyle = 'rgba(0, 0, 0, .8)';
 			context.stroke();
 			context.lineWidth = Math.min(8, Math.max(4, baseScale() * view.zoom * 50));
-			context.strokeStyle = '#8791a0';
+			context.strokeStyle = drivers.some((d) => isPitting(d.code, replayTime))
+				? '#6cdee6'
+				: '#8791a0';
 			context.stroke();
 			const boxX = screenX(pitLane.box.x);
 			const boxY = screenY(pitLane.box.y);
 			context.fillStyle = '#dce2ea';
 			context.fillRect(boxX - 3, boxY - 3, 6, 6);
 			context.font = '700 8px system-ui';
-			context.fillText('PIT LANE', boxX + 8, boxY - 7);
+			context.fillText('PIT LANE · SCHEMATIC', boxX + 8, boxY - 7);
+			for (const [point, label] of [
+				[pitLane.points[0], 'IN →'],
+				[pitLane.points.at(-1)!, 'OUT →']
+			] as const) {
+				context.fillText(label, screenX(point.x) + 8, screenY(point.y) - 12);
+			}
 		}
 		const cars: ScreenCar[] = [];
 		for (const driver of drivers) {
@@ -398,8 +471,16 @@
 				context.fillStyle = '#fff';
 				context.strokeStyle = '#080a0e';
 				context.lineWidth = 3;
-				context.strokeText(driver.code, x + 10, y + 4);
-				context.fillText(driver.code, x + 10, y + 4);
+				context.strokeText(
+					driver.code + (isPitting(driver.code, replayTime) ? ' PIT' : ''),
+					x + 10,
+					y + 4
+				);
+				context.fillText(
+					driver.code + (isPitting(driver.code, replayTime) ? ' PIT' : ''),
+					x + 10,
+					y + 4
+				);
 			}
 			context.globalAlpha = 1;
 			cars.push({
@@ -441,6 +522,10 @@
 		if (!previousFrame) previousFrame = timestamp;
 		if (playing) {
 			replayTime = Math.min(duration, replayTime + ((timestamp - previousFrame) / 1000) * speed);
+			if (clipEnd != null && replayTime >= clipEnd) {
+				replayTime = clipEnd;
+				playing = false;
+			}
 			if (replayTime >= duration) playing = false;
 		}
 		previousFrame = timestamp;
@@ -453,16 +538,20 @@
 		animationFrame = requestAnimationFrame(loop);
 	}
 	function seek(time: number) {
+		cancelClip();
 		replayTime = Math.max(0, Math.min(duration, time));
 		currentTime = replayTime;
 		leaderboard = timingAt(drivers, replayTime);
 		draw();
 	}
 	function togglePlayback() {
+		if (!playing && clipEnd != null && replayTime >= clipEnd) cancelClip();
 		if (replayTime >= duration) seek(0);
 		playing = !playing;
 	}
 	function toggleDriver(code: string) {
+		closePit();
+		markerChoices = [];
 		selectedCode = selectedCode === code ? '' : code;
 		if (selectedCode && eventFilter === 'control') eventFilter = 'all';
 		draw();
@@ -602,6 +691,7 @@
 	}
 	function activateEvent(event: ReplayEvent) {
 		if (event.type === 'radio') void playRadio(event);
+		else if (event.pitVisit) selectPit(event.pitVisit);
 		else seek(event.time);
 	}
 	function stopRadio() {
@@ -724,8 +814,9 @@
 				</p>
 				<p>
 					The circuit shape comes from loaded position traces. Car movement is interpolated and
-					projected from lap progress; the pit-lane path and pit windows are inferred. Animation is
-					not an observed racing line or proof of a physical pass.
+					projected from lap progress; the pit lane is schematic. Pit entry and exit use recorded
+					timestamps where available, with labeled estimated fallbacks. Animation is not an observed
+					racing line or proof of a physical pass.
 				</p>
 				<p>
 					Pass events are experimental timing-model detections. Race-control messages, weather
@@ -773,7 +864,11 @@
 										class:loss={(driver.positionChange ?? 0) < 0}
 										>{sourceMarker(driver.orderSource)}{driver.order}</span
 									><span class="team-line" style={`--team:${driver.color}`}></span><span
-										class="driver"><strong>{driver.code}</strong><small>{driver.team}</small></span
+										class="driver"
+										><strong
+											>{driver.code}{#if isPitting(driver.code, currentTime)}
+												<em class="pit-badge">PIT</em>{/if}</strong
+										><small>{driver.team}</small></span
 									><span class="tyre {compoundCode(driver.compound).toLowerCase()}"
 										>{compoundCode(driver.compound)}</span
 									><span class="gap" title={sourceLabel(driver.gapSource)}
@@ -790,7 +885,11 @@
 					</div>
 				</aside>
 				<div class="center-stage">
-					<section class="track-panel panel" aria-label="Circuit map">
+					<section
+						class="track-panel panel"
+						class:inspecting={Boolean(selectedPit)}
+						aria-label="Circuit map"
+					>
 						<div class="track-meta">
 							<div><span>CIRCUIT VIEW</span><strong>{loaded.bundle.race.circuit_name}</strong></div>
 							<div class="track-actions">
@@ -802,27 +901,42 @@
 								>
 							</div>
 						</div>
-						<div class="circuit">
-							<canvas
-								aria-label="Animated circuit map. Select cars from the timing tower or directly on the circuit."
-								onpointerdown={onPointerDown}
-								onpointermove={onPointerMove}
-								onpointerup={onPointerUp}
-								onpointerleave={() => {
-									dragging = false;
-									hovered = null;
-								}}
-								class:dragging
-								bind:this={canvas}
-							></canvas>{#if hovered}<div
-									class="tooltip"
-									style={`left:${Math.min(canvasWidth - 155, hovered.x + 14)}px;top:${Math.max(55, hovered.y - 45)}px`}
-								>
-									<strong><i style={`background:${hovered.color}`}></i>{hovered.name}</strong><span
-										>P{hovered.order ?? '—'} · {hovered.team}</span
-									><span>{formatGap(hovered.ahead, true)} interval</span>
-								</div>{/if}
-							<div class="map-help">Scroll to zoom · drag to pan · click a car to follow</div>
+						<div class="pit-layout" class:inspecting={Boolean(selectedPit)}>
+							<div class="circuit">
+								<canvas
+									aria-label="Animated circuit map. Select cars from the timing tower or directly on the circuit."
+									onpointerdown={onPointerDown}
+									onpointermove={onPointerMove}
+									onpointerup={onPointerUp}
+									onpointerleave={() => {
+										dragging = false;
+										hovered = null;
+									}}
+									class:dragging
+									bind:this={canvas}
+								></canvas>{#if hovered}<div
+										class="tooltip"
+										style={`left:${Math.min(canvasWidth - 155, hovered.x + 14)}px;top:${Math.max(55, hovered.y - 45)}px`}
+									>
+										<strong><i style={`background:${hovered.color}`}></i>{hovered.name}</strong
+										><span>P{hovered.order ?? '—'} · {hovered.team}</span><span
+											>{formatGap(hovered.ahead, true)} interval</span
+										>
+									</div>{/if}
+								<div class="map-help">Scroll to zoom · drag to pan · click a car to follow</div>
+							</div>
+							{#if selectedPit}<PitInspector
+									visit={selectedPit}
+									visits={scopedPits}
+									allVisits={pitVisits}
+									{drivers}
+									time={currentTime}
+									watching={clipEnd != null}
+									onwatch={watchPit}
+									oncontinue={continueRace}
+									onclose={closePit}
+									onselect={selectPit}
+								/>{/if}
 						</div>
 						{#if recentMessages.length}<div class="race-control">
 								<span>RACE CONTROL</span>{#each recentMessages as event (event.id)}<button
@@ -867,7 +981,12 @@
 							>
 						</div>
 						<label class="speed-control"
-							>SPEED<select bind:value={speed}
+							>SPEED<select
+								value={speed}
+								onchange={(event) => {
+									cancelClip();
+									speed = Number(event.currentTarget.value);
+								}}
 								>{#each SPEEDS as option (option)}<option value={option}>{option}×</option
 									>{/each}</select
 							></label
@@ -1069,7 +1188,7 @@
 									></button
 								>{/if}{/each}
 					</div>
-					<div class="event-rail">
+					<div class="event-rail" bind:clientWidth={markerWidth}>
 						<button
 							type="button"
 							aria-label="Seek on event timeline"
@@ -1083,16 +1202,46 @@
 							></i></button
 						>
 						<div class="markers">
-							{#each filteredEvents as event (event.id)}<button
+							{#each markerGroups as group (group[0].id)}
+								<button
 									type="button"
-									class={event.type}
-									class:past={event.time <= currentTime}
-									style={`left:${timelinePosition(event.time)}%`}
-									title={`${formatClock(event.time)} · ${event.label}`}
-									onclick={() => activateEvent(event)}
-								></button>{/each}
+									class={group.some((e) => e.type === 'pit') ? 'pit' : group[0].type}
+									class:past={group[0].time <= currentTime}
+									style={`left:${timelinePosition(group[0].time)}%`}
+									aria-label={group.length > 1
+										? `${group.length} events near ${formatClock(group[0].time)}`
+										: `${group[0].label}, ${group[0].meta}`}
+									title={group.map((e) => `${e.label} · ${e.meta}`).join(' / ')}
+									onclick={() =>
+										group.length > 1 ? (markerChoices = group) : activateEvent(group[0])}
+									>{group.length > 1 ? group.length : group[0].type === 'pit' ? 'P' : '•'}</button
+								>
+							{/each}
 						</div>
 					</div>
+					{#if markerChoices.length}<section
+							class="pit-choices"
+							aria-label="Nearby timeline events"
+						>
+							<button onclick={() => (markerChoices = [])}>Close event list</button
+							>{#each markerChoices as event (event.id)}<button
+									onclick={() => {
+										markerChoices = [];
+										activateEvent(event);
+									}}>{formatClock(event.time)} · {event.label}<small>{event.meta}</small></button
+								>{/each}
+						</section>{/if}
+					{#if eventFilter === 'pit'}<div class="pit-choices" aria-label="All pit visits">
+							{#each scopedPits as visit (visit.id)}<button
+									aria-pressed={selectedPit?.id === visit.id}
+									onclick={() => selectPit(visit)}
+									>{visit.driver} · Lap {visit.lap}<small
+										>{visit.tyreChange
+											? `${visit.fromCompound ?? '?'} → ${visit.toCompound ?? '?'}`
+											: 'Pit visit'} · {visit.source}</small
+									></button
+								>{/each}
+						</div>{/if}
 					<div class="phase-summary">
 						<strong>Near the current replay time</strong><span
 							>The eight closest matching events, ordered chronologically.</span
@@ -1210,6 +1359,55 @@
 </div>
 
 <style>
+	.pit-layout {
+		min-width: 0;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		align-items: start;
+	}
+	@media (min-width: 1400px) {
+		.pit-layout.inspecting {
+			grid-template-columns: minmax(0, 1fr) 330px;
+			gap: 12px;
+		}
+	}
+
+	.pit-badge {
+		margin-left: 4px;
+		padding: 1px 3px;
+		border: 1px solid #34656c;
+		border-radius: 3px;
+		font-size: 9px;
+		color: #65e3ee;
+		font-style: normal;
+	}
+	.pit-choices {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 12px;
+		max-height: 260px;
+		overflow: auto;
+	}
+	.pit-choices button {
+		min-height: 44px;
+		border: 1px solid #3b5366;
+		border-radius: 8px;
+		background: #14212d;
+		color: #e6f3ff;
+		padding: 8px;
+		text-align: left;
+	}
+	.pit-choices small {
+		display: block;
+		color: #aabed0;
+		font-size: 11px;
+		margin-top: 4px;
+	}
+	.pit-choices button:focus-visible {
+		outline: 2px solid #69dce5;
+	}
+
 	.provenance-panel {
 		margin: 0 0 1rem;
 		padding: 0.8rem 1rem;
@@ -1701,6 +1899,15 @@
 		min-width: 0;
 		overflow: hidden;
 		border-color: rgba(85, 170, 255, 0.17);
+	}
+	.track-panel.inspecting .track-meta {
+		position: relative;
+		top: auto;
+		left: auto;
+		width: auto;
+		margin: 15px 17px;
+		flex-wrap: wrap;
+		gap: 8px;
 	}
 	.track-meta {
 		position: absolute;
@@ -2436,7 +2643,8 @@
 	}
 	.event-rail {
 		position: relative;
-		margin: 18px 2px 8px;
+		margin: 18px 22px 8px;
+		padding: 18px 0;
 	}
 	.event-rail > button {
 		position: relative;
@@ -2464,7 +2672,7 @@
 	.markers {
 		position: absolute;
 		inset: 0;
-		overflow: hidden;
+		overflow: visible;
 		border-radius: 4px;
 		pointer-events: none;
 	}
@@ -2486,10 +2694,15 @@
 		color: var(--event-overtake);
 		border-radius: 50%;
 	}
+	.markers button {
+		min-width: 44px;
+		min-height: 44px;
+		font-size: 10px;
+	}
 	.markers .pit {
 		border-color: var(--event-pit);
 		color: var(--event-pit);
-		transform: translate(-50%, -50%) rotate(45deg);
+		transform: translate(-50%, -50%);
 	}
 	.markers .radio {
 		height: 17px;
@@ -2498,7 +2711,8 @@
 		border-radius: 5px;
 	}
 	.markers .past {
-		background: currentColor;
+		background: #243849;
+		box-shadow: inset 0 -3px 0 currentColor;
 	}
 	.event-list {
 		display: grid;
@@ -2710,8 +2924,12 @@
 			border-color 0.16s ease,
 			box-shadow 0.16s ease;
 	}
-	.playback button, .lap-controls button, .filters button, .track-actions button,
-	.custom-audio-controls button, .race-picker select {
+	.playback button,
+	.lap-controls button,
+	.filters button,
+	.track-actions button,
+	.custom-audio-controls button,
+	.race-picker select {
 		border-radius: var(--ui-control-radius);
 		min-height: var(--ui-control-height);
 	}
@@ -2751,8 +2969,13 @@
 		}
 	}
 	@media (max-width: 800px) {
-		.playback button, .lap-controls button, .filters button, .track-actions button,
-		.custom-audio-controls button, .timing-toggle, .race-picker select {
+		.playback button,
+		.lap-controls button,
+		.filters button,
+		.track-actions button,
+		.custom-audio-controls button,
+		.timing-toggle,
+		.race-picker select {
 			min-height: 44px;
 		}
 		.topbar {

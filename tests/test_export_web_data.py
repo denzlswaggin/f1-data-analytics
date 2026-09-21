@@ -105,6 +105,8 @@ def test_exports_deterministic_per_race_bundle(tmp_path: Path) -> None:
     assert result["races"][0]["weather_sample_count"] == 2
     bundle = json.loads((tmp_path / "web-data/races/2026-01/bundle.json").read_text())
     assert bundle["drivers"][0]["driver_name"] == "Lando Norris"
+    assert bundle["laps"][0]["pit_entry_t_s"] is None
+    assert bundle["laps"][0]["pit_exit_t_s"] is None
     assert [row["phase"] for row in bundle["radio"]] == ["pre-race", "race", "post-race"]
     assert bundle["radio"][0]["recording_url"].endswith("pre-race.mp3")
     assert bundle["weather"] == [
@@ -153,3 +155,17 @@ def test_export_retains_order_and_gap_provenance_separately(tmp_path: Path) -> N
         table = reader.read_all()
     assert table.column("running_order_source").to_pylist() == ["openf1_recorded", None]
     assert table.column("gap_source").to_pylist() == ["lap_progress_estimate", None]
+
+
+def test_recorded_pit_times_use_the_replay_clock(tmp_path: Path) -> None:
+    snapshot = tmp_path / "snapshot.duckdb"
+    _snapshot(snapshot)
+    with duckdb.connect(str(snapshot)) as connection:
+        connection.execute("alter table staging.stg_laps add column pit_in_time_sec double")
+        connection.execute("alter table staging.stg_laps add column pit_out_time_sec double")
+        connection.execute("update staging.stg_laps set pit_in_time_sec=175, pit_out_time_sec=199")
+    from scripts.export_web_data import _race_bundle
+    with duckdb.connect(str(snapshot), read_only=True) as connection:
+        bundle = _race_bundle(connection, 2026, 1)
+    assert bundle["laps"][0]["pit_entry_t_s"] == 75
+    assert bundle["laps"][0]["pit_exit_t_s"] == 99

@@ -41,6 +41,8 @@ export type DriverMeta = {
 };
 
 export type LapRow = {
+	pit_entry_t_s?: NullableNumber;
+	pit_exit_t_s?: NullableNumber;
 	driver_code: string;
 	lap_number: number;
 	lap_start_t_s: number;
@@ -152,6 +154,20 @@ export type ReplayDriver = {
 	pitWindows: PitWindow[];
 };
 
+export type PitVisit = {
+	id: string;
+	driver: string;
+	lap: number;
+	entry: number | null;
+	exit: number | null;
+	window: PitWindow | null;
+	source: 'recorded' | 'estimated' | 'incomplete';
+	fromCompound: string | null;
+	toCompound: string | null;
+	tyreChange: boolean;
+	raw: LapRow;
+};
+
 export type PitWindow = { start: number; stop: number; end: number };
 
 export type PitLaneProfile = {
@@ -198,6 +214,7 @@ export type TimingRow = {
 export type ReplayEvent = {
 	id: string;
 	time: number;
+	pitVisit?: PitVisit;
 	type: 'control' | 'overtake' | 'pit' | 'radio';
 	subtype: string;
 	label: string;
