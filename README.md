@@ -34,8 +34,8 @@ available team radio stay in sync.
 - See confidence-scored on-track overtakes without pit-cycle swaps and timing-feed flicker.
 - Withhold incomplete position feeds instead of presenting a partial race as complete.
 
-The browser animates a purpose-built replay mart with **4.1 million car ticks** in
-the current snapshot. A custom Svelte canvas keeps the experience responsive; the
+The browser animates a purpose-built replay mart with millions of car ticks.
+The snapshot-derived counts below show its current size. A custom Svelte canvas keeps the experience responsive; the
 heavy resampling and pass detection happen once upstream, not in every visitor's browser.
 
 ## Explore by question
@@ -164,10 +164,19 @@ The dashboard does not silently turn missing data into zeroes or confident claim
 - Public pages read an immutable, checksum-verified DuckDB snapshot rather than the mutable warehouse.
 - Late corrections rebuild only the affected race partition and propagate through downstream marts.
 
-The current local dataset spans **411 race weekends**, **103 drivers**, **8,424 directed
-qualifying comparisons**, **613,680 telemetry rows** and more than **4.1 million replay
-ticks**. Coverage is intentionally uneven for heavier telemetry sources and is exposed
-in the product rather than hidden.
+<!-- audit-statistics:start -->
+Published snapshot: `20260918-audit-pages34`.
+
+| Dataset | Observations | Races |
+| --- | ---: | ---: |
+| Lap timing | 104,467 | 106 |
+| Telemetry | 754,175 | 60 |
+| Replay | 6,290,491 | 61 |
+<!-- audit-statistics:end -->
+
+Regenerate these counts from the verified snapshot with
+`.venv/bin/python scripts/export_audit_evidence.py --update-readme`.
+Normal dashboard builds regenerate the serving evidence without editing README.
 
 ## Run it locally
 

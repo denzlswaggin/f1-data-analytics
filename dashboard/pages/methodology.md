@@ -25,6 +25,73 @@ select * from f1.snapshot_metadata
 
 <SnapshotStatus data={snapshot} />
 
+## Current analytical evidence
+
+```sql current_evidence
+select analysis, candidates, eligible, unit, races,
+    eligible * 100.0 / nullif(candidates, 0) as eligible_pct,
+    limitation, validation_status
+from f1.evidence_summary order by analysis
+```
+
+```sql evidence_export
+select distinct snapshot_version, snapshot_sha256, methodology_version
+from f1.evidence_summary
+```
+
+```sql validation_evidence
+select evidence_type, status, report_date, evaluated_snapshot, evaluated_sha256, result, scope
+from f1.validation_evidence
+order by case evidence_type when 'Structural checks' then 1 when 'Predictive diagnostic' then 2
+    when 'Source agreement' then 3 else 4 end
+```
+
+These counts are regenerated from the published snapshot. “Eligible” has a
+different definition and unit for each analysis; percentages must not be averaged
+into a trust score. Input race counts describe coverage, not independent samples.
+Aggregate-only tables have no input race count here.
+
+<div style="overflow-x: auto; max-width: 100%;">
+<DataTable data={current_evidence} rows=15 download=true>
+    <Column id=analysis title="Analysis" />
+    <Column id=candidates title="Candidates" />
+    <Column id=eligible title="Eligible" />
+    <Column id=unit title="Counting unit" />
+    <Column id=eligible_pct title="Eligible (%)" fmt="0.0" />
+    <Column id=races title="Input races" />
+    <Column id=limitation title="Interpretation limit" />
+</DataTable>
+</div>
+
+### Validation evidence and its scope
+
+Passing publication checks establishes consistency with the stated rules.
+Historical diagnostics keep their original evaluated snapshot and report date;
+they are never relabelled as current accuracy results. Missing or unmatched
+artifacts are marked “Not evaluated for this snapshot.” A dated source-agreement
+panel is not an independent footage review.
+
+<div style="overflow-x: auto; max-width: 100%;">
+<DataTable data={validation_evidence} rows=4>
+    <Column id=evidence_type title="Evidence type" />
+    <Column id=status title="Current snapshot status" />
+    <Column id=report_date title="Check time / historical report date" />
+    <Column id=evaluated_snapshot title="Evaluated snapshot" />
+    <Column id=result title="Recorded result" />
+    <Column id=scope title="Scope" />
+</DataTable>
+</div>
+
+<ExpandableSection title="Evidence export provenance">
+<div style="overflow-x: auto; max-width: 100%;">
+<DataTable data={evidence_export} rows=1 />
+<DataTable data={validation_evidence} rows=4>
+    <Column id=evidence_type />
+    <Column id=evaluated_sha256 title="Evaluated database SHA-256" />
+</DataTable>
+</div>
+</ExpandableSection>
+
 ## Start with the evidence type
 
 [Metric definitions](#metric-definitions) · [Uncertainty and missing data](#uncertainty-and-missing-data) · [Validation status](#validation-status) · [Published data contract](#published-data-contract)

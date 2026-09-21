@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "scripts": {
     "predev": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb",
-    "prebuild": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb",
-    "prebuild:strict": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb",
+    "prebuild": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb && npm run sources:strict",
+    "prebuild:strict": "node ../scripts/run_python.mjs scripts/check_dashboard_snapshot.py data/dashboard/latest.duckdb && npm run sources:strict",
     "build": "evidence build",
     "build:strict": "evidence build:strict",
     "dev": "npm --prefix ../web run dev:all",
@@ -16,7 +16,10 @@
     "test:interactions": "node --conditions=browser --test ../scripts/test_dashboard_interactions.mjs",
     "sources": "evidence sources",
     "sources:strict": "evidence sources --strict",
-    "preview": "evidence preview"
+    "preview": "evidence preview",
+    "audit-evidence": "node ../scripts/run_python.mjs scripts/export_audit_evidence.py",
+    "presources": "npm run audit-evidence",
+    "presources:strict": "npm run audit-evidence"
   },
   "engines": {
     "npm": ">=11 <12",

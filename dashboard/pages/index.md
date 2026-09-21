@@ -64,6 +64,10 @@ Detected passes are experimental timing-model events, not independently verified
 
 <InsightNav />
 
+The [current analytical evidence summary](methodology/#current-analytical-evidence)
+shows snapshot-derived candidate and eligible counts, with historical validation
+kept separate from current coverage.
+
 ## Data available for the latest race
 
 ```sql latest_coverage
