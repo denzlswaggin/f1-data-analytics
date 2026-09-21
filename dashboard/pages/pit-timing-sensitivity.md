@@ -7,14 +7,18 @@ max_width: 1600
 <AppNav />
 
 <PageHeader
-    eyebrow="Strategy intelligence"
-    title="How sensitive was the stop to its timing?"
+    eyebrow="Experimental strategy analysis"
+    title="Explore the pit-timing model’s sensitivity"
     description="Replay each observed dry-tyre stop from three laps earlier to three laps later, using the driver's clean-air pace before and after the stop."
     accent="strategy"
 />
 
-<KeyInsight label="A sensitivity test, not a strategy oracle">
-The model moves the same observed stop and tyre-set transition. It does not know the traffic, pit loss, tyre inventory or race-control state that would have occurred in the alternate future. A supported shift is evidence that timing mattered in the observed pace window—not proof that the team should have made that call.
+<KeyInsight label="Experimental scenarios — not stop recommendations">
+The model moves the same observed tyre transition under fixed assumptions. Model
+eligibility only means its input and extrapolation rules passed. It does not
+establish that timing mattered in the real race, that an alternative would have
+been faster, or that a team should have stopped earlier or later. Both interior
+and boundary minima remain unvalidated counterfactual estimates.
 </KeyInsight>
 
 <KeyInsight label="Temporal diagnostic: the fitted trend did not beat a constant baseline">
@@ -40,7 +44,7 @@ select distinct
     'R' || lpad(cast(cast(round as integer) as varchar), 2, '0') || ' · '
         || replace(race_name, ' Grand Prix', '')
         || ' · ' || cast(eligible_stops as integer) || '/' || cast(observed_stops as integer)
-        || ' supported stops' as race_label
+        || ' model-eligible stops' as race_label
 from f1.pit_timing_races
 where season = ${inputs.season.value}
 order by round
@@ -60,7 +64,7 @@ from f1.pit_timing_races
 where season = ${inputs.season.value} and round = ${inputs.race.value}
 ```
 
-<DataTrust data={coverage} sampleLabel="observed stops" entityLabel="Drivers" method="clean-air ±3-lap counterfactual with bootstrap uncertainty" />
+<DataTrust data={coverage} sampleLabel="observed stops" entityLabel="Drivers" method="experimental ±3-lap scenarios; uncalibrated resampling spread" />
 
 ```sql season_coverage
 select round, race_name, observed_stops, eligible_stops,
@@ -70,14 +74,14 @@ select round, race_name, observed_stops, eligible_stops,
         when replay_rows = 0 then 'Replay unavailable'
         when observed_stops = 0 then 'No analysed transitions'
         when eligible_stops = 0 then 'No stops pass the model rules'
-        else 'Supported results available'
+        else 'Experimental scenarios available'
     end as evidence_status
 from f1.pit_timing_races
 where season = ${inputs.season.value}
 order by round
 ```
 
-<ExpandableSection title="Find races with supported results — season coverage" open=true>
+<ExpandableSection title="Find races with model-eligible scenarios — season coverage" open=true>
 All completed races with loaded results are listed. Input availability is separate
 from model eligibility: a loaded replay does not guarantee enough clean reference
 laps for a stop. Counts refer to observed tyre-stint transitions analysed by this model.
@@ -86,7 +90,7 @@ laps for a stop. Counts refer to observed tyre-stint transitions analysed by thi
     <Column id=round title="Round" fmt="0" />
     <Column id=race_name title="Race" />
     <Column id=observed_stops title="Observed stops" />
-    <Column id=eligible_stops title="Supported stops" />
+    <Column id=eligible_stops title="Model-eligible stops" />
     <Column id=excluded_stops title="Excluded stops" />
     <Column id=evidence_status title="Evidence status" />
 </DataTable>
@@ -100,7 +104,7 @@ select
     case
         when not eligible then 'Excluded'
         when boundary_minimum then 'Range-edge minimum; no optimum established'
-        else timing_signal
+        else 'Interior minimum; strategy accuracy unvalidated'
     end as displayed_signal
 from f1.pit_timing_sensitivity
 where season = ${inputs.season.value} and round = ${inputs.race.value}
@@ -111,31 +115,24 @@ order by actual_pit_lap, driver_code, stop_number
 select * from ${race_stops} where eligible
 ```
 
-```sql largest_supported_gain
-select
-    coalesce(arg_max(stop_label, estimated_gain_vs_actual_sec)
-        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal'),
-        'No interior estimate') as stop_label,
-    max(estimated_gain_vs_actual_sec)
-        filter (where not boundary_minimum and timing_signal <> 'No meaningful directional signal') as estimated_gain_vs_actual_sec
-from ${supported_stops}
-```
-
 ```sql evidence_summary
 select
     count(*) as observed_stops,
     count(*) filter (where eligible) as eligible_stops,
-    count(*) filter (where timing_signal = 'No meaningful directional signal') as no_signal,
+    count(*) filter (where eligible and not boundary_minimum) as interior_stops,
     count(*) filter (where eligible and boundary_minimum) as boundary_stops
 from ${race_stops}
 ```
 
-<Grid cols=4>
+<Grid cols=3>
+    <BigValue data={evidence_summary} value=eligible_stops title="Model-eligible stops" />
+    <BigValue data={evidence_summary} value=observed_stops title="Analysed transitions" />
     <BigValue data={evidence_summary} value=boundary_stops title="Eligible minima at tested boundary" />
-    <BigValue data={largest_supported_gain} value=stop_label comparison=estimated_gain_vs_actual_sec comparisonFmt="0.00 s modelled gain" title="Largest interior timing signal" />
-    <BigValue data={evidence_summary} value=eligible_stops comparison=observed_stops comparisonFmt="0 observed stops" title="Eligible stops" />
-    <BigValue data={evidence_summary} value=no_signal title="No meaningful directional signal" />
 </Grid>
+
+These counts follow the selected race. A minimum at the range edge cannot locate
+an optimum; an interior minimum also does not establish strategy accuracy.
+
 
 {#if coverage[0]?.observed_stops === 0}
 <KeyInsight label="No analysed stops">
@@ -169,14 +166,16 @@ is missing. Incomplete windows can also come from retirement or the end of a rac
 
 ## Stop timing overview — {inputs.season.value} {inputs.race.label}
 
-The displayed shift is the lowest modelled cost among the supported scenarios. A
-negative shift means stopping earlier; a positive shift means stopping later.
-The directional finding requires at least 0.30 seconds of estimated gain and a
-75th percentile resampling delta below zero before calling a direction supported.
-Otherwise the result has no meaningful directional signal; this can reflect
-the practical gain threshold, not necessarily a spread that contains zero.
-An edge minimum gives a direction within the tested range, not an optimal pit
-lap. Rejected scenarios remain visible below with their extrapolation distances.
+Eligible means enough input evidence for this model, not demonstrated predictive
+value. Negative shifts are earlier and positive shifts later; all scenario cost
+differences remain conditional on the model. No optimum or recommended stop lap
+is published here.
+
+<ExpandableSection title="Inspect experimental scenario diagnostics">
+The lowest-cost tested shift is a numerical model result. The 0.30-second gain
+and resampling thresholds are internal heuristics, not calibrated evidence that
+a different strategy would have worked. A boundary minimum is not an optimal pit
+lap, and an interior minimum has not passed a counterfactual validation gate.
 
 <DataTable data={race_stops} rows=40 search=true download=true>
     <Column id=driver_code title="Driver" />
@@ -192,10 +191,11 @@ lap. Rejected scenarios remain visible below with their extrapolation distances.
     <Column id=displayed_signal title="Finding" />
     <Column id=confidence title="Heuristic evidence" />
 </DataTable>
+</ExpandableSection>
 
 ```sql stop_choices
 select season, round, stop_label,
-    stop_label || case when eligible then ' · Supported' else ' · Excluded' end as choice_label
+    stop_label || case when eligible then ' · Model-eligible' else ' · Excluded' end as choice_label
 from ${race_stops}
 order by actual_pit_lap, driver_code, stop_number
 ```
@@ -251,9 +251,9 @@ select * from ${selected_scenarios} where supported
 
 ## Scenario curve — {inputs.stop.value}
 
-Negative Δ is faster than the observed stop timing; positive Δ is slower. The
-pit/out-lap transition is held constant in every scenario, so this chart isolates
-the timing trade-off between extending the old stint and starting the new one.
+Negative Δ is a lower modelled cost than the observed timing; positive Δ is a
+higher modelled cost. The pit/out-lap transition is held constant. This compares
+assumed stint extensions; it does not isolate a real-world strategy effect.
 
 <BarChart
     data={supported_curve}

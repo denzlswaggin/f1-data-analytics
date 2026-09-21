@@ -11,7 +11,7 @@
                 ['How did the race unfold?', 'race-cockpit', 'Recorded result, peer-relative pace and evidence coverage'],
                 ['Where was the race won?', 'race-pace', 'Compare drivers and race phases without a 20-car spaghetti chart'],
                 ['Which pit cycles changed the race?', 'pit-strategy', 'Separate stop speed, position swing and race-control context'],
-                ['Was the stop timed near its best lap?', 'pit-timing-sensitivity', 'Compare the observed stop with ±3-lap clean-air counterfactuals'],
+                ['What does the experimental pit-timing model assume?', 'pit-timing-sensitivity', 'Inspect model eligibility and conditional ±3-lap scenarios'],
                 ['Watch the race unfold', 'race-replay', 'Replay positions, overtakes, incidents and team radio']
             ]
         },
