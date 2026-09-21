@@ -1,6 +1,8 @@
 <script>
     export let data = [];
     export let title = 'Model estimates and 90% resampling intervals';
+    export let valueLabel = 'rating';
+    export let note = 'Points are fitted ratings; lines are individual 90% resampling intervals. * Interval unavailable.';
     const finite = (value) => value != null && Number.isFinite(Number(value));
     $: rows = Array.from(data ?? []).filter((row) => finite(row.rating));
     $: values = rows.flatMap((row) => [row.rating, row.rating_lo, row.rating_hi]).filter(finite).map(Number);
@@ -38,7 +40,7 @@
             <div class="rating-row">
                 <strong>{row.driver_name}</strong><span>{Number(row.rating).toFixed(3)}</span>
                 <p>90% interval: {finite(row.rating_lo) && finite(row.rating_hi) ? `${Number(row.rating_lo).toFixed(3)} to ${Number(row.rating_hi).toFixed(3)}` : 'unavailable'} · {row.n_comparisons} comparisons</p>
-                <svg viewBox="195 -8 410 16" role="img" aria-label={`${row.driver_name}: rating ${Number(row.rating).toFixed(3)}`}>
+                <svg viewBox="195 -8 410 16" role="img" aria-label={`${row.driver_name}: ${valueLabel} ${Number(row.rating).toFixed(3)}`}>
                     <line class="grid" x1={x(0)} x2={x(0)} y1="-8" y2="8" />
                     {#if finite(row.rating_lo) && finite(row.rating_hi)}
                         <line class="interval" x1={x(row.rating_lo)} x2={x(row.rating_hi)} y1="0" y2="0" />
@@ -48,7 +50,7 @@
             </div>
         {/each}
     </div>
-    <p>Points are fitted ratings; lines are individual 90% resampling intervals. * Interval unavailable.</p>
+    <p>{note}</p>
     {:else}
     <p>No estimates meet the selected evidence filter.</p>
     {/if}

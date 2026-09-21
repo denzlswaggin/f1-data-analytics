@@ -9,7 +9,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Driver intelligence"
     title="Who gains on Sunday?"
-    description="Compare teammate-normalised qualifying and controlled race pace over the same seasons to reveal racers and Saturday specialists."
+    description="Compare fitted qualifying and race ratings, with paired intervals showing which differences remain uncertain."
     accent="drivers"
 />
 
@@ -22,10 +22,13 @@ Those gaps are chained into a second rating with the same solver used for qualif
 
 </div>
 
-Both ratings are fitted over the **same seasons**, so the comparison is like-for-like.
+Both ratings are fitted over the **same seasons**. Eligible weekends and laps can
+still differ, and the fitted scales do not isolate a causal driver effect.
 
 <KeyInsight label="How to read delta">
-Positive means stronger relative race pace; negative means stronger relative qualifying pace. Zero is the field average, not “no improvement”.
+Positive means a higher fitted race rating; negative means a higher fitted
+qualifying rating. Zero means equal fitted ratings on these model scales. A
+point estimate alone does not establish a supported difference.
 </KeyInsight>
 
 ```sql profile_coverage
@@ -59,66 +62,55 @@ from f1.driver_pace_profile
 where n_race_comparisons >= ${inputs.minraces.value}
 ```
 
-## Where every driver sits
-
-Each dot is a driver. The diagonal is "equally good on both days" — above it means the
-driver is better in the race than in qualifying, below it the reverse. Distance from
-the diagonal *is* the delta.
-
-<ScatterPlot
-    data={pace}
-    x=quali_rating
-    y=race_rating
-    series=profile
-    seriesColors={{'Racer': '#32d3f4', 'Qualifying specialist': '#f7c948'}}
-    pointSize=30
-    xAxisTitle="Qualifying rating (higher = faster)"
-    yAxisTitle="Race rating (higher = faster)"
-    tooltipTitle=driver_name
->
-    <ReferenceLine
-        data={diagonal}
-        x=x1
-        y=y1
-        x2=x2
-        y2=y2
-        label="equal on both days"
-        labelPosition=belowEnd
-    />
-</ScatterPlot>
-
-## Biggest movers
-
-```sql movers
-select * from (
-    select *, row_number() over (order by delta desc, driver_id) as top_rank,
-        row_number() over (order by delta asc, driver_id) as bottom_rank
-    from ${pace}
-)
-where top_rank <= 10 or bottom_rank <= 10
-order by delta desc
+```sql difference_intervals
+select driver_name, delta as rating,
+    case when profile <> 'Interval unavailable' then delta_lo end as rating_lo,
+    case when profile <> 'Interval unavailable' then delta_hi end as rating_hi,
+    n_race_comparisons as n_comparisons
+from ${pace}
+order by delta desc, driver_id
 ```
 
-Bars point right for drivers who gain on Sunday and left for those who lose. The zero
-line is the field average, not "no change".
+```sql difference_evidence
+select count(*) as drivers,
+    count(*) filter (where profile='Positive difference') as positive,
+    count(*) filter (where profile='Negative difference') as negative,
+    count(*) filter (where profile='Inconclusive') as inconclusive,
+    count(*) filter (where profile='Interval unavailable') as unavailable
+from ${pace}
+```
 
-<BarChart
-    data={movers}
-    x=driver_name
-    y=delta
-    series=profile
-    seriesColors={{'Racer': '#32d3f4', 'Qualifying specialist': '#f7c948'}}
-    swapXY=true
-    sort=false
-    xAxisTitle="delta (race rating − qualifying rating)"
->
-    <ReferenceLine y=0 label="field average" />
-</BarChart>
+## Differences and paired uncertainty
 
-Labels require the **90% difference interval** to exclude zero; otherwise the
-result is inconclusive. Both ratings use the same resampled weekends within each
-season (1,000 draws, seed 0). Intervals require at least 900 valid paired solves.
-These intervals describe sampling variation, not causal improvement.
+<Grid cols=4>
+    <BigValue data={difference_evidence} value=positive title="90% interval above zero" />
+    <BigValue data={difference_evidence} value=negative title="90% interval below zero" />
+    <BigValue data={difference_evidence} value=inconclusive title="Interval includes zero" />
+    <BigValue data={difference_evidence} value=unavailable title="Interval unavailable" />
+</Grid>
+
+<RatingIntervals data={difference_intervals} valueLabel="race-minus-qualifying difference"
+    title="Race minus qualifying: estimates and paired 90% intervals"
+    note="Points are fitted differences; lines are paired 90% weekend-bootstrap intervals. * Interval unavailable. Counts are directed race comparisons." />
+
+The intervals use the same resampled weekends within each season (1,000 draws,
+seed 0) and require at least 900 valid paired solves. Missing intervals are not
+zero-width certainty. Intervals touching or crossing zero are inconclusive about
+the direction, even if the point estimate is large.
+
+These are individual exploratory intervals, **not adjusted for screening multiple
+drivers**. Some will exclude zero by chance; this is not a family-wide significance
+claim or proof of a durable “Sunday specialist”. A barely positive lower endpoint
+provides less separation from zero than a wider margin. Results are conditional
+on the model and sample, not evidence of causal improvement.
+
+<ExpandableSection title="Inspect the fitted qualifying and race ratings">
+The diagonal marks equal fitted ratings, not equal real-world driver ability.
+<ScatterPlot data={pace} x=quali_rating y=race_rating series=profile pointSize=30
+    xAxisTitle="Qualifying rating" yAxisTitle="Race rating" tooltipTitle=driver_name>
+    <ReferenceLine data={diagonal} x=x1 y=y1 x2=x2 y2=y2 label="equal fitted ratings" />
+</ScatterPlot>
+</ExpandableSection>
 
 ## Full table
 
@@ -135,7 +127,7 @@ These intervals describe sampling variation, not causal improvement.
     <Column id=race_rating title="Race" fmt='0.000' />
     <Column id=quali_rank title="Quali #" />
     <Column id=race_rank title="Race #" />
-    <Column id=n_race_comparisons title="Races" />
+    <Column id=n_race_comparisons title="Directed race comparisons" />
     <Column id=first_season title="From" fmt='0000' />
     <Column id=last_season title="To" fmt='0000' />
 </DataTable>
@@ -145,7 +137,7 @@ These intervals describe sampling variation, not causal improvement.
 - **Race pace is noisier than qualifying.** A lap can be ruined by traffic, dirty air or
   a slow stop, none of which is driver pace. The comparability filters (same lap, same
   compound, tyre age within a few laps, outliers trimmed) remove most of that, but not
-  all — and they also throw away a lot of laps. `Races` is the count that survived.
+  all — and they also throw away a lot of laps. The race-comparison count is the eligible directed comparison count.
 - **Only drivers with both ratings appear.** A rating needs a chain of teammate
   comparisons; drivers outside the largest connected component of either graph are
   excluded rather than guessed at.

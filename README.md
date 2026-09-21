@@ -113,9 +113,11 @@ ratings are fitted over the same seasons.
 Saturday-to-Sunday delta = race rating − qualifying rating
 ```
 
-Positive means a driver's relative margin improves on Sunday; negative means their
-advantage is stronger on Saturday. The two ratings have a Spearman correlation of
-**0.65** in the current ground-effect-era sample: related, but far from duplicates.
+Positive means the fitted race rating is higher; negative means the fitted
+qualifying rating is higher. Interpret each difference alongside its paired
+interval: a nonzero point estimate may remain inconclusive. The historical
+evaluation reported a Spearman correlation of **0.65** between the ratings;
+this is not a continuously refreshed snapshot statistic.
 The dashboard treats this as a comparison signal, not proof of racecraft or a causal
 measure of strategy and reliability.
 
