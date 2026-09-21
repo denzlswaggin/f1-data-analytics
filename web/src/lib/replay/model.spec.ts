@@ -460,46 +460,53 @@ describe('replay model', () => {
 		expect(path?.box).not.toEqual(positionAtTrackProgress(track, 0));
 	});
 
-	it('blends into and out of the pit lane without teleporting', () => {
-		const pitLaps: LapRow[] = [
-			{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
-			{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
-		];
-		const pitPositions: PositionRow[] = Array.from({ length: 61 }, (_, t) => ({
-			...positions[0],
-			t_s: t,
-			x: t,
-			y: 0
-		}));
-		const driver = buildDrivers(pitPositions, metadata, pitLaps, 'Hungaroring')[0];
-		const track = {
-			points: [
-				{ x: 0, y: 0 },
-				{ x: 10, y: 0 },
-				{ x: 10, y: 10 },
-				{ x: 0, y: 10 },
-				{ x: 0, y: 0 }
-			],
-			cumulative: [0, 10, 20, 30, 40],
-			length: 40
-		};
-		const pitLane = buildPitLanePath(track, 'Hungaroring')!;
-		const window = driver.pitWindows[0];
-		const distance = (left: { x: number; y: number }, right: { x: number; y: number }) =>
-			Math.hypot(left.x - right.x, left.y - right.y);
-		const beforeEntry = projectedSampleAt(driver, window.start - 0.001, track, pitLane)!;
-		const entry = projectedSampleAt(driver, window.start, track, pitLane)!;
-		const exit = projectedSampleAt(driver, window.end, track, pitLane)!;
-		const afterExit = projectedSampleAt(driver, window.end + 0.001, track, pitLane)!;
-		const stopped = projectedSampleAt(driver, window.stop, track, pitLane)!;
+	it.each([false, true])(
+		'blends into and out of the pit lane without teleporting (recorded=%s)',
+		(recorded) => {
+			const pitLaps: LapRow[] = [
+				{ ...laps[0], lap_number: 1, lap_start_t_s: 0, stint: 1 },
+				{ ...laps[0], lap_number: 2, lap_start_t_s: 20, stint: 2 }
+			];
+			const pitPositions: PositionRow[] = Array.from({ length: 61 }, (_, t) => ({
+				...positions[0],
+				t_s: t,
+				x: t,
+				y: 0
+			}));
+			if (recorded) {
+				pitLaps[0].pit_entry_t_s = 17;
+				pitLaps[1].pit_exit_t_s = 39;
+			}
+			const driver = buildDrivers(pitPositions, metadata, pitLaps, 'Hungaroring')[0];
+			const track = {
+				points: [
+					{ x: 0, y: 0 },
+					{ x: 10, y: 0 },
+					{ x: 10, y: 10 },
+					{ x: 0, y: 10 },
+					{ x: 0, y: 0 }
+				],
+				cumulative: [0, 10, 20, 30, 40],
+				length: 40
+			};
+			const pitLane = buildPitLanePath(track, 'Hungaroring')!;
+			const window = driver.pitWindows[0];
+			const distance = (left: { x: number; y: number }, right: { x: number; y: number }) =>
+				Math.hypot(left.x - right.x, left.y - right.y);
+			const beforeEntry = projectedSampleAt(driver, window.start - 0.001, track, pitLane)!;
+			const entry = projectedSampleAt(driver, window.start, track, pitLane)!;
+			const exit = projectedSampleAt(driver, window.end, track, pitLane)!;
+			const afterExit = projectedSampleAt(driver, window.end + 0.001, track, pitLane)!;
+			const stopped = projectedSampleAt(driver, window.stop, track, pitLane)!;
 
-		expect(distance(beforeEntry, entry)).toBeLessThan(0.01);
-		expect(distance(exit, afterExit)).toBeLessThan(0.01);
-		expect(stopped.x).toBeCloseTo(pitLane.box.x);
-		expect(stopped.y).toBeCloseTo(pitLane.box.y);
-		const held = projectedSampleAt(driver, window.stop + 1, track, pitLane)!;
-		expect(Math.hypot(held.x - stopped.x, held.y - stopped.y)).toBeGreaterThan(0);
-	});
+			expect(distance(beforeEntry, entry)).toBeLessThan(0.01);
+			expect(distance(exit, afterExit)).toBeLessThan(0.01);
+			expect(stopped.x).toBeCloseTo(pitLane.box.x);
+			expect(stopped.y).toBeCloseTo(pitLane.box.y);
+			const held = projectedSampleAt(driver, window.stop + 1, track, pitLane)!;
+			expect(Math.hypot(held.x - stopped.x, held.y - stopped.y)).toBeGreaterThan(0);
+		}
+	);
 });
 
 it('keeps order and gap provenance attached to the held timing sample', () => {

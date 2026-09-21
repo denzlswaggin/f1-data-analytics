@@ -91,20 +91,22 @@
 	</p>
 	<section class="inset" aria-label="Schematic pit lane">
 		<div class="lane-head"><span>ENTRY →</span><span>→ EXIT</span></div>
-		<div class="lane-list" tabindex="0" role="region" aria-label="Cars in the schematic pit lane">
-        {#each visible as v (v.id)}
-			{@const driver = drivers.find((d) => d.code === v.driver)}
-			<button
-				class="lane-row"
-				onclick={() => onselect(v)}
-				aria-label={`Inspect ${v.driver} pit visit, lap ${v.lap}`}
-				style={`--team:${driver?.color ?? '#94a3b8'}`}
-			>
-				<span class="lane-label"><strong>{v.driver}</strong><small>{phase(v)}</small></span>
-				<span class="lane"><span class="car" style={`left:${progress(v)}%`}>{v.driver}</span></span>
-			</button>
-		{/each}
-        </div>
+		<div class="lane-list" role="region" aria-label="Cars in the schematic pit lane">
+			{#each visible as v (v.id)}
+				{@const driver = drivers.find((d) => d.code === v.driver)}
+				<button
+					class="lane-row"
+					onclick={() => onselect(v)}
+					aria-label={`Inspect ${v.driver} pit visit, lap ${v.lap}`}
+					style={`--team:${driver?.color ?? '#94a3b8'}`}
+				>
+					<span class="lane-label"><strong>{v.driver}</strong><small>{phase(v)}</small></span>
+					<span class="lane"
+						><span class="car" style={`left:${progress(v)}%`}>{v.driver}</span></span
+					>
+				</button>
+			{/each}
+		</div>
 		<p>
 			Schematic travel, not garage positions. Movement between entry and exit is animated;
 			stationary service time is unavailable.
@@ -129,8 +131,11 @@
 </aside>
 
 <style>
-    .lane-list{max-height:240px;overflow-y:auto;padding:0 3px}
-    .lane-list:focus-visible{outline:2px solid #69dce5}
+	.lane-list {
+		max-height: 240px;
+		overflow-y: auto;
+		padding: 0 3px;
+	}
 
 	.pit-inspector {
 		border: 1px solid #365666;
@@ -153,6 +158,7 @@
 		align-items: center;
 	}
 	header h2 {
+		scroll-margin-top: 80px;
 		font-size: 19px;
 		margin: 6px 0;
 	}

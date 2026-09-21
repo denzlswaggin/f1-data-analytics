@@ -105,6 +105,8 @@ def test_exports_deterministic_per_race_bundle(tmp_path: Path) -> None:
     assert result["races"][0]["weather_sample_count"] == 2
     bundle = json.loads((tmp_path / "web-data/races/2026-01/bundle.json").read_text())
     assert bundle["drivers"][0]["driver_name"] == "Lando Norris"
+    assert bundle["laps"][0]["pit_entry_t_s"] is None
+    assert bundle["laps"][0]["pit_exit_t_s"] is None
     assert [row["phase"] for row in bundle["radio"]] == ["pre-race", "race", "post-race"]
     assert bundle["radio"][0]["recording_url"].endswith("pre-race.mp3")
     assert bundle["weather"] == [

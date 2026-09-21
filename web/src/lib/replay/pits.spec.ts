@@ -12,6 +12,15 @@ const lap = (n: number, extra: Partial<LapRow> = {}): LapRow => ({
 	...extra
 });
 describe('pit visits', () => {
+	it('keeps a zero timestamp and ignores nonfinite or pre-race boundaries', () => {
+		const visits = buildPitVisits([
+			lap(1, { pit_entry_t_s: 0, pit_exit_t_s: 20 }),
+			lap(2, { pit_entry_t_s: NaN, pit_exit_t_s: Infinity }),
+			lap(3, { pit_entry_t_s: -2 })
+		]);
+		expect(visits).toHaveLength(1);
+		expect(visits[0]).toMatchObject({ entry: 0, exit: 20, source: 'recorded' });
+	});
 	it('uses recorded boundaries, deduplicates transitions and identifies tyres', () => {
 		const rows = [
 			lap(1, { pit_entry_t_s: 75 }),

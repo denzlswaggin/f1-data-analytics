@@ -4,7 +4,10 @@ const require = createRequire(new URL("../web/package.json", import.meta.url));
 const { chromium } = require("playwright");
 const origin =
   process.argv[2] ?? "http://127.0.0.1:4175/f1-data-analytics/replay/";
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
+});
 try {
   for (const width of [1440, 390]) {
     const page = await browser.newPage({ viewport: { width, height: 900 } });

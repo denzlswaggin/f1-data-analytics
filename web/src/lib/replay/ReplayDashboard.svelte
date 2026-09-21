@@ -134,6 +134,7 @@
 	async function selectPit(visit: PitVisit) {
 		cancelClip();
 		selectedPit = visit;
+		if (selectedCode && selectedCode !== visit.driver) selectedCode = visit.driver;
 		markerChoices = [];
 		await tick();
 		const heading = root?.querySelector<HTMLElement>('.pit-inspector h2');
@@ -544,7 +545,7 @@
 		draw();
 	}
 	function togglePlayback() {
-        if(!playing && clipEnd!=null && replayTime>=clipEnd) cancelClip();
+		if (!playing && clipEnd != null && replayTime >= clipEnd) cancelClip();
 		if (replayTime >= duration) seek(0);
 		playing = !playing;
 	}
@@ -980,7 +981,12 @@
 							>
 						</div>
 						<label class="speed-control"
-							>SPEED<select value={speed} onchange={(event)=>{cancelClip();speed=Number(event.currentTarget.value);}}
+							>SPEED<select
+								value={speed}
+								onchange={(event) => {
+									cancelClip();
+									speed = Number(event.currentTarget.value);
+								}}
 								>{#each SPEEDS as option (option)}<option value={option}>{option}×</option
 									>{/each}</select
 							></label
@@ -1367,10 +1373,10 @@
 	}
 
 	.pit-badge {
-        margin-left:4px;
-        padding:1px 3px;
-        border:1px solid #34656c;
-        border-radius:3px;
+		margin-left: 4px;
+		padding: 1px 3px;
+		border: 1px solid #34656c;
+		border-radius: 3px;
 		font-size: 9px;
 		color: #65e3ee;
 		font-style: normal;
@@ -1641,8 +1647,7 @@
 		width: 6px;
 		height: 6px;
 		margin-right: 4px;
-		background: #243849;
-        box-shadow: inset 0 -3px 0 currentColor;
+		background: currentColor;
 		border-radius: 50%;
 	}
 	.race-picker {
@@ -2706,7 +2711,8 @@
 		border-radius: 5px;
 	}
 	.markers .past {
-		background: currentColor;
+		background: #243849;
+		box-shadow: inset 0 -3px 0 currentColor;
 	}
 	.event-list {
 		display: grid;
