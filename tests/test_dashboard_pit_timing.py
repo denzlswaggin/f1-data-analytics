@@ -37,7 +37,7 @@ def test_stop_picker_includes_excluded_stops_and_uses_integer_labels() -> None:
         rows = connection.execute("select stop_label, choice_label from stop_choices").fetchall()
     assert rows == [
         ("AAA · Stop 1", "AAA · Stop 1 · Excluded"),
-        ("BBB · Stop 2", "BBB · Stop 2 · Supported"),
+        ("BBB · Stop 2", "BBB · Stop 2 · Model-eligible"),
     ]
 
 
@@ -81,8 +81,8 @@ def test_page_exposes_scenarios_uncertainty_and_limitations() -> None:
     assert "best_supported_shift_laps" in page
     assert "delta_p25_sec" in page
     assert "f1.pit_timing_scenarios" in page
-    assert "Negative Δ is faster" in page
-    assert "not a strategy oracle" in page
+    assert "Negative Δ is a lower modelled cost" in page
+    assert "not stop recommendations" in page
     assert "Pit duration is displayed" in page
     assert "five other clean-air field peers" in page
     assert "not an optimal pit" in page
@@ -111,6 +111,23 @@ def test_sources_publish_both_marts_and_typed_sentinels() -> None:
 def test_race_navigation_links_to_pit_timing_page() -> None:
     navigation = NAV.read_text(encoding="utf-8")
     assert "{ label: 'Pit timing sensitivity', path: 'pit-timing-sensitivity' }" in navigation
+
+
+def test_pit_overview_publishes_eligibility_not_a_recommendation() -> None:
+    page = PAGE.read_text()
+    assert "largest_supported_gain" not in page
+    assert "Largest interior timing signal" not in page
+    match = re.search(r"```sql evidence_summary\n(.*?)\n```", page, re.S)
+    assert match
+    query = match[1].replace("${race_stops}", "race_stops")
+    with duckdb.connect() as connection:
+        connection.execute("""create table race_stops as select * from (values
+            (true, true), (true, false), (false, false), (false, true)
+        ) t(eligible,boundary_minimum)""")
+        row = connection.execute(query).fetchone()
+        assert row == (4, 2, 1, 1)
+        connection.execute("delete from race_stops")
+        assert connection.execute(query).fetchone() == (0, 0, 0, 0)
 
 
 @pytest.mark.parametrize("populated", [False, True])

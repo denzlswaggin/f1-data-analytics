@@ -1,8 +1,8 @@
 # Who is the fastest qualifier in Formula 1? A teammate-normalised answer
 
 *How do you compare drivers across different cars and different eras? You use the
-one controlled experiment F1 runs every weekend: teammates in identical
-machinery.*
+shared-car comparison available each weekend: teammates. Setup, upgrades and
+race conditions can still differ; this is not a controlled experiment.*
 
 ---
 
@@ -10,8 +10,8 @@ machinery.*
 
 Raw qualifying results can't tell you who's fastest, because they're dominated by
 the car. Verstappen on pole tells you as much about Red Bull as about Verstappen.
-To isolate **driver** pace you need to hold the car constant — and F1 hands you
-exactly that: two drivers, same team, same car, every session.
+Comparing teammates reduces shared car effects. It does not fully isolate driver
+skill from setup, equipment differences, traffic or reliability.
 
 ## The method
 
@@ -36,12 +36,12 @@ minimise   Σ ( d_i − d_j − gap_ij )²
 ```
 
 That's a Massey-style least-squares rating on the teammate graph. Because the
-graph is connected across seasons (Hamilton → Rosberg → Bottas → Russell →
-Verstappen → …), skill propagates between drivers who never shared a car. I solve
+graph connects drivers across seasons, the fitted comparison extends to drivers
+who never shared a car. Connectivity does not make those comparisons causal. I solve
 it with damped Jacobi iteration and add empirical-Bayes shrinkage so drivers with
 only a handful of teammate races don't top the board on noise.
 
-## The result (2006–2026)
+## Historical example (2006–2026; not the current snapshot)
 
 | Rank | Driver           | Rating | Head-to-heads |
 | ---: | ---------------- | -----: | ------------: |
@@ -53,11 +53,10 @@ only a handful of teammate races don't top the board on noise.
 
 *(established drivers, ≥40 head-to-heads; higher = faster than teammates)*
 
-**Verstappen is clear of the field.** The eyebrow-raiser is **Hamilton, mid-pack**
-— which is exactly what makes the metric honest. It measures *margin over
-teammate*, and Hamilton's teammates (Alonso in 2007, Rosberg, Russell) were
-themselves elite. It's a measure of dominance over your side of the garage, not of
-absolute greatness.
+Verstappen has the highest point estimate in this historical example. That does
+not establish a statistically certain first place: individual rating intervals
+do not provide a rank probability. The model estimates relative pace through
+the teammate network, with regularisation and substantial contextual limitations.
 
 ### Caveats
 Qualifying only (single-lap pace, least polluted by strategy/reliability).
@@ -82,7 +81,7 @@ stack, all reproducible:
 - **Serve** — an **Evidence.dev** dashboard (BI-as-code) deployed to GitHub Pages.
 
 A second insight — **tyre degradation** (sec/lap fall-off per compound, from a
-regression on FastF1 lap data) — reuses the same pipeline and lands the expected
-soft > medium > hard ordering.
+regression on FastF1 lap data) — reuses the same pipeline and describes selected race/compound associations. It does not establish a universal
+compound ordering independent of fuel, weather and traffic.
 
 *Code and live dashboard: [github.com/denzlswaggin/f1-data-analytics](https://github.com/denzlswaggin/f1-data-analytics)*

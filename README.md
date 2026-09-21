@@ -34,8 +34,8 @@ available team radio stay in sync.
 - See confidence-scored on-track overtakes without pit-cycle swaps and timing-feed flicker.
 - Withhold incomplete position feeds instead of presenting a partial race as complete.
 
-The browser animates a purpose-built replay mart with **4.1 million car ticks** in
-the current snapshot. A custom Svelte canvas keeps the experience responsive; the
+The browser animates a purpose-built replay mart with millions of car ticks.
+The snapshot-derived counts below show its current size. A custom Svelte canvas keeps the experience responsive; the
 heavy resampling and pass detection happen once upstream, not in every visitor's browser.
 
 ## Explore by question
@@ -62,10 +62,13 @@ same machinery**.
 For each qualifying session, the last segment completed by both teammates becomes a
 direct pace comparison. Those gaps form a connected teammate graph, which is solved
 into one cross-era leaderboard with a Massey-style least-squares fit. Empirical-Bayes
-shrinkage stops thin samples from dominating, while a race-weekend cluster bootstrap
-makes uncertainty visible.
+shrinkage tempers thin samples. Static career intervals resample undirected
+teammate comparison edges; dynamic season intervals resample complete weekends
+within seasons. Neither establishes exact-rank probabilities.
 
-**Fastest qualifiers, 2006–2026** — drivers with at least 40 head-to-heads:
+**Historical qualifying benchmark, 2006–2026** — figures from the documented
+validation run, not a live snapshot table. Drivers shown have at least 40
+directed comparisons:
 
 | Global rank | Driver | Rating | Head-to-heads | Seasons |
 | ---: | --- | ---: | ---: | --- |
@@ -82,10 +85,10 @@ makes uncertainty visible.
 
 These are relative teammate margins, not a GOAT list or an absolute lap-time
 prediction. Global-rank gaps belong to lower-sample drivers omitted by the filter.
-Hamilton's position is a useful illustration of the metric: Alonso, Rosberg and
-Russell are unusually strong benchmarks, so beating the teammate baseline is harder.
+The network fit depends on teammate connections, era, regularisation and observed
+gaps. Its point ordering is not a direct comparison of all drivers in equal cars.
 
-The claim is tested rather than assumed. In expanding-window evaluation, the static
+In the documented historical expanding-window evaluation, the static
 rating picks the winner of an unseen individual qualifying comparison **60.5%** of the
 time and the winner of a season-long teammate battle **68.0%** of the time. It does not
 predict the exact single-session gap better than a zero-gap baseline, so the product
@@ -110,9 +113,11 @@ ratings are fitted over the same seasons.
 Saturday-to-Sunday delta = race rating − qualifying rating
 ```
 
-Positive means a driver's relative margin improves on Sunday; negative means their
-advantage is stronger on Saturday. The two ratings have a Spearman correlation of
-**0.65** in the current ground-effect-era sample: related, but far from duplicates.
+Positive means the fitted race rating is higher; negative means the fitted
+qualifying rating is higher. Interpret each difference alongside its paired
+interval: a nonzero point estimate may remain inconclusive. The historical
+evaluation reported a Spearman correlation of **0.65** between the ratings;
+this is not a continuously refreshed snapshot statistic.
 The dashboard treats this as a comparison signal, not proof of racecraft or a causal
 measure of strategy and reliability.
 
@@ -159,10 +164,19 @@ The dashboard does not silently turn missing data into zeroes or confident claim
 - Public pages read an immutable, checksum-verified DuckDB snapshot rather than the mutable warehouse.
 - Late corrections rebuild only the affected race partition and propagate through downstream marts.
 
-The current local dataset spans **411 race weekends**, **103 drivers**, **8,424 directed
-qualifying comparisons**, **613,680 telemetry rows** and more than **4.1 million replay
-ticks**. Coverage is intentionally uneven for heavier telemetry sources and is exposed
-in the product rather than hidden.
+<!-- audit-statistics:start -->
+Published snapshot: `20260918-audit-pages34`.
+
+| Dataset | Observations | Races |
+| --- | ---: | ---: |
+| Lap timing | 104,467 | 106 |
+| Telemetry | 754,175 | 60 |
+| Replay | 6,290,491 | 61 |
+<!-- audit-statistics:end -->
+
+Regenerate these counts from the verified snapshot with
+`.venv/bin/python scripts/export_audit_evidence.py --update-readme`.
+Normal dashboard builds regenerate the serving evidence without editing README.
 
 ## Run it locally
 

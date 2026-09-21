@@ -62,6 +62,9 @@ The career fit pools each driver's observed years. Different careers cover
 different seasons and teammate networks; this is not a same-era comparison.
 The display minimum is 40 directed comparisons, not 40 independent race weekends.
 Regularisation stabilises sparse connections but does not prove equal machinery.
+Career intervals resample undirected comparison edges; unlike the dynamic
+model, they do not cluster all teams from the same weekend. Neither interval
+type establishes the probability of an exact rank.
 
 <RatingIntervals data={top_drivers} title="Career estimates: at least 40 directed comparisons" />
 
