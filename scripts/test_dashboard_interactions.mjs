@@ -26,6 +26,10 @@ test('heatmap exposes detail by activation and clears stale selection when filte
     const row = { driver_name: 'Driver A', race_label: '2026 R14', metric_label: 'Braking distance', value: 0.25, teammate_name: 'Driver B' };
     const component = new Heatmap({ target: document.querySelector('main'), props: { data: [row] } });
     await tick();
+    const scroll = document.querySelector('.heatmap .scroll');
+    assert.equal(scroll.getAttribute('role'), 'region');
+    assert.equal(scroll.getAttribute('tabindex'), '0');
+    assert.match(scroll.getAttribute('aria-label'), /scroll horizontally/);
     let cell = document.querySelector('button.cell');
     assert.equal(cell.getAttribute('type'), 'button');
     assert.match(cell.getAttribute('aria-label'), /2026 R14.*0\.25 vs Driver B/);
@@ -68,6 +72,19 @@ test('navigation opens the current category and exposes the mobile menu state', 
     toggle.click();
     await tick();
     assert.equal(toggle.getAttribute('aria-expanded'), 'false');
+    component.$destroy();
+    dom.window.close();
+});
+
+test('comparison route stays visible in the starting group', async () => {
+    const dom = new JSDOM('<main></main>', { url: 'https://example.test/f1-data-analytics/driver-comparison/' });
+    globalThis.window = dom.window;
+    globalThis.document = dom.window.document;
+    const component = new AppNav({ target: document.querySelector('main') });
+    await tick();
+    const active = document.querySelector('[aria-current="page"]');
+    assert.equal(active.textContent.trim(), 'Compare drivers');
+    assert.equal(active.closest('details').open, true);
     component.$destroy();
     dom.window.close();
 });

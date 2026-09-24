@@ -17,6 +17,7 @@ async function component(name) {
     return (await import(pathToFileURL(output))).default;
 }
 const SnapshotStatus = await component('SnapshotStatus');
+const DataTrust = await component('DataTrust');
 const RelatedAnalysis = await component('RelatedAnalysis');
 const AppNav = await component('AppNav');
 const RatingIntervals = await component('RatingIntervals');
@@ -52,7 +53,23 @@ test('navigation has one entry per destination and native disclosure groups', ()
     const destinations = [...doc.querySelectorAll('.links a')].map(a => a.href);
     assert.equal(new Set(destinations).size, destinations.length);
     assert.equal(doc.querySelectorAll('.nav-groups > details > summary').length, 3);
+    assert.deepEqual(
+        [...doc.querySelectorAll('.nav-groups > details:first-child .links a')].map(a => a.textContent.trim()),
+        ['Overview', 'Explore a race', 'Compare drivers', 'Methodology']
+    );
     assert.doesNotMatch(doc.body.textContent, /Snapshot online/);
+});
+
+test('evidence summary shows coverage and distinguishes inputs from usable observations', () => {
+    const doc = documentFor(DataTrust.render({ data: [{
+        first_season: 2024, last_season: 2026, sample_rows: 120, sample_unit: 'laps',
+        usable_samples: 75, usable_unit: 'eligible laps'
+    }] }).html);
+    const summary = doc.querySelector('summary').textContent;
+    assert.match(summary, /Coverage: 2024–2026/);
+    assert.match(summary, /Inputs: 120 laps/);
+    assert.match(summary, /Usable: 75 eligible laps/);
+    assert.match(doc.querySelector('.details').textContent, /Method/);
 });
 
 test('compact ratings retain uncertainty, sample sizes and missing-interval state', () => {

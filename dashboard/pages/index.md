@@ -9,12 +9,12 @@ max_width: 1600
 <PageHeader
     hero={true}
     eyebrow="Performance analytics"
-    title="See beyond the result."
-    description="Race pace, strategy, telemetry and teammate-normalised ratings — explore the recorded result and the limits of the available comparisons."
+    title="Explore the data behind an F1 race"
+    description="Choose a question, inspect the result, and follow the evidence behind each comparison."
 >
     <div slot="actions">
-        <a href="/f1-data-analytics/race-cockpit/">Open race cockpit</a>
-        <a href="/f1-data-analytics/race-replay/">Open replay</a>
+        <a href="/f1-data-analytics/race-cockpit/">Explore a race</a>
+        <a href="/f1-data-analytics/driver-comparison/">Compare drivers</a>
     </div>
 </PageHeader>
 
@@ -23,6 +23,13 @@ select * from f1.snapshot_metadata
 ```
 
 <SnapshotStatus data={snapshot} />
+
+## Start with a question
+
+Each analysis shows its data coverage and links to the observations behind its results.
+Choose a starting point below, or browse the full set of analyses.
+
+<InsightNav />
 
 ```sql latest_race
 select * from f1.latest_race
@@ -46,6 +53,10 @@ limit 1
 
 ### {latest_race[0].race_label}
 
+These signals describe different parts of the race. The fastest loaded green lap is
+one eligible lap, while the lowest observed peer delta compares repeatable pace
+against other drivers on matching laps and tyres.
+
 <div class="metric-grid">
 <BigValue data={latest_race} value=fastest_driver title="Fastest loaded green lap" />
 {#if pace_leader.length > 0}
@@ -58,11 +69,9 @@ limit 1
 
 <RaceContextLink season={latest_race[0].season} race={latest_race[0].round} label="Open the latest race overview" />
 
-Detected passes are experimental timing-model events, not independently verified overtakes.
-
-## Explore by question
-
-<InsightNav />
+Detected passes come from an experimental timing model and are not independently
+verified overtakes. The [race overview](race-cockpit) explains which drivers and laps
+support its comparisons.
 
 The [current analytical evidence summary](methodology/#current-analytical-evidence)
 shows snapshot-derived candidate and eligible counts, with historical validation

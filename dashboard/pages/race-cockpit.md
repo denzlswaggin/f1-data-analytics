@@ -51,6 +51,10 @@ where section = 'race_story'
 
 <DataTrust data={coverage} sampleLabel="driver summaries" entityLabel="Drivers" method="joined descriptive race evidence" />
 
+Choose a season and race above; every result below uses that selection. Start with
+the recorded finish, then compare eligible lap pace and strategy. The evidence
+table at the end shows the driver-level values behind the summary.
+
 ```sql story
 select * from f1.race_story
 where season = ${inputs.season.value} and round = ${inputs.race.value}
@@ -82,6 +86,18 @@ select driver_name, passes_made
 from ${story} where passes_made is not null order by passes_made desc, finish_position limit 1
 ```
 
+<KeyInsight label="How to read these results">
+The winner is the recorded result. A lower peer delta, measured in seconds, means
+faster observed pace. It compares laps on the same lap number and tyre compound
+with at least three other drivers, excluding shared pit laps; at least five
+comparable laps are required. Pace covers
+<Value data={evidence_counts} column=pace_drivers /> of
+<Value data={evidence_counts} column=result_drivers /> result drivers, so a pace
+rank is only among eligible drivers. Pass analysis covers
+<Value data={evidence_counts} column=pass_drivers /> drivers and comes from an
+experimental timing model. Neither pace rank nor pass count measures driver skill.
+</KeyInsight>
+
 ## What happened
 
 <Grid cols=4>
@@ -103,18 +119,6 @@ from ${story} where passes_made is not null order by passes_made desc, finish_po
 {/if}
 </Grid>
 
-<KeyInsight label="Reading the evidence">
-Pace covers <Value data={evidence_counts} column=pace_drivers /> of
-<Value data={evidence_counts} column=result_drivers /> result drivers; pass
-analysis is available for <Value data={evidence_counts} column=pass_drivers />.
-Pace is the median lap-time difference from at least three other drivers on the
-same lap and compound, after shared pit-lap exclusions. At least five comparable
-laps are required. Ranks cover eligible drivers only; finish/rank differences
-are shown only when the entire result field has a pace estimate. These are
-observed comparisons, not measurements of driver skill or execution. Pass counts
-come from experimental timing reconstruction; missing analysis stays blank.
-</KeyInsight>
-
 ## Pace comparison and recorded finish
 
 ```sql outcome_flow
@@ -126,9 +130,11 @@ order by finish_position
 
 <RaceOutcomeFlow data={outcome_flow} />
 
-The middle position is a rank of observed peer-relative pace. The
-last step also contains reliability, penalties, pit timing, traffic and race
-incidents, so the flow is diagnostic rather than causal.
+The middle position is observed peer-relative pace rank. A positive finish/pace
+difference means the driver finished ahead of that rank; a negative difference
+means behind it. Differences appear only when the full result field has pace
+estimates. Reliability, penalties, pit timing, traffic and incidents also affect
+the finish, so this flow does not identify the cause of a gain or loss.
 
 ## Strategy and race-control observations
 
