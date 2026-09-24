@@ -21,7 +21,7 @@
 <div class="heatmap" data-testid="driver-dna-heatmap">
     <div class="title">{title}</div>
     {#if rows.length}
-        <div class="scroll">
+        <div class="scroll" role="region" aria-label="Race-by-race evidence, scroll horizontally" tabindex="0">
             <div class="grid" style="--columns:{races.length}">
                 <div></div>
                 {#each races as race}<div class="race">{race}</div>{/each}
@@ -51,6 +51,7 @@
     .heatmap { margin: 1rem 0 1.5rem; padding: 1rem; border: 1px solid rgba(160,174,201,.18); border-radius: .95rem; background: rgba(255,255,255,.025); }
     .title { margin-bottom: .7rem; color: #f4f7fb; font-weight: 700; }
     .scroll { overflow-x: auto; padding-bottom: .35rem; }
+    .scroll:focus-visible { outline: 2px solid var(--ui-focus, #9bc3ff); outline-offset: 2px; }
     .grid { display: grid; grid-template-columns: minmax(110px, 150px) repeat(var(--columns), minmax(58px, 1fr)); gap: 4px; min-width: max-content; }
     .race { width: 58px; min-height: 44px; display: grid; place-items: center; text-align: center; color: #aab6c6; font-size: 12px; line-height: 1.4; white-space: normal; }
     .driver { position: sticky; left: 0; z-index: 2; background: #11151d; padding-right: .5rem; display: flex; align-items: center; color: #dce3ed; font-size: 12px; font-weight: 650; }
