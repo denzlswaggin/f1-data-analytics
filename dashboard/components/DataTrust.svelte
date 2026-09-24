@@ -17,8 +17,8 @@
     $: inputUnit = row.sample_unit || sampleLabel;
     $: usableUnit = row.usable_unit || 'usable observations';
     $: comparable = row.sample_unit && row.sample_unit === row.usable_unit;
-    $: status = !hasData ? 'No published data'
-        : usable != null && !hasUsable ? 'Insufficient usable evidence' : 'Data & methodology';
+    $: status = !hasData ? 'No published data for this selection'
+        : usable != null && !hasUsable ? 'No usable evidence for this selection' : 'Evidence behind this view';
     const number = (value) => value == null ? '—' : Number(value).toLocaleString('en-US');
 </script>
 
@@ -27,8 +27,13 @@
         <span class="status" class:empty={!hasData} aria-hidden="true"></span>
         <span class="summary-copy">
             <strong>{status}</strong>
-            <span>{hasData ? `${seasons} · ${number(row.sample_rows)} ${inputUnit}` : 'Try another selection'}</span>
-            {#if usable != null}<span>→ {number(usable)} {usableUnit}</span>{/if}
+            {#if hasData}
+                <span>Coverage: {seasons}</span>
+                <span>Inputs: {number(row.sample_rows)} {inputUnit}</span>
+                {#if usable != null}<span>Usable: {number(usable)} {usableUnit}</span>{/if}
+            {:else}
+                <span>Try another selection or open details</span>
+            {/if}
         </span>
     </summary>
     <div class="details" aria-label="Data coverage and method">
@@ -69,8 +74,9 @@
     details[open] summary::after { transform: rotate(225deg); }
     summary:hover { background: rgba(160, 174, 201, 0.06); }
     summary:focus-visible { outline: 2px solid var(--ui-focus, #9bc3ff); outline-offset: 2px; }
-    .summary-copy { display: flex; flex-wrap: wrap; column-gap: .5rem; row-gap: .15rem; }
-    .summary-copy > span { color: #9facbc; }
+    .summary-copy { display: flex; flex-wrap: wrap; column-gap: .7rem; row-gap: .15rem; }
+    .summary-copy strong { flex-basis: 100%; color: #f0f4f8; }
+    .summary-copy > span { color: #b9c5d5; }
     .status { width: 0.58rem; height: 0.58rem; border-radius: 50%; background: #94a3b8; }
     .status.empty { background: currentColor; box-shadow: none; opacity: 0.35; }
     .details {

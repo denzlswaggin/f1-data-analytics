@@ -7,12 +7,13 @@
             label: 'Start here',
             items: [
                 { label: 'Overview', path: '' },
-                { label: 'Race cockpit', path: 'race-cockpit' },
+                { label: 'Explore a race', path: 'race-cockpit' },
+                { label: 'Compare drivers', path: 'driver-comparison' },
                 { label: 'Methodology', path: 'methodology' }
             ]
         },
         {
-            label: 'All race analyses',
+            label: 'Race analyses',
             items: [
                 { label: 'Latest race', path: 'latest-race' },
                 { label: 'Race replay', path: 'race-replay' },
@@ -33,7 +34,6 @@
             items: [
                 { label: 'Driver DNA', path: 'driver-dna' },
                 { label: 'Driver ratings', path: 'driver-ratings' },
-                { label: 'Compare drivers', path: 'driver-comparison' },
                 { label: 'Track fit & stability', path: 'driver-track-insights' },
                 { label: 'Pace consistency', path: 'pace-consistency' },
                 { label: 'Racecraft battles', path: 'racecraft-battles' },

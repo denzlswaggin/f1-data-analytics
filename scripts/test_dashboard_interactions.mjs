@@ -71,3 +71,16 @@ test('navigation opens the current category and exposes the mobile menu state', 
     component.$destroy();
     dom.window.close();
 });
+
+test('comparison route stays visible in the starting group', async () => {
+    const dom = new JSDOM('<main></main>', { url: 'https://example.test/f1-data-analytics/driver-comparison/' });
+    globalThis.window = dom.window;
+    globalThis.document = dom.window.document;
+    const component = new AppNav({ target: document.querySelector('main') });
+    await tick();
+    const active = document.querySelector('[aria-current="page"]');
+    assert.equal(active.textContent.trim(), 'Compare drivers');
+    assert.equal(active.closest('details').open, true);
+    component.$destroy();
+    dom.window.close();
+});

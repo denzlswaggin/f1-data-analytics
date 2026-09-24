@@ -1,8 +1,8 @@
 <script>
     const featured = [
-        ['Explore the latest race', 'race-cockpit', 'Results, pace and strategy in one overview'],
-        ['Compare two drivers', 'driver-comparison', 'Shared-season form and uncertainty'],
-        ['Watch the race replay', 'race-replay', 'Positions, incidents and radio on one timeline']
+        ['What shaped a race?', 'race-cockpit', 'Start with the result, then compare pace, strategy and evidence.', 'Race overview'],
+        ['How do two drivers compare?', 'driver-comparison', 'See shared-season form, uncertainty and supporting observations.', 'Driver comparison'],
+        ['How did the race unfold?', 'race-replay', 'Follow positions, incidents and radio on one timeline.', 'Race replay']
     ];
     const groups = [
         {
@@ -36,10 +36,10 @@
     ];
 </script>
 
-<div class="insight-nav">
+<nav class="insight-nav" aria-label="Explore analyses by question">
     <div class="featured">
         {#each featured as link}
-            <a href={link[1]}><strong>{link[0]} <i aria-hidden="true">→</i></strong><span>{link[2]}</span></a>
+            <a href={link[1]}><small class="topic">{link[3]}</small><strong>{link[0]} <i aria-hidden="true">→</i></strong><span>{link[2]}</span><small class="action">Explore analysis →</small></a>
         {/each}
     </div>
     {#each groups as group}
@@ -55,7 +55,7 @@
             </div>
         </section>
     {/each}
-</div>
+</nav>
 
 <style>
     .insight-nav { margin: 1rem 0 2rem; }
@@ -64,10 +64,15 @@
     h3 { margin: 0 0 .75rem; color: #aab6c6; font-size: .9rem; font-weight: 650; }
     .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: .75rem; }
     a { display: flex; flex-direction: column; gap: .5rem; padding: 1rem; border: 1px solid var(--dashboard-border); border-radius: .75rem; color: inherit; text-decoration: none; background: var(--dashboard-surface); }
-    .featured a { padding: 1.25rem; background: var(--dashboard-surface-raised); }
+    .featured a { min-height: 11rem; padding: 1.25rem; border-color: rgba(160, 174, 201, 0.3); border-top: 3px solid var(--dashboard-red); background: var(--dashboard-surface-raised); }
+    .featured a:nth-child(2) { border-top-color: var(--dashboard-cyan); }
+    .featured a:nth-child(3) { border-top-color: var(--dashboard-violet); }
+    .featured small { color: #b9d5f5; font-size: .78rem; font-weight: 750; }
+    .featured .topic { color: #bbc7d6; letter-spacing: .06em; text-transform: uppercase; }
+    .featured .action { margin-top: auto; }
     strong { display: flex; justify-content: space-between; gap: .5rem; color: #f4f7fb; font-size: .95rem; line-height: 1.4; }
     strong i { color: #aab6c6; font-style: normal; }
-    a > span { color: #aab6c6; font-size: .85rem; line-height: 1.5; }
+    a > span { color: #bbc7d6; font-size: .85rem; line-height: 1.5; }
     a:hover { border-color: #64748b; background: #1b2230; }
     a:focus-visible { outline: 2px solid #9bc3ff; outline-offset: 3px; }
     @media (max-width: 700px) { .featured { grid-template-columns: 1fr; } }

@@ -18,8 +18,13 @@ max_width: 1600
     </div>
 </PageHeader>
 
-<KeyInsight label="How to read the rating">
-Higher is faster in the fitted teammate network. The model cannot fully separate driver and car performance. Individual 90% resampling intervals are shown with the estimates; overlapping or separated intervals alone are not a paired significance test.
+<KeyInsight label="How to read this page">
+Start with the career benchmark, then use the season and driver filters for recent
+form and one driver's history. Ratings are unitless model scores: higher means
+faster relative to the fitted teammate network, not a predicted lap time. Lines
+show individual 90% resampling intervals; their overlap alone is not a paired
+significance test. The model cannot fully separate driver and car performance.
+Open the data table below each result to inspect its estimates and sample counts.
 </KeyInsight>
 
 Compare two careers in [Compare Drivers](driver-comparison), contrast qualifying
