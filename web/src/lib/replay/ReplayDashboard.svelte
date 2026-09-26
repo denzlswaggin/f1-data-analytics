@@ -113,7 +113,7 @@
 		const groups: ReplayEvent[][] = [];
 		for (const event of [...filteredEvents].sort((a, b) => a.time - b.time)) {
 			const last = groups.at(-1);
-			if (last && ((event.time - last[0].time) / Math.max(1, duration)) * markerWidth < 44)
+			if (last && ((event.time - last[0].time) / Math.max(1, duration)) * markerWidth < 48)
 				last.push(event);
 			else groups.push([event]);
 		}
@@ -1174,7 +1174,10 @@
 									type="button"
 									class="filter-{filter}"
 									class:active={eventFilter === filter}
-									onclick={() => (eventFilter = filter)}
+									onclick={() => {
+										eventFilter = filter;
+										markerChoices = [];
+									}}
 									>{filter === 'all'
 										? 'All events'
 										: filter === 'control'
@@ -1188,48 +1191,81 @@
 									></button
 								>{/if}{/each}
 					</div>
-					<div class="event-rail" bind:clientWidth={markerWidth}>
-						<button
-							type="button"
-							aria-label="Seek on event timeline"
-							onclick={(event) => {
-								const r = event.currentTarget.getBoundingClientRect();
-								seek(((event.clientX - r.left) / r.width) * duration);
-							}}
-							><span class="elapsed" style={`width:${timelinePosition(currentTime)}%`}></span><i
-								class="playhead"
-								style={`left:${timelinePosition(currentTime)}%`}
-							></i></button
-						>
-						<div class="markers">
-							{#each markerGroups as group (group[0].id)}
-								<button
-									type="button"
-									class={group.some((e) => e.type === 'pit') ? 'pit' : group[0].type}
-									class:past={group[0].time <= currentTime}
-									style={`left:${timelinePosition(group[0].time)}%`}
-									aria-label={group.length > 1
-										? `${group.length} events near ${formatClock(group[0].time)}`
-										: `${group[0].label}, ${group[0].meta}`}
-									title={group.map((e) => `${e.label} · ${e.meta}`).join(' / ')}
-									onclick={() =>
-										group.length > 1 ? (markerChoices = group) : activateEvent(group[0])}
-									>{group.length > 1 ? group.length : group[0].type === 'pit' ? 'P' : '•'}</button
-								>
-							{/each}
+					<div class="event-rail-scroll" role="region" aria-label="Scrollable race event timeline">
+						<div class="event-rail" bind:clientWidth={markerWidth}>
+							<button
+								type="button"
+								aria-label="Seek on event timeline"
+								onclick={(event) => {
+									const r = event.currentTarget.getBoundingClientRect();
+									seek(((event.clientX - r.left) / r.width) * duration);
+								}}
+								><span class="elapsed" style={`width:${timelinePosition(currentTime)}%`}></span><i
+									class="playhead"
+									style={`left:${timelinePosition(currentTime)}%`}
+								></i></button
+							>
+							<div class="markers">
+								{#each markerGroups as group (group[0].id)}
+									<button
+										type="button"
+										class={group.some((e) => e.type === 'pit') ? 'pit' : group[0].type}
+										class:multiple={group.length > 1}
+										class:past={group[0].time <= currentTime}
+										class:selected={markerChoices[0]?.id === group[0].id}
+										style={`left:${timelinePosition(group[0].time)}%`}
+										aria-expanded={group.length > 1
+											? markerChoices[0]?.id === group[0].id
+											: undefined}
+										aria-label={group.length > 1
+											? `${group.length} events near ${formatClock(group[0].time)}`
+											: `${group[0].label}, ${group[0].meta}`}
+										title={group.map((e) => `${e.label} · ${e.meta}`).join(' / ')}
+										onclick={() =>
+											group.length > 1 ? (markerChoices = group) : activateEvent(group[0])}
+										><span class="marker-symbol" aria-hidden="true"
+											>{group.length > 1 ? group.length : ''}</span
+										></button
+									>
+								{/each}
+							</div>
+							<div class="rail-scale" aria-hidden="true">
+								<span>RACE START</span><span>FINISH</span>
+							</div>
 						</div>
 					</div>
+					<p class="rail-scroll-hint">Scroll sideways to explore the race timeline</p>
 					{#if markerChoices.length}<section
-							class="pit-choices"
+							class="marker-choices"
 							aria-label="Nearby timeline events"
 						>
-							<button onclick={() => (markerChoices = [])}>Close event list</button
-							>{#each markerChoices as event (event.id)}<button
-									onclick={() => {
-										markerChoices = [];
-										activateEvent(event);
-									}}>{formatClock(event.time)} · {event.label}<small>{event.meta}</small></button
-								>{/each}
+							<div class="marker-choices-head">
+								<div>
+									<strong
+										>{markerChoices.length} events around {formatClock(
+											markerChoices[0].time
+										)}</strong
+									><span>Choose an event to jump to it</span>
+								</div>
+								<button
+									type="button"
+									aria-label="Close event list"
+									onclick={() => (markerChoices = [])}>Close</button
+								>
+							</div>
+							<div class="marker-choices-list">
+								{#each markerChoices as event (event.id)}<button
+										type="button"
+										class="event {event.type}"
+										onclick={() => {
+											markerChoices = [];
+											activateEvent(event);
+										}}
+										><i></i><time>{formatClock(event.time)}</time><span
+											><strong>{event.label}</strong><small>{event.meta}</small></span
+										>{#if event.type === 'radio'}<b>LISTEN</b>{/if}</button
+									>{/each}
+							</div>
 						</section>{/if}
 					{#if eventFilter === 'pit'}<div class="pit-choices" aria-label="All pit visits">
 							{#each scopedPits as visit (visit.id)}<button
@@ -1243,8 +1279,8 @@
 								>{/each}
 						</div>{/if}
 					<div class="phase-summary">
-						<strong>Near the current replay time</strong><span
-							>The eight closest matching events, ordered chronologically.</span
+						<strong>Events near {formatClock(currentTime)}</strong><span
+							>{nearbyEvents.length} closest matching events</span
 						>
 					</div>
 					<div class="event-list">
@@ -2583,9 +2619,10 @@
 	}
 	.phase-summary {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
+		justify-content: space-between;
 		gap: 9px;
-		margin-top: 14px;
+		margin-top: 18px;
 		color: var(--muted);
 		font-size: var(--text-meta);
 	}
@@ -2641,84 +2678,165 @@
 		margin-left: 5px;
 		color: var(--filter-color, inherit);
 	}
+	.event-rail-scroll {
+		min-width: 0;
+		overflow-x: auto;
+		scrollbar-color: #495365 transparent;
+	}
 	.event-rail {
 		position: relative;
-		margin: 18px 22px 8px;
-		padding: 18px 0;
+		margin: 12px 22px 4px;
+		padding: 7px 0 20px;
+	}
+	.rail-scroll-hint {
+		display: none;
 	}
 	.event-rail > button {
 		position: relative;
 		width: 100%;
-		height: 8px;
+		height: 44px;
 		padding: 0;
-		background: #292e39;
+		background: transparent;
 		border: 0;
-		border-radius: 4px;
+	}
+	.event-rail > button::before {
+		position: absolute;
+		inset: 19px 0;
+		background: #29313e;
+		border-radius: 3px;
+		content: '';
 	}
 	.elapsed {
 		position: absolute;
-		inset: 0 auto 0 0;
-		background: linear-gradient(90deg, var(--accent), var(--purple));
-		border-radius: inherit;
+		inset: 19px auto 19px 0;
+		background: linear-gradient(90deg, #b74f5b, #ea7180);
+		border-radius: 3px;
 	}
 	.playhead {
 		position: absolute;
 		top: 50%;
 		width: 3px;
-		height: 23px;
+		height: 34px;
 		background: #fff;
+		border-radius: 2px;
+		box-shadow:
+			0 0 0 4px rgba(255, 255, 255, 0.12),
+			0 0 12px rgba(255, 255, 255, 0.3);
 		transform: translate(-50%, -50%);
 	}
 	.markers {
 		position: absolute;
-		inset: 0;
+		inset: 7px 0 auto;
+		height: 44px;
 		overflow: visible;
-		border-radius: 4px;
 		pointer-events: none;
 	}
 	.markers button {
+		--marker-color: var(--event-control);
 		position: absolute;
 		top: 50%;
-		width: 8px;
-		height: 14px;
+		width: 44px;
+		height: 44px;
 		padding: 0;
-		background: #11151c;
-		border: 2px solid var(--event-control);
-		border-radius: 3px;
-		color: var(--event-control);
+		background: transparent;
+		border: 0;
+		color: var(--marker-color);
 		pointer-events: auto;
 		transform: translate(-50%, -50%);
 	}
-	.markers .overtake {
-		border-color: var(--event-overtake);
-		color: var(--event-overtake);
+	.marker-symbol {
+		display: grid;
+		place-items: center;
+		width: 10px;
+		height: 10px;
+		margin: auto;
+		background: #151b24;
+		border: 2px solid var(--marker-color);
 		border-radius: 50%;
+		box-shadow: 0 0 0 3px #111720;
 	}
-	.markers button {
-		min-width: 44px;
-		min-height: 44px;
-		font-size: 10px;
+	.markers button.multiple .marker-symbol {
+		width: 26px;
+		height: 22px;
+		border-radius: 12px;
+		font:
+			700 10px/1 Consolas,
+			monospace;
+	}
+	.markers button:hover .marker-symbol,
+	.markers button.selected .marker-symbol {
+		background: color-mix(in srgb, var(--marker-color) 24%, #151b24);
+		box-shadow: 0 0 0 4px color-mix(in srgb, var(--marker-color) 16%, transparent);
+	}
+	.markers .overtake {
+		--marker-color: var(--event-overtake);
 	}
 	.markers .pit {
-		border-color: var(--event-pit);
-		color: var(--event-pit);
-		transform: translate(-50%, -50%);
+		--marker-color: var(--event-pit);
 	}
 	.markers .radio {
-		height: 17px;
-		border-color: var(--event-radio);
-		color: var(--event-radio);
+		--marker-color: var(--event-radio);
+	}
+	.markers .past .marker-symbol {
+		background: color-mix(in srgb, var(--marker-color) 25%, #151b24);
+	}
+	.rail-scale {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 1px;
+		color: var(--muted);
+		font-size: var(--text-caption);
+		letter-spacing: 0.08em;
+	}
+	.marker-choices {
+		margin: 8px 0 4px;
+		padding: 11px;
+		background: #111923;
+		border: 1px solid var(--line-strong);
+		border-radius: 8px;
+	}
+	.marker-choices-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		margin-bottom: 9px;
+	}
+	.marker-choices-head strong,
+	.marker-choices-head span {
+		display: block;
+	}
+	.marker-choices-head strong {
+		font-size: var(--text-small);
+	}
+	.marker-choices-head span {
+		margin-top: 2px;
+		color: var(--muted);
+		font-size: var(--text-meta);
+	}
+	.marker-choices-head button {
+		min-height: 32px;
+		padding: 5px 10px;
+		color: var(--muted-strong);
+		background: transparent;
+		border: 1px solid var(--line);
 		border-radius: 5px;
 	}
-	.markers .past {
-		background: #243849;
-		box-shadow: inset 0 -3px 0 currentColor;
+	.marker-choices-list {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 6px;
+		max-height: 264px;
+		overflow-y: auto;
+	}
+	.marker-choices-list .event {
+		width: 100%;
 	}
 	.event-list {
 		display: grid;
-		grid-template-columns: 1fr;
-		gap: 7px;
-		margin-top: 16px;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 8px;
+		margin-top: 10px;
 	}
 	.event {
 		--event-color: var(--event-control);
@@ -2772,10 +2890,14 @@
 		display: block;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 	.event strong {
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
 		font-size: var(--text-small);
+		line-height: 1.35;
 	}
 	.event small {
 		margin-top: 3px;
@@ -2783,6 +2905,21 @@
 		font-size: var(--text-meta);
 		line-height: 1.45;
 		white-space: normal;
+	}
+	@media (max-width: 800px) {
+		.event-rail {
+			min-width: 1400px;
+		}
+		.rail-scroll-hint {
+			display: block;
+			margin: 2px 0 0;
+			color: var(--muted);
+			font-size: var(--text-caption);
+		}
+		.event-list,
+		.marker-choices-list {
+			grid-template-columns: 1fr;
+		}
 	}
 	.event b {
 		color: var(--event-color);
