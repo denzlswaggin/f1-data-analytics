@@ -118,7 +118,7 @@ order by focus_rank, position_before
 ```
 
 <Grid cols=4>
-    <BigValue data={selected_event} value=event_type comparison=duration_s comparisonFmt="0 s" title="Intervention" />
+    <BigValue data={selected_event} value=event_type comparison=duration_s comparisonFmt='0" s"' title="Intervention" />
     <BigValue data={selected_event} value=pit_status title="Pit opportunity" />
     <BigValue data={selected_event} value=gap_status title="Gap evidence" />
     <BigValue data={selected_event} value=restart_status title="Recovery evidence" />

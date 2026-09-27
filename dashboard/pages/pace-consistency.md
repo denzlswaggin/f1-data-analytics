@@ -91,17 +91,17 @@ from ${eligible_results}
 
 <Grid cols=3>
     {#if most_repeatable.length > 0}
-<BigValue data={most_repeatable} value=driver_code comparison=robust_consistency_sec comparisonFmt="0.000 s" title="Most repeatable pace" />
+<BigValue data={most_repeatable} value=driver_code comparison=robust_consistency_sec comparisonFmt='0.000" s"' title="Most repeatable pace" />
 {:else}
 <KeyInsight label="Most repeatable pace">Insufficient eligible evidence.</KeyInsight>
 {/if}
     {#if largest_tail.length > 0}
-<BigValue data={largest_tail} value=driver_code comparison=slow_lap_cost_per_10_laps_sec comparisonFmt="0.000 s / 10 laps" title="Largest observed slow tail" />
+<BigValue data={largest_tail} value=driver_code comparison=slow_lap_cost_per_10_laps_sec comparisonFmt='0.000" s / 10 laps"' title="Largest observed slow tail" />
 {:else}
 <KeyInsight label="Largest observed slow tail">Insufficient eligible evidence.</KeyInsight>
 {/if}
     {#if evidence_count.length > 0}
-<BigValue data={evidence_count} value=drivers comparison=laps comparisonFmt="0 modelled laps" title="Eligible drivers" />
+<BigValue data={evidence_count} value=drivers comparison=laps comparisonFmt='0" modelled laps"' title="Eligible drivers" />
 {:else}
 <KeyInsight label="Eligible drivers">Insufficient eligible evidence.</KeyInsight>
 {/if}

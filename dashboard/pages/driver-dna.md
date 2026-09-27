@@ -608,9 +608,9 @@ limit 1
 ```
 
 <Grid cols=3>
-    <BigValue data={lap_summary} value=driver_name comparison=reconstructed_delta_sec comparisonFmt="+0.000;-0.000 s reconstructed" title="Selected driver" />
-    <BigValue data={largest_gain} value=segment comparison=segment_delta_sec comparisonFmt="+0.000;-0.000 s" title="Largest 200 m gain" />
-    <BigValue data={largest_loss} value=segment comparison=segment_delta_sec comparisonFmt="+0.000;-0.000 s" title="Largest 200 m loss" />
+    <BigValue data={lap_summary} value=driver_name comparison=reconstructed_delta_sec comparisonFmt='+0.000" s reconstructed";-0.000" s reconstructed"' title="Selected driver" />
+    <BigValue data={largest_gain} value=segment comparison=segment_delta_sec comparisonFmt='+0.000" s";-0.000" s"' title="Largest 200 m gain" />
+    <BigValue data={largest_loss} value=segment comparison=segment_delta_sec comparisonFmt='+0.000" s";-0.000" s"' title="Largest 200 m loss" />
 </Grid>
 
 <DriverDNALap data={selected_lap} />
