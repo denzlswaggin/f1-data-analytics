@@ -265,11 +265,11 @@ from ${race_drivers}
     <Column id=races_covered title="Races" />
     <Column id=observed_attacks title="Attack episodes" />
     <Column id=observed_defences title="Defence episodes" />
-    <Column id=observed_attack_pressure_s title="Applying pressure" fmt="0 s" />
-    <Column id=observed_defensive_pressure_s title="Under pressure" fmt="0 s" />
+    <Column id=observed_attack_pressure_s title="Applying pressure" fmt='0" s"' />
+    <Column id=observed_defensive_pressure_s title="Under pressure" fmt='0" s"' />
     <Column id=distinct_defenders title="Defenders faced" />
     <Column id=distinct_attackers title="Attackers faced" />
-    <Column id=median_time_to_pass_s title="Median time to eligible pass" fmt="0 s" />
+    <Column id=median_time_to_pass_s title="Median time to eligible pass" fmt='0" s"' />
 </DataTable>
 
 ## Repeated matchups
@@ -304,7 +304,7 @@ order by episodes desc, pair
     <Column id=interrupted title="Interrupted" />
     <Column id=unresolved title="Unresolved" />
     <Column id=insufficient_resolved title="Insufficient resolved" />
-    <Column id=pressure_seconds title="Observed pressure" fmt="0 s" />
+    <Column id=pressure_seconds title="Observed pressure" fmt='0" s"' />
 </DataTable>
 
 {#if battle_pairs.length > 0}
@@ -321,7 +321,7 @@ order by round, start_t_s
     <Column id=attacker_code title="Attacker" />
     <Column id=defender_code title="Defender" />
     <Column id=start_lap title="Start lap" />
-    <Column id=pressure_seconds title="Pressure" fmt="0 s" />
+    <Column id=pressure_seconds title="Pressure" fmt='0" s"' />
     <Column id=outcome title="Outcome" />
     <Column id=eligible title="Eligible result" />
     <Column id=attacker_compound title="Attacker tyre" />
@@ -394,10 +394,10 @@ order by round, start_t_s
     <Column id=start_lap title="Start lap" />
     <Column id=end_lap title="End lap" />
     <Column id=position_contested title="For position" />
-    <Column id=pressure_seconds title="Total pressure (sample-supported)" fmt="0 s" />
-    <Column id=longest_pressure_run_s title="Longest pressure run" fmt="0 s" />
-    <Column id=release_run_s title="Uninterrupted release" fmt="0 s" />
-    <Column id=min_gap_s title="Minimum gap" fmt="0.000 s" />
+    <Column id=pressure_seconds title="Total pressure (sample-supported)" fmt='0" s"' />
+    <Column id=longest_pressure_run_s title="Longest pressure run" fmt='0" s"' />
+    <Column id=release_run_s title="Uninterrupted release" fmt='0" s"' />
+    <Column id=min_gap_s title="Minimum gap" fmt='0.000" s"' />
     <Column id=driver_outcome title="Outcome" />
     <Column id=quick_reversal title="Reversed ≤60 s" />
     <Column id=confidence title="Evidence" />

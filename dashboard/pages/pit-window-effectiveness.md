@@ -87,12 +87,12 @@ where position_flip
 
 <Grid cols=3>
     {#if strongest_early.length > 0}
-    <BigValue data={strongest_early} value=beneficiary comparison=gain_sec comparisonFmt="0.00 s" title="Largest early-stop gain" />
+    <BigValue data={strongest_early} value=beneficiary comparison=gain_sec comparisonFmt='0.00" s"' title="Largest early-stop gain" />
     {:else}
     <KeyInsight label="No early-stop gain">No eligible window shows a positive gain for the early stopper.</KeyInsight>
     {/if}
     {#if strongest_late.length > 0}
-    <BigValue data={strongest_late} value=beneficiary comparison=gain_sec comparisonFmt="0.00 s" title="Largest late-stop gain" />
+    <BigValue data={strongest_late} value=beneficiary comparison=gain_sec comparisonFmt='0.00" s"' title="Largest late-stop gain" />
     {:else}
     <KeyInsight label="No late-stop gain">No eligible window shows a positive gain for the late stopper.</KeyInsight>
     {/if}

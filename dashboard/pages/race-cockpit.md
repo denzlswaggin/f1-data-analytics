@@ -101,19 +101,19 @@ experimental timing model. Neither pace rank nor pass count measures driver skil
 ## What happened
 
 <Grid cols=4>
-    <BigValue data={winner} value=driver_name comparison=grid_position comparisonFmt="Grid P0" title="Winner" />
+    <BigValue data={winner} value=driver_name comparison=grid_position comparisonFmt='"Grid P"0' title="Winner" />
 {#if pace_leader.length > 0}
     <BigValue data={pace_leader} value=driver_name title="Lowest observed peer delta" />
 {:else}
 <p>No supported pace comparison in this race.</p>
 {/if}
 {#if execution_leader.length > 0}
-    <BigValue data={execution_leader} value=driver_name comparison=outcome_vs_pace comparisonFmt="+0;-0 vs pace" title="Largest finish/model difference" />
+    <BigValue data={execution_leader} value=driver_name comparison=outcome_vs_pace comparisonFmt='+0" vs pace";-0" vs pace"' title="Largest finish/model difference" />
 {:else}
 <p>Finish/model comparison unavailable: incomplete pace field.</p>
 {/if}
 {#if pass_leader.length > 0}
-    <BigValue data={pass_leader} value=driver_name comparison=passes_made comparisonFmt="0 passes" title="Most model-detected passes" />
+    <BigValue data={pass_leader} value=driver_name comparison=passes_made comparisonFmt='0" passes"' comparisonDelta={false} comparisonTitle="" title="Most model-detected passes" />
 {:else}
 <p>Pass analysis unavailable for this race.</p>
 {/if}
@@ -167,12 +167,12 @@ where coverage_status in ('Processed', 'Processed: no observed battles')
 
 <Grid cols=3>
     {#if strategy_summary.length > 0}
-    <BigValue data={strategy_summary} value=flips comparison=largest_swing comparisonFmt="0.00 s max swing" title="Pit-window flips" />
+    <BigValue data={strategy_summary} value=flips comparison=largest_swing comparisonFmt='0.00" s max swing"' title="Pit-window flips" />
     {:else}
     <p>No eligible pit-window comparison.</p>
     {/if}
     {#if control_summary.length > 0}
-    <BigValue data={control_summary} value=interventions comparison=stops_under_control comparisonFmt="0 stops" title="Published interventions" />
+    <BigValue data={control_summary} value=interventions comparison=stops_under_control comparisonFmt='0" stops"' title="Published interventions" />
     {:else}
     <p>Race-control source coverage unavailable.</p>
     {/if}

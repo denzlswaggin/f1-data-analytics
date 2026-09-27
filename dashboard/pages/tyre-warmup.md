@@ -94,17 +94,17 @@ from ${race_stints}
 
 <Grid cols=3>
     {#if fastest_settling.length > 0}
-<BigValue data={fastest_settling} value=driver_stint comparison=time_to_pace_laps comparisonFmt="0 laps" title="Earliest confirmation, complete history" />
+<BigValue data={fastest_settling} value=driver_stint comparison=time_to_pace_laps comparisonFmt='0" laps"' title="Earliest confirmation, complete history" />
 {:else}
 <KeyInsight label="Earliest confirmation, complete history">Insufficient eligible evidence.</KeyInsight>
 {/if}
     {#if largest_first_lap_loss.length > 0}
-<BigValue data={largest_first_lap_loss} value=driver_stint comparison=first_flying_warmup_loss_sec comparisonFmt="+0.00;-0.00 s" title="Largest first-flying loss" />
+<BigValue data={largest_first_lap_loss} value=driver_stint comparison=first_flying_warmup_loss_sec comparisonFmt='+0.00" s";-0.00" s"' title="Largest first-flying loss" />
 {:else}
 <KeyInsight label="Largest first-flying loss">Insufficient eligible evidence.</KeyInsight>
 {/if}
     {#if outcome_counts.length > 0}
-<BigValue data={outcome_counts} value=achieved comparison=beyond_six comparisonFmt="0 censored beyond lap 6" title="Complete-history confirmations" />
+<BigValue data={outcome_counts} value=achieved comparison=beyond_six comparisonFmt='0" censored beyond lap 6"' title="Complete-history confirmations" />
 {:else}
 <KeyInsight label="Complete-history confirmations">Insufficient eligible evidence.</KeyInsight>
 {/if}
