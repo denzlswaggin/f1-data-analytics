@@ -3,7 +3,7 @@
 -- For each stop, compare the driver's track position the lap *before* the stop
 -- with their position two laps *after* it — the window over which an under/
 -- overcut plays out. `positions_gained` > 0 means places gained across the
--- cycle. Jolpica pit-stop timing (~2011+) is joined to the FastF1 race laps
+-- cycle. Jolpica pit-stop timing is joined to the 2024-2026 FastF1 race laps
 -- already loaded for the rest of the dashboard, avoiding a duplicate lap-data
 -- backfill. Null positions (e.g. a stop on lap 1) leave the delta null.
 with stops as (

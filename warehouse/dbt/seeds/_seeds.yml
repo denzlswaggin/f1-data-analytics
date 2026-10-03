@@ -5,7 +5,7 @@ seeds:
     description: >
       Constructor -> hex livery colour, keyed on the FastF1 team name (as it lands
       in raw.laps). Drives car colours in the race-replay track map. Includes a few
-      recent historical teams so it applies across the FastF1 era (2018+).
+      teams needed by the 2024-2026 replay context.
     columns:
       - name: team
         description: FastF1 team name (e.g. "Red Bull Racing").

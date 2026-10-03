@@ -1,11 +1,16 @@
 # Versioned dashboard snapshots
 
 The public Evidence site never reads the mutable operational warehouse. After
-Dagster's persistent round refresh finishes, `Publish Dashboard Snapshot` exports the
+Dagster's persistent round refresh finishes, `Publish Dashboard Snapshot` exports
 the explicit `DASHBOARD_CONTRACT` allowlist into an immutable DuckDB file,
 validates it, calculates SHA-256, and can publish both database and manifest to
 object storage. Raw tables that are not queried by the product, notably
 `staging.stg_positions`, never enter the serving artifact.
+
+Published rows are restricted to [2024–2026](data-context.md). The snapshot
+validator rejects any season outside that range. During the scope migration, a
+checksum-verified prior snapshot supplied complete heavy-source coverage; rating
+marts were recalculated from the retained qualifying and race comparisons.
 
 On the September 2026 development snapshot this allowlist reduced the DuckDB
 artifact from 1.05 GB to 124 MB (about 88%) without removing a dashboard source.

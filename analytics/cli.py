@@ -7,7 +7,7 @@ Example::
     python -m analytics.cli validate         # backtest + CIs + shrinkage sweep
     python -m analytics.cli validate --race  # ...the same checks on the race-pace rating
     python -m analytics.cli replay --season 2026 --round 1  # build marts.race_replay
-    python -m analytics.cli pace-profile --from-season 2022  # Saturday vs Sunday
+    python -m analytics.cli pace-profile --from-season 2024  # Saturday vs Sunday
 """
 
 from __future__ import annotations

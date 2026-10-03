@@ -344,6 +344,18 @@ def test_builds_versioned_snapshot_and_latest_copy(tmp_path: Path) -> None:
     )
 
 
+def test_rejects_snapshot_with_season_outside_context(tmp_path: Path) -> None:
+    source = tmp_path / "source.duckdb"
+    _warehouse(source)
+    with duckdb.connect(str(source)) as connection:
+        connection.execute("update staging.stg_races set season = 2023 where round = 2")
+
+    settings = Settings(warehouse="duckdb", duckdb_path=source, lake_dir=tmp_path / "lake")
+    with pytest.raises(ValueError, match="outside 2024-2026"):
+        build_dashboard_snapshot(tmp_path / "snapshots", settings=settings, version="out-of-range")
+    assert not (tmp_path / "snapshots/latest.duckdb").exists()
+
+
 def test_legacy_snapshot_manifest_remains_loadable() -> None:
     manifest = SnapshotManifest(
         version="legacy",

@@ -28,12 +28,13 @@ from jinja2 import Environment
 def test_staging_classification(
     position: int, position_text: str | None, status: str, expected: bool | None
 ) -> None:
-    template = Path("warehouse/dbt/models/staging/stg_results.sql").read_text()
+    template = Path("warehouse/dbt/models/staging/stg_results.sql").read_text(encoding="utf-8")
     sql = (
         Environment()
         .from_string(template)
         .render(
             source=lambda *_: "source_results",
+            season_in_context=lambda column: f"cast({column} as integer) between 2024 and 2026",
             dbt_utils={"generate_surrogate_key": lambda _: "'key'"},
         )
     )

@@ -13,13 +13,13 @@ An end-to-end Formula 1 data product: resilient Python ingestion, a recoverable
 Parquet lake, DuckDB and Postgres warehouses, tested dbt transformations, Dagster
 orchestration, reproducible analytical models and an interactive Evidence dashboard.
 
-<!--
-Launch asset: add a real 8–12 second Race Replay GIF here before announcing the
-public repository. Suggested path: docs/readme-assets/race-replay.gif
+The active data context covers **the 2024, 2025 and 2026 seasons**. See the
+[data-context guide](docs/data-context.md) for the boundary used by ingestion,
+transformations and published snapshots.
 
-After the first Pages deployment, also add:
-**[Explore the live dashboard →](https://denzlswaggin.github.io/f1-data-analytics/)**
--->
+![Race replay of the 2026 Madrid Grand Prix, showing the circuit, live timing, a pit visit and the selected driver's details](docs/readme-assets/race-replay.png)
+
+*Race Replay brings the circuit, timing tower, pit activity and driver context onto one clock.*
 
 ## Watch a race unfold
 
@@ -34,6 +34,10 @@ available team radio stay in sync.
 - See confidence-scored on-track overtakes without pit-cycle swaps and timing-feed flicker.
 - Withhold incomplete position feeds instead of presenting a partial race as complete.
 
+![Replay event timeline with pit stops, model-detected passes and team radio for the selected driver](docs/readme-assets/race-timeline.png)
+
+*The event timeline makes it possible to jump from a pass, pit stop or radio message back into the replay.*
+
 The browser animates a purpose-built replay mart with millions of car ticks.
 The snapshot-derived counts below show its current size. A custom Svelte canvas keeps the experience responsive; the
 heavy resampling and pass detection happen once upstream, not in every visitor's browser.
@@ -46,8 +50,9 @@ The dashboard is organised around questions rather than warehouse tables.
 | --- | --- | --- |
 | What actually decided the race? | **Latest race story** | Controlled pace, execution gain and detected passes |
 | Can I watch the race develop? | **Race replay** | Cars, timing, tyres, incidents, overtakes and radio on one clock |
-| Who is fastest beyond the car? | **Driver ratings** | Teammate-normalised career pace and current form |
+| Who is fastest beyond the car? | **Driver ratings** | Teammate-normalised 2024–2026 pace and season form |
 | How do two drivers compare? | **Driver comparison** | Shared-season form, 90% intervals and an evidence-strength cue |
+| How is a fast race lap driven? | **Driver DNA** | Teammate-normalised technique with repeatability checks |
 | Where was a lap won? | **Telemetry** | Speed traces, cumulative time delta and pedal inputs |
 | Which tyres faded? | **Tyre strategy** | Stint timelines and fuel- and track-adjusted fall-off |
 | Which pit cycles changed the race? | **Pit strategy** | Stop speed, position swing and race-control context |
@@ -61,38 +66,38 @@ same machinery**.
 
 For each qualifying session, the last segment completed by both teammates becomes a
 direct pace comparison. Those gaps form a connected teammate graph, which is solved
-into one cross-era leaderboard with a Massey-style least-squares fit. Empirical-Bayes
-shrinkage tempers thin samples. Static career intervals resample undirected
+into a three-season leaderboard with a Massey-style least-squares fit. Empirical-Bayes
+shrinkage tempers thin samples. Static rating intervals resample undirected
 teammate comparison edges; dynamic season intervals resample complete weekends
 within seasons. Neither establishes exact-rank probabilities.
 
-**Historical qualifying benchmark, 2006–2026** — figures from the documented
-validation run, not a live snapshot table. Drivers shown have at least 40
-directed comparisons:
+![2024–2026 teammate-normalised qualifying ratings with individual 90% intervals and comparison counts](docs/readme-assets/driver-ratings.png)
 
-| Global rank | Driver | Rating | Head-to-heads | Seasons |
+*The dashboard benchmark shows estimates and uncertainty together. This view requires at least 40 directed comparisons per driver.*
+
+**Qualifying benchmark, 2024–2026** — rebuilt from the three-season warehouse.
+Drivers shown have at least 20 teammate comparisons:
+
+| Rank | Driver | Rating | Comparisons | Seasons |
 | ---: | --- | ---: | ---: | --- |
-| 1 | Max Verstappen | 0.919 | 234 | 2015–2026 |
-| 4 | George Russell | 0.619 | 161 | 2019–2026 |
-| 5 | Charles Leclerc | 0.559 | 183 | 2018–2026 |
-| 6 | Daniel Ricciardo | 0.495 | 252 | 2011–2024 |
-| 7 | Sebastian Vettel | 0.462 | 292 | 2007–2022 |
-| 8 | Pierre Gasly | 0.435 | 181 | 2017–2026 |
-| 9 | Lando Norris | 0.433 | 162 | 2019–2026 |
-| 12 | Nico Rosberg | 0.345 | 202 | 2006–2016 |
-| 14 | Fernando Alonso | 0.293 | 358 | 2006–2026 |
-| 15 | Lewis Hamilton | 0.288 | 388 | 2007–2026 |
+| 1 | George Russell | 0.465 | 61 | 2024–2026 |
+| 2 | Oliver Bearman | 0.273 | 37 | 2024–2026 |
+| 3 | Andrea Kimi Antonelli | 0.164 | 37 | 2025–2026 |
+| 4 | Esteban Ocon | 0.164 | 56 | 2024–2026 |
+| 5 | Nico Hülkenberg | 0.099 | 60 | 2024–2026 |
+| 6 | Charles Leclerc | 0.072 | 61 | 2024–2026 |
+| 7 | Carlos Sainz | 0.052 | 58 | 2024–2026 |
+| 8 | Pierre Gasly | -0.012 | 60 | 2024–2026 |
+| 9 | Gabriel Bortoleto | -0.041 | 36 | 2025–2026 |
+| 10 | Alexander Albon | -0.052 | 56 | 2024–2026 |
 
 These are relative teammate margins, not a GOAT list or an absolute lap-time
-prediction. Global-rank gaps belong to lower-sample drivers omitted by the filter.
-The network fit depends on teammate connections, era, regularisation and observed
+prediction. The network fit depends on teammate connections, season range, regularisation and observed
 gaps. Its point ordering is not a direct comparison of all drivers in equal cars.
 
-In the documented historical expanding-window evaluation, the static
-rating picks the winner of an unseen individual qualifying comparison **60.5%** of the
-time and the winner of a season-long teammate battle **68.0%** of the time. It does not
-predict the exact single-session gap better than a zero-gap baseline, so the product
-presents it as a ranking and states that limit explicitly.
+The earlier expanding-window evaluation used a wider dataset and does not measure
+performance on this three-season context. Re-run validation before quoting a
+predictive result for 2024–2026.
 
 Read the [validation report](docs/rating-validation.md) or reproduce the result:
 
@@ -101,6 +106,19 @@ python -m analytics.cli ratings --top 20
 python -m analytics.cli ratings-v2 --top 20
 python -m analytics.cli validate
 ```
+
+## Driver DNA — technique with evidence
+
+Driver DNA compares representative fast race laps against each driver's teammate
+and checks whether a technique signal repeats across races. The example below
+shows Max Verstappen's 2025–2026 sample; labels separate stable, context-dependent
+and inconclusive traits rather than treating every estimate as a fixed style.
+
+![Driver DNA interpretation for Max Verstappen with five technique traits, intervals and repeatability labels](docs/readme-assets/driver-dna.png)
+
+These are observations from eligible laps, not a universal driver-skill score.
+Explore the [Driver DNA validation protocol](docs/driver-dna-validation.md) for matching rules
+and evidence limits.
 
 ## The second cut — Saturday vs Sunday
 
@@ -115,9 +133,8 @@ Saturday-to-Sunday delta = race rating − qualifying rating
 
 Positive means the fitted race rating is higher; negative means the fitted
 qualifying rating is higher. Interpret each difference alongside its paired
-interval: a nonzero point estimate may remain inconclusive. The historical
-evaluation reported a Spearman correlation of **0.65** between the ratings;
-this is not a continuously refreshed snapshot statistic.
+interval: a nonzero point estimate may remain inconclusive. The rating
+relationship needs fresh validation on the 2024–2026 context.
 The dashboard treats this as a comparison signal, not proof of racecraft or a causal
 measure of strategy and reliability.
 
@@ -165,11 +182,11 @@ The dashboard does not silently turn missing data into zeroes or confident claim
 - Late corrections rebuild only the affected race partition and propagate through downstream marts.
 
 <!-- audit-statistics:start -->
-Published snapshot: `20260918-audit-pages34`.
+Published snapshot: `20261003-2024-2026-v2`.
 
 | Dataset | Observations | Races |
 | --- | ---: | ---: |
-| Lap timing | 104,467 | 106 |
+| Lap timing | 62,470 | 62 |
 | Telemetry | 754,175 | 60 |
 | Replay | 6,290,491 | 61 |
 <!-- audit-statistics:end -->
@@ -197,7 +214,7 @@ python -m pip install -e . --no-deps
 copy .env.example .env
 
 # Quick smoke dataset
-python -m ingestion.cli backfill --season 2023
+python -m ingestion.cli backfill --season 2024
 make dbt-build
 
 # Analytical marts
@@ -291,6 +308,7 @@ make dbt-build
 
 ## Deeper documentation
 
+- [2024–2026 data context](docs/data-context.md)
 - [How the codebase fits together](docs/codebase-guide.md)
 - [Portfolio case study](docs/portfolio-case-study.md)
 - [Teammate-normalised pace: the full story](docs/blog-teammate-normalised-pace.md)

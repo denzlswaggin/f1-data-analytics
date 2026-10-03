@@ -42,8 +42,8 @@ typecheck: ## Run mypy type checks
 test: ## Run the test suite
 	$(PYTHON) -m pytest -q
 
-backfill: ## Backfill seasons 2006 through 2025 (the full driver-ratings dataset)
-	$(PYTHON) -m ingestion.cli backfill --from 2006 --to 2025
+backfill: ## Backfill the 2024 through 2026 data context
+	$(PYTHON) -m ingestion.cli backfill --from 2024 --to 2026
 
 dbt-build: ## Build the dbt project (dev target)
 	$(DBT) build --project-dir warehouse/dbt --profiles-dir warehouse/dbt --target dev

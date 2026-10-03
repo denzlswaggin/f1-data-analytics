@@ -3,12 +3,14 @@
 with laps as (
     select pace.*, timing.lap_start_sec
     from {{ ref('mart_lap_times') }} as pace
-    join {{ ref('stg_laps') }} as timing
+    inner join {{ ref('stg_laps') }} as timing
         on timing.season = pace.season and timing.round = pace.round
         and timing.driver_code = pace.driver_code and timing.lap_number = pace.lap_number
         and timing.session = 'R'
     where pace.tyre_life >= 2 and pace.compound is not null
-), aligned as (
+),
+
+aligned as (
     select laps.season, laps.round, laps.race_name, laps.driver_code, laps.lap_number,
         laps.compound, laps.tyre_life, laps.lap_time_sec,
         avg(weather.track_temp) as track_temp, avg(weather.air_temp) as air_temp,
@@ -24,6 +26,7 @@ with laps as (
     group by laps.season, laps.round, laps.race_name, laps.driver_code, laps.lap_number,
         laps.compound, laps.tyre_life, laps.lap_time_sec
 )
+
 select season, round, race_name, compound, weather_bucket,
     avg(track_temp) as avg_track_temp, avg(air_temp) as avg_air_temp,
     count(*) as n_laps, regr_slope(lap_time_sec, tyre_life) as deg_sec_per_lap,

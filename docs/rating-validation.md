@@ -1,5 +1,10 @@
 # Validating the driver-rating model
 
+This report preserves an evaluation on a wider historical dataset. The active
+product now uses [2024–2026 only](data-context.md); the figures below are not
+valid measurements for that shorter window. Re-run the validation before citing
+current model performance.
+
 The headline insight ([teammate-normalised "true pace"](blog-teammate-normalised-pace.md))
 produces a single cross-era leaderboard by fitting a per-driver pace deficit to every
 observed teammate qualifying gap. A least-squares fit will *always* return a ranking —

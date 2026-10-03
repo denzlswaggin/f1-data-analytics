@@ -18,7 +18,7 @@
         {
             title: 'Driver analysis',
             links: [
-                ['How do teammates compare?', 'driver-ratings', 'Teammate-normalised career pace and current form'],
+                ['How do teammates compare?', 'driver-ratings', 'Teammate-normalised 2024–2026 pace and season form'],
                 ['Compare two drivers honestly', 'driver-comparison', 'Season form with uncertainty and shared-season evidence'],
                 ['Who repeats their pace most reliably?', 'pace-consistency', 'Clean-air consistency and unexplained slow-lap tail'],
                 ['Who gains on Sunday?', 'saturday-vs-sunday', 'Qualifying pace versus controlled race pace'],

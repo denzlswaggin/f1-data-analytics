@@ -24,8 +24,8 @@ order by driver_name
 ```
 
 <FilterBar title="Choose drivers" description="Ratings use seasons shared by both drivers.">
-    <QueryDropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver A" />
-    <QueryDropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="hamilton" title="Driver B" />
+    <QueryDropdown data={drivers} name=driver_a value=driver_id label=driver_name defaultValue="russell" title="Driver A" />
+    <QueryDropdown data={drivers} name=driver_b value=driver_id label=driver_name defaultValue="leclerc" title="Driver B" />
 </FilterBar>
 
 ```sql comparison
@@ -136,21 +136,21 @@ the difference. Overlapping or separated individual ranges are not a paired test
 </div>
 </ExpandableSection>
 
-## Career model benchmark
+## Three-season model benchmark
 
-Career estimates pool each driver's full observed history, which can differ in
-years and sample size. They are a separate context from the shared-season comparison.
+Static estimates pool each driver's observations within 2024–2026, which can differ
+in seasons and sample size. They are a separate view from the shared-season comparison.
 
-```sql career
+```sql pooled_rating
 select driver_name, rank, rating, rating_lo, rating_hi, n_comparisons, first_season, last_season
 from f1.driver_ratings
 where driver_id in ('${inputs.driver_a.value}', '${inputs.driver_b.value}')
 order by rating desc
 ```
 
-<ExpandableSection title="View career benchmark">
+<ExpandableSection title="View three-season benchmark">
 <div style="overflow-x: auto; max-width: 100%;">
-<DataTable data={career} rows=2 download=true />
+<DataTable data={pooled_rating} rows=2 download=true />
 </div>
 </ExpandableSection>
 

@@ -25,7 +25,7 @@ models:
   - name: mart_lap_times
     description: >
       Green-flag race laps with tyre context (one row per driver per racing lap),
-      for race-pace and tyre-stint analysis. FastF1-sourced (2018+).
+      for race-pace and tyre-stint analysis. FastF1-sourced within the 2024-2026 data context.
     columns:
       - name: lap_time_sec
         description: Lap time in seconds (valid timed green-flag laps only).
@@ -111,7 +111,7 @@ models:
   - name: mart_weather_degradation
     description: >
       Tyre degradation (sec/lap) per race, compound and lap-aligned
-      weather bucket (wet/hot/cool). FastF1-sourced (2018+).
+      weather bucket (wet/hot/cool). FastF1-sourced within the 2024-2026 data context.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, compound, weather_bucket]
@@ -132,7 +132,7 @@ models:
   - name: mart_speed_trap
     description: >
       Straight-line speed (km/h) per driver per race from the SpeedST trap over
-      green-flag laps — a power-unit / low-drag proxy. FastF1-sourced (2018+).
+      green-flag laps — a power-unit / low-drag proxy. FastF1-sourced within the 2024-2026 data context.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, driver_code]
@@ -153,7 +153,7 @@ models:
     description: >
       Race-lap telemetry (speed/throttle/brake/DRS/gear/x/y) resampled by distance,
       with driver and tyre context. Powers speed traces and track maps.
-      FastF1-sourced (2018+).
+      FastF1-sourced within the 2024-2026 data context.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, driver_code, lap_number, distance_m]
@@ -175,7 +175,7 @@ models:
     description: >
       Per-driver-stint tyre-degradation rate (sec/lap): a linear fit of lap time
       vs tyre age within each individual stint. Finer-grained than
-      mart_tyre_degradation, which pools by race and compound. FastF1-sourced (2018+).
+      mart_tyre_degradation, which pools by race and compound. FastF1-sourced within the 2024-2026 data context.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           combination_of_columns: [season, round, driver_code, stint]
@@ -221,7 +221,7 @@ models:
       driver, stint) with the compound run and the absolute lap span it covered.
       Powers the tyre-strategy gantt (a per-driver bar of compound-coloured stints
       with pit stops at the boundaries). Built from every race lap (not just
-      green-flag), so spans are contiguous. FastF1-sourced (2018+).
+      green-flag), so spans are contiguous. FastF1-sourced within the 2024-2026 data context.
     # Enforced data contract: dbt fails the build if the model's shape drifts from
     # the columns/types declared below. Types are cross-dialect (DuckDB + Postgres).
     config:

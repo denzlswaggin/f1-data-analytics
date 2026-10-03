@@ -111,6 +111,25 @@ jobs:
         run: |
           mkdir -p data/dashboard
           cp tests/fixtures/dashboard-ci.duckdb data/dashboard/latest.duckdb
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          import duckdb
+
+          snapshot = Path("data/dashboard/latest.duckdb")
+          with snapshot.open("rb") as source:
+              sha256 = hashlib.file_digest(source, "sha256").hexdigest()
+          with duckdb.connect(str(snapshot), read_only=True) as connection:
+              version = connection.execute(
+                  "select version from dashboard.snapshot_metadata"
+              ).fetchone()[0]
+          snapshot.with_suffix(".json").write_text(
+              json.dumps({"version": version, "sha256": sha256}) + "\n",
+              encoding="utf-8",
+          )
+          PY
 
       - name: Validate Evidence sources and build
         run: |

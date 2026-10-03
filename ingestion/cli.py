@@ -2,8 +2,8 @@
 
 Examples::
 
-    python -m ingestion.cli backfill --season 2023
-    python -m ingestion.cli backfill --from 2018 --to 2024
+    python -m ingestion.cli backfill --season 2024
+    python -m ingestion.cli backfill --from 2024 --to 2026
     python -m ingestion.cli incremental          # current season only
     python -m ingestion.cli laps --season 2024 --incremental   # only new rounds
 """
@@ -15,7 +15,7 @@ from typing import Annotated
 
 import typer
 
-from ingestion.config import get_settings
+from ingestion.config import FIRST_SEASON, LAST_SEASON, get_settings
 from ingestion.health import evaluate_pipeline_health, record_pipeline_health
 from ingestion.logging import configure_logging, get_logger
 from ingestion.maintenance import (
@@ -103,7 +103,7 @@ def _echo_rounds(rows: int, season: int, rounds: list[int], noun: str, suffix: s
 
 @app.command()
 def backfill(
-    season: Annotated[int | None, typer.Option(help="Single season to load (e.g. 2023).")] = None,
+    season: Annotated[int | None, typer.Option(help="Single season to load (2024-2026).")] = None,
     from_: Annotated[int | None, typer.Option("--from", help="Start season (inclusive).")] = None,
     to: Annotated[int | None, typer.Option(help="End season (inclusive).")] = None,
     resources: Annotated[
@@ -119,6 +119,8 @@ def backfill(
         seasons = list(range(from_, to + 1))
     else:
         raise typer.BadParameter("Provide --season, or both --from and --to.")
+    if not seasons or seasons[0] < FIRST_SEASON or seasons[-1] > LAST_SEASON:
+        raise typer.BadParameter(f"Seasons must be within {FIRST_SEASON}-{LAST_SEASON}.")
 
     res = tuple(resources) if resources else DEFAULT_RESOURCES
     log.info("cli.backfill.start", seasons=seasons, resources=res, target=get_settings().warehouse)

@@ -3,6 +3,7 @@
 -- (FastF1); bridged to the Ergast driver_id downstream via stg_driver_codes.
 with source as (
     select * from {{ source('raw', 'telemetry') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

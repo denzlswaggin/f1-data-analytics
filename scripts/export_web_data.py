@@ -250,14 +250,15 @@ def _race_bundle(
         """,
         [season, round_number, season, round_number, season, season, round_number],
     )
-    lap_columns = {row[0] for row in connection.execute(
-        "describe staging.stg_laps"
-    ).fetchall()}
+    lap_columns = {row[0] for row in connection.execute("describe staging.stg_laps").fetchall()}
     pit_fields = ", ".join(
         f"round({column} - race_start_sec, 3) as {alias}"
-        if column in lap_columns else f"null::double as {alias}"
-        for column, alias in [("pit_in_time_sec", "pit_entry_t_s"),
-                              ("pit_out_time_sec", "pit_exit_t_s")]
+        if column in lap_columns
+        else f"null::double as {alias}"
+        for column, alias in [
+            ("pit_in_time_sec", "pit_entry_t_s"),
+            ("pit_out_time_sec", "pit_exit_t_s"),
+        ]
     )
     laps = _rows(
         connection,

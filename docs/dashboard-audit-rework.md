@@ -1,5 +1,10 @@
 # Dashboard audit remediation
 
+This is the September 2026 audit record. Its requirement to preserve 2022–2023
+data and its five-season counts have been superseded by the [2024–2026 data
+context](data-context.md). The recorded audit results below are retained as
+historical evidence.
+
 Baseline: `20260918-current`, main `1643162`, through Madrid 2026 R14.
 Branch: `fix/audit-data-and-core-pages`. Sections 1 through 4 complete on the same branch; verification is recorded below.
 Approach: correct demonstrated errors, validate existing models, expose uncertainty;

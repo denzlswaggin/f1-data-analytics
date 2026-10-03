@@ -9,11 +9,9 @@ lifecycle—source contracts, incremental ingestion, a recoverable lake, two
 warehouse dialects, tested transformations, orchestration, model validation,
 uncertainty, and a consumer-facing BI application.
 
-On the current local dataset it covers 2006–2026, 411 completed race weekends,
-103 drivers, and 8,424 directed qualifying comparisons. Race analysis adds 784
-controlled teammate gaps across 60 races. The browser-facing snapshot includes
-613,680 telemetry rows and 4,129,511 animated race-replay ticks across the races
-whose heavy sources have been loaded.
+The active [data context](data-context.md) covers the 2024–2026 seasons.
+Counts in each published dashboard snapshot are generated from that snapshot's
+manifest, because source coverage changes as new races are loaded.
 
 ## The user problem
 
@@ -25,7 +23,7 @@ measurement rule.
 
 The output serves two audiences:
 
-- an F1 analyst can explore career pace, season-specific form, race pace,
+- an F1 analyst can explore three-season pace, season-specific form, race pace,
   strategy, telemetry, and replay;
 - a data team can inspect lineage, tests, partition audits, failed runs, and the
   exact recovery path behind every published number.
@@ -39,7 +37,7 @@ The output serves two audiences:
 | Atomic Parquet partitions | Raw recovery source and cheap replay of one season/round | Local volumes need an off-host backup policy |
 | Round/session replacement | Late corrections do not rebuild or overwrite a whole season | Partition metadata becomes part of the correctness contract |
 | Dagster asset graph | Scheduling, durable run history, retries, and blocking checks in one view | A single-host Compose deployment is not horizontally scalable |
-| Static rating plus V2 | Stable career benchmark remains comparable; V2 exposes changing form | V2's predictive improvement is deliberately reported as marginal |
+| Static rating plus V2 | Stable 2024–2026 benchmark remains comparable; V2 exposes changing form | Predictive claims need fresh validation on the shorter window |
 
 ## Reliability work
 
@@ -51,7 +49,7 @@ portfolio look good but behave badly:
    and touched partition.
 3. Late telemetry corrections rebuild only the audited race partition; a
    regression test mutates historical source data and proves propagation.
-4. The current season derives from the calendar or an environment override.
+4. The refresh season defaults to 2026 and may be pinned within 2024–2026.
 5. Dagster checks block downstream publication when core loads are missing,
    stale, duplicated, null, or carry invalid intervals.
 6. `restore-partition` repairs one warehouse partition directly from the lake.
@@ -74,17 +72,9 @@ date—and labels descriptive metrics as descriptive rather than causal.
 
 ## Analytical result and honest boundary
 
-The static regularised teammate graph predicts the winner of future qualifying
-comparisons above chance. V2 adds driver-season nodes, temporal regularisation,
-Q-session reliability weights, and a race-weekend cluster bootstrap. On the
-current expanding-window evaluation:
-
-| Model | MAE | Direction accuracy |
-| --- | ---: | ---: |
-| Static career benchmark | 0.638 | 0.605 |
-| Dynamic latest-season model | 0.634 | 0.607 |
-
-That is evidence of parity plus a small gain, not a breakthrough. V2 earns its
+V2 adds driver-season nodes, temporal regularisation, Q-session reliability
+weights, and a race-weekend cluster bootstrap. Earlier predictive results were
+measured on a wider historical dataset and must be rerun for 2024–2026. V2 earns its
 place because it answers a different product question—how form evolves—and its
 uncertainty intervals make weak seasons visible. Neither model removes upgrades,
 setup, reliability, traffic, or teammate-strength effects.

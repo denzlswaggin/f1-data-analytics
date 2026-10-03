@@ -95,10 +95,12 @@ try {
 			);
 			if (route === 'traffic-adjusted-pace') {
 				assert.equal(
-					await page
-						.locator('.data-trust summary')
-						.getByText('Data & methodology', { exact: true })
-						.count(),
+					await page.locator('.data-trust summary').count(),
+					1,
+					'traffic analysis must expose its evidence status'
+				);
+				assert.equal(
+					await page.locator('.data-trust .details').getByText('Method', { exact: true }).count(),
 					1
 				);
 			}

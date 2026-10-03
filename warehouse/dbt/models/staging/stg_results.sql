@@ -3,6 +3,7 @@
 -- rating, which is qualifying-based).
 with source as (
     select * from {{ source('raw', 'results') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

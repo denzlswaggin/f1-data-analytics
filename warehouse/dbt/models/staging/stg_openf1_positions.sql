@@ -1,5 +1,6 @@
 with source as (
     select * from {{ source('raw', 'openf1_positions') }}
+    where {{ season_in_context('season') }}
 )
 
 select

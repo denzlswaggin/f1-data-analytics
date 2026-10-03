@@ -3,6 +3,7 @@
 -- partial (OpenF1 doesn't have radio for every race yet).
 with source as (
     select * from {{ source('raw', 'team_radio') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

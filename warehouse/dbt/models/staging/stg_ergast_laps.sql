@@ -3,6 +3,7 @@
 -- carries track position, which FastF1 laps also do but for a shorter era.
 with source as (
     select * from {{ source('raw', 'ergast_laps') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

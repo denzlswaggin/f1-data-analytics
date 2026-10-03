@@ -28,7 +28,7 @@ Raw F1 data enters through a **Python extract-load (EL) layer** that pulls from 
 APIs, writes it to a **Parquet "lake"** on disk, and loads it into a **warehouse**
 (DuckDB in dev, Postgres in prod). **dbt** then transforms the raw tables through
 three layers — `staging → intermediate → marts` — each a schema in the warehouse.
-The headline insight (cross-era driver ratings) is *not* a dbt model: it's a
+The headline insight (2024–2026 driver ratings) is *not* a dbt model: it's a
 **Python numpy solver** that reads a dbt intermediate table, solves a least-squares
 problem, and writes the result back into the `marts` schema. **Dagster** can run
 that whole chain on a schedule, and **Evidence** turns the marts into a web
@@ -73,19 +73,19 @@ in your head — it's the one part of the architecture that isn't "just dbt".
 ## 2. The end-to-end data flow (trace one number)
 
 The best way to understand the system is to follow a single fact from API to
-pixel. Take **Verstappen's qualifying time at the 2023 Bahrain GP**.
+pixel. Take **Verstappen's qualifying time at the 2024 Bahrain GP**.
 
 1. **Extract.** `ingestion/pipeline.py:extract_resource` asks
-   `JolpicaClient.paginate` for the `qualifying` resource of season 2023. The
+   `JolpicaClient.paginate` for the `qualifying` resource of season 2024. The
    client (`ingestion/clients/jolpica.py`) fetches pages of JSON, honouring rate
    limits and retries.
 2. **Flatten.** Each nested race record is turned into flat rows by
    `_flatten_qualifying` in `ingestion/resources.py` — one dict per driver with
    `q1`/`q2`/`q3` as strings like `"1:29.708"`.
 3. **Land in the lake.** `loaders/lake.py:write_parquet` writes the season's rows
-   to `data/raw/qualifying/season=2023/data.parquet`.
+   to `data/raw/qualifying/season=2024/data.parquet`.
 4. **Load the warehouse.** `loaders/warehouse.py:load_dataframe` deletes any
-   existing 2023 rows and inserts the new ones into `raw.qualifying` (idempotent).
+   existing 2024 rows and inserts the new ones into `raw.qualifying` (idempotent).
 5. **Stage.** dbt's `stg_qualifying.sql` casts types and calls the `parse_laptime`
    macro to turn `"1:29.708"` into `89.708` seconds (`q3_sec`).
 6. **Compute the gap.** `int_teammate_quali_gaps.sql` pairs Verstappen with his
@@ -187,7 +187,7 @@ strict sequence: refresh the small season endpoints, ingest one race partition,
 run dbt, then incrementally materialize that race's replay and overtakes. The
 Monday schedule resolves only the latest race dated before today; the same job
 can be launched for any explicit partition as a targeted backfill. Season asset
-jobs remain available for broad historical backfills.
+jobs remain available for backfills within 2024–2026.
 
 Every stage is timed and exposes duration/budget/utilisation metadata. The
 budget settings live in `Settings`, making performance drift a visible failed
@@ -291,11 +291,10 @@ This is the intellectual core. Read `int_teammate_quali_gaps.sql` and
 ### The idea
 
 Teammates drive **identical cars**, so the qualifying gap *between two teammates*
-is a clean measurement of driver skill with the car cancelled out. But that only
-compares each driver to *their* teammate. To build one cross-era leaderboard, you
-chain the pairwise gaps across the whole "teammate graph" (Hamilton is comparable
-to Verstappen because Hamilton→Rosberg→Bottas→Russell→Verstappen are all linked by
-shared teammates).
+reduces the shared car effect. But that only compares each driver to *their*
+teammate. To build one 2024–2026 leaderboard, you chain the pairwise gaps across
+the "teammate graph" (Russell and Leclerc are linked through Hamilton's 2024
+Mercedes and 2025 Ferrari teammate comparisons).
 
 ### Step 1 — the gap (SQL, `int_teammate_quali_gaps.sql`)
 
@@ -464,7 +463,7 @@ practice exercises — build them yourself; the verification loop is your safety
 2. Add a `Resource(...)` entry to the `RESOURCES` dict (set `path_template`,
    `table_key`, `list_key`). Add it to `DEFAULT_RESOURCES` if it should backfill by
    default.
-3. **Verify:** `python -m ingestion.cli backfill --season 2023 --resource <name>`,
+3. **Verify:** `python -m ingestion.cli backfill --season 2024 --resource <name>`,
    then check `raw.<name>` exists in the warehouse.
 4. To surface it downstream, add a `stg_<name>.sql` + a source entry in
    `models/staging/_f1__sources.yml`, and (optionally) a `@asset` in

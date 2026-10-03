@@ -3,6 +3,7 @@
 -- teammate-normalised driver rating.
 with source as (
     select * from {{ source('raw', 'qualifying') }}
+    where {{ season_in_context('season') }}
 ),
 
 parsed as (

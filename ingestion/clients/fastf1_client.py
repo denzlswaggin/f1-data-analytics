@@ -1,6 +1,6 @@
 """Client for FastF1 — per-lap timing and tyre data from the official F1 feed.
 
-FastF1 covers 2018→present, downloads a lot per session, and caches to disk, so
+FastF1 downloads a lot per session and caches to disk, so
 this client enables the cache and exposes focused loaders — per-lap records
 (with tyre + speed-trap context), per-minute weather, distance-resampled
 telemetry, and time-stamped positional data (for the race-replay map) — each

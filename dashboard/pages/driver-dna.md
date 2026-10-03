@@ -28,6 +28,14 @@ Every point comes from the fastest telemetry-backed race lap available for both 
 select distinct season
 from f1.driver_dna_evidence
 where season > 0
+union
+select distinct from_season as season
+from f1.driver_dna_profile
+where from_season > 0
+union
+select distinct to_season as season
+from f1.driver_dna_profile
+where to_season > 0
 order by season desc
 ```
 
@@ -81,6 +89,7 @@ order by driver_name
 <div class="dna-empty"><strong>Limited selection:</strong> one or both selected drivers do not have the five eligible races required for a published aggregate. Race-level evidence remains visible below when available.</div>
 {/if}
 
+{#if profile_evidence.length > 0}
 <DataTable data={profile_evidence} rows=2>
     <Column id=driver_name title="Driver" />
     <Column id=n_comparisons title="Eligible races" />
@@ -89,6 +98,7 @@ order by driver_name
     <Column id=seasons title="Evidence span" />
     <Column id=confidence title="Confidence" />
 </DataTable>
+{/if}
 
 <div id="technique-profile" class="section-anchor"></div>
 
@@ -607,11 +617,15 @@ order by segment_delta_sec asc
 limit 1
 ```
 
+{#if selected_lap.length > 0}
 <Grid cols=3>
     <BigValue data={lap_summary} value=driver_name comparison=reconstructed_delta_sec comparisonFmt='+0.000" s reconstructed";-0.000" s reconstructed"' title="Selected driver" />
     <BigValue data={largest_gain} value=segment comparison=segment_delta_sec comparisonFmt='+0.000" s";-0.000" s"' title="Largest 200 m gain" />
     <BigValue data={largest_loss} value=segment comparison=segment_delta_sec comparisonFmt='+0.000" s";-0.000" s"' title="Largest 200 m loss" />
 </Grid>
+{:else}
+<div class="dna-empty"><strong>No eligible lap:</strong> choose a driver with published race-level evidence in this season window.</div>
+{/if}
 
 <DriverDNALap data={selected_lap} />
 
@@ -630,6 +644,7 @@ order by season desc, round desc, driver_name
 ```
 
 <ExpandableSection title="View evidence rows and methodology">
+{#if evidence_rows.length > 0}
 <DataTable data={evidence_rows} rows=40 search=true download=true>
     <Column id=season />
     <Column id=round />
@@ -643,6 +658,9 @@ order by season desc, round desc, driver_name
     <Column id=valid_coverage_pct title="Valid coverage (%)" fmt="0.0" />
     <Column id=confidence />
 </DataTable>
+{:else}
+<div class="dna-empty">No eligible race-level evidence for these drivers and seasons.</div>
+{/if}
 
 Metrics are distance-weighted. Full throttle is ≥99%; coasting is ≤5% throttle with no brake. A brake onset needs at least 50 m without braking before it and 50 m of braking after it. Low-speed corner speed uses points where the pair-average speed is ≤160 km/h. Small interpolation overshoots in throttle are clamped to 0–100 and counted; gear anomalies are counted but do not affect the five metrics.
 

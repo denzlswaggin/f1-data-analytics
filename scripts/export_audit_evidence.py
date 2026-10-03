@@ -40,12 +40,12 @@ def verified_manifest(snapshot: Path) -> dict[str, Any]:
 # Denominators deliberately stay metric-specific: no aggregate trust score.
 METRICS = [
     (
-        "Career ratings",
+        "Three-season ratings",
         "marts.driver_ratings",
         "n_comparisons>=40",
         "drivers",
         "null",
-        "Career display minimum; model intervals do not establish exact rank certainty.",
+        "2024-2026 display minimum; model intervals do not establish exact rank certainty.",
     ),
     (
         "Clean-air pace",
