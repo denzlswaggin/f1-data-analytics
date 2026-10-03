@@ -1,6 +1,6 @@
 # Who is the fastest qualifier in Formula 1? A teammate-normalised answer
 
-*How do you compare drivers across different cars and different eras? You use the
+*How do you compare drivers across different cars in the 2024–2026 seasons? You use the
 shared-car comparison available each weekend: teammates. Setup, upgrades and
 race conditions can still differ; this is not a controlled experiment.*
 
@@ -28,7 +28,7 @@ This is antisymmetric (`gap_ab = −gap_ba`) and additive along chains, which is
 property that lets it generalise.
 
 **2. Chaining into one number.** Teammate gaps are local. To turn them into a
-single cross-era leaderboard I solve for a per-driver *pace deficit* `d` that best
+single three-season leaderboard I solve for a per-driver *pace deficit* `d` that best
 explains every observed gap:
 
 ```
@@ -41,19 +41,19 @@ who never shared a car. Connectivity does not make those comparisons causal. I s
 it with damped Jacobi iteration and add empirical-Bayes shrinkage so drivers with
 only a handful of teammate races don't top the board on noise.
 
-## Historical example (2006–2026; not the current snapshot)
+## 2024–2026 example
 
 | Rank | Driver           | Rating | Head-to-heads |
 | ---: | ---------------- | -----: | ------------: |
-|    1 | Max Verstappen   |  0.919 |           234 |
-|    2 | George Russell   |  0.619 |           161 |
-|    3 | Charles Leclerc  |  0.559 |           183 |
-|    4 | Daniel Ricciardo |  0.495 |           252 |
-|    5 | Sebastian Vettel |  0.462 |           292 |
+|    1 | George Russell        |  0.465 |            61 |
+|    2 | Oliver Bearman        |  0.273 |            37 |
+|    3 | Andrea Kimi Antonelli |  0.164 |            37 |
+|    4 | Esteban Ocon          |  0.164 |            56 |
+|    5 | Nico Hülkenberg       |  0.099 |            60 |
 
-*(established drivers, ≥40 head-to-heads; higher = faster than teammates)*
+*(drivers with at least 20 comparisons; higher = faster than teammates)*
 
-Verstappen has the highest point estimate in this historical example. That does
+Russell has the highest point estimate in this three-season example. That does
 not establish a statistically certain first place: individual rating intervals
 do not provide a rank probability. The model estimates relative pace through
 the teammate network, with regularisation and substantial contextual limitations.

@@ -35,17 +35,11 @@ independent and preserves the season mix.
 ## Evaluation
 
 An expanding-window backtest fits on seasons before year `Y` and predicts the
-teammate gaps in `Y`. In the documented historical 2006–2026 evaluation, with the
-defaults (`prior_weight=8`, `temporal_weight=48`):
-
-| Model | MAE | Gap-direction accuracy |
-| --- | ---: | ---: |
-| Career-wide static benchmark | 0.638 | 0.605 |
-| Dynamic latest-season rating | 0.634 | 0.607 |
-
-The improvement is marginal. V2 should therefore be used to explore form and
-career trajectories, not presented as a decisive predictive breakthrough. The
-CLI prints both results from the same temporal splits:
+teammate gaps in `Y`. The active [2024–2026 context](data-context.md) gives this
+test a much shorter training history than the earlier historical evaluation.
+V2 should therefore be used to explore form and career trajectories without
+claiming predictive improvement. The CLI prints both results from the same
+temporal splits:
 
 ```bash
 python -m analytics.cli validate --n-boot 0

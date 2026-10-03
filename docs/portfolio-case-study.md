@@ -9,11 +9,9 @@ lifecycle—source contracts, incremental ingestion, a recoverable lake, two
 warehouse dialects, tested transformations, orchestration, model validation,
 uncertainty, and a consumer-facing BI application.
 
-On the current local dataset it covers 2006–2026, 411 completed race weekends,
-103 drivers, and 8,424 directed qualifying comparisons. Race analysis adds 784
-controlled teammate gaps across 60 races. The browser-facing snapshot includes
-613,680 telemetry rows and 4,129,511 animated race-replay ticks across the races
-whose heavy sources have been loaded.
+The active [data context](data-context.md) covers the 2024–2026 seasons.
+Counts in each published dashboard snapshot are generated from that snapshot's
+manifest, because source coverage changes as new races are loaded.
 
 ## The user problem
 
@@ -74,17 +72,9 @@ date—and labels descriptive metrics as descriptive rather than causal.
 
 ## Analytical result and honest boundary
 
-The static regularised teammate graph predicts the winner of future qualifying
-comparisons above chance. V2 adds driver-season nodes, temporal regularisation,
-Q-session reliability weights, and a race-weekend cluster bootstrap. On the
-current expanding-window evaluation:
-
-| Model | MAE | Direction accuracy |
-| --- | ---: | ---: |
-| Static career benchmark | 0.638 | 0.605 |
-| Dynamic latest-season model | 0.634 | 0.607 |
-
-That is evidence of parity plus a small gain, not a breakthrough. V2 earns its
+V2 adds driver-season nodes, temporal regularisation, Q-session reliability
+weights, and a race-weekend cluster bootstrap. Earlier predictive results were
+measured on a wider historical dataset and must be rerun for 2024–2026. V2 earns its
 place because it answers a different product question—how form evolves—and its
 uncertainty intervals make weak seasons visible. Neither model removes upgrades,
 setup, reliability, traffic, or teammate-strength effects.

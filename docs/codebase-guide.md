@@ -73,19 +73,19 @@ in your head — it's the one part of the architecture that isn't "just dbt".
 ## 2. The end-to-end data flow (trace one number)
 
 The best way to understand the system is to follow a single fact from API to
-pixel. Take **Verstappen's qualifying time at the 2023 Bahrain GP**.
+pixel. Take **Verstappen's qualifying time at the 2024 Bahrain GP**.
 
 1. **Extract.** `ingestion/pipeline.py:extract_resource` asks
-   `JolpicaClient.paginate` for the `qualifying` resource of season 2023. The
+   `JolpicaClient.paginate` for the `qualifying` resource of season 2024. The
    client (`ingestion/clients/jolpica.py`) fetches pages of JSON, honouring rate
    limits and retries.
 2. **Flatten.** Each nested race record is turned into flat rows by
    `_flatten_qualifying` in `ingestion/resources.py` — one dict per driver with
    `q1`/`q2`/`q3` as strings like `"1:29.708"`.
 3. **Land in the lake.** `loaders/lake.py:write_parquet` writes the season's rows
-   to `data/raw/qualifying/season=2023/data.parquet`.
+   to `data/raw/qualifying/season=2024/data.parquet`.
 4. **Load the warehouse.** `loaders/warehouse.py:load_dataframe` deletes any
-   existing 2023 rows and inserts the new ones into `raw.qualifying` (idempotent).
+   existing 2024 rows and inserts the new ones into `raw.qualifying` (idempotent).
 5. **Stage.** dbt's `stg_qualifying.sql` casts types and calls the `parse_laptime`
    macro to turn `"1:29.708"` into `89.708` seconds (`q3_sec`).
 6. **Compute the gap.** `int_teammate_quali_gaps.sql` pairs Verstappen with his
@@ -464,7 +464,7 @@ practice exercises — build them yourself; the verification loop is your safety
 2. Add a `Resource(...)` entry to the `RESOURCES` dict (set `path_template`,
    `table_key`, `list_key`). Add it to `DEFAULT_RESOURCES` if it should backfill by
    default.
-3. **Verify:** `python -m ingestion.cli backfill --season 2023 --resource <name>`,
+3. **Verify:** `python -m ingestion.cli backfill --season 2024 --resource <name>`,
    then check `raw.<name>` exists in the warehouse.
 4. To surface it downstream, add a `stg_<name>.sql` + a source entry in
    `models/staging/_f1__sources.yml`, and (optionally) a `@asset` in

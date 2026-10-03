@@ -38,11 +38,11 @@ make dagster          # launch Dagster UI (asset graph + schedules)
 Full pipeline, in order:
 
 ```bash
-python -m ingestion.cli backfill --from 2006 --to 2025   # Jolpica → Parquet lake → dev DuckDB (~17k rows)
+python -m ingestion.cli backfill --from 2024 --to 2026   # Jolpica → Parquet lake → dev DuckDB
 python -m ingestion.cli laps --season 2024 --from-round 1 --to-round 5   # FastF1 laps (.[telemetry])
 make dbt-build                                           # staging → intermediate → marts (61 models)
 python -m analytics.cli ratings --top 20                 # solve + print driver leaderboard
-python -m analytics.cli pace-profile --from-season 2022  # Saturday-vs-Sunday delta (needs FastF1 laps)
+python -m analytics.cli pace-profile --from-season 2024  # Saturday-vs-Sunday delta (needs FastF1 laps)
 cd dashboard && npm run dev                              # Evidence dashboard at localhost:3000
 ```
 
@@ -92,8 +92,8 @@ Evidence dashboard → GitHub Pages }**.
    `int_teammate_quali_gaps` (compare the two teammates in the last knockout session both set a time in;
    gap = `100*(ln(t_driver) - ln(t_teammate))`, antisymmetric + additive) → `analytics/ratings.py` solves
    `min Σ(d_i − d_j − gap)²` on the teammate graph via **damped Jacobi** iteration with **empirical-Bayes
-   shrinkage**, over the **largest connected component** → `driver_ratings`. 2006–2025: Verstappen #1, then
-   Russell, Leclerc, Ricciardo, Vettel; Hamilton mid-pack (the metric measures *margin over teammate*).
+   shrinkage**, over the **largest connected component** → `driver_ratings`. The 2024–2026 rating
+   measures *margin over teammate* within the selected seasons; rebuild it after changing source coverage.
 2. **Saturday vs Sunday** (`marts.driver_pace_profile`): the same teammate-normalisation applied to *race*
    pace. `int_teammate_race_gaps` pairs teammates on the **same lap number** (identical fuel load) over
    green-flag laps on the **same compound** within a few laps of tyre age, drops the start lap / in-out laps /
