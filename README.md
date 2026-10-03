@@ -17,13 +17,9 @@ The active data context covers **the 2024, 2025 and 2026 seasons**. See the
 [data-context guide](docs/data-context.md) for the boundary used by ingestion,
 transformations and published snapshots.
 
-<!--
-Launch asset: add a real 8–12 second Race Replay GIF here before announcing the
-public repository. Suggested path: docs/readme-assets/race-replay.gif
+![Race replay of the 2026 Madrid Grand Prix, showing the circuit, live timing, a pit visit and the selected driver's details](docs/readme-assets/race-replay.png)
 
-After the first Pages deployment, also add:
-**[Explore the live dashboard →](https://denzlswaggin.github.io/f1-data-analytics/)**
--->
+*Race Replay brings the circuit, timing tower, pit activity and driver context onto one clock.*
 
 ## Watch a race unfold
 
@@ -37,6 +33,10 @@ available team radio stay in sync.
 - Jump directly to a pass, incident or radio message.
 - See confidence-scored on-track overtakes without pit-cycle swaps and timing-feed flicker.
 - Withhold incomplete position feeds instead of presenting a partial race as complete.
+
+![Replay event timeline with pit stops, model-detected passes and team radio for the selected driver](docs/readme-assets/race-timeline.png)
+
+*The event timeline makes it possible to jump from a pass, pit stop or radio message back into the replay.*
 
 The browser animates a purpose-built replay mart with millions of car ticks.
 The snapshot-derived counts below show its current size. A custom Svelte canvas keeps the experience responsive; the
@@ -52,6 +52,7 @@ The dashboard is organised around questions rather than warehouse tables.
 | Can I watch the race develop? | **Race replay** | Cars, timing, tyres, incidents, overtakes and radio on one clock |
 | Who is fastest beyond the car? | **Driver ratings** | Teammate-normalised 2024–2026 pace and season form |
 | How do two drivers compare? | **Driver comparison** | Shared-season form, 90% intervals and an evidence-strength cue |
+| How is a fast race lap driven? | **Driver DNA** | Teammate-normalised technique with repeatability checks |
 | Where was a lap won? | **Telemetry** | Speed traces, cumulative time delta and pedal inputs |
 | Which tyres faded? | **Tyre strategy** | Stint timelines and fuel- and track-adjusted fall-off |
 | Which pit cycles changed the race? | **Pit strategy** | Stop speed, position swing and race-control context |
@@ -69,6 +70,10 @@ into a three-season leaderboard with a Massey-style least-squares fit. Empirical
 shrinkage tempers thin samples. Static rating intervals resample undirected
 teammate comparison edges; dynamic season intervals resample complete weekends
 within seasons. Neither establishes exact-rank probabilities.
+
+![2024–2026 teammate-normalised qualifying ratings with individual 90% intervals and comparison counts](docs/readme-assets/driver-ratings.png)
+
+*The dashboard benchmark shows estimates and uncertainty together. This view requires at least 40 directed comparisons per driver.*
 
 **Qualifying benchmark, 2024–2026** — rebuilt from the three-season warehouse.
 Drivers shown have at least 20 teammate comparisons:
@@ -101,6 +106,19 @@ python -m analytics.cli ratings --top 20
 python -m analytics.cli ratings-v2 --top 20
 python -m analytics.cli validate
 ```
+
+## Driver DNA — technique with evidence
+
+Driver DNA compares representative fast race laps against each driver's teammate
+and checks whether a technique signal repeats across races. The example below
+shows Max Verstappen's 2025–2026 sample; labels separate stable, context-dependent
+and inconclusive traits rather than treating every estimate as a fixed style.
+
+![Driver DNA interpretation for Max Verstappen with five technique traits, intervals and repeatability labels](docs/readme-assets/driver-dna.png)
+
+These are observations from eligible laps, not a universal driver-skill score.
+Explore the [Driver DNA validation protocol](docs/driver-dna-validation.md) for matching rules
+and evidence limits.
 
 ## The second cut — Saturday vs Sunday
 
