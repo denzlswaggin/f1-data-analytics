@@ -25,7 +25,7 @@ import pandas as pd
 from analytics.racecraft_integrity import RECEIPT_COLUMNS, validate_snapshot_processing
 from sqlalchemy import create_engine, inspect, text
 
-from ingestion.config import Settings, get_settings
+from ingestion.config import FIRST_SEASON, LAST_SEASON, Settings, get_settings
 from ingestion.snapshot_coverage import (
     materialize_source_coverage,
     validate_partition_preservation,
@@ -1315,6 +1315,16 @@ def validate_dashboard_snapshot(path: Path) -> str | None:
             raise ValueError(
                 "dashboard snapshot has incompatible columns: " + "; ".join(broken_columns)
             )
+        for schema, table in sorted(DASHBOARD_CONTRACT):
+            if "season" not in DASHBOARD_CONTRACT[(schema, table)]:
+                continue
+            qualified = f"{_quote(schema)}.{_quote(table)}"
+            outside = connection.execute(
+                f"select count(*) from {qualified} where season not between ? and ?",
+                [FIRST_SEASON, LAST_SEASON],
+            ).fetchone()
+            if outside and outside[0]:
+                raise ValueError(f"{schema}.{table} contains seasons outside 2024-2026")
         validate_recorded_story(connection)
         validate_source_coverage(connection)
         validate_snapshot_processing(connection)

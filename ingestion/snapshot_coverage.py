@@ -4,6 +4,8 @@ from pathlib import Path
 
 import duckdb
 
+from ingestion.config import FIRST_SEASON, LAST_SEASON
+
 SOURCE_TABLES = {
     "pitstops": "marts.mart_pit_strategy",
     "weather": "staging.stg_weather",
@@ -75,7 +77,12 @@ def validate_partition_preservation(
         for (table,) in tables:
             columns = {row[0] for row in old.execute(f"describe {table}").fetchall()}
             keys = "season,round,session" if "session" in columns else "season,round"
-            before = set(old.execute(f"select distinct {keys} from {table}").fetchall())
+            before = set(
+                old.execute(
+                    f"select distinct {keys} from {table} where season between ? and ?",
+                    [FIRST_SEASON, LAST_SEASON],
+                ).fetchall()
+            )
             try:
                 after = set(new.execute(f"select distinct {keys} from {table}").fetchall())
             except (duckdb.CatalogException, duckdb.BinderException):

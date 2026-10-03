@@ -22,6 +22,17 @@ def test_lost_partition_requires_an_explicit_reason(tmp_path: Path) -> None:
     )
 
 
+def test_legacy_partition_can_leave_snapshot_during_scope_migration(tmp_path: Path) -> None:
+    old, new = tmp_path / "old.duckdb", tmp_path / "new.duckdb"
+    for path, rounds in [(old, "(2023,1),(2024,1)"), (new, "(2024,1)")]:
+        with duckdb.connect(str(path)) as connection:
+            connection.execute("create schema marts")
+            connection.execute(
+                f"create table marts.weather as select * from (values {rounds}) t(season,round)"
+            )
+    validate_partition_preservation(old, new)
+
+
 def test_coverage_gate_requires_attempt_receipt_and_correct_count() -> None:
     from ingestion.snapshot_coverage import (
         SOURCE_TABLES,
