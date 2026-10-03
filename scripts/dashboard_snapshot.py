@@ -19,6 +19,11 @@ def main() -> None:
     build.add_argument("--version")
     build.add_argument("--publish-uri")
     build.add_argument(
+        "--base-snapshot",
+        type=Path,
+        help="Migrate a verified existing snapshot and recompute its rating marts",
+    )
+    build.add_argument(
         "--coverage-exceptions",
         type=Path,
         help="JSON list of explicit table/season/round/reason exceptions",
@@ -39,6 +44,7 @@ def main() -> None:
                 if args.coverage_exceptions
                 else None
             ),
+            base_snapshot=args.base_snapshot,
         )
     else:
         manifest = fetch_dashboard_snapshot(args.uri, args.output)

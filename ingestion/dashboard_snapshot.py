@@ -1186,6 +1186,48 @@ def _copy_duckdb(source: Path, target: Path) -> dict[str, int]:
     return rows
 
 
+def _copy_scoped_snapshot(base: Path, target: Path) -> dict[str, int]:
+    """Migrate a verified publication and recompute ratings on its own evidence."""
+    manifest = json.loads(base.with_suffix(".json").read_text(encoding="utf-8"))
+    if _sha256(base) != manifest.get("sha256"):
+        raise ValueError("Base snapshot checksum does not match its manifest")
+    rows = _copy_duckdb(base, target)
+    with duckdb.connect(str(target)) as connection:
+        for schema, table in sorted(DASHBOARD_CONTRACT):
+            if "season" not in DASHBOARD_CONTRACT[(schema, table)]:
+                continue
+            qualified = f"{_quote(schema)}.{_quote(table)}"
+            connection.execute(
+                f"delete from {qualified} where season not between ? and ?",
+                [FIRST_SEASON, LAST_SEASON],
+            )
+        connection.execute("""create table staging.stg_drivers as
+            select driver_id, max(driver_code) as driver_code,
+                max(driver_name) as driver_name,
+                max(driver_nationality) as nationality,
+                min(season) as first_season, max(season) as last_season,
+                count(*) as race_entries
+            from staging.stg_results group by driver_id""")
+    from analytics.pipeline import (
+        build_driver_pace_profile,
+        build_driver_ratings,
+        build_driver_ratings_v2,
+    )
+
+    scoped_settings = Settings(warehouse="duckdb", duckdb_path=target)
+    build_driver_ratings(settings=scoped_settings)
+    build_driver_ratings_v2(settings=scoped_settings)
+    build_driver_pace_profile(from_season=FIRST_SEASON, settings=scoped_settings)
+    with duckdb.connect(str(target)) as connection:
+        connection.execute("drop table staging.stg_drivers")
+        for schema, table in sorted(DASHBOARD_CONTRACT):
+            qualified = f"{_quote(schema)}.{_quote(table)}"
+            rows[f"{schema}.{table}"] = int(
+                _scalar(connection, f"select count(*) from {qualified}")
+            )
+    return rows
+
+
 def _copy_postgres(settings: Settings, target: Path) -> dict[str, int]:
     engine = create_engine(settings.pg_dsn)
     target_connection = duckdb.connect(str(target))
@@ -1425,6 +1467,7 @@ def build_dashboard_snapshot(
     publish_uri: str | None = None,
     now: dt.datetime | None = None,
     coverage_exceptions: list[dict[str, Any]] | None = None,
+    base_snapshot: Path | None = None,
 ) -> SnapshotManifest:
     """Build, validate and atomically publish one versioned dashboard snapshot."""
     settings = settings or get_settings()
@@ -1442,11 +1485,16 @@ def build_dashboard_snapshot(
     temporary = Path(temporary_name)
     temporary.unlink()
     try:
-        table_rows = (
-            _copy_duckdb(settings.duckdb_path, temporary)
-            if settings.warehouse == "duckdb"
-            else _copy_postgres(settings, temporary)
-        )
+        if base_snapshot is not None:
+            if settings.warehouse != "duckdb":
+                raise ValueError("Snapshot migration requires a DuckDB warehouse")
+            table_rows = _copy_scoped_snapshot(base_snapshot, temporary)
+        else:
+            table_rows = (
+                _copy_duckdb(settings.duckdb_path, temporary)
+                if settings.warehouse == "duckdb"
+                else _copy_postgres(settings, temporary)
+            )
         latest_event_date = validate_dashboard_snapshot(temporary)
         validate_partition_preservation(
             output_dir / "latest.duckdb", temporary, coverage_exceptions
@@ -1458,7 +1506,7 @@ def build_dashboard_snapshot(
             temporary,
             version=version,
             generated_at=now,
-            source=settings.warehouse,
+            source="scoped_snapshot" if base_snapshot is not None else settings.warehouse,
             latest_event_date=latest_event_date,
             git_sha=git_sha,
             package_versions=package_versions,
@@ -1471,7 +1519,7 @@ def build_dashboard_snapshot(
     manifest = SnapshotManifest(
         version=version,
         generated_at=now.isoformat(),
-        source=settings.warehouse,
+        source="scoped_snapshot" if base_snapshot is not None else settings.warehouse,
         database_file=final_path.name,
         sha256=_sha256(final_path),
         size_bytes=final_path.stat().st_size,
