@@ -2,6 +2,7 @@
 -- ("22.343" or "1:05.201") is parsed to seconds via the parse_laptime macro.
 with source as (
     select * from {{ source('raw', 'pitstops') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

@@ -3,6 +3,7 @@
 -- not the Ergast driver_id.
 with source as (
     select * from {{ source('raw', 'laps') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

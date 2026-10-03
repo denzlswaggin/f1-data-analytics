@@ -9,6 +9,7 @@
 
 with source as (
     select * from {{ source('raw', 'race_control') }}
+    where {{ season_in_context('season') }}
 ),
 
 deduped as (

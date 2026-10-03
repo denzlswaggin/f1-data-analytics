@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import datetime as dt
 from pathlib import Path
 
 import pytest
 from ingestion.config import Settings
 
 
-def test_current_season_defaults_to_calendar_year(
+def test_current_season_defaults_to_last_supported_season(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     # Pydantic reads the environment when Settings is created; keep the default
@@ -17,16 +16,25 @@ def test_current_season_defaults_to_calendar_year(
     monkeypatch.delenv("F1_CURRENT_SEASON", raising=False)
     monkeypatch.chdir(tmp_path)
     settings = Settings()
-    assert settings.current_season == dt.date.today().year
+    assert settings.current_season == 2026
 
 
 def test_current_season_accepts_environment_override(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("F1_CURRENT_SEASON", "2030")
+    monkeypatch.setenv("F1_CURRENT_SEASON", "2025")
     monkeypatch.chdir(tmp_path)
     settings = Settings()
-    assert settings.current_season == 2030
+    assert settings.current_season == 2025
+
+
+@pytest.mark.parametrize("season", [2023, 2027])
+def test_current_season_rejects_outside_context(
+    season: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(ValueError):
+        Settings(current_season=season)
 
 
 def test_required_health_resources_are_trimmed_and_deduplicated() -> None:

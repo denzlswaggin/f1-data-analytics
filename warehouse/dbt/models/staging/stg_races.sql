@@ -1,6 +1,7 @@
 -- One clean row per race: typed keys, a stable surrogate key, and tidy names.
 with source as (
     select * from {{ source('raw', 'races') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

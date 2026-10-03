@@ -18,9 +18,9 @@ does*" — it is a relative claim, not an absolute one.
 
 The qualifying gaps are deliberately **re-solved over only the seasons the race
 gaps cover**, rather than reusing ``marts.driver_ratings``. Race pace comes from
-FastF1 (2018+, and in practice a narrower ingested window) while qualifying goes
-back to 2006; comparing ratings fitted on two different driver populations would
-make the delta meaningless. Deriving the season set from ``race_gaps`` here —
+FastF1 and qualifying can have different coverage within 2024-2026; comparing
+ratings fitted on two different driver populations would make the delta
+meaningless. Deriving the season set from ``race_gaps`` here —
 instead of relying on two matching SQL filters — makes that impossible to get
 wrong.
 

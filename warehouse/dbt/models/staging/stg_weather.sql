@@ -2,6 +2,7 @@
 -- Feeds the weather-adjusted degradation mart, which summarises to race grain.
 with source as (
     select * from {{ source('raw', 'weather') }}
+    where {{ season_in_context('season') }}
 ),
 
 renamed as (

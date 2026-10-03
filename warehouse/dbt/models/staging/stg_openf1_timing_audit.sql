@@ -19,3 +19,4 @@ select
     cast(interval_row_count as bigint) as interval_row_count,
     cast(control_row_count as bigint) as control_row_count
 from {{ source('raw', 'openf1_timing_audit') }}
+where {{ season_in_context('season') }}
