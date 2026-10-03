@@ -37,10 +37,10 @@ def test_actual_serving_classification(
         )
         c.execute(
             "create table pace as "
-            + Path("dashboard/sources/f1/driver_pace_profile.sql").read_text()
+            + Path("dashboard/sources/f1/driver_pace_profile.sql").read_text(encoding="utf-8")
         )
         assert c.execute("select profile from pace").fetchone() == (expected,)
-        page = Path("dashboard/pages/saturday-vs-sunday.md").read_text()
+        page = Path("dashboard/pages/saturday-vs-sunday.md").read_text(encoding="utf-8")
         match = re.search(r"```sql difference_intervals\n(.*?)\n```", page, re.S)
         assert match
         result = c.execute(match[1].replace("${pace}", "pace")).fetchone()
@@ -56,7 +56,7 @@ def test_actual_serving_classification(
 
 
 def test_primary_display_uses_paired_intervals_without_specialist_labels() -> None:
-    page = Path("dashboard/pages/saturday-vs-sunday.md").read_text()
+    page = Path("dashboard/pages/saturday-vs-sunday.md").read_text(encoding="utf-8")
     assert "<RatingIntervals data={difference_intervals}" in page
     assert "<BarChart" not in page
     assert "not adjusted for screening multiple" in page
