@@ -1,4 +1,4 @@
--- One clean, typed row per driver per lap (FastF1). Covers 2018+; used for race
+-- One clean, typed row per driver per lap (FastF1). Covers 2024-2026; used for race
 -- pace and tyre-stint analysis. Driver key here is the 3-letter code (FastF1),
 -- not the Ergast driver_id.
 with source as (

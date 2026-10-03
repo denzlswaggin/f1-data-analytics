@@ -284,7 +284,8 @@ def _load_hf_transcripts(season: int) -> dict[tuple[str, pd.Timestamp], str]:
     """Return ``{(racing_number, utc_timestamp): transcript}`` for a season.
 
     Transcripts come from the public ``MikCil/f1-team-radio`` dataset (Whisper/Cohere
-    ASR over the F1 radio archive), which covers 2018-2025. Its ``message_timestamp``
+    ASR over the F1 radio archive). Within this project, transcripts are available
+    for 2024-2025; its ``message_timestamp``
     matches the OpenF1 clip ``date`` exactly, so we join on (car number, timestamp).
     One clip can hold a driver+engineer exchange split across rows — those are
     concatenated. Empty for seasons the dataset doesn't cover (e.g. 2026).

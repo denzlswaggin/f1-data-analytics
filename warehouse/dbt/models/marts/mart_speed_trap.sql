@@ -2,7 +2,7 @@
 --
 -- The speed-trap reading on the longest straight (SpeedST), summarised over
 -- green-flag race laps — a proxy for power-unit output and low-drag efficiency.
--- FastF1-sourced (2018+); driver_id/name bridged via stg_driver_codes.
+-- FastF1-sourced (2024-2026); driver_id/name bridged via stg_driver_codes.
 with laps as (
     select * from {{ ref('stg_laps') }}
     where session = 'R'
