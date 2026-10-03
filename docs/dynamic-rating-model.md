@@ -2,7 +2,7 @@
 
 ## Question
 
-The original model estimates one driver value across a whole career. That is a
+The original model estimates one driver value across 2024–2026. That is a
 useful, stable benchmark, but it cannot answer whether a driver improved,
 declined, or adapted to a new regulation era. V2 estimates a separate latent
 pace deficit for every observed driver-season.
@@ -37,7 +37,7 @@ independent and preserves the season mix.
 An expanding-window backtest fits on seasons before year `Y` and predicts the
 teammate gaps in `Y`. The active [2024–2026 context](data-context.md) gives this
 test a much shorter training history than the earlier historical evaluation.
-V2 should therefore be used to explore form and career trajectories without
+V2 should therefore be used to explore form across these three seasons without
 claiming predictive improvement. The CLI prints both results from the same
 temporal splits:
 

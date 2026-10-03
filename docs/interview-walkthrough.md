@@ -43,9 +43,9 @@ This demonstrates detection and recovery, not merely a green CI badge.
 ## 2:45–3:45 — Defend the model
 
 Explain the static teammate graph first, then V2's driver-season nodes and
-temporal edges. Lead with the holdout result: V2 improves only slightly (MAE
-0.634 vs 0.638; direction 0.607 vs 0.605). Keeping both models is a product and
-scientific choice—the stable benchmark answers career pace, V2 answers form.
+temporal edges. The active model covers 2024–2026; the earlier holdout figures
+came from a wider dataset and need revalidation. The static benchmark answers
+pace across these three seasons, while V2 answers season form.
 
 Call out what the model does not control: upgrade timing, setup, reliability,
 traffic, and changing teammate strength. The strongest answer to “is it causal?”

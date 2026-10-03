@@ -1,6 +1,6 @@
 # Joint qualifying and race-pace ratings (V3 experiment)
 
-V3 is a research model, not a replacement for the published V1 career rating or
+V3 is a research model, not a replacement for the published V1 three-season rating or
 V2 driver-season rating. It asks whether two related signals—qualifying pace and
 carefully controlled race pace—predict future teammate gaps better when estimated
 together. The pipeline writes V3 to separate marts and records enough evidence to

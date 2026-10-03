@@ -28,7 +28,7 @@ Raw F1 data enters through a **Python extract-load (EL) layer** that pulls from 
 APIs, writes it to a **Parquet "lake"** on disk, and loads it into a **warehouse**
 (DuckDB in dev, Postgres in prod). **dbt** then transforms the raw tables through
 three layers — `staging → intermediate → marts` — each a schema in the warehouse.
-The headline insight (cross-era driver ratings) is *not* a dbt model: it's a
+The headline insight (2024–2026 driver ratings) is *not* a dbt model: it's a
 **Python numpy solver** that reads a dbt intermediate table, solves a least-squares
 problem, and writes the result back into the `marts` schema. **Dagster** can run
 that whole chain on a schedule, and **Evidence** turns the marts into a web
@@ -187,7 +187,7 @@ strict sequence: refresh the small season endpoints, ingest one race partition,
 run dbt, then incrementally materialize that race's replay and overtakes. The
 Monday schedule resolves only the latest race dated before today; the same job
 can be launched for any explicit partition as a targeted backfill. Season asset
-jobs remain available for broad historical backfills.
+jobs remain available for backfills within 2024–2026.
 
 Every stage is timed and exposes duration/budget/utilisation metadata. The
 budget settings live in `Settings`, making performance drift a visible failed
@@ -291,11 +291,10 @@ This is the intellectual core. Read `int_teammate_quali_gaps.sql` and
 ### The idea
 
 Teammates drive **identical cars**, so the qualifying gap *between two teammates*
-is a clean measurement of driver skill with the car cancelled out. But that only
-compares each driver to *their* teammate. To build one cross-era leaderboard, you
-chain the pairwise gaps across the whole "teammate graph" (Hamilton is comparable
-to Verstappen because Hamilton→Rosberg→Bottas→Russell→Verstappen are all linked by
-shared teammates).
+reduces the shared car effect. But that only compares each driver to *their*
+teammate. To build one 2024–2026 leaderboard, you chain the pairwise gaps across
+the "teammate graph" (Russell and Leclerc are linked through Hamilton's 2024
+Mercedes and 2025 Ferrari teammate comparisons).
 
 ### Step 1 — the gap (SQL, `int_teammate_quali_gaps.sql`)
 

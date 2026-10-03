@@ -114,7 +114,7 @@ mirrored teammate comparisons and replay ticks are correlated observations.
 
 | Analysis | What the value means | Publication evidence | Main limitation |
 | --- | --- | --- | --- |
-| Ratings / Driver Comparison | Higher fitted qualifying rating means faster within the teammate network | Career display: at least 40 directed comparisons; season estimates show their counts and 90% intervals | Shared years are not identical weekends or direct head-to-heads; car effects remain |
+| Ratings / Driver Comparison | Higher fitted qualifying rating means faster within the teammate network | 2024–2026 display: at least 40 directed comparisons; season estimates show their counts and 90% intervals | Shared years are not identical weekends or direct head-to-heads; car effects remain |
 | Saturday vs Sunday | Difference between fitted qualifying and race ratings | Joint weekend resampling within seasons; interval needs at least 900 valid draws out of 1,000 | Correlated estimates require joint resampling; this is not a finish prediction |
 | Race Pace / Traffic | Seconds relative to the median of other drivers on the same lap and compound; lower is faster | At least three other peers; clean-air summary needs five clean laps; traffic association also needs five matched traffic laps | Tyre age, car and context differ; replay gaps can be estimated |
 | Pace Consistency | Robust residual spread in seconds after a stint trend; lower is more repeatable | Valid clean-air stint fits and at least eight modelled laps per driver | Slow-tail cost is unexplained residual time, not a count of driver mistakes |
@@ -247,9 +247,9 @@ teammate graph with regularisation. This reduces the largest shared car effect;
 it does not remove upgrade timing, setup, traffic, reliability, injury, or every
 change in teammate strength.
 
-The career model answers “who was consistently fast relative to teammates?”.
+The pooled 2024–2026 model answers “who was consistently fast relative to teammates?”.
 The dynamic model answers “how did that relative form change by season?”. Its
-90% intervals resample complete race weekends within seasons. Static career
+90% intervals resample complete race weekends within seasons. Static rating
 intervals instead resample undirected teammate comparison edges: mirrored rows
 stay together, but different teams at one weekend are not clustered together.
 These are individual estimate intervals, not exact-rank probabilities.

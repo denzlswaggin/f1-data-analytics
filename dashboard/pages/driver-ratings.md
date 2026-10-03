@@ -9,7 +9,7 @@ max_width: 1600
 <PageHeader
     eyebrow="Driver intelligence"
     title="How do teammates compare in qualifying?"
-    description="A teammate-normalised view of career pace and current form, with uncertainty kept visible instead of hidden behind a ranking."
+    description="A teammate-normalised view of 2024–2026 pace and season form, with uncertainty kept visible instead of hidden behind a ranking."
     accent="drivers"
 >
     <div slot="actions">
@@ -19,7 +19,7 @@ max_width: 1600
 </PageHeader>
 
 <KeyInsight label="How to read this page">
-Start with the career benchmark, then use the season and driver filters for recent
+Start with the three-season benchmark, then use the season and driver filters for recent
 form and one driver's history. Ratings are unitless model scores: higher means
 faster relative to the fitted teammate network, not a predicted lap time. Lines
 show individual 90% resampling intervals; their overlap alone is not a paired
@@ -27,7 +27,7 @@ significance test. The model cannot fully separate driver and car performance.
 Open the data table below each result to inspect its estimates and sample counts.
 </KeyInsight>
 
-Compare two careers in [Compare Drivers](driver-comparison), contrast qualifying
+Compare two drivers in [Compare Drivers](driver-comparison), contrast qualifying
 and race pace in [Saturday vs Sunday](saturday-vs-sunday), or inspect the full
 [methodology and data contract](methodology).
 
@@ -54,26 +54,26 @@ limit 15
 ```
 
 <nav class="section-nav" aria-label="On this page">
-    <a href="#career-benchmark">Career benchmark</a>
+    <a href="#period-benchmark">Three-season benchmark</a>
     <a href="#season-form">Season form</a>
     <a href="#driver-history">Driver history</a>
 </nav>
 
-<div id="career-benchmark" class="section-anchor"></div>
+<div id="period-benchmark" class="section-anchor"></div>
 
-## Career qualifying benchmark
+## 2024–2026 qualifying benchmark
 
-The career fit pools each driver's observed years. Different careers cover
-different seasons and teammate networks; this is not a same-era comparison.
+The static fit pools each driver's observed years in 2024–2026. Drivers can cover
+different subsets of those seasons and teammate networks.
 The display minimum is 40 directed comparisons, not 40 independent race weekends.
 Regularisation stabilises sparse connections but does not prove equal machinery.
-Career intervals resample undirected comparison edges; unlike the dynamic
+Static intervals resample undirected comparison edges; unlike the dynamic
 model, they do not cluster all teams from the same weekend. Neither interval
 type establishes the probability of an exact rank.
 
-<RatingIntervals data={top_drivers} title="Career estimates: at least 40 directed comparisons" />
+<RatingIntervals data={top_drivers} title="2024–2026 estimates: at least 40 directed comparisons" />
 
-<ExpandableSection title="View career leaderboard data">
+<ExpandableSection title="View three-season leaderboard data">
 <div style="overflow-x: auto; max-width: 100%;">
 <DataTable data={top_drivers} rows=15>
     <Column id=rank title="#" />
@@ -92,11 +92,11 @@ type establishes the probability of an exact rank.
 
 ## Season form — dynamic model
 
-Unlike the career-wide benchmark above, this model estimates a separate rating
+Unlike the pooled benchmark above, this model estimates a separate rating
 for every driver-season. Adjacent seasons share information through a temporal
 regulariser; whole race weekends are resampled together for the 90% interval.
-On the expanding-window holdout it is only marginally better than the static
-model, so read it as a form lens rather than a replacement leaderboard.
+The earlier expanding-window evaluation used a wider historical dataset. Read
+this as a form lens while the 2024–2026 model awaits fresh validation.
 
 ```sql rating_seasons
 select distinct season from f1.driver_ratings_v2 order by season desc
@@ -146,12 +146,12 @@ limited support even when the regularised point estimate appears precise.
 
 ```sql drivers_list
 select distinct driver_id, driver_name
-from f1.season_pace
+from f1.driver_ratings_v2
 order by driver_name
 ```
 
 <FilterBar title="Explore one driver" scope="Driver history only" description="Follow season-by-season form and teammate gap.">
-    <QueryDropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="max_verstappen" title="Driver" />
+    <QueryDropdown data={drivers_list} name=driver value=driver_id label=driver_name defaultValue="russell" title="Driver" />
 </FilterBar>
 
 ```sql driver_dynamic_form

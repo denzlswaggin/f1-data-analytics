@@ -23,7 +23,7 @@ measurement rule.
 
 The output serves two audiences:
 
-- an F1 analyst can explore career pace, season-specific form, race pace,
+- an F1 analyst can explore three-season pace, season-specific form, race pace,
   strategy, telemetry, and replay;
 - a data team can inspect lineage, tests, partition audits, failed runs, and the
   exact recovery path behind every published number.
@@ -37,7 +37,7 @@ The output serves two audiences:
 | Atomic Parquet partitions | Raw recovery source and cheap replay of one season/round | Local volumes need an off-host backup policy |
 | Round/session replacement | Late corrections do not rebuild or overwrite a whole season | Partition metadata becomes part of the correctness contract |
 | Dagster asset graph | Scheduling, durable run history, retries, and blocking checks in one view | A single-host Compose deployment is not horizontally scalable |
-| Static rating plus V2 | Stable career benchmark remains comparable; V2 exposes changing form | V2's predictive improvement is deliberately reported as marginal |
+| Static rating plus V2 | Stable 2024–2026 benchmark remains comparable; V2 exposes changing form | Predictive claims need fresh validation on the shorter window |
 
 ## Reliability work
 
@@ -49,7 +49,7 @@ portfolio look good but behave badly:
    and touched partition.
 3. Late telemetry corrections rebuild only the audited race partition; a
    regression test mutates historical source data and proves propagation.
-4. The current season derives from the calendar or an environment override.
+4. The refresh season defaults to 2026 and may be pinned within 2024–2026.
 5. Dagster checks block downstream publication when core loads are missing,
    stale, duplicated, null, or carry invalid intervals.
 6. `restore-partition` repairs one warehouse partition directly from the lake.

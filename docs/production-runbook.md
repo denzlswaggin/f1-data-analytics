@@ -11,7 +11,7 @@ is not evidence that infrastructure has been deployed.
 
 ```bash
 cp .env.production.example .env.production
-# Set a unique F1_PG_PASSWORD and the current F1_CURRENT_SEASON.
+# Set a unique F1_PG_PASSWORD; keep F1_CURRENT_SEASON within 2024–2026.
 make prod-up
 make prod-smoke
 ```

@@ -50,7 +50,7 @@ The dashboard is organised around questions rather than warehouse tables.
 | --- | --- | --- |
 | What actually decided the race? | **Latest race story** | Controlled pace, execution gain and detected passes |
 | Can I watch the race develop? | **Race replay** | Cars, timing, tyres, incidents, overtakes and radio on one clock |
-| Who is fastest beyond the car? | **Driver ratings** | Teammate-normalised career pace and current form |
+| Who is fastest beyond the car? | **Driver ratings** | Teammate-normalised 2024–2026 pace and season form |
 | How do two drivers compare? | **Driver comparison** | Shared-season form, 90% intervals and an evidence-strength cue |
 | Where was a lap won? | **Telemetry** | Speed traces, cumulative time delta and pedal inputs |
 | Which tyres faded? | **Tyre strategy** | Stint timelines and fuel- and track-adjusted fall-off |
@@ -66,7 +66,7 @@ same machinery**.
 For each qualifying session, the last segment completed by both teammates becomes a
 direct pace comparison. Those gaps form a connected teammate graph, which is solved
 into a three-season leaderboard with a Massey-style least-squares fit. Empirical-Bayes
-shrinkage tempers thin samples. Static career intervals resample undirected
+shrinkage tempers thin samples. Static rating intervals resample undirected
 teammate comparison edges; dynamic season intervals resample complete weekends
 within seasons. Neither establishes exact-rank probabilities.
 
