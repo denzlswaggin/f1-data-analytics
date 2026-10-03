@@ -15,7 +15,8 @@ depth plus verification spot-checks; this file is meant to stand on its own.)
   pins, resolved apart from the core), `.[telemetry]` (FastF1 — heavy, pulls matplotlib/scipy),
   `.[orchestration]` (Dagster). The FastF1 client imports lazily so the core install/CI stay lean.
 - Config is `F1_*` env vars / `.env` (copy `.env.example`). Key knobs: `F1_WAREHOUSE=duckdb|postgres`,
-  `F1_DUCKDB_PATH=data/warehouse/f1.duckdb`. Prod Postgres 16 = `docker compose up -d postgres` (creds f1/f1/f1;
+  `F1_DUCKDB_PATH=data/warehouse/f1.duckdb`. Prod Postgres 16 = `make prod-up` after setting a unique
+  `F1_PG_PASSWORD` in `.env.production`;
   Docker Desktop must be running — on Windows launch it and poll `docker info`).
 
 ## Commands

@@ -16,7 +16,13 @@ make prod-up
 make prod-smoke
 ```
 
-Dagster is served on `http://localhost:3001`. Enable the
+If an existing Postgres volume was initialized with a sample password, rotate
+the database role password as well as updating `.env.production`; changing the
+Compose environment alone does not change the role password stored in Postgres.
+
+Postgres and Dagster bind to `127.0.0.1` on the host; neither service is
+published to other network interfaces. Dagster is served on
+`http://localhost:3001`. Enable the
 `latest_round_refresh` schedule in Dagster after the first successful manual
 materialization of the current season's `raw.races` asset. The schedule runs at
 06:00 every Monday and selects the greatest round whose race date is before the

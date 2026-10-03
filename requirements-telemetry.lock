@@ -20,6 +20,8 @@ cffi==2.1.1
     # via cryptography
 charset-normalizer==3.5.1
     # via requests
+colorama==0.4.6
+    # via typer
 contourpy==1.4.0
     # via matplotlib
 cryptography==50.0.1
@@ -32,6 +34,8 @@ fastf1==3.8.3
     # via f1-data-analytics (pyproject.toml)
 fonttools==4.65.0
     # via matplotlib
+greenlet==3.5.6
+    # via sqlalchemy
 idna==3.19
     # via
     #   requests
@@ -86,7 +90,7 @@ pydantic-settings==2.15.0
     # via f1-data-analytics (pyproject.toml)
 pygments==2.21.0
     # via rich
-pyjwt==2.14.0
+pyjwt==2.15.1
     # via fastf1
 pyparsing==3.3.2
     # via matplotlib
@@ -143,7 +147,7 @@ tzdata==2026.4
     # via pandas
 url-normalize==3.0.0
     # via requests-cache
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   requests
     #   requests-cache

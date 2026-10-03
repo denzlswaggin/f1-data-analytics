@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     pg_port: int = 5432
     pg_database: str = "f1"
     pg_user: str = "f1"
-    pg_password: str = "f1"
+    pg_password: str = ""
     pg_schema: str = "raw"
 
     # Data lake. Local by default; set `lake_uri` to an object-store base
@@ -154,6 +154,8 @@ class Settings(BaseSettings):
     @property
     def pg_dsn(self) -> str:
         """SQLAlchemy connection string for the Postgres warehouse."""
+        if not self.pg_password:
+            raise ValueError("F1_PG_PASSWORD must be set for the Postgres warehouse")
         return (
             f"postgresql+psycopg2://{self.pg_user}:{self.pg_password}"
             f"@{self.pg_host}:{self.pg_port}/{self.pg_database}"

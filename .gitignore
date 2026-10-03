@@ -7,8 +7,13 @@ build/
 dist/
 .venv/
 venv/
-.env
-.env.production
+.env*
+!.env.example
+!.env.production.example
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/

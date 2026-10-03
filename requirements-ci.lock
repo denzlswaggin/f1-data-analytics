@@ -52,8 +52,13 @@ click==8.4.2
     #   uvicorn
 colorama==0.4.6
     # via
+    #   build
+    #   click
     #   dbt-common
+    #   pytest
     #   sqlfluff
+    #   tqdm
+    #   typer
 coloredlogs==14.0
     # via dagster
 coverage==7.16.0
@@ -132,6 +137,8 @@ graphql-core==3.2.12
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
+greenlet==3.5.6
+    # via sqlalchemy
 grpcio==1.83.1
     # via
     #   dagster
@@ -234,6 +241,7 @@ packaging==26.3
     #   dagster-shared
     #   dbt-core
     #   pytest
+    #   virtualenv
     #   wheel
 pandas==3.0.5
     # via f1-data-analytics (pyproject.toml)
@@ -271,6 +279,8 @@ protobuf==6.33.6
     #   dbt-core
     #   dbt-protos
     #   grpcio-health-checking
+psutil==7.2.2
+    # via dagster
 psycopg2-binary==2.9.13
     # via
     #   dagster-postgres
@@ -297,6 +307,8 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+pyreadline3==3.5.6
+    # via humanfriendly
 pytest==9.1.1
     # via
     #   f1-data-analytics (pyproject.toml)
@@ -326,6 +338,8 @@ pytz==2026.3.post1
     #   dagster
     #   dbt-adapters
     #   dbt-core
+pywin32==312
+    # via dagster
 pyyaml==6.0.3
     # via
     #   dagster-shared
@@ -458,18 +472,19 @@ typing-inspection==0.4.4
     #   pydantic
     #   pydantic-settings
 tzdata==2026.4
-    # via dagster
+    # via
+    #   agate
+    #   dagster
+    #   pandas
 universal-pathlib==0.3.10
     # via dagster
-urllib3==2.7.0
+urllib3==2.8.0
     # via
     #   requests
     #   types-requests
 uvicorn==0.52.4
     # via dagster-webserver
-uvloop==0.22.1
-    # via uvicorn
-virtualenv==21.7.9
+virtualenv==21.14.5
     # via pre-commit
 watchdog==6.0.0
     # via dagster

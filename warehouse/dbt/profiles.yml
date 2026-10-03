@@ -17,7 +17,7 @@ f1:
       host: "{{ env_var('F1_PG_HOST', 'localhost') }}"
       port: "{{ env_var('F1_PG_PORT', '5432') | int }}"
       user: "{{ env_var('F1_PG_USER', 'f1') }}"
-      password: "{{ env_var('F1_PG_PASSWORD', 'f1') }}"
+      password: "{{ env_var('F1_PG_PASSWORD') }}"
       dbname: "{{ env_var('F1_PG_DATABASE', 'f1') }}"
       # Default schema for un-namespaced nodes; layer models set their own
       # (staging/intermediate/marts) via generate_schema_name.

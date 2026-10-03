@@ -41,3 +41,14 @@ def test_required_health_resources_are_trimmed_and_deduplicated() -> None:
     settings = Settings(health_required_resources=" laps,telemetry, laps, ")
 
     assert settings.required_health_resources == ("laps", "telemetry")
+
+
+def test_postgres_requires_an_explicit_password(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.delenv("F1_PG_PASSWORD", raising=False)
+    monkeypatch.chdir(tmp_path)
+    settings = Settings(warehouse="postgres")
+
+    with pytest.raises(ValueError, match="F1_PG_PASSWORD must be set"):
+        _ = settings.pg_dsn

@@ -35,7 +35,7 @@ services:
       POSTGRES_PASSWORD: ${F1_PG_PASSWORD:?Copy .env.production.example to .env.production}
       POSTGRES_DB: ${F1_PG_DATABASE:-f1}
     ports:
-      - "${F1_PG_PUBLISHED_PORT:-5432}:5432"
+      - "127.0.0.1:${F1_PG_PUBLISHED_PORT:-5432}:5432"
     volumes:
       - f1_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -55,7 +55,7 @@ services:
     entrypoint: ["dagster-webserver"]
     command: ["-h", "0.0.0.0", "-p", "3001", "-w", "orchestration/workspace.yaml"]
     ports:
-      - "${F1_DAGSTER_PORT:-3001}:3001"
+      - "127.0.0.1:${F1_DAGSTER_PORT:-3001}:3001"
     healthcheck:
       test:
         [
