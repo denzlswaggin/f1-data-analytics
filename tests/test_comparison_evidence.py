@@ -85,6 +85,7 @@ def test_cockpit_control_zero_requires_observed_messages() -> None:
             select 2025 as season, 3 as round, 2 as intervention_stop_count,
                    3 as position_gainer_count""")
         for rnd, expected in ((1, []), (2, [(0, 0, 0)]), (3, [(1, 2, 3)])):
-            result = conn.execute(query("race-cockpit", "control_summary",
-                                        {"season": "2025", "race": str(rnd)})).fetchall()
+            result = conn.execute(
+                query("race-cockpit", "control_summary", {"season": "2025", "race": str(rnd)})
+            ).fetchall()
             assert result == expected

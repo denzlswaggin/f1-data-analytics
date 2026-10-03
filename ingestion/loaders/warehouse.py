@@ -161,7 +161,7 @@ def _load_duckdb(
             for load in partition_loads:
                 con.execute(
                     f'DELETE FROM raw."{table}" WHERE season = ? AND round = ? '
-                    'AND session IS NOT DISTINCT FROM ?',
+                    "AND session IS NOT DISTINCT FROM ?",
                     [season, load.round, load.session],
                 )
         elif rounds is not None:

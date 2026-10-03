@@ -103,10 +103,14 @@ def test_replace_rounds_appends_new_rounds(tmp_path: Path) -> None:
 
 def test_session_refresh_preserves_other_sessions_and_rounds(tmp_path: Path) -> None:
     settings = _settings(tmp_path)
-    initial = pd.DataFrame({
-        "season": [2026] * 3, "round": [13, 14, 14],
-        "session": ["R", "Q", "R"], "val": [13, 140, 141],
-    })
+    initial = pd.DataFrame(
+        {
+            "season": [2026] * 3,
+            "round": [13, 14, 14],
+            "session": ["R", "Q", "R"],
+            "val": [13, 140, 141],
+        }
+    )
     load_dataframe(initial, "weather", 2026, settings, replace_rounds=True)
     replacement = initial.iloc[[2]].assign(val=142)
     load_dataframe(replacement, "weather", 2026, settings, replace_rounds=True)

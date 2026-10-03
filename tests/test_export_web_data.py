@@ -165,6 +165,7 @@ def test_recorded_pit_times_use_the_replay_clock(tmp_path: Path) -> None:
         connection.execute("alter table staging.stg_laps add column pit_out_time_sec double")
         connection.execute("update staging.stg_laps set pit_in_time_sec=175, pit_out_time_sec=199")
     from scripts.export_web_data import _race_bundle
+
     with duckdb.connect(str(snapshot), read_only=True) as connection:
         bundle = _race_bundle(connection, 2026, 1)
     assert bundle["laps"][0]["pit_entry_t_s"] == 75
